@@ -1,0 +1,38 @@
+[
+  {
+    "table_name": "a1_company_list",
+    "schema_prompt_context": "### TABEL: a1_company_list\n**Columns:**\n  - company_list_id (uuid, NOT NULL, DEFAULT: gen_random_uuid())\n  - job_number (text, NOT NULL)\n  - name (text, NOT NULL)\n  - company_name (text, NOT NULL)\n  - created_by (text, NOT NULL)\n  - customer_code (character varying, NULLABLE)\n**Foreign Keys:** (None)"
+  },
+  {
+    "table_name": "a2_conversation_files",
+    "schema_prompt_context": "### TABEL: a2_conversation_files\n**Columns:**\n  - id (uuid, NOT NULL, DEFAULT: gen_random_uuid())\n  - conversation_id (uuid, NOT NULL)\n  - file_name (text, NOT NULL)\n  - file_type (character varying, NOT NULL)\n  - file_url (text, NOT NULL)\n  - file_size_kb (integer, NULLABLE)\n  - uploaded_by (uuid, NOT NULL)\n  - uploaded_at (timestamp with time zone, NOT NULL, DEFAULT: now())\n**Foreign Keys:**\n  * FK: conversation_id -> a2_record_conversations(id)\n  * FK: uploaded_by -> d3_employee(id)"
+  },
+  {
+    "table_name": "a2_record_conversations",
+    "schema_prompt_context": "### TABEL: a2_record_conversations\n**Columns:**\n  - id (uuid, NOT NULL, DEFAULT: gen_random_uuid())\n  - job_number (character varying, NULLABLE)\n  - customer_id (uuid, NOT NULL)\n  - customer_code (character varying, NULLABLE)\n  - sales_pic_id (uuid, NOT NULL)\n  - channel_type (character varying, NOT NULL)\n  - conversation_date (date, NOT NULL, DEFAULT: CURRENT_DATE)\n  - summary (text, NOT NULL)\n  - need_assistance (boolean, NOT NULL, DEFAULT: false)\n  - urgency_level (character varying, NULLABLE)\n  - synced_to_ctrack (boolean, NOT NULL, DEFAULT: true)\n  - document_urls (ARRAY, NULLABLE)\n  - status (character varying, NOT NULL, DEFAULT: 'active'::character varying)\n  - created_by (uuid, NOT NULL)\n  - created_at (timestamp with time zone, NOT NULL, DEFAULT: now())\n  - updated_at (timestamp with time zone, NOT NULL, DEFAULT: now())\n**Foreign Keys:**\n  * FK: created_by -> d3_employee(id)\n  * FK: customer_id -> a1_company_list(company_list_id)\n  * FK: sales_pic_id -> d3_employee(id)"
+  },
+  {
+    "table_name": "a2_worksheet_checklists",
+    "schema_prompt_context": "### TABEL: a2_worksheet_checklists\n**Columns:**\n  - id (uuid, NOT NULL, DEFAULT: gen_random_uuid())\n  - worksheet_id (bigint, NOT NULL)\n  - check_label (text, NOT NULL)\n  - is_verified (boolean, NOT NULL, DEFAULT: false)\n  - verified_by (uuid, NULLABLE)\n  - verified_at (timestamp with time zone, NULLABLE)\n  - sort_order (smallint, NOT NULL, DEFAULT: 0)\n  - created_at (timestamp with time zone, NOT NULL, DEFAULT: now())\n**Foreign Keys:**\n  * FK: verified_by -> d3_employee(id)\n  * FK: worksheet_id -> a2_worksheets(worksheet_id)"
+  },
+  {
+    "table_name": "a2_worksheet_documents",
+    "schema_prompt_context": "### TABEL: a2_worksheet_documents\n**Columns:**\n  - id (uuid, NOT NULL, DEFAULT: gen_random_uuid())\n  - worksheet_id (bigint, NOT NULL)\n  - doc_name (text, NOT NULL)\n  - doc_type (character varying, NOT NULL)\n  - file_size_kb (integer, NULLABLE)\n  - doc_url (text, NOT NULL)\n  - doc_description (text, NULLABLE)\n  - is_verified (boolean, NOT NULL, DEFAULT: false)\n  - uploaded_by (uuid, NULLABLE)\n  - uploaded_at (timestamp with time zone, NOT NULL, DEFAULT: now())\n  - created_at (timestamp with time zone, NOT NULL, DEFAULT: now())\n**Foreign Keys:**\n  * FK: uploaded_by -> d3_employee(id)\n  * FK: worksheet_id -> a2_worksheets(worksheet_id)"
+  },
+  {
+    "table_name": "a2_worksheet_photos",
+    "schema_prompt_context": "### TABEL: a2_worksheet_photos\n**Columns:**\n  - id (uuid, NOT NULL, DEFAULT: gen_random_uuid())\n  - worksheet_id (bigint, NOT NULL)\n  - photo_label (text, NOT NULL)\n  - photo_status (text, NOT NULL)\n  - photo_url (text, NULLABLE)\n  - file_name (text, NULLABLE)\n  - taken_at (timestamp with time zone, NULLABLE)\n  - is_verified (boolean, NOT NULL, DEFAULT: false)\n  - sort_order (smallint, NOT NULL, DEFAULT: 0)\n  - created_at (timestamp with time zone, NOT NULL, DEFAULT: now())\n**Foreign Keys:**\n  * FK: worksheet_id -> a2_worksheets(worksheet_id)"
+  },
+  {
+    "table_name": "a2_worksheet_physical_items",
+    "schema_prompt_context": "### TABEL: a2_worksheet_physical_items\n**Columns:**\n  - id (uuid, NOT NULL, DEFAULT: gen_random_uuid())\n  - worksheet_id (bigint, NOT NULL)\n  - item_label (text, NOT NULL)\n  - item_value (text, NOT NULL)\n  - item_unit (text, NULLABLE)\n  - sort_order (smallint, NOT NULL, DEFAULT: 0)\n  - created_at (timestamp with time zone, NOT NULL, DEFAULT: now())\n**Foreign Keys:**\n  * FK: worksheet_id -> a2_worksheets(worksheet_id)"
+  },
+  {
+    "table_name": "a2_worksheets",
+    "schema_prompt_context": "### TABEL: a2_worksheets\n**Columns:**\n  - worksheet_id (bigint, NOT NULL)\n  - transaction_no (character varying, NOT NULL)\n  - job_no (character varying, NOT NULL)\n  - customer_id (uuid, NOT NULL)\n  - created_by_user_id (bigint, NULLABLE)\n  - create_date (date, NOT NULL, DEFAULT: CURRENT_DATE)\n  - status_kendala (character varying, NULLABLE, DEFAULT: 'normal'::character varying)\n  - field_agent_id (uuid, NULLABLE)\n  - sales_pic_id (uuid, NULLABLE)\n  - shipper (text, NULLABLE)\n  - consignee (text, NULLABLE)\n  - mawb (character varying, NULLABLE)\n  - hawb (character varying, NULLABLE)\n  - handover_datetime (timestamp with time zone, NULLABLE)\n  - handover_location (text, NULLABLE)\n  - pihak_penyerah (text, NULLABLE)\n  - pihak_penerima (text, NULLABLE)\n  - is_dangerous_goods (boolean, NOT NULL, DEFAULT: false)\n  - special_handling (text, NULLABLE)\n  - has_issue (boolean, NOT NULL, DEFAULT: false)\n  - issue_note (text, NULLABLE)\n  - is_exported_pdf (boolean, NOT NULL, DEFAULT: false)\n  - updated_at (timestamp with time zone, NOT NULL, DEFAULT: now())\n  - conversation_id (uuid, NULLABLE)\n**Foreign Keys:**\n  * FK: conversation_id -> a2_record_conversations(id)\n  * FK: customer_id -> a1_company_list(company_list_id)\n  * FK: field_agent_id -> d3_employee(id)\n  * FK: sales_pic_id -> d3_employee(id)"
+  },
+  {
+    "table_name": "d3_employee",
+    "schema_prompt_context": "### TABEL: d3_employee\n**Columns:**\n  - id (uuid, NOT NULL, DEFAULT: gen_random_uuid())\n  - employee_id (character varying, NOT NULL)\n  - full_name (character varying, NOT NULL)\n  - email (character varying, NOT NULL)\n  - phone (character varying, NULLABLE)\n  - identity_type (character varying, NULLABLE, DEFAULT: 'KTP'::character varying)\n  - identity_number (character varying, NULLABLE)\n  - join_date (date, NOT NULL)\n  - employment_status (character varying, NOT NULL, DEFAULT: 'PROBATION'::character varying)\n  - position_id (uuid, NOT NULL)\n  - department_id (uuid, NOT NULL)\n  - work_location (character varying, NOT NULL, DEFAULT: 'HQ'::character varying)\n  - avatar_url (text, NULLABLE)\n  - created_at (timestamp with time zone, NULLABLE, DEFAULT: now())\n  - updated_at (timestamp with time zone, NULLABLE, DEFAULT: now())\n**Foreign Keys:**\n  * FK: department_id -> d3_departments(id)\n  * FK: position_id -> d3_positions(id)\n  * FK: department_id -> d3_departments(id)"
+  }
+]
