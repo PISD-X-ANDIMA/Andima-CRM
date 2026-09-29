@@ -1,3 +1,5 @@
+import { supabase } from './supabaseClient';
+
 export interface UploadedFileMetadata {
   file_name: string;
   file_type: string;
@@ -5,34 +7,46 @@ export interface UploadedFileMetadata {
   file_size_kb: number;
 }
 
+const BUCKET_NAME = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || 'a2-record-documents';
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB per FR-02.2
+
+const ALLOWED_EXTENSIONS = ['pdf', 'docx', 'jpg', 'jpeg', 'png', 'txt'];
+const ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'text/plain',
+];
+
 /**
- * Service simulasi upload file untuk modal REC.
- * Dirancang modular agar siap dialihkan ke service bucket storage asli
- * (Supabase Storage, AWS S3, atau Cloudflare R2) di masa depan.
+ * Validasi ekstensi dan batas ukuran file 10 MB
  */
-export async function simulateFileUpload(file: File): Promise<UploadedFileMetadata> {
-  // Simulasi network latency upload (300ms)
-  await new Promise((resolve) => setTimeout(resolve, 300));
-
-  const ext = file.name.split('.').pop()?.toLowerCase() || 'txt';
-  const fileSizeKb = Math.round(file.size / 1024) || 1;
-
-  // URL fallback online standar publik yang aman & bebas hak cipta
-  let sampleOnlineUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
-  if (ext === 'txt') {
-    sampleOnlineUrl = 'https://raw.githubusercontent.com/mathiasbynens/utf8.js/master/tests/tests.js';
+export function validateFile(file: File): { valid: boolean; error?: string } {
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    return {
+      valid: false,
+      error: `Ukuran file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimal 10 MB.`,
+    };
   }
 
-  return {
-    file_name: file.name,
-    file_type: ext,
-    file_url: sampleOnlineUrl,
-    file_size_kb: fileSizeKb,
-  };
+  const ext = file.name.split('.').pop()?.toLowerCase() || '';
+  const isExtAllowed = ALLOWED_EXTENSIONS.includes(ext);
+  const isMimeAllowed = !file.type || ALLOWED_MIME_TYPES.includes(file.type);
+
+  if (!isExtAllowed && !isMimeAllowed) {
+    return {
+      valid: false,
+      error: `Format file "${file.name}" tidak didukung. Harap unggah berkas PDF, DOCX, JPG, PNG, atau TXT.`,
+    };
+  }
+
+  return { valid: true };
 }
 
 /**
- * Helper untuk mengunggah berkas percakapan dengan penanganan respons standar.
+ * Mengunggah berkas percakapan langsung ke Supabase Storage (bucket: record-documents).
  */
 export async function uploadConversationFile(file: File): Promise<{
   success: boolean;
@@ -40,21 +54,62 @@ export async function uploadConversationFile(file: File): Promise<{
   error?: string;
 }> {
   try {
-    const data = await simulateFileUpload(file);
-    return { success: true, data };
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
+    }
+
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'bin';
+    const fileSizeKb = Math.round(file.size / 1024) || 1;
+    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const filePath = `conversations/${Date.now()}_${sanitizedFileName}`;
+
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Unggah ke Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from(BUCKET_NAME)
+      .upload(filePath, buffer, {
+        contentType: file.type || 'application/octet-stream',
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error('Supabase storage upload error:', uploadError);
+      return { success: false, error: uploadError.message };
+    }
+
+    // Ambil public URL dari berkas yang diunggah
+    const { data: publicUrlData } = supabase.storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(filePath);
+
+    return {
+      success: true,
+      data: {
+        file_name: file.name,
+        file_type: ext,
+        file_url: publicUrlData.publicUrl,
+        file_size_kb: fileSizeKb,
+      },
+    };
   } catch (err: any) {
-    return { success: false, error: err.message || 'Gagal mengunggah file' };
+    console.error('Upload exception:', err);
+    return { success: false, error: err?.message || 'Gagal mengunggah berkas ke Supabase Storage' };
   }
 }
 
 /**
- * Placeholder untuk integrasi bucket storage nyata nantinya.
+ * Helper untuk mengunggah ke bucket kustom bila dibutuhkan
  */
 export async function uploadToStorageBucket(
-  _bucketName: string,
+  bucketName: string,
   file: File
 ): Promise<string> {
-  // Nanti dapat diganti dengan client.storage.from(bucket).upload(...)
-  const metadata = await simulateFileUpload(file);
-  return metadata.file_url;
+  const result = await uploadConversationFile(file);
+  if (!result.success || !result.data) {
+    throw new Error(result.error || 'Upload error');
+  }
+  return result.data.file_url;
 }

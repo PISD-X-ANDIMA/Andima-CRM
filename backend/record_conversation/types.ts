@@ -23,7 +23,7 @@ export interface RecordConversationItem {
   customer_id: string;
   customer_code: string | null;
   sales_pic_id: string;
-  channel_type: 'WhatsApp' | 'Meeting';
+  channel_type: string;
   conversation_date: string;
   summary: string;
   need_assistance: boolean;
@@ -140,7 +140,7 @@ export interface WorksheetItem {
 export interface NewConversationPayload {
   customer_id: string;
   customer_code?: string;
-  channel_type: 'WhatsApp' | 'Meeting';
+  channel_type: string;
   conversation_date?: string;
   summary: string;
   need_assistance: boolean;
@@ -153,6 +153,23 @@ export interface NewConversationPayload {
     file_url: string;
     file_size_kb: number;
   } | null;
+  uploaded_files?: {
+    file_name: string;
+    file_type: string;
+    file_url: string;
+    file_size_kb: number;
+  }[];
+}
+
+export interface UpdateConversationPayload {
+  id: string;
+  summary?: string;
+  channel_type?: string;
+  urgency_level?: 'high_priority' | 'average' | 'standard' | 'critical' | null;
+  need_assistance?: boolean;
+  status?: 'active' | 'archived';
+  job_number?: string | null;
+  document_urls?: string[];
 }
 
 export interface DashboardStats {

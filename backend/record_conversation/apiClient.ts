@@ -3,6 +3,7 @@ import {
   RecordConversationItem,
   WorksheetItem,
   NewConversationPayload,
+  UpdateConversationPayload,
   DashboardStats,
   PaginatedResult,
 } from './types';
@@ -41,6 +42,8 @@ export async function fetchApiCustomers(): Promise<CompanyItem[]> {
 export async function fetchApiConversations(options?: {
   channelType?: string;
   status?: string;
+  date?: string;
+  needAssistance?: string;
   page?: number;
   limit?: number;
 }): Promise<PaginatedResult<RecordConversationItem>> {
@@ -50,6 +53,12 @@ export async function fetchApiConversations(options?: {
   }
   if (options?.status && options.status !== 'All Statuses') {
     params.set('status', options.status);
+  }
+  if (options?.date && options.date !== 'All Dates') {
+    params.set('date', options.date);
+  }
+  if (options?.needAssistance && options.needAssistance !== 'All Assistance') {
+    params.set('need_assistance', options.needAssistance);
   }
   if (options?.page) {
     params.set('page', String(options.page));
@@ -92,6 +101,34 @@ export async function createApiConversation(
     return {
       success: false,
       error: json.error || `HTTP ${res.status}: Failed to create conversation`,
+    };
+  }
+
+  return {
+    success: true,
+    data: json.data,
+  };
+}
+
+/**
+ * Memperbarui percakapan via REST API: PATCH /api/record-conversation/conversations
+ */
+export async function updateApiConversation(
+  payload: UpdateConversationPayload
+): Promise<{ success: boolean; data?: RecordConversationItem; error?: string }> {
+  const res = await fetch(`${BASE_URL}/conversations`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    return {
+      success: false,
+      error: json.error || `HTTP ${res.status}: Failed to update conversation`,
     };
   }
 

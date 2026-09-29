@@ -38,9 +38,10 @@ Seluruh endpoint REST API menggunakan format respons terstandarisasi berikut:
 | 2 | `GET` | `/api/record-conversation/customers` | Mengambil daftar akun perusahaan pelanggan |
 | 3 | `GET` | `/api/record-conversation/conversations` | Mengambil riwayat percakapan dengan filter channel & status |
 | 4 | `POST` | `/api/record-conversation/conversations` | Menyimpan log percakapan baru & lampiran berkas |
-| 5 | `GET` | `/api/record-conversation/worksheets` | Mengambil daftar tugas penugasan lapangan (*Field Worksheets*) |
-| 6 | `GET` | `/api/record-conversation/worksheets/:id` | Mengambil detail lengkap 1 lembar kerja beserta 4 tabel relasi |
-| 7 | `POST` | `/api/record-conversation/upload` | Mengunggah berkas percakapan (chat/meeting notes) |
+| 5 | `PATCH` | `/api/record-conversation/conversations` | Memperbarui atribut percakapan (summary, urgensi, asistensi, status, channel) |
+| 6 | `GET` | `/api/record-conversation/worksheets` | Mengambil daftar tugas penugasan lapangan (*Field Worksheets*) |
+| 7 | `GET` | `/api/record-conversation/worksheets/:id` | Mengambil detail lengkap 1 lembar kerja beserta 4 tabel relasi |
+| 8 | `POST` | `/api/record-conversation/upload` | Mengunggah berkas percakapan (chat/meeting notes) |
 
 ---
 
@@ -231,7 +232,69 @@ curl -X POST "http://localhost:3000/api/record-conversation/conversations" \
 
 ---
 
-### 3.5. GET `/api/record-conversation/worksheets`
+### 3.5. PATCH `/api/record-conversation/conversations`
+Memperbarui atribut percakapan yang ada di tabel `public.a2_record_conversations` (seperti ringkasan diskusi, channel, tingkat urgensi, kebutuhan asistensi, status, atau job number).
+
+- **Headers**: `Content-Type: application/json`
+- **Request Body (JSON)**:
+  - `id` *(required, string UUID)*: ID percakapan yang akan diperbarui.
+  - `summary` *(optional, string)*: Ringkasan catatan diskusi.
+  - `channel_type` *(optional, enum)*: `'WhatsApp'` | `'Meeting'`.
+  - `urgency_level` *(optional, enum)*: `'high_priority'` | `'average'` | `'standard'`.
+  - `need_assistance` *(optional, boolean)*: `true` | `false`.
+  - `status` *(optional, enum)*: `'active'` | `'archived'`.
+  - `job_number` *(optional, string)*: Nomor acuan pekerjaan.
+
+#### Contoh Request Body:
+```json
+{
+  "id": "e2808c1a-6cb2-40fe-a8c9-25f0e1f72a6b",
+  "summary": "Diskusi kepastian jadwal kontainer di Gate 3 Priok. Penanganan selesai dikoordinasikan.",
+  "channel_type": "WhatsApp",
+  "urgency_level": "average",
+  "need_assistance": false,
+  "status": "active"
+}
+```
+
+#### Contoh Respons (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "id": "e2808c1a-6cb2-40fe-a8c9-25f0e1f72a6b",
+    "customer_id": "a98b5048-49f1-49a2-832b-9f1191aae258",
+    "customer_code": "TRX-0626-00112",
+    "job_number": "AENAT/2606/0209",
+    "sales_pic_id": "9c274330-44f1-474d-91c0-523aac3ea9cf",
+    "channel_type": "WhatsApp",
+    "conversation_date": "2026-09-30",
+    "summary": "Diskusi kepastian jadwal kontainer di Gate 3 Priok. Penanganan selesai dikoordinasikan.",
+    "need_assistance": false,
+    "urgency_level": "average",
+    "synced_to_ctrack": true,
+    "status": "active",
+    "updated_at": "2026-09-30T01:34:00.000Z",
+    "company_name": "PT. YOSSAVA TRANS LOGISTIK",
+    "sales_pic_name": "Adelia"
+  }
+}
+```
+
+#### Contoh cURL:
+```bash
+curl -X PATCH "http://localhost:3000/api/record-conversation/conversations" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "id": "e2808c1a-6cb2-40fe-a8c9-25f0e1f72a6b",
+       "summary": "Ringkasan telah diperbarui.",
+       "urgency_level": "average"
+     }'
+```
+
+---
+
+### 3.6. GET `/api/record-conversation/worksheets`
 Mengambil daftar seluruh penugasan lembar kerja inspektur lapangan (*Field Agent Tasks & Worksheets*) dari `public.a2_worksheets` secara bertahap (*server-side pagination*).
 
 - **Query Parameters**:
@@ -274,7 +337,7 @@ curl -X GET "http://localhost:3000/api/record-conversation/worksheets?page=1&lim
 
 ---
 
-### 3.6. GET `/api/record-conversation/worksheets/:id`
+### 3.7. GET `/api/record-conversation/worksheets/:id`
 Mengambil data detail lengkap 1 lembar kerja penugasan lapangan berserta **4 tabel relasi anak**:
 1. `physical_items`: Rincian fisik barang kargo.
 2. `photos`: Bukti foto verifikasi lapangan.
@@ -360,7 +423,7 @@ curl -X GET "http://localhost:3000/api/record-conversation/worksheets/1" \
 
 ---
 
-### 3.7. POST `/api/record-conversation/upload`
+### 3.8. POST `/api/record-conversation/upload`
 Mengunggah berkas percakapan chat export (`.txt`) atau catatan rapat (`.pdf`/`.docx`).
 
 - **Headers**: `Content-Type: multipart/form-data`

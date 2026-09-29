@@ -159,7 +159,33 @@ Untuk menjaga performa frontend tetap ringan saat volume data bertumbuh, kedua t
 
 ---
 
-## 7. Verifikasi Kualitas & Hasil Testing
+## 7. Fitur Job Number & Edit In-Place dengan Dirty-State Checking
+
+Pada panel detail percakapan (Panel `VIEW` yang dibuka melalui tombol "View" di tabel Conversation):
+- **Tampilan Job Number**:
+  - Ditampilkan di header panel (`#AENAT/2606/0209`) dan di grid *CUSTOMER & PIC INFORMATION*.
+- **Penyuntingan Atribut (In-Place Edit)**:
+  - Pengguna dapat langsung memperbarui atribut:
+    1. `summary` (Ringkasan catatan diskusi via textarea responsif).
+    2. `channel_type` (`WhatsApp` atau `Meeting`).
+    3. `urgency_level` (`High Priority`, `Average`, `Standard`).
+    4. `need_assistance` (Tombol switch `Yes` / `No`).
+    5. `status` (`Active` atau `Archived`).
+  - Data yang bersifat audit/master tetap read-only: `Company Name`, `Customer Code`, `Job Number`, `Sales PIC`, `Conversation Date`, dan `C-Track Synchronized`.
+- **Dirty-State Checking pada Tombol Simpan**:
+  - Tombol **Simpan Perubahan** berstatus *disabled* dan berwarna abu-abu bila data form belum diubah (`isConvDirty === false`).
+  - Begitu ada perubahan pada salah satu field, tombol otomatis aktif (`bg-blue-600 hover:bg-blue-700 text-white`) dan muncul indikator `"Perubahan Belum Disimpan"`.
+  - Mutasi dikirim via `PATCH /api/record-conversation/conversations` ke Supabase, tabel percakapan langsung diperbarui di memori, pesan sukses muncul, dan tombol kembali *disabled*.
+
+### 7.2. Perapihan Dropdown & Input Form Modal REC
+- **Searchable Customer Dropdown**: Dropdown akun pelanggan menggunakan custom Tailwind dengan kotak pencarian instan (nama perusahaan, kode akun, dan job number) serta penutupan otomatis saat klik di luar.
+- **Input Job Number (Opsional)**: Formulir modal REC menyediakan input nomor pekerjaan yang otomatis terisi dari akun pelanggan dan bebas diedit.
+- **Channel Manual Dinamis**: Opsi Jenis Channel menyediakan kartu `Manual / Lainnya` yang memunculkan input teks kustom (misal "Telepon Langsung", "Email", dll.) dan tersimpan ke kolom `channel_type`.
+- **Filter Bar Tab Utama Tailwind**: Dropdown filter *Channel Type* dan *Status* pada tab utama digantikan dengan popover Tailwind modern dengan indikator aktif.
+
+---
+
+## 8. Verifikasi Kualitas & Hasil Testing
 
 1. **Static Analysis & TypeScript Checking**:
    - `pnpm build`: Berhasil 100% tanpa error (*Exit Code 0*).
@@ -169,6 +195,7 @@ Untuk menjaga performa frontend tetap ringan saat volume data bertumbuh, kedua t
    - `GET /api/record-conversation/customers` — Status 200 OK
    - `GET /api/record-conversation/conversations?page=1&limit=8` — Status 200 OK (8 item / page)
    - `POST /api/record-conversation/conversations` — Status 201 Created
+   - `PATCH /api/record-conversation/conversations` — Status 200 OK (In-Place Edit)
    - `GET /api/record-conversation/worksheets?page=1&limit=8` — Status 200 OK (8 item / page)
    - `GET /api/record-conversation/worksheets/[id]` — Status 200 OK
    - `POST /api/record-conversation/upload` — Status 200 OK
