@@ -29,13 +29,13 @@ const INITIAL_FORM: CreateCustomerInput = {
 
 function validate(data: CreateCustomerInput): FormErrors {
   const errors: FormErrors = {};
-  if (!data.company_name.trim()) errors.company_name = "Nama perusahaan wajib diisi";
-  if (!data.address.trim()) errors.address = "Alamat wajib diisi";
-  if (!data.pic_full_name.trim()) errors.pic_full_name = "Nama PIC wajib diisi";
+  if (!data.company_name.trim()) errors.company_name = "Company name is required";
+  if (!data.address.trim()) errors.address = "Address is required";
+  if (!data.pic_full_name.trim()) errors.pic_full_name = "PIC name is required";
   if (!data.pic_phone_number.trim()) {
-    errors.pic_phone_number = "Nomor telepon PIC wajib diisi";
+    errors.pic_phone_number = "PIC phone number is required";
   } else if (!/^[0-9+\-\s()]{7,20}$/.test(data.pic_phone_number.trim())) {
-    errors.pic_phone_number = "Format nomor telepon tidak valid";
+    errors.pic_phone_number = "Invalid phone number format";
   }
   return errors;
 }
@@ -76,9 +76,9 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
 
         if (!json.success) {
           if (json.code === "DUPLICATE_001") {
-            setErrors({ company_name: "Nama perusahaan sudah terdaftar" });
+            setErrors({ company_name: "This company is already registered" });
           } else {
-            setErrors({ general: json.message || "Gagal menyimpan customer" });
+            setErrors({ general: json.message || "Failed to save the customer" });
           }
           return;
         }
@@ -86,7 +86,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
         setForm(INITIAL_FORM);
         onSuccess(json.data.companyId);
       } catch {
-        setErrors({ general: "Terjadi kesalahan koneksi. Silakan coba lagi." });
+        setErrors({ general: "A connection error occurred. Please try again." });
       } finally {
         setIsSubmitting(false);
       }
@@ -126,7 +126,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
               <Building2 className="w-4 h-4" />
             </div>
             <h2 id="customer-modal-title" className="text-base font-semibold text-slate-900">
-              Tambah Customer Baru
+              Add New Customer
             </h2>
           </div>
           <button
@@ -134,7 +134,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
             onClick={handleClose}
             disabled={isSubmitting}
             className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors disabled:opacity-50"
-            aria-label="Tutup modal"
+            aria-label="Close dialog"
           >
             <X className="w-4 h-4" />
           </button>
@@ -151,10 +151,10 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
               </div>
             )}
 
-            {/* Section: Perusahaan */}
+            {/* Company section */}
             <div>
               <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                Informasi Perusahaan
+                Company Information
               </p>
               <div className="space-y-3">
                 {/* Company Name */}
@@ -163,7 +163,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
                     htmlFor="field-company_name"
                     className="block text-xs font-medium text-slate-700 mb-1.5"
                   >
-                    Nama Perusahaan <span className="text-red-500">*</span>
+                    Company Name <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -174,7 +174,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
                       type="text"
                       value={form.company_name}
                       onChange={(e) => handleChange("company_name", e.target.value)}
-                      placeholder="PT. Contoh Perusahaan"
+                      placeholder="Example Company, Inc."
                       className={`w-full pl-9 pr-4 py-2.5 border rounded-lg text-sm transition-all focus:outline-none focus:ring-2 ${
                         errors.company_name
                           ? "border-red-300 focus:border-red-400 focus:ring-red-500/20"
@@ -187,35 +187,6 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
                   )}
                 </div>
 
-                {/* Address */}
-                <div>
-                  <label
-                    htmlFor="field-address"
-                    className="block text-xs font-medium text-slate-700 mb-1.5"
-                  >
-                    Alamat <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute top-3 left-0 pl-3 pointer-events-none text-slate-400">
-                      <MapPin className="w-4 h-4" />
-                    </div>
-                    <textarea
-                      id="field-address"
-                      value={form.address}
-                      onChange={(e) => handleChange("address", e.target.value)}
-                      placeholder="Jl. Contoh No. 1, Kota..."
-                      rows={2}
-                      className={`w-full pl-9 pr-4 py-2.5 border rounded-lg text-sm transition-all focus:outline-none focus:ring-2 resize-none ${
-                        errors.address
-                          ? "border-red-300 focus:border-red-400 focus:ring-red-500/20"
-                          : "border-slate-200 focus:border-blue-400 focus:ring-blue-500/20"
-                      }`}
-                    />
-                  </div>
-                  {errors.address && (
-                    <p className="mt-1.5 text-[11px] text-red-600">{errors.address}</p>
-                  )}
-                </div>
               </div>
             </div>
 
@@ -225,7 +196,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
             {/* Section: PIC */}
             <div>
               <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                Contact PIC Utama
+                Primary PIC Contact
               </p>
               <div className="space-y-3">
                 {/* PIC Name */}
@@ -234,7 +205,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
                     htmlFor="field-pic_full_name"
                     className="block text-xs font-medium text-slate-700 mb-1.5"
                   >
-                    Nama PIC <span className="text-red-500">*</span>
+                    PIC Name <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -245,7 +216,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
                       type="text"
                       value={form.pic_full_name}
                       onChange={(e) => handleChange("pic_full_name", e.target.value)}
-                      placeholder="Nama lengkap"
+                      placeholder="Full name"
                       className={`w-full pl-9 pr-4 py-2.5 border rounded-lg text-sm transition-all focus:outline-none focus:ring-2 ${
                         errors.pic_full_name
                           ? "border-red-300 focus:border-red-400 focus:ring-red-500/20"
@@ -264,7 +235,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
                     htmlFor="field-pic_phone"
                     className="block text-xs font-medium text-slate-700 mb-1.5"
                   >
-                    Nomor Telepon <span className="text-red-500">*</span>
+                    Phone Number <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -295,7 +266,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
                       htmlFor="field-pic_position"
                       className="block text-xs font-medium text-slate-700 mb-1.5"
                     >
-                      Jabatan
+                      Job Title
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -306,7 +277,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
                         type="text"
                         value={form.pic_position || ""}
                         onChange={(e) => handleChange("pic_position", e.target.value)}
-                        placeholder="Manajer / GM..."
+                        placeholder="Manager / General Manager..."
                         className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-blue-400 focus:ring-blue-500/20 transition-all"
                       />
                     </div>
@@ -328,11 +299,29 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
                         type="email"
                         value={form.pic_email || ""}
                         onChange={(e) => handleChange("pic_email", e.target.value)}
-                        placeholder="email@perusahaan.com"
+                        placeholder="email@company.com"
                         className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-blue-400 focus:ring-blue-500/20 transition-all"
                       />
                     </div>
                   </div>
+                </div>
+
+                <div>
+                  <label htmlFor="field-address" className="mb-1.5 block text-xs font-medium text-slate-700">
+                    Address <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="pointer-events-none absolute left-0 top-3 pl-3 text-slate-400"><MapPin className="h-4 w-4" /></div>
+                    <textarea
+                      id="field-address"
+                      value={form.address}
+                      onChange={(event) => handleChange("address", event.target.value)}
+                      placeholder="Company address"
+                      rows={2}
+                      className={`w-full resize-none rounded-lg border py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 ${errors.address ? "border-red-300 focus:border-red-400 focus:ring-red-500/20" : "border-slate-200 focus:border-blue-400 focus:ring-blue-500/20"}`}
+                    />
+                  </div>
+                  {errors.address && <p className="mt-1.5 text-[11px] text-red-600">{errors.address}</p>}
                 </div>
               </div>
             </div>
@@ -346,7 +335,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
               disabled={isSubmitting}
               className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
             >
-              Batal
+              Cancel
             </button>
             <button
               type="submit"
@@ -356,10 +345,10 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Menyimpan...</span>
+                  <span>Saving...</span>
                 </>
               ) : (
-                <span>Simpan Customer</span>
+                <span>Save Customer</span>
               )}
             </button>
           </div>

@@ -45,14 +45,14 @@ export function DeleteConfirmDialog({
                 id="delete-dialog-title"
                 className="text-sm font-semibold text-slate-900"
               >
-                Hapus Customer
+                Delete Customer
               </h3>
               <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">
-                Anda akan menghapus{" "}
+                You are about to delete{" "}
                 <strong className="text-slate-800 font-semibold">
                   {companyName}
                 </strong>{" "}
-                dari daftar customer. Tindakan ini tidak dapat dibatalkan.
+                from the customer list. This action cannot be undone.
               </p>
             </div>
           </div>
@@ -65,7 +65,7 @@ export function DeleteConfirmDialog({
             disabled={isDeleting}
             className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
           >
-            Batal
+            Cancel
           </button>
           <button
             type="button"
@@ -76,10 +76,10 @@ export function DeleteConfirmDialog({
             {isDeleting ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Menghapus...</span>
+                <span>Deleting...</span>
               </>
             ) : (
-              <span>Hapus</span>
+              <span>Delete</span>
             )}
           </button>
         </div>

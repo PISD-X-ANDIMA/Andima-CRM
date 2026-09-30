@@ -33,24 +33,24 @@ interface StatCard {
 function buildCards(data: DashboardSummaryData): StatCard[] {
   return [
     {
-      label: "Total Customer",
+      label: "Total Customers",
       value: data.totalCustomer,
       icon: Users,
       iconBg: "bg-blue-50",
       iconColor: "text-blue-600",
     },
     {
-      label: "Meeting Minggu Ini",
+      label: "Meetings This Week",
       value: data.meetingThisWeek.total,
-      sub: `${data.meetingThisWeek.completed} selesai · ${data.meetingThisWeek.upcoming} akan datang`,
+      sub: `${data.meetingThisWeek.completed} completed · ${data.meetingThisWeek.upcoming} upcoming`,
       icon: CalendarCheck,
-      iconBg: "bg-emerald-50",
-      iconColor: "text-emerald-600",
+      iconBg: "bg-purple-50",
+      iconColor: "text-purple-600",
     },
     {
-      label: "Belum Ada Notulensi",
+      label: "Missing Meeting Notes",
       value: data.unminutedMeetingsCount,
-      sub: "Meeting sudah lewat",
+      sub: "Meetings that have ended",
       icon: FileX,
       iconBg:
         data.unminutedMeetingsCount > 0
@@ -63,12 +63,12 @@ function buildCards(data: DashboardSummaryData): StatCard[] {
       highlight: data.unminutedMeetingsCount > 0,
     },
     {
-      label: "Notulensi Terkirim",
+      label: "Notes Sent",
       value: data.sentMinutesCount,
-      sub: "Bulan berjalan",
+      sub: "This month",
       icon: FileCheck2,
-      iconBg: "bg-purple-50",
-      iconColor: "text-purple-600",
+      iconBg: "bg-blue-50",
+      iconColor: "text-blue-600",
     },
   ];
 }
@@ -117,41 +117,44 @@ export function SummaryCards() {
         return (
           <article
             key={card.label}
-            className={`flex min-w-0 items-start gap-4 rounded-2xl border bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-colors ${
+            className={`flex min-w-0 flex-col gap-3 rounded-2xl border bg-white p-5 shadow-sm transition-colors ${
               card.highlight
                 ? "border-amber-200/80"
                 : "border-slate-200/80"
             }`}
           >
-            <div
-              className={`mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${card.iconBg}`}
-            >
-              <Icon className={`h-6 w-6 ${card.iconColor}`} />
-            </div>
-
-            <div className="min-w-0">
-              <p className="text-xs leading-tight font-medium text-slate-500">
+            <div className="flex items-start justify-between">
+              <p className="text-[15px] font-semibold text-slate-700">
                 {card.label}
               </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div
+                className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl ${card.iconBg}`}
+              >
+                <Icon className={`h-[22px] w-[22px] ${card.iconColor}`} />
+              </div>
 
               {isLoading ? (
-                <div className="mt-1.5 h-7 w-12 animate-pulse rounded bg-slate-100" />
+                <div className="h-8 w-16 animate-pulse rounded bg-slate-100" />
               ) : (
-                <p
-                  className={`mt-0.5 text-2xl leading-none font-bold ${
-                    card.highlight ? "text-amber-600" : "text-slate-900"
-                  }`}
-                >
-                  {card.value}
-                </p>
-              )}
-
-              {card.sub && !isLoading && (
-                <p className="mt-1 truncate text-[11px] leading-tight text-slate-400">
-                  {card.sub}
-                </p>
+                <div className="flex flex-col justify-center">
+                  <p
+                    className={`text-3xl leading-none font-bold ${
+                      card.highlight ? "text-amber-600" : "text-slate-900"
+                    }`}
+                  >
+                    {card.value}
+                  </p>
+                </div>
               )}
             </div>
+            {card.sub && !isLoading && (
+              <p className="truncate text-[11px] leading-tight text-slate-400">
+                {card.sub}
+              </p>
+            )}
           </article>
         );
       })}

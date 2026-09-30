@@ -174,7 +174,7 @@ export function Sidebar() {
                   isSalesExecutiveActive ? "text-blue-400" : "text-slate-500"
                 }`}
               />
-              <span>CRM</span>
+            <span>CRM</span>
             </span>
 
             <ChevronDown
@@ -186,10 +186,11 @@ export function Sidebar() {
 
           {crmOpen && (
             <div className="mt-0.5 ml-2">
+              <div className="flex w-full items-center rounded-lg text-[13px] font-medium">
               <button
                 type="button"
                 onClick={handleSalesExecutiveClick}
-                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
+                className={`flex flex-1 items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors ${
                   isSalesExecutiveDashboard
                     ? "bg-blue-600/15 text-blue-300"
                     : isSalesExecutiveActive
@@ -208,20 +209,13 @@ export function Sidebar() {
                   <span>Sales Executive</span>
                 </span>
 
-                <span
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Buka atau tutup submenu Sales Executive"
+              </button>
+                <button
+                  type="button"
+                  aria-label="Toggle Sales Executive submenu"
                   onClick={(event) => {
                     event.stopPropagation();
                     setSalesExecOpen((value) => !value);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      setSalesExecOpen((value) => !value);
-                    }
                   }}
                   className="rounded p-0.5 hover:bg-white/10"
                 >
@@ -234,8 +228,8 @@ export function Sidebar() {
                         : "text-slate-500"
                     }`}
                   />
-                </span>
-              </button>
+                </button>
+              </div>
 
               {salesExecOpen && (
                 <div className="mt-0.5 ml-3 space-y-0.5">

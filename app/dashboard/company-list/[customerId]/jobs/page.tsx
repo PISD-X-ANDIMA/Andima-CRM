@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { ArrowLeft, Briefcase, CheckCircle2, Clock, Calendar } from "lucide-react";
 import { getCustomerById } from "@/lib/services/customer-service";
 
@@ -8,15 +7,15 @@ interface PageProps {
 }
 
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
-  completed: { label: "Selesai", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  in_progress: { label: "Berlangsung", cls: "bg-blue-50 text-blue-700 border-blue-200" },
-  pending: { label: "Menunggu", cls: "bg-amber-50 text-amber-700 border-amber-200" },
-  cancelled: { label: "Dibatalkan", cls: "bg-red-50 text-red-700 border-red-200" },
+  completed: { label: "Completed", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  in_progress: { label: "In Progress", cls: "bg-blue-50 text-blue-700 border-blue-200" },
+  pending: { label: "Pending", cls: "bg-amber-50 text-amber-700 border-amber-200" },
+  cancelled: { label: "Canceled", cls: "bg-red-50 text-red-700 border-red-200" },
 };
 
 function formatDate(dateStr?: string | null): string {
   if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("id-ID", {
+  return new Date(dateStr).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -27,7 +26,7 @@ export default async function CustomerJobsPage({ params }: PageProps) {
   const { customerId } = await params;
   const customer = await getCustomerById(customerId);
 
-  if (!customer) notFound();
+  if (!customer) return <section className="mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white p-8"><Link href="/dashboard/company-list" className="text-sm text-blue-600">← Back to Company List</Link><h1 className="mt-5 text-2xl font-bold">Job data unavailable</h1><p className="mt-2 text-slate-500">Customer ID: {customerId}. Customer details could not be loaded.</p></section>;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -55,10 +54,10 @@ export default async function CustomerJobsPage({ params }: PageProps) {
           </div>
           <div>
             <h1 className="text-xl font-bold text-slate-900">
-              Daftar Job — {customer.companyName}
+              Jobs for — {customer.companyName}
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              {customer.jobs.length} penugasan tercatat
+              {customer.jobs.length} jobs recorded
             </p>
           </div>
         </div>
@@ -68,7 +67,7 @@ export default async function CustomerJobsPage({ params }: PageProps) {
           className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Ke Detail Customer</span>
+          <span>Back to Customer Details</span>
         </Link>
       </div>
 
@@ -77,9 +76,9 @@ export default async function CustomerJobsPage({ params }: PageProps) {
         <div className="flex items-start gap-3">
           <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-sm text-white">Mode Read-Only</h3>
+            <h3 className="font-semibold text-sm text-white">Read-Only View</h3>
             <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-              Daftar job bersifat read-only dari modul Sales Executive. Perubahan status job dikelola oleh tim operasional.
+              This job list is read-only in the Sales Executive module. Job status changes are managed by the operations team.
             </p>
           </div>
         </div>
@@ -88,7 +87,7 @@ export default async function CustomerJobsPage({ params }: PageProps) {
       {/* Jobs Table */}
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-800">Riwayat Penugasan</h2>
+          <h2 className="text-sm font-semibold text-slate-800">Job History</h2>
           <span className="text-xs text-slate-400">{customer.jobs.length} job</span>
         </div>
 
@@ -97,9 +96,9 @@ export default async function CustomerJobsPage({ params }: PageProps) {
             <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
               <Clock className="w-6 h-6" />
             </div>
-            <h3 className="text-sm font-semibold text-slate-800">Belum ada penugasan</h3>
+            <h3 className="text-sm font-semibold text-slate-800">No jobs yet</h3>
             <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-              Job dan penugasan untuk customer ini akan muncul di sini secara otomatis.
+              Jobs and assignments for this customer will appear here automatically.
             </p>
           </div>
         ) : (
@@ -107,7 +106,7 @@ export default async function CustomerJobsPage({ params }: PageProps) {
             <table className="w-full text-sm">
               <thead className="border-b border-slate-100">
                 <tr>
-                  {["NO", "JOB NO", "JUDUL", "STATUS", "TANGGAL DIJADWALKAN", "TANGGAL DIBUAT"].map(
+                  {["NO", "JOB NO", "TITLE", "STATUS", "SCHEDULED DATE", "CREATED DATE"].map(
                     (h, i) => (
                       <th
                         key={i}

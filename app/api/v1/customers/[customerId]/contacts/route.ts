@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     const contacts = await getContactsByCustomerId(customerId);
     return createSuccessResponse(contacts, { total: contacts.length });
   } catch {
-    return createErrorResponse("GET_001", "Gagal mengambil daftar kontak", undefined, 500);
+    return createErrorResponse("GET_001", "Failed to load the contact list", undefined, 500);
   }
 }
 
@@ -27,10 +27,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const body = await request.json();
 
     if (!body.full_name?.trim()) {
-      return createErrorResponse("VALIDATION_001", "Nama kontak wajib diisi", undefined, 400);
+      return createErrorResponse("VALIDATION_001", "Contact name is required", undefined, 400);
     }
     if (!body.phone_number?.trim()) {
-      return createErrorResponse("VALIDATION_001", "Nomor telepon wajib diisi", undefined, 400);
+      return createErrorResponse("VALIDATION_001", "Phone number is required", undefined, 400);
     }
 
     const result = await createContact(customerId, {
@@ -42,11 +42,11 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     });
 
     if (!result.success) {
-      return createErrorResponse("CREATE_001", result.error || "Gagal menambah kontak", undefined, 500);
+      return createErrorResponse("CREATE_001", result.error || "Failed to add the contact", undefined, 500);
     }
 
     return createSuccessResponse({ contactId: result.contactId }, undefined, 201);
   } catch {
-    return createErrorResponse("CREATE_002", "Request tidak valid", undefined, 400);
+    return createErrorResponse("CREATE_002", "Invalid request", undefined, 400);
   }
 }

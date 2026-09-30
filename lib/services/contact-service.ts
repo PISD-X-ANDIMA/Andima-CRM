@@ -10,7 +10,7 @@ export interface ContactInput {
 }
 
 /**
- * Mengambil seluruh contact PIC untuk customer tertentu.
+ * Retrieves all PIC contacts for a customer.
  */
 export async function getContactsByCustomerId(
   customerId: string
@@ -46,7 +46,7 @@ export async function getContactsByCustomerId(
 }
 
 /**
- * Menambahkan contact PIC baru ke customer.
+ * Adds a new PIC contact to a customer.
  */
 export async function createContact(
   customerId: string,
@@ -58,7 +58,7 @@ export async function createContact(
   try {
     const isPrimary = Boolean(input.is_primary);
 
-    // Jika contact baru dijadikan primary, nonaktifkan primary lama
+    // Deactivate the old primary contact when the new contact is made primary.
     if (isPrimary) {
       await (supabase as any)
         .from("a1_company_contacts")
@@ -82,7 +82,7 @@ export async function createContact(
 
     if (error) return { success: false, error: error.message };
 
-    // Update kolom `name` pada a1_company_list jika primary
+    // Update the a1_company_list `name` column when this contact is primary.
     if (isPrimary) {
       await (supabase as any)
         .from("a1_company_list")
@@ -97,7 +97,7 @@ export async function createContact(
 }
 
 /**
- * Mengubah data contact PIC.
+ * Updates a PIC contact.
  */
 export async function updateContact(
   customerId: string,
@@ -118,7 +118,7 @@ export async function updateContact(
     if (input.email !== undefined) updatePayload.email = input.email?.trim() || null;
 
     if (input.is_primary) {
-      // Nonaktifkan primary lama
+      // Deactivate the previous primary contact.
       await (supabase as any)
         .from("a1_company_contacts")
         .update({ is_primary: false, updated_at: new Date().toISOString() })
@@ -151,7 +151,7 @@ export async function updateContact(
 }
 
 /**
- * Menghapus contact PIC dengan aturan proteksi PIC terakhir.
+ * Deletes a PIC contact while protecting the last remaining contact.
  */
 export async function deleteContact(
   customerId: string,
@@ -161,7 +161,7 @@ export async function deleteContact(
   if (!supabase) return { success: false, error: "Database client unavailable" };
 
   try {
-    // 1. Ambil seluruh contact aktif customer ini
+    // 1. Load all active contacts for this customer.
     const { data: contacts, error: fetchErr } = await (supabase as any)
       .from("a1_company_contacts")
       .select("id, is_primary")
@@ -169,29 +169,29 @@ export async function deleteContact(
       .is("deleted_at", null);
 
     if (fetchErr || !contacts || contacts.length === 0) {
-      return { success: false, error: "Contact tidak ditemukan" };
+      return { success: false, error: "Contact not found" };
     }
 
-    // Aturan 7 & 8: Dilarang menghapus jika hanya tersisa 1 contact
+    // Rules 7 and 8: Do not delete the last remaining contact.
     if (contacts.length <= 1) {
       return {
         success: false,
         errorCode: "CONTACT_002",
-        error: "Dilarang menghapus satu-satunya narahubung PIC yang dimiliki customer",
+        error: "The customer's only PIC contact cannot be deleted",
       };
     }
 
     const targetContact = contacts.find((c: any) => c.id === contactId);
     if (!targetContact) {
-      return { success: false, error: "Contact tidak ditemukan" };
+      return { success: false, error: "Contact not found" };
     }
 
-    // Jika yang dihapus adalah PIC utama, dilarang hapus tanpa memilih pengganti terlebih dahulu
+    // Require a replacement before deleting the current primary PIC.
     if (targetContact.is_primary) {
       return {
         success: false,
         errorCode: "CONTACT_002",
-        error: "Dilarang menghapus PIC utama aktif. Ubah PIC utama ke contact lain terlebih dahulu",
+        error: "The active primary PIC cannot be deleted. Assign another contact as primary first.",
       };
     }
 

@@ -27,13 +27,13 @@ export interface CustomerListItem {
   companyName: string;
   customerCode?: string | null;
   address?: string | null;
-  /** Transaction number dari data legacy (customer_code) */
+  /** Transaction number from the legacy customer_code field. */
   transactionNo?: string | null;
-  /** Job number dari kolom job_number */
+  /** Job number from the job_number field. */
   jobNumber?: string | null;
-  /** Sales / created by dari kolom created_by */
+  /** Sales representative or creator from the created_by field. */
   createdBy?: string | null;
-  /** Tanggal created (formatted) */
+  /** Formatted creation date. */
   createdDate?: string | null;
   primaryPic: PrimaryContact | null;
   meetingSchedule: ActiveMeeting | null;
@@ -147,6 +147,7 @@ export interface ApiResponseSuccess<T> {
     total?: number;
     page?: number;
     limit?: number;
+    perPage?: number;
     totalPages?: number;
   };
 }

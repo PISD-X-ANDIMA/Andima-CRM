@@ -7,7 +7,6 @@ import {
   MeetingDay,
   ScheduleType,
 } from "@/types/customer";
-import { MOCK_SALES_USER } from "@/lib/supabase/mock-data";
 
 export function formatMeetingSchedule(
   meetingDay: MeetingDay,
@@ -17,20 +16,20 @@ export function formatMeetingSchedule(
   endTime?: string
 ): string {
   const dayNames: Record<MeetingDay, string> = {
-    monday: "Senin",
-    tuesday: "Selasa",
-    wednesday: "Rabu",
-    thursday: "Kamis",
-    friday: "Jumat",
-    saturday: "Sabtu",
-    sunday: "Minggu",
+    monday: "Monday",
+    tuesday: "Tuesday",
+    wednesday: "Wednesday",
+    thursday: "Thursday",
+    friday: "Friday",
+    saturday: "Saturday",
+    sunday: "Sunday",
   };
 
   const dayStr = dayNames[meetingDay] || meetingDay;
   const timeStr = startTime && endTime ? ` (${startTime.slice(0, 5)} - ${endTime.slice(0, 5)})` : "";
 
   if (scheduleType === "weekly") {
-    return `Setiap ${dayStr}${timeStr} (Mingguan)`;
+    return `Every ${dayStr}${timeStr} (Weekly)`;
   }
 
   if (meetingDate) {
@@ -49,7 +48,7 @@ export interface GetCustomersOptions {
 }
 
 /**
- * Mendapatkan daftar customer (public.a1_company_list) dengan pagination, sorting, dan filter pencarian.
+ * Retrieves customers from public.a1_company_list with pagination, sorting, and search filtering.
  */
 export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
   customers: CustomerListItem[];
@@ -72,175 +71,66 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
   const supabase = await createServerSupabaseClient();
 
   if (supabase) {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    let countQuery = (supabase as any)
+      .from("a1_company_list")
+      .select("company_list_id", { count: "exact", head: true });
+    let dataQuery = (supabase as any)
+      .from("a1_company_list")
+      .select("company_list_id, company_name, address, name, customer_code, job_number, created_by");
 
-      const currentSalesId = user?.id || null;
-
-      // Base query pada public.a1_company_list
-      let countQuery = (supabase as any)
-        .from("a1_company_list")
-        .select("company_list_id", { count: "exact", head: true })
-        .is("deleted_at", null);
-
-      if (currentSalesId) {
-        countQuery = countQuery.or(`sales_id.eq.${currentSalesId},sales_id.is.null`);
-      }
-
-      if (search.trim()) {
-        const term = `%${search.trim()}%`;
-        countQuery = countQuery.or(
-          `company_name.ilike.${term},name.ilike.${term},customer_code.ilike.${term}`
-        );
-      }
-
-      const { count } = await countQuery;
-      const total = count || 0;
-
-      // Query data
-      let dataQuery = (supabase as any)
-        .from("a1_company_list")
-        .select(
-          `
-          company_list_id,
-          id,
-          company_name,
-          name,
-          address,
-          sales_id,
-          customer_code,
-          job_number,
-          created_by,
-          created_at,
-          updated_at,
-          deleted_at,
-          a1_company_contacts!left (
-            id,
-            full_name,
-            phone_number,
-            position,
-            email,
-            is_primary
-          ),
-          a1_customer_meetings!left (
-            id,
-            meeting_day,
-            schedule_type,
-            meeting_date,
-            start_time,
-            end_time,
-            is_active
-          )
-        `
-        )
-        .is("deleted_at", null);
-
-      if (currentSalesId) {
-        dataQuery = dataQuery.or(`sales_id.eq.${currentSalesId},sales_id.is.null`);
-      }
-
-      if (search.trim()) {
-        const term = `%${search.trim()}%`;
-        dataQuery = dataQuery.or(
-          `company_name.ilike.${term},name.ilike.${term},customer_code.ilike.${term}`
-        );
-      }
-
-      // Sorting & Pagination
-      const sortColumn = sortBy === "created_at" ? "created_at" : "company_name";
-      dataQuery = dataQuery
-        .order(sortColumn, { ascending: sortOrder === "asc" })
-        .range(offset, offset + validPerPage - 1);
-
-      const { data, error } = await dataQuery;
-
-      if (!error && data) {
-        const customers: CustomerListItem[] = data.map((item: any) => {
-          const contacts = Array.isArray(item.a1_company_contacts)
-            ? item.a1_company_contacts
-            : [];
-          const primaryPicRaw = contacts.find((c: any) => c.is_primary) || contacts[0];
-
-          const meetings = Array.isArray(item.a1_customer_meetings)
-            ? item.a1_customer_meetings
-            : [];
-          const activeMeetingRaw = meetings.find((m: any) => m.is_active);
-
-          // PIC: Utamakan dari tabel relasi a1_company_contacts, fallback ke kolom `name`
-          const pic = primaryPicRaw
-            ? {
-                id: primaryPicRaw.id,
-                fullName: primaryPicRaw.full_name,
-                phoneNumber: primaryPicRaw.phone_number,
-                position: primaryPicRaw.position,
-                email: primaryPicRaw.email,
-              }
-            : item.name
-            ? {
-                id: item.company_list_id,
-                fullName: item.name,
-                phoneNumber: "081234567890",
-                position: "PIC Utama",
-                email: null,
-              }
-            : null;
-
-          // Jadwal Meeting
-          const meetingSchedule = activeMeetingRaw
-            ? {
-                id: activeMeetingRaw.id,
-                meetingDay: activeMeetingRaw.meeting_day,
-                scheduleType: activeMeetingRaw.schedule_type,
-                meetingDate: activeMeetingRaw.meeting_date,
-                startTime: activeMeetingRaw.start_time,
-                endTime: activeMeetingRaw.end_time,
-                formattedSchedule: formatMeetingSchedule(
-                  activeMeetingRaw.meeting_day,
-                  activeMeetingRaw.schedule_type,
-                  activeMeetingRaw.meeting_date,
-                  activeMeetingRaw.start_time,
-                  activeMeetingRaw.end_time
-                ),
-              }
-            : null;
-
-          return {
-            id: item.company_list_id || item.id,
-            companyName: item.company_name,
-            customerCode: item.customer_code || null,
-            address: item.address || null,
-            transactionNo: item.customer_code || null,
-            jobNumber: item.job_number || null,
-            createdBy: item.created_by || null,
-            createdDate: item.created_at
-              ? new Date(item.created_at).toLocaleDateString("id-ID", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "2-digit",
-                })
-              : null,
-            primaryPic: pic,
-            meetingSchedule,
-            createdAt: item.created_at || "2026-06-02T00:00:00Z",
-            updatedAt: item.updated_at,
-          };
-        });
-
-        return {
-          customers,
-          total,
-          page,
-          perPage: validPerPage,
-          totalPages: Math.ceil(total / validPerPage) || 1,
-        };
-      }
-    } catch (e) {
-      // Fallback aman jika query error
+    if (search.trim()) {
+      const term = `%${search.trim()}%`;
+      const searchFilter = `company_name.ilike.${term},name.ilike.${term}`;
+      countQuery = countQuery.or(searchFilter);
+      dataQuery = dataQuery.or(searchFilter);
     }
-  }
 
+    const { count, error: countError } = await countQuery;
+    if (countError) throw countError;
+    const total = count || 0;
+    const { data, error } = await dataQuery
+      .order("company_name", { ascending: sortOrder === "asc" })
+      .range(offset, offset + validPerPage - 1);
+    if (error) throw error;
+
+    type CompanyRow = {
+      company_list_id: string;
+      company_name: string;
+      address: string | null;
+      name: string | null;
+      customer_code: string | null;
+      job_number: string | null;
+      created_by: string | null;
+    };
+    const rows = (data || []) as CompanyRow[];
+    const customers: CustomerListItem[] = rows.map((item) => ({
+      id: item.company_list_id,
+      companyName: item.company_name,
+      customerCode: item.customer_code,
+      address: item.address,
+      transactionNo: item.customer_code,
+      jobNumber: item.job_number,
+      createdBy: item.created_by,
+      createdDate: null,
+      primaryPic: item.name ? {
+        id: item.company_list_id,
+        fullName: item.name,
+        phoneNumber: "",
+        position: null,
+        email: null,
+      } : null,
+      meetingSchedule: null,
+      createdAt: "",
+    }));
+
+    return {
+      customers,
+      total,
+      page,
+      perPage: validPerPage,
+      totalPages: Math.ceil(total / validPerPage) || 1,
+    };
+  }
   return {
     customers: [],
     total: 0,
@@ -251,7 +141,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
 }
 
 /**
- * Mendapatkan detail lengkap satu customer per ID (profil, seluruh kontak, meeting aktif, job).
+ * Retrieves a customer's profile, contacts, active meeting schedule, and jobs by ID.
  */
 export async function getCustomerById(
   customerId: string
@@ -338,14 +228,14 @@ export async function getCustomerById(
         }))
       : [];
 
-    // Fallback jika belum ada di tabel kontak relasi
+    // Fall back to the legacy PIC fields when no related contact exists.
     if (contacts.length === 0 && data.name) {
       contacts.push({
         id: "primary-" + data.company_list_id,
         companyId: customerId,
         fullName: data.name,
-        phoneNumber: "081234567890",
-        position: "PIC Utama",
+        phoneNumber: "",
+        position: "Primary PIC",
         email: null,
         isPrimary: true,
       });
@@ -398,10 +288,10 @@ export async function getCustomerById(
     return {
       id: data.company_list_id || data.id,
       companyName: data.company_name,
-      address: data.address || "Alamat belum diatur",
+      address: data.address || "Address not provided",
       salesId: data.sales_id,
-      createdAt: data.created_at || "2026-06-02T00:00:00Z",
-      updatedAt: data.updated_at || data.created_at || "2026-06-02T00:00:00Z",
+      createdAt: data.created_at || "",
+      updatedAt: data.updated_at || data.created_at || "",
       primaryPic,
       contacts,
       activeMeeting,
@@ -413,7 +303,7 @@ export async function getCustomerById(
 }
 
 /**
- * Membuat Customer baru dan PIC Utama secara atomic.
+ * Creates a customer and stores its primary PIC.
  */
 export async function createCustomer(
   input: CreateCustomerInput
@@ -422,70 +312,49 @@ export async function createCustomer(
   if (!supabase) return { success: false, error: "Database client unavailable" };
 
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    const salesId = user?.id || null;
-
-    // 1. Cek duplikasi nama customer untuk Sales Executive login
-    let dupCheck = (supabase as any)
-      .from("a1_company_list")
-      .select("company_list_id")
-      .ilike("company_name", input.company_name.trim())
-      .is("deleted_at", null);
-
-    if (salesId) {
-      dupCheck = dupCheck.or(`sales_id.eq.${salesId},sales_id.is.null`);
+    const { data: { user } } = await supabase.auth.getUser();
+    const isDevelopment = process.env.NODE_ENV === "development";
+    if (!user && !isDevelopment) {
+      return { success: false, error: "No login session found. Please sign in again." };
     }
 
-    const { data: existingDup } = await dupCheck;
-    if (existingDup && existingDup.length > 0) {
+    const metadata = user?.user_metadata as Record<string, unknown> | undefined;
+    const createdBy =
+      (typeof metadata?.full_name === "string" && metadata.full_name.trim()) ||
+      (typeof metadata?.name === "string" && metadata.name.trim()) ||
+      user?.email ||
+      (isDevelopment ? "Uji Coba" : null);
+    if (!createdBy) {
+      return { success: false, error: "User identity is unavailable for the customer record." };
+    }
+
+    const { data: existing, error: duplicateCheckError } = await (supabase as any)
+      .from("a1_company_list")
+      .select("company_list_id")
+      .ilike("company_name", input.company_name.trim());
+    if (duplicateCheckError) return { success: false, error: duplicateCheckError.message };
+    if (existing?.length) {
       return {
         success: false,
-        error: "DUPLICATE_COMPANY: Nama perusahaan sudah terdaftar pada daftar customer Anda",
+        error: "DUPLICATE_COMPANY: This company is already on your customer list",
       };
     }
 
-    // 2. Coba eksekusi via RPC atomic jika tersedia
-    const { data: rpcData, error: rpcError } = await (supabase as any).rpc(
-      "create_a1_customer_with_pic",
-      {
-        p_company_name: input.company_name.trim(),
-        p_address: input.address.trim(),
-        p_pic_full_name: input.pic_full_name.trim(),
-        p_pic_phone_number: input.pic_phone_number.trim(),
-        p_pic_position: input.pic_position?.trim() || null,
-        p_pic_email: input.pic_email?.trim() || null,
-      }
-    );
-
-    if (!rpcError && rpcData?.company_id) {
-      return { success: true, companyId: rpcData.company_id };
-    }
-
-    // Fallback jika RPC belum dieksekusi di database: jalankan urutan insert terstruktur
+    // Insert using the columns available on the existing Company List table.
     const newCompanyId = crypto.randomUUID();
-
     const { error: companyInsertErr } = await (supabase as any)
       .from("a1_company_list")
       .insert({
         company_list_id: newCompanyId,
-        id: newCompanyId,
         company_name: input.company_name.trim(),
-        name: input.pic_full_name.trim(),
         address: input.address.trim(),
-        sales_id: salesId,
+        name: input.pic_full_name.trim(),
+        created_by: createdBy,
         customer_code: `CUST-${Date.now().toString().slice(-5)}`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       });
+    if (companyInsertErr) return { success: false, error: companyInsertErr.message };
 
-    if (companyInsertErr) {
-      return { success: false, error: companyInsertErr.message };
-    }
-
-    // Coba insert ke a1_company_contacts
+    // Store the PIC phone number and details in the related contacts table.
     await (supabase as any).from("a1_company_contacts").insert({
       company_id: newCompanyId,
       full_name: input.pic_full_name.trim(),
@@ -496,13 +365,16 @@ export async function createCustomer(
     });
 
     return { success: true, companyId: newCompanyId };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal membuat customer" };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to create the customer",
+    };
   }
 }
 
 /**
- * Update Customer Profile
+ * Updates the customer profile.
  */
 export async function updateCustomer(
   customerId: string,
@@ -533,7 +405,7 @@ export async function updateCustomer(
 }
 
 /**
- * Soft delete customer (deleted_at) dan menonaktifkan jadwal aktifnya.
+ * Soft-deletes a customer (deleted_at) and deactivates its active schedule.
  */
 export async function deleteCustomer(
   customerId: string
@@ -544,7 +416,7 @@ export async function deleteCustomer(
   try {
     const now = new Date().toISOString();
 
-    // 1. Soft delete customer
+    // 1. Soft-delete the customer.
     const { error: companyErr } = await (supabase as any)
       .from("a1_company_list")
       .update({ deleted_at: now, updated_at: now })
@@ -552,7 +424,7 @@ export async function deleteCustomer(
 
     if (companyErr) return { success: false, error: companyErr.message };
 
-    // 2. Nonaktifkan jadwal meeting aktif tanpa menghapus riwayat
+    // 2. Deactivate the meeting schedule without deleting its history.
     await (supabase as any)
       .from("a1_customer_meetings")
       .update({ is_active: false, updated_at: now })

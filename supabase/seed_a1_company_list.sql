@@ -1,19 +1,19 @@
 -- ============================================================================
--- SEED DATA ACTUAL & DUMMY: a1_company_list
+-- SAMPLE AND TEST DATA: a1_company_list
 -- ============================================================================
--- Menggunakan HANYA 6 kolom yang sudah ada di tabel:
+-- Uses only the six columns that existed in the table when this seed was created:
 -- 1. company_list_id (UUID)
--- 2. customer_code   (Transaction No: TRX-0626-00112 s/d TRX-0626-00121)
--- 3. company_name    (PT. YOSSAVA TRANS LOGISTIK, dsb)
--- 4. name            (Nama PIC Narahubung)
--- 5. job_number      (AENAT/2606/0209 s/d AENAT/2606/0219)
+-- 2. customer_code   (Transaction No: TRX-0626-00112 through TRX-0626-00121)
+-- 3. company_name    (PT. YOSSAVA TRANS LOGISTIK, etc.)
+-- 4. name            (PIC contact name)
+-- 5. job_number      (AENAT/2606/0209 through AENAT/2606/0219)
 -- 6. created_by      (Wulan / Eca)
 -- ============================================================================
 
--- 1. Pastikan ekstensi UUID aktif
+-- 1. Ensure the UUID extension is enabled.
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. Pastikan RLS mengizinkan pembacaan & penulisan data untuk aplikasi CRM
+-- 2. Ensure RLS permits the CRM application to read and write data.
 ALTER TABLE public.a1_company_list ENABLE ROW LEVEL SECURITY;
 
 DO $$
@@ -41,7 +41,7 @@ BEGIN
     END IF;
 END $$;
 
--- 3. Masukkan Data Asli & Data Dummy (HANYA 6 kolom resmi)
+-- 3. Insert sample and test data (only the six supported columns).
 INSERT INTO public.a1_company_list (
     company_list_id,
     customer_code,
@@ -50,14 +50,14 @@ INSERT INTO public.a1_company_list (
     job_number,
     created_by
 ) VALUES
-    -- DATA ASLI (Actual Records dari user)
+    -- SAMPLE RECORDS supplied by the user.
     (gen_random_uuid(), 'TRX-0626-00112', 'PT. YOSSAVA TRANS LOGISTIK', 'Budi Santoso',   'AENAT/2606/0209', 'Wulan'),
     (gen_random_uuid(), 'TRX-0626-00113', 'PT. YOSSAVA TRANS LOGISTIK', 'Hendra Wijaya',  'AENAT/2606/0211', 'Eca'),
     (gen_random_uuid(), 'TRX-0626-00114', 'PT. YOSSAVA TRANS LOGISTIK', 'Siti Rahma',     'AENAT/2606/0212', 'Wulan'),
     (gen_random_uuid(), 'TRX-0626-00115', 'PT. YOSSAVA TRANS LOGISTIK', 'Dewi Sartika',   'AENAT/2606/0213', 'Eca'),
     (gen_random_uuid(), 'TRX-0626-00116', 'PT. YOSSAVA TRANS LOGISTIK', 'Agus Setiawan',  'AENAT/2606/0214', 'Wulan'),
 
-    -- DATA DUMMY TAMBAHAN SESUAI FORMAT (Variasi Customer & Job No berurutan)
+    -- Additional test records following the same customer and job-number format.
     (gen_random_uuid(), 'TRX-0626-00117', 'PT. SAMUDERA BAHARI LOGISTIK',      'Rian Pratama',    'AENAT/2606/0215', 'Eca'),
     (gen_random_uuid(), 'TRX-0626-00118', 'PT. SINAR SURYA EXPRESS',           'Farhan Maulana',  'AENAT/2606/0216', 'Wulan'),
     (gen_random_uuid(), 'TRX-0626-00119', 'PT. CITRA MANDIRI CARGO',           'Melisa Anggraeni','AENAT/2606/0217', 'Eca'),

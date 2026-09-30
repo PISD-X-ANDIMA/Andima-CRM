@@ -12,7 +12,7 @@ export interface MeetingInput {
 }
 
 /**
- * Mendapatkan jadwal meeting aktif untuk customer tertentu.
+ * Retrieves the active meeting schedule for a customer.
  */
 export async function getMeetingByCustomerId(
   customerId: string
@@ -57,7 +57,7 @@ export async function getMeetingByCustomerId(
 }
 
 /**
- * Memeriksa apakah ada jadwal meeting customer lain yang bentrok.
+ * Checks whether another customer's meeting schedule conflicts.
  */
 export async function detectMeetingConflict(
   salesId: string,
@@ -90,7 +90,7 @@ export async function detectMeetingConflict(
       if (overlap) {
         return {
           hasConflict: true,
-          conflictWith: m.a1_company_list?.company_name || "Customer Lain",
+          conflictWith: m.a1_company_list?.company_name || "Another customer",
         };
       }
     }
@@ -102,7 +102,7 @@ export async function detectMeetingConflict(
 }
 
 /**
- * Membuat jadwal meeting baru untuk customer.
+ * Creates a new meeting schedule for a customer.
  */
 export async function createMeeting(
   customerId: string,
@@ -112,7 +112,7 @@ export async function createMeeting(
   if (!supabase) return { success: false, error: "Database client unavailable" };
 
   try {
-    // Nonaktifkan jadwal aktif lama jika ada
+    // Deactivate any existing active schedule.
     await (supabase as any)
       .from("a1_customer_meetings")
       .update({ is_active: false, updated_at: new Date().toISOString() })
@@ -143,7 +143,7 @@ export async function createMeeting(
 }
 
 /**
- * Update jadwal meeting.
+ * Updates a meeting schedule.
  */
 export async function updateMeeting(
   customerId: string,
@@ -181,7 +181,7 @@ export async function updateMeeting(
 }
 
 /**
- * Soft delete / deactivate jadwal meeting (menghentikan pengulangan masa depan).
+ * Soft-deletes or deactivates a meeting schedule to stop future recurrences.
  */
 export async function deleteMeeting(
   customerId: string,

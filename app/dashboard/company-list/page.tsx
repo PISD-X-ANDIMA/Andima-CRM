@@ -5,13 +5,11 @@ import { useRouter } from "next/navigation";
 import { Plus, Search, Download, ChevronDown, RefreshCw } from "lucide-react";
 import { CustomerListItem, ApiResponse } from "@/types/customer";
 import { CustomerTable } from "@/components/customer/CustomerTable";
-import { SummaryCards } from "@/components/dashboard/SummaryCards";
 import { CustomerFormModal } from "@/components/customer/CustomerFormModal";
 
 export default function CompanyListPage() {
   const router = useRouter();
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
-  const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -38,15 +36,14 @@ export default function CompanyListPage() {
 
       if (!res.ok || !json.success) {
         throw new Error(
-          (!json.success && json.message) || "Gagal memuat data pelanggan"
+          (!json.success && json.message) || "Failed to load customer data"
         );
       }
 
       setCustomers(json.data);
-      setTotal((json as any).meta?.total ?? json.data.length);
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : "Terjadi kesalahan koneksi";
+        err instanceof Error ? err.message : "A connection error occurred";
       setError(message);
     } finally {
       setIsLoading(false);
@@ -54,7 +51,8 @@ export default function CompanyListPage() {
   }, []);
 
   useEffect(() => {
-    fetchCustomers(debouncedSearch);
+    const timeout = window.setTimeout(() => { void fetchCustomers(debouncedSearch); }, 0);
+    return () => window.clearTimeout(timeout);
   }, [fetchCustomers, debouncedSearch]);
 
   const handleResetSearch = () => {
@@ -64,7 +62,7 @@ export default function CompanyListPage() {
 
   const handleAddSuccess = (companyId: string) => {
     setIsModalOpen(false);
-    // Refresh list dan navigasi ke detail
+    // Refresh the list and navigate to the customer details.
     fetchCustomers(debouncedSearch);
     router.push(`/dashboard/company-list/${companyId}`);
   };
@@ -74,16 +72,11 @@ export default function CompanyListPage() {
       {/* Page Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-4xl font-bold text-slate-950 tracking-tight">
             Company List
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Kelola dan pantau customer yang ditangani oleh Sales Executive.
-            {total > 0 && (
-              <span className="ml-2 text-blue-600 font-medium">
-                {total} customer
-              </span>
-            )}
+            Manage customers and contact information.
           </p>
         </div>
 
@@ -95,12 +88,9 @@ export default function CompanyListPage() {
           className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
         >
           <Plus className="w-4 h-4" />
-          <span>Add Customer</span>
+          <span>Add Company</span>
         </button>
       </div>
-
-      {/* Summary KPI Cards */}
-      <SummaryCards />
 
       {/* Filter Bar */}
       <div className="flex items-center gap-3">
@@ -114,7 +104,7 @@ export default function CompanyListPage() {
             type="text"
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
-            placeholder="Cari nama perusahaan atau PIC..."
+            placeholder="Search company or PIC..."
             className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
           />
         </div>
@@ -158,7 +148,7 @@ export default function CompanyListPage() {
           type="button"
           disabled
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-400 cursor-not-allowed"
-          title="Export (segera hadir)"
+          title="Export (Coming Soon)"
         >
           <Download className="w-4 h-4" />
           <span>Export</span>

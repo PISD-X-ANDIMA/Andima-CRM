@@ -1,346 +1,129 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
-import { Calendar, ChevronLeft, ChevronRight, Clock, Phone, Users } from "lucide-react";
-import { CalendarSlotMeeting, CustomerListItem, ApiResponse } from "@/types/customer";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import type { ApiResponse, CustomerListItem } from "@/types/customer";
 
-type DayName = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const hours = Array.from({ length: 10 }, (_, index) => 8 + index);
+const dayKeys = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
 
-const DAY_LABELS: Record<DayName, string> = {
-  monday: "Senin",
-  tuesday: "Selasa",
-  wednesday: "Rabu",
-  thursday: "Kamis",
-  friday: "Jumat",
-  saturday: "Sabtu",
-  sunday: "Minggu",
-};
-
-const WEEKDAYS: DayName[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-
-const TIME_SLOTS = [
-  "08:00", "09:00", "10:00", "11:00", "12:00",
-  "13:00", "14:00", "15:00", "16:00", "17:00",
-];
-
-function getWeekDates(offsetWeek = 0): Record<DayName, string> {
-  const now = new Date();
-  const day = now.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + diffToMonday + offsetWeek * 7);
-
-  const result: Partial<Record<DayName, string>> = {};
-  WEEKDAYS.forEach((d, i) => {
-    const date = new Date(monday);
-    date.setDate(monday.getDate() + (d === "sunday" ? 6 : i));
-    result[d] = date.toISOString().split("T")[0];
-  });
-  return result as Record<DayName, string>;
-}
-
-function formatDateShort(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
-}
-
-function formatWeekLabel(dates: Record<DayName, string>): string {
-  const start = new Date(dates.monday + "T00:00:00");
-  const end = new Date(dates.saturday + "T00:00:00");
-  return `${formatDateShort(dates.monday)} – ${formatDateShort(dates.saturday)} ${end.getFullYear()}`;
-}
-
-interface MeetingEvent {
-  companyId: string;
-  companyName: string;
-  picName: string;
-  picPhone: string;
-  day: DayName;
-  startTime: string;
-  endTime: string;
-  status: "upcoming" | "completed";
-  scheduleType: string;
+function dateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 export default function MeetingSchedulePage() {
-  const [weekOffset, setWeekOffset] = useState(0);
-  const [events, setEvents] = useState<MeetingEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const weekDates = getWeekDates(weekOffset);
-  const now = new Date();
+  const [month, setMonth] = useState(() => new Date(2026, 9, 1));
+  const [selected, setSelected] = useState("2026-10-07");
+  const [customers, setCustomers] = useState<CustomerListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [slotToBook, setSlotToBook] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [mutationError, setMutationError] = useState("");
 
-  const loadMeetings = useCallback(async () => {
-    setIsLoading(true);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
     try {
-      const res = await fetch("/api/v1/customers?perPage=100");
-      const json: ApiResponse<CustomerListItem[]> = await res.json();
-      if (!json.success) return;
-
-      const newEvents: MeetingEvent[] = [];
-      for (const customer of json.data) {
-        if (!customer.meetingSchedule) continue;
-        const m = customer.meetingSchedule;
-
-        let day = m.meetingDay as DayName;
-        let meetingDateStr: string | null = null;
-
-        if (m.scheduleType === "one_day") {
-          if (!m.meetingDate) continue;
-          meetingDateStr = m.meetingDate;
-          // Hitung hari dari meetingDate
-          const d = new Date(m.meetingDate + "T00:00:00");
-          const dayNum = d.getDay();
-          const dayKey = Object.entries({
-            monday: 1, tuesday: 2, wednesday: 3, thursday: 4,
-            friday: 5, saturday: 6, sunday: 0,
-          }).find(([, v]) => v === dayNum)?.[0] as DayName;
-          if (!dayKey) continue;
-          day = dayKey;
-
-          // Apakah one_day ini jatuh pada minggu yang sedang ditampilkan?
-          const weekDateStr = weekDates[day];
-          if (meetingDateStr !== weekDateStr) continue;
-        }
-
-        // Tentukan status
-        const endDateTime = new Date(`${weekDates[day]}T${m.endTime || "10:00"}:00`);
-        const status: "upcoming" | "completed" = endDateTime > now ? "upcoming" : "completed";
-
-        newEvents.push({
-          companyId: customer.id,
-          companyName: customer.companyName,
-          picName: customer.primaryPic?.fullName || "—",
-          picPhone: customer.primaryPic?.phoneNumber || "",
-          day,
-          startTime: m.startTime || "09:00",
-          endTime: m.endTime || "10:00",
-          status,
-          scheduleType: m.scheduleType,
-        });
-      }
-
-      setEvents(newEvents);
-    } catch {
-      // Silent fail
+      const response = await fetch("/api/v1/customers?perPage=100");
+      const result: ApiResponse<CustomerListItem[]> = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.success ? "Failed to load the schedule." : result.message);
+      setCustomers(result.data);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Failed to load the schedule.");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }, [weekOffset]);
+  }, []);
 
-  useEffect(() => {
-    loadMeetings();
-  }, [loadMeetings]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void load(); }, [load]);
 
-  function getEventsForSlot(day: DayName, timeSlot: string): MeetingEvent[] {
-    return events.filter((e) => {
-      if (e.day !== day) return false;
-      const slotHour = parseInt(timeSlot.split(":")[0], 10);
-      const startHour = parseInt((e.startTime || "00:00").split(":")[0], 10);
-      const endHour = parseInt((e.endTime || "00:00").split(":")[0], 10);
-      return slotHour >= startHour && slotHour < endHour;
-    });
+  const calendarDays = useMemo(() => {
+    const start = new Date(month.getFullYear(), month.getMonth(), 1);
+    const offset = start.getDay();
+    return Array.from({ length: 42 }, (_, index) => new Date(start.getFullYear(), start.getMonth(), index - offset + 1));
+  }, [month]);
+
+  const selectedDate = new Date(`${selected}T00:00:00`);
+  const agenda = customers.flatMap((customer) => {
+    const meeting = customer.meetingSchedule;
+    if (!meeting) return [];
+    const isScheduled = meeting.scheduleType === "one_day"
+      ? meeting.meetingDate === selected
+      : meeting.meetingDay === dayKeys[selectedDate.getDay()];
+    return isScheduled ? [{ customer, meeting }] : [];
+  });
+
+  async function saveMeeting(formData: FormData) {
+    const companyId = String(formData.get("companyId") || "");
+    const startTime = slotToBook || String(formData.get("startTime") || "09:00");
+    const endHour = Math.min(Number(startTime.slice(0, 2)) + 1, 23);
+    const endTime = `${String(endHour).padStart(2, "0")}:${startTime.slice(3, 5)}`;
+    const scheduleType = String(formData.get("scheduleType") || "one_day");
+    setSaving(true);
+    setMutationError("");
+    try {
+      const response = await fetch(`/api/v1/customers/${companyId}/meetings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          meeting_day: dayKeys[selectedDate.getDay()],
+          schedule_type: scheduleType,
+          meeting_date: scheduleType === "one_day" ? selected : null,
+          start_time: `${startTime}:00`,
+          end_time: `${endTime}:00`,
+        }),
+      });
+      const result: ApiResponse<{ meetingId: string }> = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.success ? "Failed to save the meeting." : result.message);
+      setSlotToBook(null);
+      await load();
+    } catch (cause) {
+      setMutationError(cause instanceof Error ? cause.message : "Failed to save the meeting.");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  const todayStr = now.toISOString().split("T")[0];
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
+    <div className="mx-auto w-full max-w-[1440px] space-y-7">
+      <header className="flex flex-wrap items-end justify-between gap-5">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            Jadwal Meeting
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Kalender mingguan meeting customer Sales Executive.
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-950">{selectedDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</h1>
+          <p className="mt-1 text-lg text-slate-500">Meeting schedule and availability for this date</p>
         </div>
+        <button onClick={() => setSlotToBook("09:00")} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-lg font-semibold text-white hover:bg-blue-700"><Plus className="h-5 w-5" />Add Meeting</button>
+      </header>
 
-        {/* Week Navigation */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setWeekOffset((w) => w - 1)}
-            className="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-900 hover:border-slate-300 flex items-center justify-center transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <div className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 min-w-[180px] text-center">
-            {formatWeekLabel(weekDates)}
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(350px,0.8fr)_minmax(500px,1.2fr)]">
+        <section className="rounded-2xl border border-slate-200 bg-white p-6">
+          <div className="mb-7 flex items-center justify-between">
+            <button aria-label="Previous month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="rounded p-2 text-slate-400 hover:bg-slate-100"><ChevronLeft /></button>
+            <h2 className="text-2xl font-semibold text-slate-900">{month.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h2>
+            <button aria-label="Next month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="rounded p-2 text-slate-400 hover:bg-slate-100"><ChevronRight /></button>
           </div>
-          <button
-            type="button"
-            onClick={() => setWeekOffset((w) => w + 1)}
-            className="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-900 hover:border-slate-300 flex items-center justify-center transition-colors"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-          {weekOffset !== 0 && (
-            <button
-              type="button"
-              onClick={() => setWeekOffset(0)}
-              className="px-3 py-2 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
-            >
-              Minggu Ini
-            </button>
-          )}
-        </div>
+          <div className="grid grid-cols-7 gap-y-3 text-center">
+            {weekdayNames.map((day) => <span key={day} className="pb-2 text-sm font-medium text-slate-600">{day}</span>)}
+            {calendarDays.map((date) => {
+              const key = dateKey(date);
+              const inMonth = date.getMonth() === month.getMonth();
+              const hasMeeting = customers.some(({ meetingSchedule: m }) => m && (m.scheduleType === "one_day" ? m.meetingDate === key : m.meetingDay === dayKeys[date.getDay()]));
+              return <button key={key} onClick={() => setSelected(key)} className={`mx-auto grid h-10 w-10 place-items-center rounded-full text-sm ${!inMonth ? "text-slate-300" : "text-slate-700 hover:bg-blue-50"} ${key === selected ? "bg-blue-600 font-semibold text-white hover:bg-blue-700" : ""}`} aria-pressed={key === selected}>
+                <span>{date.getDate()}</span>{hasMeeting && key !== selected && <span className="absolute mt-7 h-1 w-1 rounded-full bg-blue-500" />}
+              </button>;
+            })}
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          {loading ? <div className="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center text-slate-500">Loading schedule...</div> : error ? <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-700">{error}<button className="ml-3 underline" onClick={() => void load()}>Try again</button></div> : agenda.length > 0 ? agenda.map(({ customer, meeting }) => <Link key={meeting.id} href={`/dashboard/company-list/${customer.id}`} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-slate-700 hover:border-blue-300"><span className="flex items-center gap-4"><i className="h-3 w-3 rounded-full bg-blue-500" /><span className="font-medium">{customer.companyName}</span></span><span className="text-slate-500">{meeting.startTime?.slice(0, 5)}–{meeting.endTime?.slice(0, 5)}</span></Link>) : <div className="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center"><p className="font-medium text-slate-600">No meeting scheduled</p><p className="mt-1 text-sm text-slate-500">Choose another date or add a schedule from the Company List.</p></div>}
+          {!loading && !error && hours.map((hour) => <div key={hour} className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-slate-500"><span className="flex items-center gap-4"><i className="h-3 w-3 rounded-full bg-slate-400" />Available</span><span>{String(hour).padStart(2, "0")}:00–{String(hour + 1).padStart(2, "0")}:00</span><button onClick={() => setSlotToBook(`${String(hour).padStart(2, "0")}:00`)} className="rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600">+Add</button></div>)}
+        </section>
       </div>
-
-      {/* Summary Strip */}
-      <div className="flex items-center gap-4 text-sm">
-        <div className="flex items-center gap-1.5 text-slate-600">
-          <Users className="w-4 h-4 text-slate-400" />
-          <span className="font-medium">{events.length}</span>
-          <span className="text-slate-400">meeting minggu ini</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-          <span className="text-xs text-slate-500">{events.filter(e => e.status === "upcoming").length} Akan Datang</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-          <span className="text-xs text-slate-500">{events.filter(e => e.status === "completed").length} Selesai</span>
-        </div>
-      </div>
-
-      {/* Calendar Grid */}
-      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-        {/* Day Headers */}
-        <div className="grid border-b border-slate-100" style={{ gridTemplateColumns: "72px repeat(6, 1fr)" }}>
-          <div className="py-3 px-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider text-center">
-            Jam
-          </div>
-          {WEEKDAYS.map((day) => {
-            const dateStr = weekDates[day];
-            const isToday = dateStr === todayStr;
-            return (
-              <div
-                key={day}
-                className={`py-3 px-2 text-center border-l border-slate-100 ${isToday ? "bg-blue-50/60" : ""}`}
-              >
-                <p className={`text-[11px] font-semibold uppercase tracking-wider ${isToday ? "text-blue-600" : "text-slate-400"}`}>
-                  {DAY_LABELS[day]}
-                </p>
-                <p className={`text-base font-bold mt-0.5 ${isToday ? "text-blue-700" : "text-slate-700"}`}>
-                  {formatDateShort(dateStr).split(" ")[0]}
-                </p>
-                <p className="text-[10px] text-slate-400">
-                  {formatDateShort(dateStr).split(" ")[1]}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Time Slots */}
-        {isLoading ? (
-          <div className="p-12 text-center">
-            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-sm text-slate-500">Memuat jadwal...</p>
-          </div>
-        ) : (
-          <div className="overflow-y-auto max-h-[520px]">
-            {TIME_SLOTS.map((slot, slotIdx) => (
-              <div
-                key={slot}
-                className={`grid border-b border-slate-50 min-h-[64px] ${slotIdx % 2 === 0 ? "" : "bg-slate-50/30"}`}
-                style={{ gridTemplateColumns: "72px repeat(6, 1fr)" }}
-              >
-                {/* Time label */}
-                <div className="flex items-start justify-center pt-2">
-                  <span className="text-[11px] text-slate-400 font-mono">{slot}</span>
-                </div>
-
-                {/* Day cells */}
-                {WEEKDAYS.map((day) => {
-                  const cellEvents = getEventsForSlot(day, slot);
-                  const isToday = weekDates[day] === todayStr;
-                  return (
-                    <div
-                      key={day}
-                      className={`border-l border-slate-100 px-1.5 py-1 ${isToday ? "bg-blue-50/30" : ""}`}
-                    >
-                      {cellEvents.map((evt, ei) => (
-                        <div
-                          key={`${evt.companyId}-${ei}`}
-                          className={`rounded-lg px-2 py-1.5 mb-1 text-[11px] leading-snug cursor-default select-none ${
-                            evt.status === "upcoming"
-                              ? "bg-blue-500 text-white"
-                              : "bg-emerald-500 text-white"
-                          }`}
-                          title={`${evt.companyName} | ${evt.picName} | ${evt.startTime}–${evt.endTime}`}
-                        >
-                          <p className="font-semibold truncate">{evt.companyName}</p>
-                          <p className="text-white/80 truncate flex items-center gap-0.5 mt-0.5">
-                            <Clock className="w-2.5 h-2.5" />
-                            {evt.startTime?.slice(0, 5)}–{evt.endTime?.slice(0, 5)}
-                          </p>
-                          <p className="text-white/70 truncate mt-0.5">
-                            {evt.picName}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* List View Below */}
-      {events.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <div className="px-6 py-4 border-b border-slate-100">
-            <h2 className="text-sm font-semibold text-slate-800">
-              Detail Meeting Minggu Ini
-            </h2>
-          </div>
-          <div className="divide-y divide-slate-50">
-            {events
-              .sort((a, b) => {
-                const dayOrder = WEEKDAYS.indexOf(a.day) - WEEKDAYS.indexOf(b.day);
-                if (dayOrder !== 0) return dayOrder;
-                return (a.startTime || "").localeCompare(b.startTime || "");
-              })
-              .map((evt, idx) => (
-                <div key={idx} className="flex items-center gap-4 px-6 py-3.5 hover:bg-slate-50/50 transition-colors">
-                  <div
-                    className={`w-2 h-2 rounded-full shrink-0 ${evt.status === "upcoming" ? "bg-blue-500" : "bg-emerald-500"}`}
-                  />
-                  <div className="w-20 shrink-0">
-                    <p className="text-xs font-semibold text-slate-700">{DAY_LABELS[evt.day]}</p>
-                    <p className="text-[11px] text-slate-400">{formatDateShort(weekDates[evt.day])}</p>
-                  </div>
-                  <div className="w-24 shrink-0">
-                    <p className="text-xs font-mono text-slate-600">
-                      {evt.startTime?.slice(0, 5)} – {evt.endTime?.slice(0, 5)}
-                    </p>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 truncate">{evt.companyName}</p>
-                    <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                      <Phone className="w-3 h-3" />
-                      {evt.picName}
-                      {evt.picPhone && <span className="font-mono">· {evt.picPhone}</span>}
-                    </p>
-                  </div>
-                  <span
-                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border shrink-0 ${
-                      evt.status === "upcoming"
-                        ? "bg-blue-50 text-blue-700 border-blue-200"
-                        : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    }`}
-                  >
-                    {evt.status === "upcoming" ? "Akan Datang" : "Selesai"}
-                  </span>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
+      {slotToBook && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/40 p-4"><form action={saveMeeting} className="w-full max-w-md space-y-4 rounded-2xl bg-white p-6 shadow-xl"><div><h2 className="text-xl font-bold text-slate-900">Add Meeting</h2><p className="mt-1 text-sm text-slate-500">{selectedDate.toLocaleDateString("en-GB")} · {slotToBook}</p></div><label className="block text-sm font-medium text-slate-700">Company<select required name="companyId" defaultValue="" className="mt-1 w-full rounded-lg border border-slate-300 p-2.5"><option value="" disabled>Select a company</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.companyName}</option>)}</select></label><input type="hidden" name="startTime" value={slotToBook} /><label className="block text-sm font-medium text-slate-700">Schedule Type<select name="scheduleType" className="mt-1 w-full rounded-lg border border-slate-300 p-2.5"><option value="one_day">One day</option><option value="weekly">Weekly</option></select></label>{mutationError && <p role="alert" className="text-sm text-red-600">{mutationError}</p>}<div className="flex justify-end gap-2"><button type="button" onClick={() => setSlotToBook(null)} className="rounded-lg border px-4 py-2 text-slate-600">Cancel</button><button disabled={saving || customers.length === 0} className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white disabled:opacity-50">{saving ? "Saving..." : "Save Meeting"}</button></div></form></div>}
     </div>
   );
 }

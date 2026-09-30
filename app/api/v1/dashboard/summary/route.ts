@@ -18,6 +18,6 @@ export async function GET(_req: NextRequest) {
     const summary = await getDashboardSummary(salesId);
     return createSuccessResponse(summary);
   } catch {
-    return createErrorResponse("DASHBOARD_001", "Gagal mengambil ringkasan dashboard", undefined, 500);
+    return createErrorResponse("DASHBOARD_001", "Failed to load the dashboard summary", undefined, 500);
   }
 }

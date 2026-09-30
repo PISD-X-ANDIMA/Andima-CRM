@@ -2,29 +2,29 @@ import { NextResponse } from "next/server";
 import { ApiResponseError, ApiResponseSuccess } from "@/types/customer";
 
 export const ERROR_CODES = {
-  CUSTOMER_001: "Data customer wajib diisi",
-  CUSTOMER_002: "Gagal menyimpan data customer",
-  CUSTOMER_003: "Gagal menghapus customer",
-  CUSTOMER_004: "Customer tidak dapat diakses",
-  CONTACT_001: "Nama dan nomor telepon PIC wajib diisi",
-  CONTACT_002: "PIC utama tidak valid atau dilarang menghapus PIC terakhir",
-  CONTACT_003: "Gagal menyimpan contact PIC",
-  CONTACT_004: "Gagal menghapus contact PIC",
-  SEARCH_001: "Data tidak ditemukan",
-  SEARCH_002: "Query pencarian gagal",
-  EXPORT_001: "Gagal mengekspor data customer ke Excel",
-  EXPORT_002: "Tidak ada data untuk diekspor",
-  MEETING_001: "Hari meeting wajib diisi",
-  MEETING_002: "Tipe jadwal harus berupa weekly atau one_day",
-  MEETING_003: "Gagal menyimpan jadwal meeting",
-  MEETING_004: "Gagal menghapus jadwal meeting",
-  TASK_001: "Gagal membuka daftar task / job customer",
-  TASK_002: "Job customer tidak ditemukan",
-  DASHBOARD_001: "Modul dashboard gagal dimuat",
-  DASHBOARD_002: "Anda tidak memiliki akses ke modul ini",
+  CUSTOMER_001: "Customer data is required",
+  CUSTOMER_002: "Failed to save customer data",
+  CUSTOMER_003: "Failed to delete customer",
+  CUSTOMER_004: "You do not have access to this customer",
+  CONTACT_001: "PIC name and phone number are required",
+  CONTACT_002: "The primary PIC is invalid or the last contact cannot be deleted",
+  CONTACT_003: "Failed to save the PIC contact",
+  CONTACT_004: "Failed to delete the PIC contact",
+  SEARCH_001: "No data found",
+  SEARCH_002: "The search query failed",
+  EXPORT_001: "Failed to export customer data to Excel",
+  EXPORT_002: "There is no data to export",
+  MEETING_001: "The meeting day is required",
+  MEETING_002: "Schedule type must be weekly or one_day",
+  MEETING_003: "Failed to save the meeting schedule",
+  MEETING_004: "Failed to delete the meeting schedule",
+  TASK_001: "Failed to load the customer task/job list",
+  TASK_002: "Customer job not found",
+  DASHBOARD_001: "Failed to load the dashboard module",
+  DASHBOARD_002: "You do not have access to this module",
 } as const;
 
-export type ErrorCode = keyof typeof ERROR_CODES;
+export type ErrorCode = keyof typeof ERROR_CODES | string;
 
 export function createSuccessResponse<T>(
   data: T,
@@ -51,7 +51,7 @@ export function createErrorResponse(
     {
       success: false,
       code,
-      message: customMessage || ERROR_CODES[code] || "Terjadi kesalahan",
+      message: customMessage || (ERROR_CODES as Record<string, string>)[code] || "An error occurred",
       errors,
     },
     { status }

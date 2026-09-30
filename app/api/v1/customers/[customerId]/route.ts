@@ -15,11 +15,11 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     const { customerId } = await params;
     const customer = await getCustomerById(customerId);
     if (!customer) {
-      return createErrorResponse("NOT_FOUND_001", "Customer tidak ditemukan", undefined, 404);
+      return createErrorResponse("NOT_FOUND_001", "Customer not found", undefined, 404);
     }
     return createSuccessResponse(customer);
   } catch {
-    return createErrorResponse("GET_001", "Gagal mengambil data customer", undefined, 500);
+    return createErrorResponse("GET_001", "Failed to load customer data", undefined, 500);
   }
 }
 
@@ -30,11 +30,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
     const result = await updateCustomer(customerId, body);
     if (!result.success) {
-      return createErrorResponse("UPDATE_001", result.error || "Gagal mengupdate customer", undefined, 500);
+      return createErrorResponse("UPDATE_001", result.error || "Failed to update the customer", undefined, 500);
     }
     return createSuccessResponse({ customerId });
   } catch {
-    return createErrorResponse("UPDATE_002", "Request tidak valid", undefined, 400);
+    return createErrorResponse("UPDATE_002", "Invalid request", undefined, 400);
   }
 }
 
@@ -43,10 +43,10 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
     const { customerId } = await params;
     const result = await deleteCustomer(customerId);
     if (!result.success) {
-      return createErrorResponse("DELETE_001", result.error || "Gagal menghapus customer", undefined, 500);
+      return createErrorResponse("DELETE_001", result.error || "Failed to delete the customer", undefined, 500);
     }
     return createSuccessResponse({ customerId });
   } catch {
-    return createErrorResponse("DELETE_002", "Gagal menghapus customer", undefined, 500);
+    return createErrorResponse("DELETE_002", "Failed to delete the customer", undefined, 500);
   }
 }

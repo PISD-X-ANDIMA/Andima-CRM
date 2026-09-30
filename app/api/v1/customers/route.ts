@@ -21,10 +21,15 @@ export async function GET(request: NextRequest) {
       perPage: result.perPage,
       totalPages: result.totalPages,
     });
-  } catch {
+  } catch (error) {
+    const detail = error instanceof Error
+      ? error.message
+      : typeof error === "object" && error !== null && "message" in error && typeof error.message === "string"
+        ? error.message
+        : "Unknown database error";
     return createErrorResponse(
       "SEARCH_002",
-      "Gagal melakukan pencarian customer",
+      `Failed to load the Company List: ${detail}`,
       undefined,
       500
     );

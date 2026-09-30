@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   Building2,
@@ -21,7 +20,7 @@ interface PageProps {
 
 function formatDate(dateStr?: string | null): string {
   if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("id-ID", {
+  return new Date(dateStr).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -32,9 +31,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
   const { customerId } = await params;
   const customer = await getCustomerById(customerId);
 
-  if (!customer) {
-    notFound();
-  }
+  if (!customer) return <section className="mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white p-8"><Link href="/dashboard/company-list" className="text-sm text-blue-600">← Back to Company List</Link><h1 className="mt-5 text-2xl font-bold">Customer data unavailable</h1><p className="mt-2 text-slate-500">Customer {customerId} could not be found or loaded.</p><Link href={`/dashboard/company-list/${customerId}/jobs`} className="mt-5 inline-block text-blue-600">View Jobs</Link></section>;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -45,7 +42,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
           className="inline-flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Kembali ke Company List</span>
+          <span>Back to Company List</span>
         </Link>
       </div>
 
@@ -81,7 +78,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
           className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm"
         >
           <Briefcase className="w-4 h-4" />
-          <span>Lihat Job Customer</span>
+          <span>View Customer Jobs</span>
         </Link>
       </div>
 
@@ -95,19 +92,19 @@ export default async function CustomerDetailPage({ params }: PageProps) {
           </div>
           <dl className="space-y-3">
             <div>
-              <dt className="text-[11px] text-slate-400 font-medium">Nama Perusahaan</dt>
+              <dt className="text-[11px] text-slate-400 font-medium">Company Name</dt>
               <dd className="text-sm font-semibold text-slate-800 mt-0.5">
                 {customer.companyName}
               </dd>
             </div>
             <div>
-              <dt className="text-[11px] text-slate-400 font-medium">Alamat</dt>
+              <dt className="text-[11px] text-slate-400 font-medium">Address</dt>
               <dd className="text-sm text-slate-700 mt-0.5">
-                {customer.address || <span className="text-slate-400 italic">Belum diatur</span>}
+                {customer.address || <span className="text-slate-400 italic">Not provided</span>}
               </dd>
             </div>
             <div>
-              <dt className="text-[11px] text-slate-400 font-medium">Terdaftar Sejak</dt>
+              <dt className="text-[11px] text-slate-400 font-medium">Registered Since</dt>
               <dd className="text-sm text-slate-700 mt-0.5">{formatDate(customer.createdAt)}</dd>
             </div>
           </dl>
@@ -120,7 +117,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
             <span>Contact & PIC ({customer.contacts.length})</span>
           </div>
           {customer.contacts.length === 0 ? (
-            <p className="text-xs text-slate-400 italic">Belum ada kontak</p>
+            <p className="text-xs text-slate-400 italic">No contacts yet</p>
           ) : (
             <ul className="space-y-3">
               {customer.contacts.slice(0, 3).map((c) => (
@@ -150,7 +147,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
               ))}
               {customer.contacts.length > 3 && (
                 <li className="text-[11px] text-slate-400 italic">
-                  +{customer.contacts.length - 3} kontak lainnya
+                  +{customer.contacts.length - 3} more contacts
                 </li>
               )}
             </ul>
@@ -167,7 +164,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
             <div className="space-y-2.5">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span className="text-xs font-semibold text-slate-800">Jadwal Aktif</span>
+                <span className="text-xs font-semibold text-slate-800">Active Schedule</span>
               </div>
               <div className="p-3 rounded-xl bg-purple-50 border border-purple-100">
                 <p className="text-sm font-semibold text-purple-800">
@@ -181,7 +178,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
               </div>
             </div>
           ) : (
-            <p className="text-xs text-slate-400 italic">Belum ada jadwal meeting</p>
+            <p className="text-xs text-slate-400 italic">No meeting schedule yet</p>
           )}
         </div>
       </div>
@@ -198,7 +195,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
               href={`/dashboard/company-list/${customerId}/jobs`}
               className="text-[11px] text-blue-600 hover:text-blue-800 font-medium transition-colors"
             >
-              Lihat Semua →
+              View All →
             </Link>
           </div>
           <div className="overflow-x-auto">
@@ -209,13 +206,13 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                     Job No
                   </th>
                   <th className="pb-2.5 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Judul
+                    Title
                   </th>
                   <th className="pb-2.5 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="pb-2.5 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Tanggal
+                    Date
                   </th>
                 </tr>
               </thead>
@@ -260,7 +257,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
       {customer.primaryPic && (
         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
           <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3">
-            Narahubung Utama
+            Primary Contact
           </p>
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2 text-sm text-slate-700">

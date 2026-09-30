@@ -1,14 +1,14 @@
 -- ============================================================================
 -- MIGRATION: 202609300002_a1_company_list_additive_revision.sql
 -- Module: Sales Executive Dashboard & Customer Data Management (Squad A1)
--- Table Utama: public.a1_company_list (Existing)
--- Relasi Baru: public.a1_company_contacts, public.a1_customer_meetings,
+-- Primary table: public.a1_company_list (Existing)
+-- New relations: public.a1_company_contacts, public.a1_customer_meetings,
 --              public.a1_meeting_minutes, public.a1_customer_jobs
 -- ============================================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Function otomatis update timestamp
+-- Automatically update the updated_at timestamp.
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -17,13 +17,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 1. MODIFIKASI ADDITIVE PADA public.a1_company_list (TIDAK MENGHAPUS KOLOM LAMA)
+-- 1. ADDITIVE CHANGES TO public.a1_company_list (PRESERVE EXISTING COLUMNS)
 ALTER TABLE public.a1_company_list ADD COLUMN IF NOT EXISTS id UUID;
 UPDATE public.a1_company_list SET id = company_list_id WHERE id IS NULL;
 ALTER TABLE public.a1_company_list ALTER COLUMN id SET DEFAULT gen_random_uuid();
 CREATE UNIQUE INDEX IF NOT EXISTS idx_a1_company_list_id ON public.a1_company_list (id);
 
-ALTER TABLE public.a1_company_list ADD COLUMN IF NOT EXISTS address TEXT DEFAULT 'Alamat belum diatur';
+ALTER TABLE public.a1_company_list ADD COLUMN IF NOT EXISTS address TEXT DEFAULT 'Address not provided';
 ALTER TABLE public.a1_company_list ADD COLUMN IF NOT EXISTS sales_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
 ALTER TABLE public.a1_company_list ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now());
 ALTER TABLE public.a1_company_list ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now());
@@ -33,13 +33,13 @@ CREATE INDEX IF NOT EXISTS idx_a1_company_list_sales_id ON public.a1_company_lis
 CREATE INDEX IF NOT EXISTS idx_a1_company_list_company_name ON public.a1_company_list (company_name);
 CREATE INDEX IF NOT EXISTS idx_a1_company_list_deleted_at ON public.a1_company_list (deleted_at);
 
--- Trigger updated_at pada a1_company_list
+-- updated_at trigger for a1_company_list.
 DROP TRIGGER IF EXISTS trg_a1_company_list_updated_at ON public.a1_company_list;
 CREATE TRIGGER trg_a1_company_list_updated_at
 BEFORE UPDATE ON public.a1_company_list
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Update sales_id untuk 10 data existing yang sudah ada ke sales user pertama
+-- Assign existing rows without a sales owner to the first available sales user.
 DO $$
 DECLARE
     v_first_user UUID;
@@ -50,7 +50,7 @@ BEGIN
     END IF;
 END $$;
 
--- 2. TABEL: public.a1_company_contacts (PIC Utama & Tambahan)
+-- 2. TABLE: public.a1_company_contacts (Primary and Additional PICs)
 CREATE TABLE IF NOT EXISTS public.a1_company_contacts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id UUID NOT NULL REFERENCES public.a1_company_list(company_list_id) ON DELETE CASCADE,
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS public.a1_company_contacts (
 CREATE INDEX IF NOT EXISTS idx_a1_contacts_company_id ON public.a1_company_contacts (company_id);
 CREATE INDEX IF NOT EXISTS idx_a1_contacts_deleted_at ON public.a1_company_contacts (deleted_at);
 
--- Partial Constraint: Satu customer hanya boleh memiliki 1 PIC utama aktif
+-- Partial constraint: each customer may have only one active primary PIC.
 CREATE UNIQUE INDEX IF NOT EXISTS unique_a1_primary_contact_per_company 
 ON public.a1_company_contacts (company_id) 
 WHERE is_primary = true AND deleted_at IS NULL;
@@ -77,11 +77,11 @@ CREATE TRIGGER trg_a1_company_contacts_updated_at
 BEFORE UPDATE ON public.a1_company_contacts
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Migrasikan data PIC dari kolom `name` pada a1_company_list existing ke a1_company_contacts
+-- Migrate PIC data from the existing a1_company_list `name` column to a1_company_contacts.
 INSERT INTO public.a1_company_contacts (company_id, full_name, phone_number, is_primary)
 SELECT 
     c.company_list_id,
-    COALESCE(c.name, 'PIC Utama'),
+    COALESCE(c.name, 'Primary PIC'),
     '081234567890',
     true
 FROM public.a1_company_list c
@@ -90,7 +90,7 @@ WHERE NOT EXISTS (
     WHERE cc.company_id = c.company_list_id AND cc.is_primary = true
 );
 
--- 3. TABEL: public.a1_customer_meetings (Jadwal Meeting Customer)
+-- 3. TABLE: public.a1_customer_meetings (Customer Meeting Schedules)
 CREATE TABLE IF NOT EXISTS public.a1_customer_meetings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id UUID NOT NULL REFERENCES public.a1_company_list(company_list_id) ON DELETE CASCADE,
@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS public.a1_customer_meetings (
 CREATE INDEX IF NOT EXISTS idx_a1_meetings_company_id ON public.a1_customer_meetings (company_id);
 CREATE INDEX IF NOT EXISTS idx_a1_meetings_deleted_at ON public.a1_customer_meetings (deleted_at);
 
--- Partial Constraint: Satu customer hanya boleh memiliki 1 jadwal meeting aktif
+-- Partial constraint: each customer may have only one active meeting schedule.
 CREATE UNIQUE INDEX IF NOT EXISTS unique_a1_active_meeting_per_company 
 ON public.a1_customer_meetings (company_id) 
 WHERE is_active = true AND deleted_at IS NULL;
@@ -119,7 +119,7 @@ CREATE TRIGGER trg_a1_customer_meetings_updated_at
 BEFORE UPDATE ON public.a1_customer_meetings
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- 4. TABEL: public.a1_meeting_minutes (Notulensi - Pendukung KPI 3 & 4)
+-- 4. TABLE: public.a1_meeting_minutes (Meeting Notes - Supports KPIs 3 and 4)
 CREATE TABLE IF NOT EXISTS public.a1_meeting_minutes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     meeting_id UUID NULL REFERENCES public.a1_customer_meetings(id) ON DELETE SET NULL,
@@ -133,7 +133,7 @@ CREATE TABLE IF NOT EXISTS public.a1_meeting_minutes (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- 5. TABEL: public.a1_customer_jobs (List Job / Task per Customer)
+-- 5. TABLE: public.a1_customer_jobs (Jobs and Tasks per Customer)
 CREATE TABLE IF NOT EXISTS public.a1_customer_jobs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id UUID NOT NULL REFERENCES public.a1_company_list(company_list_id) ON DELETE CASCADE,
@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS public.a1_customer_jobs (
 
 CREATE INDEX IF NOT EXISTS idx_a1_jobs_company_id ON public.a1_customer_jobs (company_id);
 
--- Migrasikan job_number dan customer_code yang ada di a1_company_list ke a1_customer_jobs
+-- Migrate existing job_number and customer_code values to a1_customer_jobs.
 INSERT INTO public.a1_customer_jobs (company_id, transaction_no, job_number, title, status)
 SELECT 
     c.company_list_id,
@@ -172,14 +172,14 @@ ALTER TABLE public.a1_customer_jobs ENABLE ROW LEVEL SECURITY;
 
 DO $$
 BEGIN
-    -- Policy a1_company_list
+-- a1_company_list policy.
     DROP POLICY IF EXISTS "a1_company_list_sales_policy" ON public.a1_company_list;
     CREATE POLICY "a1_company_list_sales_policy" ON public.a1_company_list
     FOR ALL TO authenticated
     USING (sales_id = auth.uid() OR sales_id IS NULL)
     WITH CHECK (sales_id = auth.uid());
 
-    -- Policy a1_company_contacts
+-- a1_company_contacts policy.
     DROP POLICY IF EXISTS "a1_company_contacts_sales_policy" ON public.a1_company_contacts;
     CREATE POLICY "a1_company_contacts_sales_policy" ON public.a1_company_contacts
     FOR ALL TO authenticated
@@ -200,7 +200,7 @@ BEGIN
         )
     );
 
-    -- Policy a1_customer_meetings
+-- a1_customer_meetings policy.
     DROP POLICY IF EXISTS "a1_customer_meetings_sales_policy" ON public.a1_customer_meetings;
     CREATE POLICY "a1_customer_meetings_sales_policy" ON public.a1_customer_meetings
     FOR ALL TO authenticated
@@ -221,7 +221,7 @@ BEGIN
         )
     );
 
-    -- Policy a1_customer_jobs
+-- a1_customer_jobs policy.
     DROP POLICY IF EXISTS "a1_customer_jobs_sales_policy" ON public.a1_customer_jobs;
     CREATE POLICY "a1_customer_jobs_sales_policy" ON public.a1_customer_jobs
     FOR ALL TO authenticated
@@ -244,7 +244,7 @@ BEGIN
 END $$;
 
 -- ============================================================================
--- ATOMIC RPC FUNCTION: Create Customer + PIC Utama (Transaction Safe)
+-- ATOMIC RPC FUNCTION: Create a Customer and Primary PIC (Transaction Safe)
 -- ============================================================================
 CREATE OR REPLACE FUNCTION public.create_a1_customer_with_pic(
     p_company_name VARCHAR,
@@ -265,17 +265,17 @@ DECLARE
 BEGIN
     v_sales_id := auth.uid();
 
-    -- Cek duplikasi nama customer untuk sales yang sama
+    -- Check for a duplicate customer name for the same sales user.
     IF EXISTS (
         SELECT 1 FROM public.a1_company_list 
         WHERE (sales_id = v_sales_id OR v_sales_id IS NULL)
           AND LOWER(company_name) = LOWER(p_company_name)
           AND deleted_at IS NULL
     ) THEN
-        RAISE EXCEPTION 'DUPLICATE_COMPANY: Nama perusahaan sudah terdaftar untuk akun Anda';
+        RAISE EXCEPTION 'DUPLICATE_COMPANY: This company is already registered for your account';
     END IF;
 
-    -- 1. Insert ke tabel existing public.a1_company_list
+    -- 1. Insert into the existing public.a1_company_list table.
     v_company_id := gen_random_uuid();
     INSERT INTO public.a1_company_list (
         company_list_id,
@@ -297,7 +297,7 @@ BEGIN
         now()
     );
 
-    -- 2. Insert ke tabel relasi public.a1_company_contacts sebagai PIC Utama
+    -- 2. Insert the primary PIC into the related public.a1_company_contacts table.
     INSERT INTO public.a1_company_contacts (
         company_id,
         full_name,
@@ -321,6 +321,6 @@ BEGIN
     );
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE; -- Transaction otomatis rollback bila terjadi error
+        RAISE; -- The transaction rolls back automatically if an error occurs.
 END;
 $$;
