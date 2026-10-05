@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { supabase } from '@/lib/supabaseClient';
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -18,6 +19,7 @@ import {
   Briefcase,
   Settings,
   Calendar,
+  LogOut,
 } from "lucide-react";
 
 interface SubMenuItem {
@@ -294,13 +296,25 @@ export function Sidebar() {
         </div>
       </nav>
 
-      <div className="px-3 pb-4">
+      <div className="px-3 pb-4 space-y-0.5">
         <button
           type="button"
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-slate-400 transition-colors hover:bg-white/[0.04] hover:text-slate-200"
         >
           <Settings className="h-[18px] w-[18px] text-slate-500" />
           <span>Settings</span>
+        </button>
+        <button
+          type="button"
+          onClick={async () => {
+            await supabase.auth.signOut();
+            try { localStorage.removeItem('andima_user'); } catch {}
+            router.push('/login');
+          }}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300"
+        >
+          <LogOut className="h-[18px] w-[18px] text-red-400" />
+          <span>Logout</span>
         </button>
       </div>
     </aside>
