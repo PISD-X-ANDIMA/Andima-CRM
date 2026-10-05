@@ -1,6 +1,8 @@
 'use client';
-import React, { useState } from 'react';
-import { Search, Bell, HelpCircle, Users, Briefcase, Settings, LayoutGrid, Receipt, MonitorSmartphone, Headphones, ChevronUp, Box, Monitor, ShieldAlert } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Search, Bell, HelpCircle, Users, Briefcase, Settings, LayoutGrid, Receipt, MonitorSmartphone, Headphones, ChevronUp, Box, Monitor, ShieldAlert, LogOut } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 import InteractionTab from '../components/InteractionTab';
 import FollowUpTab from '../components/FollowUpTab';
 import ComplaintsTab from '../components/ComplaintsTab';
@@ -23,11 +25,96 @@ const TabBtn = ({ label, id, active, setTab, count }: any) => (
 type PageKey = 'RecordConversation' | 'MonitoringIssue' | 'NeedBackup';
 
 export default function CRMDashboard() {
+  const router = useRouter();
   const [page, setPage] = useState<PageKey>('RecordConversation');
   const [tab, setTab] = useState('Interaction');
   const [needBackupSub, setNeedBackupSub] = useState<'eskalasi' | 'pengalihan'>('eskalasi');
 
+  const [currentUser, setCurrentUser] = useState<{
+    name: string;
+    role: string;
+    email?: string;
+  }>({
+    name: 'CRM Staff',
+    role: 'Customer Relationship Management',
+  });
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const cached = typeof window !== 'undefined' ? localStorage.getItem('andima_user') : null;
+        if (cached) {
+          try {
+            setCurrentUser(JSON.parse(cached));
+          } catch {
+            // Ignore parse error
+          }
+        }
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          let name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'CRM Staff';
+          let role = 'CRM Staff';
+
+          try {
+            const { data: profile } = await supabase
+              .from('b2_register')
+              .select('full_name, employment_status, position_id')
+              .eq('id', user.id)
+              .maybeSingle();
+
+            if (profile?.full_name) {
+              name = profile.full_name;
+            }
+          } catch (e) {
+            console.warn(e);
+          }
+
+          const userData = { name, role, email: user.email };
+          setCurrentUser(userData);
+          localStorage.setItem('andima_user', JSON.stringify(userData));
+        } else if (!cached) {
+          router.replace('/login');
+          return;
+        }
+      } catch (err) {
+        console.error('Auth verification error:', err);
+      } finally {
+        setIsAuthChecking(false);
+      }
+    }
+
+    checkAuth();
+  }, [router]);
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error(err);
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('andima_user');
+    }
+    router.replace('/login');
+  };
+
   const pageName = page === 'RecordConversation' ? tab : page === 'MonitoringIssue' ? 'Monitoring Issue' : 'Need Backup';
+
+  if (isAuthChecking) {
+    const cached = typeof window !== 'undefined' ? localStorage.getItem('andima_user') : null;
+    if (!cached) {
+      return (
+        <div className="flex h-screen w-full items-center justify-center bg-[#07111F] text-white">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-4 border-[#3B6FF5] border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-semibold tracking-wide text-slate-300">Menghubungkan ke Andima CRM...</p>
+          </div>
+        </div>
+      );
+    }
+  }
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans">
@@ -137,14 +224,27 @@ export default function CRMDashboard() {
               <input type="text" placeholder="Global search..." className="w-full bg-slate-100 py-1.5 pl-9 pr-4 rounded-full text-sm outline-none" />
             </div>
           </div>
-          <div className="flex items-center gap-5">
-            <button className="relative text-slate-400"><Bell size={20} /><span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">3</span></button>
-            <button className="text-slate-400"><HelpCircle size={20} /></button>
+          <div className="flex items-center gap-4">
+            <button className="relative text-slate-400 hover:text-slate-600 transition-colors"><Bell size={20} /><span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">3</span></button>
+            <button className="text-slate-400 hover:text-slate-600 transition-colors"><HelpCircle size={20} /></button>
             <div className="h-6 w-px bg-slate-200" />
             <div className="flex items-center gap-3 text-right">
-              <div><div className="text-sm font-bold text-slate-700">Adelia</div><div className="text-[10px] text-slate-500">Dispatcher Level 2</div></div>
-              <div className="w-9 h-9 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-sm">A</div>
+              <div>
+                <div className="text-sm font-bold text-slate-700">{currentUser.name}</div>
+                <div className="text-[10px] font-medium text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded inline-block">{currentUser.role}</div>
+              </div>
+              <div className="w-9 h-9 rounded-full bg-[#3B6FF5] text-white flex items-center justify-center font-bold text-sm shadow-md uppercase">
+                {currentUser.name.trim().charAt(0) || 'C'}
+              </div>
             </div>
+            <button
+              onClick={handleLogout}
+              title="Logout from CRM"
+              className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-red-600 hover:bg-red-50 hover:text-red-700 transition-all border border-red-200"
+            >
+              <LogOut size={15} />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
         </header>
 

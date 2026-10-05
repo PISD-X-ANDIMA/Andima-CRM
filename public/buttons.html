@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Andima CRM - Button & Badge Design System</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              purple: '#7C5CFC',
+              purpleHover: '#6842F8',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-slate-50 text-slate-900 font-sans p-8 max-w-6xl mx-auto space-y-12">
+
+  <header class="border-b border-slate-200 pb-6">
+    <h1 class="text-3xl font-extrabold text-slate-900">Andima CRM - Design System Components</h1>
+    <p class="text-slate-500 text-sm mt-1">Koleksi komponen HTML murni (Buttons, Channel Badges, Status Badges, Priority
+      Badges, Dropdown, Input).</p>
+  </header>
+  <!-- ========================================================================= -->
+  <!-- EXACT SPECIFICATION (SESUAI GAMBAR): INTERACTION FILTER BAR & BADGES -->
+  <!-- ========================================================================= -->
+  <section class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-7">
+    <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+      <div>
+        <h2 class="text-xl font-bold text-slate-800">Komponen Filter Bar & Channel Pills</h2>
+        <p class="text-slate-500 text-xs mt-0.5">Implementasi presisi 100% sesuai screenshot desain: Tombol Add
+          Interaction, Filter Toolbar, dan State Komponen.</p>
+      </div>
+      <span
+        class="text-xs font-semibold px-2.5 py-1 bg-purple-50 text-[#7C5CFC] rounded-full border border-purple-200">Pixel-Perfect</span>
+    </div>
+
+    <!-- 1. Tombol + Add Interaction -->
+    <div>
+      <button
+        class="inline-flex items-center gap-2 bg-[#7C5CFC] hover:bg-[#6842F8] active:scale-[0.98] text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow-sm transition-all duration-150 cursor-pointer">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        <span>Add Interaction</span>
+      </button>
+    </div>
+
+    <!-- 2. Main Filter Bar Card -->
+    <div
+      class="bg-white border border-[#CBD5E1] rounded-xl px-4 py-2.5 sm:px-5 sm:py-3 shadow-xs flex flex-wrap lg:flex-nowrap items-center justify-between gap-3">
+
+      <!-- Sisi Kiri: Label Channel & Pills -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-semibold text-[#475467] mr-1 select-none">Channel:</span>
+
+        <!-- Pill: All (Active / Selected) -->
+        <button id="pill-all" onclick="selectChannel('all')"
+          class="channel-pill inline-flex items-center gap-1.5 bg-[#7C5CFC] text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-xs transition-all cursor-pointer">
+          <span>All</span>
+          <span
+            class="counter-badge bg-white/20 text-white text-[11px] px-2 py-0.5 rounded-full font-bold ml-0.5">24</span>
+        </button>
+
+        <!-- Pill: Panggilan Telepon 7 -->
+        <button id="pill-phone" onclick="selectChannel('phone')"
+          class="channel-pill inline-flex items-center gap-1.5 bg-white border border-[#CBD5E1] hover:border-slate-400 text-[#334155] text-xs font-medium px-3.5 py-1.5 rounded-full transition-all cursor-pointer">
+          <svg class="w-3.5 h-3.5 text-[#475467]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+          </svg>
+          <span class="pill-label">Panggilan Telepon 7</span>
+        </button>
+
+        <!-- Pill: Email Resmi 6 -->
+        <button id="pill-email" onclick="selectChannel('email')"
+          class="channel-pill inline-flex items-center gap-1.5 bg-white border border-[#CBD5E1] hover:border-slate-400 text-[#334155] text-xs font-medium px-3.5 py-1.5 rounded-full transition-all cursor-pointer">
+          <svg class="w-3.5 h-3.5 text-[#475467]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect width="20" height="16" x="2" y="4" rx="2" />
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+          </svg>
+          <span class="pill-label">Email Resmi 6</span>
+        </button>
+
+        <!-- Pill: WhatsApp 5 -->
+        <button id="pill-whatsapp" onclick="selectChannel('whatsapp')"
+          class="channel-pill inline-flex items-center gap-1.5 bg-white border border-[#CBD5E1] hover:border-slate-400 text-[#334155] text-xs font-medium px-3.5 py-1.5 rounded-full transition-all cursor-pointer">
+          <svg class="w-3.5 h-3.5 text-[#475467]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+          </svg>
+          <span class="pill-label">WhatsApp 5</span>
+        </button>
+
+        <!-- Pill: Meeting Online -->
+        <button id="pill-meeting" onclick="selectChannel('meeting')"
+          class="channel-pill inline-flex items-center gap-1.5 bg-white border border-[#CBD5E1] hover:border-slate-400 text-[#334155] text-xs font-medium px-3.5 py-1.5 rounded-full transition-all cursor-pointer">
+          <svg class="w-3.5 h-3.5 text-[#475467]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          <span class="pill-label">Meeting Online</span>
+        </button>
+      </div>
+
+      <!-- Sisi Kanan: Status & Date Filter -->
+      <div class="flex items-center gap-2">
+        <!-- Status Dropdown -->
+        <div class="relative">
+          <button id="status-dropdown-btn" onclick="toggleStatusMenu()"
+            class="inline-flex items-center justify-between gap-4 bg-white border border-[#CBD5E1] hover:border-slate-400 text-[#0F172A] text-xs font-semibold px-3.5 py-2 rounded-xl transition cursor-pointer min-w-[120px]">
+            <span id="selected-status-label">All Status</span>
+            <svg class="w-3.5 h-3.5 text-[#64748B]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+          <div id="status-menu"
+            class="hidden absolute right-0 mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-lg py-1 text-xs z-20">
+            <div onclick="selectStatus('All Status')"
+              class="px-3 py-1.5 hover:bg-purple-50 text-slate-700 font-medium cursor-pointer">All Status</div>
+            <div onclick="selectStatus('Completed')"
+              class="px-3 py-1.5 hover:bg-purple-50 text-emerald-600 font-medium cursor-pointer">Completed</div>
+            <div onclick="selectStatus('Pending')"
+              class="px-3 py-1.5 hover:bg-purple-50 text-amber-600 font-medium cursor-pointer">Pending</div>
+            <div onclick="selectStatus('Open')"
+              class="px-3 py-1.5 hover:bg-purple-50 text-rose-600 font-medium cursor-pointer">Open</div>
+          </div>
+        </div>
+
+        <!-- Date Picker Button -->
+        <div class="relative">
+          <button
+            class="inline-flex items-center gap-2 bg-white border border-[#CBD5E1] hover:border-slate-400 text-[#0F172A] text-xs font-semibold px-3 py-2 rounded-xl transition cursor-pointer">
+            <svg class="w-3.5 h-3.5 text-[#64748B]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <rect width="18" height="18" x="3" y="4" rx="2" />
+              <path d="M16 2v4M8 2v4M3 10h18" />
+            </svg>
+            <span>Sep 2026</span>
+            <svg class="w-3.5 h-3.5 text-[#64748B]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 3. Component States & Variants (Persis gambar spec bawah) -->
+    <div class="pt-2 flex flex-wrap items-start gap-6">
+
+      <!-- Purple Dashed Box Container -->
+      <div
+        class="border-2 border-dashed border-[#A78BFA] bg-purple-50/20 rounded-2xl p-4 flex flex-col gap-3.5 min-w-[240px]">
+
+        <!-- State 1: Unselected Pill -->
+        <div>
+          <div
+            class="inline-flex items-center gap-2 bg-white border border-[#CBD5E1] text-[#334155] text-xs font-medium px-4 py-1.5 rounded-full shadow-2xs">
+            <svg class="w-3.5 h-3.5 text-[#475467]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+            </svg>
+            <span>Panggilan Telepon 7</span>
+          </div>
+        </div>
+
+        <!-- State 2: Selected / Active Pill -->
+        <div>
+          <div
+            class="inline-flex items-center gap-2 bg-[#7C5CFC] text-white text-xs font-medium px-4 py-1.5 rounded-full shadow-sm">
+            <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+            </svg>
+            <span>Panggilan Telepon</span>
+            <span class="bg-white/20 text-white text-[11px] px-2 py-0.5 rounded-full font-bold ml-0.5">7</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Di Samping Kotak Dashed: Unselected Pill -->
+      <div class="pt-2">
+        <div
+          class="inline-flex items-center gap-2 bg-white border border-[#CBD5E1] text-[#334155] text-xs font-medium px-4 py-1.5 rounded-full shadow-2xs">
+          <svg class="w-3.5 h-3.5 text-[#475467]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+          </svg>
+          <span>Panggilan Telepon 7</span>
+        </div>
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- 1. BUTTON SECTION -->
+  <section class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+    <h2 class="text-xl font-bold text-slate-800 border-b pb-3">1. Standard & Filter Buttons</h2>
+
+    <!-- Primary & Variants -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-semibold text-slate-600">Standard Buttons:</h3>
+      <div class="flex flex-wrap items-center gap-4">
+        <!-- 1. Solid Primary -->
+        <button
+          class="bg-[#7C5CFC] hover:bg-[#6842F8] text-white font-medium px-6 py-2.5 rounded-xl shadow-sm transition-all duration-200">
+          Button
+        </button>
+
+        <!-- 2. Outline -->
+        <button
+          class="bg-white border-2 border-[#7C5CFC] text-[#7C5CFC] hover:bg-[#7C5CFC]/10 font-medium px-6 py-2.5 rounded-xl transition-all duration-200">
+          Button
+        </button>
+
+        <!-- 3. Hover / Active -->
+        <button class="bg-[#6842F8] text-white font-medium px-6 py-2.5 rounded-xl shadow-md">
+          Button
+        </button>
+
+        <!-- 4. Disabled -->
+        <button disabled class="bg-[#D1D5DB] text-[#9CA3AF] font-medium px-6 py-2.5 rounded-xl cursor-not-allowed">
+          Button
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Pills & Action Buttons -->
+    <div class="space-y-4 pt-4 border-t">
+      <h3 class="text-sm font-semibold text-slate-600">Filter Pills & Action Buttons:</h3>
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Add Interaction -->
+        <button
+          class="inline-flex items-center gap-1.5 bg-[#7C5CFC] hover:bg-[#6842F8] text-white text-xs font-semibold px-4 py-2 rounded-full shadow-sm">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Add Interaction
+        </button>
+
+        <!-- Status Pill -->
+        <button
+          class="inline-flex items-center gap-1.5 bg-[#7C5CFC] text-white text-xs font-medium px-3.5 py-2 rounded-full shadow-sm">
+          <span>Status:</span>
+          <span class="bg-white/20 px-1.5 py-0.5 rounded-md font-semibold text-[11px]">All (2)</span>
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+
+        <!-- Search Pills -->
+        <div
+          class="inline-flex items-center gap-1.5 bg-white border border-slate-200 text-slate-700 text-xs px-3.5 py-2 rounded-full shadow-xs">
+          <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <span>Q Panggilan Masuk</span>
+        </div>
+
+        <div
+          class="inline-flex items-center gap-1.5 bg-white border border-slate-200 text-slate-700 text-xs px-3.5 py-2 rounded-full shadow-xs">
+          <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <span>Q WhatsApp</span>
+        </div>
+
+        <!-- Date Range Pill -->
+        <button
+          class="inline-flex items-center gap-2 bg-white border border-slate-200 text-slate-700 text-xs font-medium px-3.5 py-2 rounded-full shadow-xs">
+          <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <rect width="18" height="18" x="3" y="4" rx="2" />
+            <path d="M16 2v4M8 2v4M3 10h18" />
+          </svg>
+          <span>11 Sep 2024 - 18 Sep 2024</span>
+        </button>
+
+        <!-- Remove Filter Tag -->
+        <span
+          class="inline-flex items-center gap-1.5 bg-purple-50 text-[#7C5CFC] border border-purple-200 text-xs font-medium px-3 py-1.5 rounded-full">
+          <span>Q Panggilan Masuk</span>
+          <button class="hover:bg-purple-200 rounded-full p-0.5">
+            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 2. CHANNEL BADGE KHUSUS MODUL INTERACTIONS (SESUAI GAMBAR PERSIS) -->
+  <!-- ========================================================================= -->
+  <section class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+    <!-- Header Title & Subtitle -->
+    <div>
+      <h2 class="text-2xl sm:text-[28px] font-extrabold text-[#0F172A] tracking-tight">Channel Badge Khusus Modul
+        Interactions</h2>
+      <p class="text-slate-500 text-sm sm:text-base mt-1.5 font-normal">Digunakan pada tabel interaksi log, filter tabs,
+        dan card detail komunikasi.</p>
+    </div>
+
+    <!-- 4 Columns Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 pt-2">
+
+      <!-- Column 1: Variant: Wa -->
+      <div
+        class="border-[1.5px] border-[#66AA87] bg-[#EBEBEB] rounded-2xl p-4 sm:p-5 flex flex-col justify-between min-h-[250px] transition-all hover:shadow-xs">
+        <div>
+          <span class="text-[13px] text-[#64748B] font-normal block mb-4">Variant: Wa</span>
+          <div class="flex flex-col items-start gap-2.5">
+            <!-- Badge 1: WhatsApp -->
+            <div
+              class="inline-flex items-center gap-2 bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <svg class="w-4 h-4 text-[#10B981]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+              </svg>
+              <span>WhatsApp</span>
+            </div>
+
+            <!-- Badge 2: WhatsApp 5 -->
+            <div
+              class="inline-flex items-center gap-2 bg-white border border-[#475467] text-[#334155] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <svg class="w-4 h-4 text-[#475467]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+              </svg>
+              <span>WhatsApp 5</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spec Note Box -->
+        <div class="mt-6 bg-white rounded-xl p-3 text-[11px] text-[#64748B] font-normal leading-relaxed">
+          <div>Icon: message-circle |</div>
+          <div>Radius: 9999px (Pill)</div>
+        </div>
+      </div>
+
+      <!-- Column 2: Variant: Phone call -->
+      <div
+        class="border-[1.5px] border-[#66AA87] bg-[#EBEBEB] rounded-2xl p-4 sm:p-5 flex flex-col justify-between min-h-[250px] transition-all hover:shadow-xs">
+        <div>
+          <span class="text-[13px] text-[#64748B] font-normal block mb-4 leading-tight">Variant:<br />Phone call</span>
+          <div class="flex flex-col items-start gap-2.5">
+            <!-- Badge 1: Panggilan Telepon -->
+            <div
+              class="inline-flex items-center gap-2 bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <svg class="w-4 h-4 text-[#2563EB]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                <path d="M14.05 2a9 9 0 0 1 8 7.94" />
+                <path d="M14.05 6A5 5 0 0 1 18 10" />
+              </svg>
+              <span>Panggilan Telepon</span>
+            </div>
+
+            <!-- Badge 2: Panggilan Telepon 7 -->
+            <div
+              class="inline-flex items-center gap-2 bg-white border border-[#475467] text-[#334155] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <svg class="w-4 h-4 text-[#475467]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                <path d="M14.05 2a9 9 0 0 1 8 7.94" />
+                <path d="M14.05 6A5 5 0 0 1 18 10" />
+              </svg>
+              <span>Panggilan Telepon 7</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spec Note Box -->
+        <div class="mt-6 bg-white rounded-xl p-3 text-[11px] text-[#64748B] font-normal leading-relaxed">
+          <div>Icon: phone-call |</div>
+          <div>Radius: 9999px (Pill)</div>
+        </div>
+      </div>
+
+      <!-- Column 3: Variant: Email -->
+      <div
+        class="border-[1.5px] border-[#66AA87] bg-[#EBEBEB] rounded-2xl p-4 sm:p-5 flex flex-col justify-between min-h-[250px] transition-all hover:shadow-xs">
+        <div>
+          <span class="text-[13px] text-[#64748B] font-normal block mb-4">Variant: Email</span>
+          <div class="flex flex-col items-start gap-2.5">
+            <!-- Badge 1: Email Resmi -->
+            <div
+              class="inline-flex items-center gap-2 bg-[#FAF5FF] text-[#9333EA] border border-[#E9D5FF] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <svg class="w-4 h-4 text-[#9333EA]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect width="20" height="16" x="2" y="4" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+              <span>Email Resmi</span>
+            </div>
+
+            <!-- Badge 2: Email Resmi 6 -->
+            <div
+              class="inline-flex items-center gap-2 bg-white border border-[#475467] text-[#334155] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <svg class="w-4 h-4 text-[#475467]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect width="20" height="16" x="2" y="4" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+              <span>Email Resmi 6</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spec Note Box -->
+        <div class="mt-6 bg-white rounded-xl p-3 text-[11px] text-[#64748B] font-normal leading-relaxed">
+          <div>Icon: mail | Radius:</div>
+          <div>9999px (Pill)</div>
+        </div>
+      </div>
+
+      <!-- Column 4: Variant: Meeting online -->
+      <div
+        class="border-[1.5px] border-[#66AA87] bg-[#EBEBEB] rounded-2xl p-4 sm:p-5 flex flex-col justify-between min-h-[250px] transition-all hover:shadow-xs">
+        <div>
+          <span class="text-[13px] text-[#64748B] font-normal block mb-4">Variant: Meeting online</span>
+          <div class="flex flex-col items-start gap-2.5">
+            <!-- Badge 1: Meeting Online -->
+            <div
+              class="inline-flex items-center gap-2 bg-[#FFFBEB] text-[#B45309] border border-[#FDE68A] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <svg class="w-4 h-4 text-[#D97706]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              <span>Meeting Online</span>
+            </div>
+
+            <!-- Badge 2: Meeting Online -->
+            <div
+              class="inline-flex items-center gap-2 bg-white border border-[#475467] text-[#334155] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <svg class="w-4 h-4 text-[#475467]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              <span>Meeting Online</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spec Note Box -->
+        <div class="mt-6 bg-white rounded-xl p-3 text-[11px] text-[#64748B] font-normal leading-relaxed">
+          <div>Icon: users/briefcase |</div>
+          <div>Radius: 9999px (Pill)</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 3. STATUS BADGES -->
+  <section class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+    <div>
+      <h2 class="text-2xl font-bold text-[#0F172A] tracking-tight">Status Badge</h2>
+      <p class="text-xs sm:text-sm text-[#64748B] mt-1 font-normal">
+        Standar status modul CRM: Pending, In Progress, Resolved, Follow-up, Overdue.
+      </p>
+    </div>
+
+    <!-- 4 Cards Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+
+      <!-- Card 1: Status / Succes -->
+      <div
+        class="border-[1.5px] border-[#7CB99A] bg-[#F7FCF9] rounded-2xl p-5 flex flex-col justify-between min-h-[220px] transition-all hover:shadow-xs">
+        <div>
+          <h3 class="text-base font-bold text-[#16834B]">Status / Succes</h3>
+          <div class="flex flex-col items-start gap-2.5 mt-5">
+            <!-- Badge 1: Completed -->
+            <div
+              class="inline-flex items-center gap-2 bg-[#EAF7F0] text-[#16834B] border border-[#CDE7D9] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <span class="w-2 h-2 rounded-full bg-[#16834B]"></span>
+              <span>Completed</span>
+            </div>
+
+            <!-- Badge 2: Terselesaikan -->
+            <div
+              class="inline-flex items-center gap-1.5 bg-[#EAF7F0] text-[#16834B] border border-[#CDE7D9] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <svg class="w-3.5 h-3.5 text-[#16834B]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span>Terselesaikan</span>
+            </div>
+          </div>
+        </div>
+        <p class="text-[11px] text-[#64748B] leading-relaxed mt-6">
+          Digunakan untuk interaksi sukses &amp; komplain selesai.
+        </p>
+      </div>
+
+      <!-- Card 2: Followup -->
+      <div
+        class="border-[1.5px] border-[#EDCD8A] bg-[#FFFBF3] rounded-2xl p-5 flex flex-col justify-between min-h-[220px] transition-all hover:shadow-xs">
+        <div>
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-[#D99A18]">Followup</h3>
+            <span class="text-[11px] font-mono text-[#A89E90]">#D99A18</span>
+          </div>
+          <div class="flex flex-col items-start gap-2.5 mt-5">
+            <!-- Badge 1: Pending -->
+            <div
+              class="inline-flex items-center gap-2 bg-[#FEF7E6] text-[#D99A18] border border-[#F9EBCC] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <span class="w-2 h-2 rounded-full bg-[#D99A18]"></span>
+              <span>Pending</span>
+            </div>
+
+            <!-- Badge 2: Follow-up Required -->
+            <div
+              class="inline-flex items-center gap-2 bg-[#FEF3C7] text-[#D97706] border border-[#FCE493] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <span class="w-2 h-2 rounded-full bg-[#D97706]"></span>
+              <span>Follow-up Required</span>
+            </div>
+          </div>
+        </div>
+        <p class="text-[11px] text-[#64748B] leading-relaxed mt-6">
+          Peringatan aksi tindak lanjut atau konfirmasi armada.
+        </p>
+      </div>
+
+      <!-- Card 3: Open / Overdue -->
+      <div
+        class="border-[1.5px] border-[#E89797] bg-[#FEFAFA] rounded-2xl p-5 flex flex-col justify-between min-h-[220px] transition-all hover:shadow-xs">
+        <div>
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-[#E05262]">Open / Overdue</h3>
+            <span class="text-[11px] font-mono text-[#A89E90]">#E05262</span>
+          </div>
+          <div class="flex flex-col items-start gap-2.5 mt-5">
+            <!-- Badge 1: Open -->
+            <div
+              class="inline-flex items-center gap-2 bg-[#FDF2F2] text-[#DC2626] border border-[#F8DBDB] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <span class="w-2 h-2 rounded-full bg-[#DC2626]"></span>
+              <span>Open</span>
+            </div>
+
+            <!-- Badge 2: Overdue Task -->
+            <div
+              class="inline-flex items-center gap-2 bg-[#FEE2E2] text-[#B91C1C] border border-[#FCC9C9] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <span class="w-2 h-2 rounded-full bg-[#B91C1C]"></span>
+              <span>Overdue Task</span>
+            </div>
+          </div>
+        </div>
+        <p class="text-[11px] text-[#64748B] leading-relaxed mt-6">
+          Keluhan baru masuk atau tenggat SLA yang terlewat.
+        </p>
+      </div>
+
+      <!-- Card 4: Info / In Progress -->
+      <div
+        class="border-[1.5px] border-[#91AFFA] bg-[#FAFCFF] rounded-2xl p-5 flex flex-col justify-between min-h-[220px] transition-all hover:shadow-xs">
+        <div>
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-[#3B6FF5]">Info / In Progress</h3>
+            <span class="text-[11px] font-mono text-[#A89E90]">#3B6FF5</span>
+          </div>
+          <div class="flex flex-col items-start gap-2.5 mt-5">
+            <!-- Badge 1: In Progress -->
+            <div
+              class="inline-flex items-center gap-2 bg-[#EFF6FF] text-[#2563EB] border border-[#D3E5FE] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <span class="w-2 h-2 rounded-full bg-[#3B6FF5]"></span>
+              <span>In Progress</span>
+            </div>
+
+            <!-- Badge 2: Menunggu Respon -->
+            <div
+              class="inline-flex items-center gap-2 bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <span class="w-2 h-2 rounded-full bg-[#3B6FF5]"></span>
+              <span>Menunggu Respon</span>
+            </div>
+          </div>
+        </div>
+        <p class="text-[11px] text-[#64748B] leading-relaxed mt-6">
+          Digunakan untuk task sedang diproses atau tiket aktif.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 4. PRIORITY BADGES -->
+  <section class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+    <div>
+      <h2 class="text-2xl font-bold text-[#0F172A] tracking-tight">Priority Badge Khusus Follow up &amp; Complaints</h2>
+      <p class="text-xs sm:text-sm text-[#64748B] mt-1 font-normal">
+        Indikator level prioritas tugas operasional pengiriman dan investigasi keluhan.
+      </p>
+    </div>
+
+    <!-- 3 Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+      <!-- Card 1: High Priority -->
+      <div
+        class="border-[1.5px] border-[#686868] bg-[#EBEBEB] rounded-2xl p-6 flex flex-col justify-between min-h-[220px] transition-all hover:shadow-xs">
+        <div>
+          <h3 class="text-lg font-bold text-[#E05262]">High Priority</h3>
+          <div class="flex items-center gap-4 mt-5 flex-wrap">
+            <!-- Badge 1: High Priority (Pill) -->
+            <div
+              class="inline-flex items-center gap-2 bg-[#FEF2F2] text-[#E05262] border border-[#FECDCA] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <span class="w-2 h-2 rounded-full bg-[#E05262]"></span>
+              <span>High Priority</span>
+            </div>
+
+            <!-- Badge 2: Prioritas Tinggi -->
+            <div class="inline-flex items-center gap-2 text-xs font-semibold text-[#E05262]">
+              <span class="w-2 h-2 rounded-full bg-[#E05262]"></span>
+              <span>Prioritas Tinggi</span>
+            </div>
+          </div>
+        </div>
+        <p class="text-[11px] text-[#64748B] leading-relaxed mt-6">
+          Wajib digunakan pada tiket klaim muatan rusak, keterlambatan armada &gt;4 jam, atau keluhan akun Enterprise.
+        </p>
+      </div>
+
+      <!-- Card 2: Medium Priority -->
+      <div
+        class="border-[1.5px] border-[#686868] bg-[#EBEBEB] rounded-2xl p-6 flex flex-col justify-between min-h-[220px] transition-all hover:shadow-xs">
+        <div>
+          <h3 class="text-lg font-bold text-[#D99A18]">Medium Priority</h3>
+          <div class="flex items-center gap-4 mt-5 flex-wrap">
+            <!-- Badge 1: Medium Priority (Pill) -->
+            <div
+              class="inline-flex items-center gap-2 bg-[#FEF7E6] text-[#D99A18] border border-[#F9EBCC] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <span class="w-2 h-2 rounded-full bg-[#D99A18]"></span>
+              <span>Medium Priority</span>
+            </div>
+
+            <!-- Badge 2: Prioritas Menengah -->
+            <div class="inline-flex items-center gap-2 text-xs font-semibold text-[#D99A18]">
+              <span class="w-2 h-2 rounded-full bg-[#D99A18]"></span>
+              <span>Prioritas Menengah</span>
+            </div>
+          </div>
+        </div>
+        <p class="text-[11px] text-[#64748B] leading-relaxed mt-6">
+          Digunakan untuk konfirmasi jadwal muat rutin, permintaan surat jalan susulan, atau revisi nomor DO.
+        </p>
+      </div>
+
+      <!-- Card 3: Low Priority -->
+      <div
+        class="border-[1.5px] border-[#686868] bg-[#EBEBEB] rounded-2xl p-6 flex flex-col justify-between min-h-[220px] transition-all hover:shadow-xs">
+        <div>
+          <h3 class="text-lg font-bold text-[#64748B]">Low Priority</h3>
+          <div class="flex items-center gap-4 mt-5 flex-wrap">
+            <!-- Badge 1: Low Priority (Pill) -->
+            <div
+              class="inline-flex items-center gap-2 bg-[#F1F5F9] text-[#475467] border border-[#CBD5E1] text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <span class="w-2 h-2 rounded-full bg-[#94A3B8]"></span>
+              <span>Low Priority</span>
+            </div>
+
+            <!-- Badge 2: Prioritas Rendah -->
+            <div class="inline-flex items-center gap-2 text-xs font-semibold text-[#64748B]">
+              <span class="w-2 h-2 rounded-full bg-[#94A3B8]"></span>
+              <span>Prioritas Rendah</span>
+            </div>
+          </div>
+        </div>
+        <p class="text-[11px] text-[#64748B] leading-relaxed mt-6">
+          Pembaruan informasi kontak PIC baru, ucapan hari raya, atau rekonsiliasi arsip pengiriman bulanan.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 5. DROPDOWN -->
+  <section class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+    <div>
+      <h2 class="text-2xl font-bold text-[#0F172A] tracking-tight">Dropdown</h2>
+      <p class="text-xs sm:text-sm text-[#64748B] mt-1 font-normal">
+        Testing pemilihan opsi.
+      </p>
+    </div>
+
+    <!-- Dropdown Component -->
+    <div class="relative w-full max-w-[330px]">
+      <!-- Trigger Button -->
+      <button type="button" onclick="toggleComponentDropdown()" id="componentDropdownTrigger"
+        class="w-full bg-[#D9D9D9] hover:bg-[#D0D0D0] text-black font-bold text-base sm:text-lg px-8 py-4 rounded-2xl flex items-center justify-between transition-colors cursor-pointer">
+        <span id="selectedComponentText">Pilih komponen</span>
+        <svg class="w-6 h-6 text-black stroke-[3.5] transition-transform duration-200" id="componentDropdownIcon"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+
+      <!-- Dropdown Menu List (Open state matching screenshot) -->
+      <div id="componentDropdownMenu"
+        class="w-full bg-[#D9D9D9] border border-[#767676] shadow-md mt-0.5 overflow-hidden">
+        <div onclick="selectComponentOption('Pilih komponen')"
+          class="dropdown-item px-8 py-2 bg-[#C8C8C8] text-white font-medium text-[15px] cursor-pointer hover:bg-[#BEBEBE] transition-colors">
+          Pilih komponen
+        </div>
+        <div onclick="selectComponentOption('Button')"
+          class="dropdown-item px-8 py-2 bg-[#D9D9D9] text-black text-[15px] cursor-pointer hover:bg-[#C8C8C8] hover:text-white transition-colors">
+          Button
+        </div>
+        <div onclick="selectComponentOption('Dropdown')"
+          class="dropdown-item px-8 py-2 bg-[#D9D9D9] text-black text-[15px] cursor-pointer hover:bg-[#C8C8C8] hover:text-white transition-colors">
+          Dropdown
+        </div>
+        <div onclick="selectComponentOption('Input')"
+          class="dropdown-item px-8 py-2 bg-[#D9D9D9] text-black text-[15px] cursor-pointer hover:bg-[#C8C8C8] hover:text-white transition-colors">
+          Input
+        </div>
+        <div onclick="selectComponentOption('Notification')"
+          class="dropdown-item px-8 py-2 bg-[#D9D9D9] text-black text-[15px] cursor-pointer hover:bg-[#C8C8C8] hover:text-white transition-colors">
+          Notification
+        </div>
+        <div onclick="selectComponentOption('DataTable')"
+          class="dropdown-item px-8 py-2 bg-[#D9D9D9] text-black text-[15px] cursor-pointer hover:bg-[#C8C8C8] hover:text-white transition-colors">
+          DataTable
+        </div>
+        <div onclick="selectComponentOption('Pagination')"
+          class="dropdown-item px-8 py-2 bg-[#D9D9D9] text-black text-[15px] cursor-pointer hover:bg-[#C8C8C8] hover:text-white transition-colors">
+          Pagination
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 6. FORM INPUT ERROR (SESUAI GAMBAR PERSIS) -->
+  <!-- ========================================================================= -->
+  <section id="form-input-section"
+    class="bg-[#222031] text-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl shadow-lg space-y-6">
+    <!-- Header Title & Subtitle -->
+    <div>
+      <h2 class="text-2xl sm:text-[26px] font-extrabold text-white tracking-tight">Form Input Error</h2>
+      <p class="text-[#94A3B8] text-xs sm:text-sm mt-1 font-normal">
+        Testing input normal dan kondisi error.
+      </p>
+    </div>
+
+    <!-- Form Content -->
+    <div class="space-y-2 pt-1 max-w-xl">
+      <label for="demo-email-input" class="block text-base sm:text-lg font-bold text-white mb-2">
+        Email
+      </label>
+
+      <!-- Input Field -->
+      <div class="relative">
+        <input type="text" id="demo-email-input" placeholder="Masukkan email kamu"
+          oninput="handleDemoEmailInput(this.value)" onkeydown="if(event.key==='Enter') validateDemoEmail()"
+          class="w-full bg-[#D4D4D8] text-slate-900 placeholder-[#71717A] text-base font-medium px-5 py-3.5 sm:py-4 rounded-2xl border-2 border-[#E05262] ring-2 ring-[#E05262]/20 focus:outline-none transition-all" />
+      </div>
+
+      <!-- Error Indicator & Text -->
+      <div id="demo-email-error" class="flex items-center gap-2 pt-1">
+        <svg class="w-5 h-5 shrink-0" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="10" r="10" fill="#E05262" />
+          <path d="M10 5V11" stroke="#222031" stroke-width="2.5" stroke-linecap="round" />
+          <circle cx="10" cy="14.5" r="1.25" fill="#222031" />
+        </svg>
+        <span id="demo-email-error-text" class="text-[#E05262] text-sm sm:text-base font-semibold">
+          Email wajib diisi.
+        </span>
+      </div>
+
+      <!-- Action Buttons (Validasi Input & Reset) -->
+      <div class="flex items-center gap-3 pt-3">
+        <button type="button" onclick="validateDemoEmail()"
+          class="bg-[#7C5CFC] hover:bg-[#6842F8] active:scale-[0.98] text-white font-bold text-sm sm:text-base px-6 py-2.5 rounded-xl shadow-sm transition cursor-pointer">
+          Validasi Input
+        </button>
+        <button type="button" onclick="resetDemoEmail()"
+          class="bg-white hover:bg-slate-100 active:scale-[0.98] text-[#7C5CFC] font-bold text-sm sm:text-base px-6 py-2.5 rounded-xl shadow-sm transition cursor-pointer">
+          Reset
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- NOTIFICATION (SESUAI GAMBAR PERSIS) -->
+  <!-- ========================================================================= -->
+  <section id="notification-section"
+    class="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm space-y-6">
+    <!-- Header Title & Subtitle -->
+    <div>
+      <h2 class="text-2xl sm:text-[28px] font-extrabold text-[#0F172A] tracking-tight">Notification</h2>
+      <p class="text-xs sm:text-sm text-[#64748B] mt-1 font-normal">
+        Testing notifikasi Success, Warning, dan Error.
+      </p>
+    </div>
+
+    <!-- Notification Trigger Buttons -->
+    <div class="flex items-center gap-3 pt-1 flex-wrap">
+      <!-- Success Button (Purple) -->
+      <button type="button" onclick="setNotificationType('success')" id="notif-btn-success"
+        class="bg-[#7C5CFC] hover:bg-[#6842F8] active:scale-[0.98] text-white font-bold text-sm sm:text-base px-6 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer">
+        Success
+      </button>
+
+      <!-- Warning Button (Amber/Gold) -->
+      <button type="button" onclick="setNotificationType('warning')" id="notif-btn-warning"
+        class="bg-[#D99A18] hover:bg-[#C28812] active:scale-[0.98] text-white font-bold text-sm sm:text-base px-6 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer">
+        Warning
+      </button>
+
+      <!-- Error Button (Red/Crimson) -->
+      <button type="button" onclick="setNotificationType('error')" id="notif-btn-error"
+        class="bg-[#D9384F] hover:bg-[#C42E44] active:scale-[0.98] text-white font-bold text-sm sm:text-base px-6 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer">
+        Error
+      </button>
+    </div>
+
+    <!-- Notification Preview Card Box -->
+    <div class="bg-[#F8FAFC] border border-slate-100 rounded-2xl py-12 sm:py-16 px-6 flex items-center justify-center transition-all">
+      <div id="notification-banner"
+        class="bg-[#199E6C] text-white font-bold text-2xl sm:text-3xl px-12 py-5 sm:px-14 sm:py-5 rounded-2xl shadow-sm transition-all duration-200 ease-out transform">
+        Success!
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 7. DATA TABLE (SESUAI GAMBAR PERSIS) -->
+  <!-- ========================================================================= -->
+  <style>
+    /* DataTable Pixel-Perfect Styles */
+    .dt-container {
+      background-color: #E5ECF6;
+      border: 1px solid #CAD6E4;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .dt-header {
+      background-color: #CCD7E6;
+      border-bottom: 1px solid #CAD6E4;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .dt-row {
+      border-top: 1px solid #CAD6E4;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      background-color: #E5ECF6;
+      transition: background-color 0.15s ease;
+    }
+
+    .dt-row:hover {
+      background-color: #DBE5F2;
+    }
+
+    .dt-checkbox-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      width: 19px;
+      height: 19px;
+      min-width: 19px;
+      min-height: 19px;
+      flex-shrink: 0;
+    }
+
+    .dt-checkbox-input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+      margin: 0;
+      padding: 0;
+      pointer-events: none;
+    }
+
+    .dt-checkbox-box {
+      width: 19px;
+      height: 19px;
+      min-width: 19px;
+      min-height: 19px;
+      background-color: #FFFFFF;
+      border: 1.5px solid #94A3B8;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.1s ease, border-color 0.1s ease;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+
+    .dt-checkbox-icon {
+      width: 13px;
+      height: 13px;
+      display: none;
+    }
+
+    /* Checked State - Exactly matching user image */
+    .dt-checkbox-input:checked+.dt-checkbox-box {
+      background-color: #1B68F8;
+      border-color: #1B68F8;
+    }
+
+    .dt-checkbox-input:checked+.dt-checkbox-box .dt-checkbox-icon {
+      display: block;
+    }
+
+    .dt-name-header {
+      font-weight: 700;
+      color: #0F172A;
+      font-size: 16px;
+    }
+
+    .dt-name-cell {
+      font-weight: 500;
+      color: #1E293B;
+      font-size: 15px;
+    }
+
+    .dt-search-box {
+      background-color: #F1F5F9;
+      border-radius: 14px;
+      border: none;
+      outline: none;
+      padding: 11px 16px 11px 40px;
+      font-size: 14px;
+      color: #1E293B;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    .dt-search-box::placeholder {
+      color: #64748B;
+    }
+
+    .dt-add-btn {
+      background-color: #1B68F8;
+      color: #FFFFFF;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 11px 28px;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(27, 104, 248, 0.3);
+      transition: all 0.15s ease;
+    }
+
+    .dt-add-btn:hover {
+      background-color: #1557D4;
+    }
+
+    .dt-add-btn:active {
+      transform: scale(0.98);
+    }
+
+    .dt-page-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: #475467;
+      transition: all 0.15s ease;
+    }
+
+    .dt-page-btn:hover {
+      background-color: #F1F5F9;
+      color: #0F172A;
+    }
+
+    .dt-page-btn.active {
+      background-color: #0F172A;
+      color: #FFFFFF;
+      font-weight: 700;
+    }
+
+    .dt-nav-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #E2E8F0;
+      background-color: #FFFFFF;
+      color: #475467;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .dt-nav-btn:hover:not(:disabled) {
+      border-color: #CBD5E1;
+      color: #0F172A;
+    }
+
+    .dt-nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  </style>
+
+  <section class="bg-white p-6 sm:p-10 rounded-2xl border border-slate-200 shadow-sm space-y-6" id="datatable-section">
+    <!-- Header Title & Subtitle -->
+    <div>
+      <h2 class="text-2xl sm:text-[28px] font-extrabold text-[#0F172A] tracking-tight">DataTable</h2>
+      <p class="text-xs sm:text-sm text-[#64748B] mt-1 font-normal">
+        Testing search, checkbox, dan Add New.
+      </p>
+    </div>
+
+    <!-- Action Toolbar (Search & Add New) -->
+    <div class="flex flex-wrap items-center justify-between gap-4 pt-1">
+      <!-- Search Input -->
+      <div class="relative w-full max-w-[300px]">
+        <svg class="w-4 h-4 text-[#94A3B8] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.3-4.3" />
+        </svg>
+        <input type="text" id="dt-search-input" oninput="filterDataTable(this.value)" placeholder="Search"
+          class="dt-search-box" />
+      </div>
+
+      <!-- Add New Button -->
+      <button type="button" onclick="openAddModal()" class="dt-add-btn">
+        Add New
+      </button>
+    </div>
+
+    <!-- The Table Card Container -->
+    <div class="dt-container mt-2">
+      <!-- Table Header -->
+      <div class="dt-header">
+        <label class="dt-checkbox-wrapper">
+          <input type="checkbox" id="dt-select-all" class="dt-checkbox-input" onchange="toggleSelectAllRows(this)" />
+          <span class="dt-checkbox-box">
+            <svg viewBox="0 0 16 16" fill="none" class="dt-checkbox-icon">
+              <path d="M3.2 8.3L6.4 11.5L12.8 4.5" stroke="white" stroke-width="2.7" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+          </span>
+        </label>
+        <span class="dt-name-header">Name</span>
+      </div>
+
+      <!-- Table Body Rows Container -->
+      <div id="dt-rows-container">
+        <!-- Rendered dynamically by JavaScript -->
+      </div>
+    </div>
+
+    <!-- Table Footer (Pagination & Data Info) -->
+    <div class="flex flex-wrap items-center justify-between gap-4 pt-3">
+      <!-- Left: Data Info -->
+      <div id="dt-info-text" class="text-xs sm:text-sm text-[#64748B]">
+        Menampilkan 1–5 dari 25 data
+      </div>
+
+      <!-- Right: Pagination Controls -->
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <!-- Prev Button -->
+        <button type="button" onclick="changeDtPage(dtCurrentPage - 1)" id="dt-prev-btn" class="dt-nav-btn">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
+
+        <!-- Page Numbers List -->
+        <div id="dt-pagination-numbers" class="flex items-center gap-1 sm:gap-1.5">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Next Button -->
+        <button type="button" onclick="changeDtPage(dtCurrentPage + 1)" id="dt-next-btn" class="dt-nav-btn">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal Add New -->
+    <div id="dt-add-modal"
+      class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="text-lg font-bold text-slate-900">Add New Data</h3>
+          <button type="button" onclick="closeAddModal()"
+            class="text-slate-400 hover:text-slate-600 rounded-lg p-1 cursor-pointer">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">Name</label>
+          <input type="text" id="dt-new-name-input" placeholder="e.g. Table 26"
+            onkeydown="if(event.key==='Enter') submitAddNewItem()"
+            class="w-full bg-[#F1F5F9] text-slate-800 text-sm px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B68F8]/40 border border-slate-200" />
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" onclick="closeAddModal()"
+            class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer">
+            Cancel
+          </button>
+          <button type="button" onclick="submitAddNewItem()"
+            class="px-5 py-2 text-xs font-semibold bg-[#1B68F8] hover:bg-[#1557D4] text-white rounded-xl transition shadow-xs cursor-pointer">
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactivity Script -->
+  <script>
+    // State management for Channel filter
+    const channelData = {
+      all: { label: 'All', count: '24', icon: null },
+      phone: { label: 'Panggilan Telepon', count: '7', icon: `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>` },
+      email: { label: 'Email Resmi', count: '6', icon: `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>` },
+      whatsapp: { label: 'WhatsApp', count: '5', icon: `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>` },
+      meeting: { label: 'Meeting Online', count: '', icon: `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>` }
+    };
+
+    function selectChannel(key) {
+      Object.keys(channelData).forEach(k => {
+        const btn = document.getElementById('pill-' + k);
+        if (!btn) return;
+        const item = channelData[k];
+        if (k === key) {
+          // Set Active
+          btn.className = 'channel-pill inline-flex items-center gap-1.5 bg-[#7C5CFC] text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-xs transition-all cursor-pointer';
+          let inner = '';
+          if (item.icon) inner += item.icon;
+          inner += `<span>${item.label}</span>`;
+          if (item.count) {
+            inner += `<span class="counter-badge bg-white/20 text-white text-[11px] px-2 py-0.5 rounded-full font-bold ml-0.5">${item.count}</span>`;
+          }
+          btn.innerHTML = inner;
+        } else {
+          // Set Inactive
+          btn.className = 'channel-pill inline-flex items-center gap-2 bg-white border border-[#CBD5E1] hover:border-slate-400 text-[#334155] text-xs font-medium px-4 py-1.5 rounded-full transition-all cursor-pointer';
+          let inner = '';
+          if (item.icon) {
+            inner += item.icon.replace('class="w-3.5 h-3.5"', 'class="w-3.5 h-3.5 text-[#475467]"');
+          }
+          inner += `<span class="pill-label">${item.label}${item.count ? ' ' + item.count : ''}</span>`;
+          btn.innerHTML = inner;
+        }
+      });
+    }
+
+    function toggleStatusMenu() {
+      const menu = document.getElementById('status-menu');
+      menu.classList.toggle('hidden');
+    }
+
+    function selectStatus(status) {
+      document.getElementById('selected-status-label').textContent = status;
+      document.getElementById('status-menu').classList.add('hidden');
+    }
+
+    function toggleComponentDropdown() {
+      const menu = document.getElementById('componentDropdownMenu');
+      const icon = document.getElementById('componentDropdownIcon');
+      if (menu) {
+        menu.classList.toggle('hidden');
+        if (icon) {
+          icon.classList.toggle('rotate-180');
+        }
+      }
+    }
+
+    function selectComponentOption(val) {
+      const label = document.getElementById('selectedComponentText');
+      if (label) label.textContent = val;
+      const items = document.querySelectorAll('#componentDropdownMenu .dropdown-item');
+      items.forEach(el => {
+        if (el.textContent.trim() === val) {
+          el.className = 'dropdown-item px-8 py-2 bg-[#C8C8C8] text-white font-medium text-[15px] cursor-pointer hover:bg-[#BEBEBE] transition-colors';
+        } else {
+          el.className = 'dropdown-item px-8 py-2 bg-[#D9D9D9] text-black text-[15px] cursor-pointer hover:bg-[#C8C8C8] hover:text-white transition-colors';
+        }
+      });
+      if (val === 'DataTable') {
+        const el = document.getElementById('datatable-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }
+      if (val === 'Input') {
+        const el = document.getElementById('form-input-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }
+      if (val === 'Notification') {
+        const el = document.getElementById('notification-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    // =========================================================================
+    // DATA TABLE LOGIC (Search, Checkbox, Add New, Pagination)
+    // =========================================================================
+    let dtItems = Array.from({ length: 25 }, (_, i) => ({
+      id: i + 1,
+      name: `Table ${i + 1}`,
+      checked: false
+    }));
+    let dtCurrentPage = 1;
+    const dtPageSize = 5;
+    let dtSearchQuery = '';
+
+    function getFilteredDtItems() {
+      if (!dtSearchQuery) return dtItems;
+      return dtItems.filter(item => item.name.toLowerCase().includes(dtSearchQuery.toLowerCase()));
+    }
+
+    function renderDataTable() {
+      const filtered = getFilteredDtItems();
+      const totalItems = filtered.length;
+      const totalPages = Math.ceil(totalItems / dtPageSize) || 1;
+
+      if (dtCurrentPage > totalPages) dtCurrentPage = totalPages;
+      if (dtCurrentPage < 1) dtCurrentPage = 1;
+
+      const startIndex = (dtCurrentPage - 1) * dtPageSize;
+      const endIndex = Math.min(startIndex + dtPageSize, totalItems);
+      const currentRows = filtered.slice(startIndex, endIndex);
+
+      // Render Rows
+      const container = document.getElementById('dt-rows-container');
+      if (container) {
+        if (currentRows.length === 0) {
+          container.innerHTML = `
+            <div style="padding: 32px 24px; text-align: center; font-size: 14px; color: #64748B; font-weight: 500;">
+              Tidak ada data ditemukan
+            </div>
+          `;
+        } else {
+          container.innerHTML = currentRows.map((item) => `
+            <div class="dt-row">
+              <label class="dt-checkbox-wrapper">
+                <input type="checkbox" class="dt-checkbox-input dt-row-checkbox" data-id="${item.id}" ${item.checked ? 'checked' : ''} onchange="handleDtRowCheck(${item.id}, this.checked)" />
+                <span class="dt-checkbox-box">
+                  <svg viewBox="0 0 16 16" fill="none" class="dt-checkbox-icon">
+                    <path d="M3.2 8.3L6.4 11.5L12.8 4.5" stroke="white" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+              </label>
+              <span class="dt-name-cell">${item.name}</span>
+            </div>
+          `).join('');
+        }
+      }
+
+      // Update Select All Checkbox
+      const selectAll = document.getElementById('dt-select-all');
+      if (selectAll) {
+        selectAll.checked = currentRows.length > 0 && currentRows.every(r => r.checked);
+      }
+
+      // Update Info Text
+      const infoText = document.getElementById('dt-info-text');
+      if (infoText) {
+        if (totalItems === 0) {
+          infoText.textContent = `Menampilkan 0 data`;
+        } else {
+          infoText.textContent = `Menampilkan ${startIndex + 1}–${endIndex} dari ${totalItems} data`;
+        }
+      }
+
+      // Update Pagination Buttons
+      const paginationContainer = document.getElementById('dt-pagination-numbers');
+      if (paginationContainer) {
+        let btns = '';
+        for (let p = 1; p <= totalPages; p++) {
+          if (p === dtCurrentPage) {
+            btns += `<button type="button" class="dt-page-btn active">${p}</button>`;
+          } else {
+            btns += `<button type="button" onclick="changeDtPage(${p})" class="dt-page-btn">${p}</button>`;
+          }
+        }
+        paginationContainer.innerHTML = btns;
+      }
+
+      // Prev / Next button states
+      const prevBtn = document.getElementById('dt-prev-btn');
+      const nextBtn = document.getElementById('dt-next-btn');
+      if (prevBtn) prevBtn.disabled = dtCurrentPage <= 1;
+      if (nextBtn) nextBtn.disabled = dtCurrentPage >= totalPages;
+    }
+
+    function toggleSelectAllRows(checkbox) {
+      const isChecked = checkbox.checked;
+      const filtered = getFilteredDtItems();
+      const startIndex = (dtCurrentPage - 1) * dtPageSize;
+      const endIndex = Math.min(startIndex + dtPageSize, filtered.length);
+      for (let i = startIndex; i < endIndex; i++) {
+        filtered[i].checked = isChecked;
+      }
+      renderDataTable();
+    }
+
+    function handleDtRowCheck(id, isChecked) {
+      const item = dtItems.find(it => it.id === id);
+      if (item) item.checked = isChecked;
+      renderDataTable();
+    }
+
+    function filterDataTable(val) {
+      dtSearchQuery = val;
+      dtCurrentPage = 1;
+      renderDataTable();
+    }
+
+    function changeDtPage(page) {
+      dtCurrentPage = page;
+      renderDataTable();
+    }
+
+    function openAddModal() {
+      const modal = document.getElementById('dt-add-modal');
+      const input = document.getElementById('dt-new-name-input');
+      if (modal) modal.classList.remove('hidden');
+      if (input) {
+        input.value = `Table ${dtItems.length + 1}`;
+        setTimeout(() => input.focus(), 50);
+      }
+    }
+
+    function closeAddModal() {
+      const modal = document.getElementById('dt-add-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function submitAddNewItem() {
+      const input = document.getElementById('dt-new-name-input');
+      const name = input ? input.value.trim() : '';
+      if (!name) return;
+      const newId = dtItems.length ? Math.max(...dtItems.map(d => d.id)) + 1 : 1;
+      dtItems.push({ id: newId, name: name, checked: false });
+      closeAddModal();
+      dtCurrentPage = Math.ceil(dtItems.length / dtPageSize);
+      renderDataTable();
+    }
+
+    // Initialize DataTable on page load
+    document.addEventListener('DOMContentLoaded', renderDataTable);
+    // Also run immediately in case DOM is already ready
+    renderDataTable();
+
+    // Close dropdown & modal on outside click
+    window.addEventListener('click', function (e) {
+      const btn = document.getElementById('status-dropdown-btn');
+      const menu = document.getElementById('status-menu');
+      if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
+        menu.classList.add('hidden');
+      }
+
+      const modal = document.getElementById('dt-add-modal');
+      if (modal && e.target === modal) {
+        closeAddModal();
+      }
+    });
+
+    // =========================================================================
+    // FORM INPUT ERROR VALIDATION HANDLERS
+    // =========================================================================
+    function validateDemoEmail() {
+      const input = document.getElementById('demo-email-input');
+      if (!input) return;
+      const val = input.value.trim();
+
+      if (!val) {
+        setInputError(true, 'Email wajib diisi.');
+      } else {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(val)) {
+          setInputError(true, 'Format email tidak valid.');
+        } else {
+          setInputError(false, '');
+        }
+      }
+    }
+
+    function handleDemoEmailInput(val) {
+      if (val.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (emailRegex.test(val.trim())) {
+          setInputError(false, '');
+        }
+      }
+    }
+
+    function setInputError(hasError, message) {
+      const input = document.getElementById('demo-email-input');
+      const errorBox = document.getElementById('demo-email-error');
+      const errorText = document.getElementById('demo-email-error-text');
+      if (!input || !errorBox || !errorText) return;
+
+      if (hasError) {
+        input.className = 'w-full bg-[#D4D4D8] text-slate-900 placeholder-[#71717A] text-base font-medium px-5 py-3.5 sm:py-4 rounded-2xl border-2 border-[#E05262] ring-2 ring-[#E05262]/20 focus:outline-none transition-all';
+        errorText.textContent = message || 'Email wajib diisi.';
+        errorBox.classList.remove('hidden');
+        errorBox.classList.add('flex');
+      } else {
+        input.className = 'w-full bg-[#D4D4D8] text-slate-900 placeholder-[#71717A] text-base font-medium px-5 py-3.5 sm:py-4 rounded-2xl border-2 border-emerald-500 ring-2 ring-emerald-500/20 focus:outline-none transition-all';
+        errorBox.classList.remove('flex');
+        errorBox.classList.add('hidden');
+      }
+    }
+
+    function resetDemoEmail() {
+      const input = document.getElementById('demo-email-input');
+      const errorBox = document.getElementById('demo-email-error');
+      if (input) {
+        input.value = '';
+        input.className = 'w-full bg-[#D4D4D8] text-slate-900 placeholder-[#71717A] text-base font-medium px-5 py-3.5 sm:py-4 rounded-2xl border-2 border-transparent focus:border-[#7C5CFC] focus:outline-none transition-all';
+      }
+      if (errorBox) {
+        errorBox.classList.remove('flex');
+        errorBox.classList.add('hidden');
+      }
+    }
+
+    // =========================================================================
+    // NOTIFICATION COMPONENT LOGIC
+    // =========================================================================
+    const notificationConfig = {
+      success: {
+        bg: 'bg-[#199E6C]',
+        text: 'Success!'
+      },
+      warning: {
+        bg: 'bg-[#D99A18]',
+        text: 'Warning!'
+      },
+      error: {
+        bg: 'bg-[#D9384F]',
+        text: 'Error!'
+      }
+    };
+
+    function setNotificationType(type) {
+      const banner = document.getElementById('notification-banner');
+      if (!banner) return;
+      const conf = notificationConfig[type] || notificationConfig.success;
+      banner.className = `${conf.bg} text-white font-bold text-2xl sm:text-3xl px-12 py-5 sm:px-14 sm:py-5 rounded-2xl shadow-sm transition-all duration-200 ease-out transform`;
+      banner.textContent = conf.text;
+    }
+  </script>
+</body>
+
+</html>

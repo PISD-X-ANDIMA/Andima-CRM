@@ -1,17 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey =
+const supabaseAnonKey =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
   '';
 
-if (!supabaseUrl || !supabaseKey) {
+if (!supabaseUrl || !supabaseAnonKey) {
   if (typeof window !== 'undefined') {
     console.warn(
-      'Supabase credentials (NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY/PUBLISHABLE_KEY) are missing in environment variables.'
+      'Variabel Supabase tidak ditemukan! Pastikan .env.local sudah dibuat di root folder dan server Next.js sudah di-restart.'
     );
   }
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
