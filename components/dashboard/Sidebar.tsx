@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
@@ -62,11 +63,11 @@ const salesExecutiveMenus: SubMenuItem[] = [
 const topMenuItems: MenuItem[] = [
   {
     name: "Dashboard",
-    href: "/dashboard/sales-executive",
+    href: "/dashboard",
     icon: LayoutDashboard,
   },
   {
-    name: "POS",
+    name: "CCR",
     href: "#",
     icon: ShoppingBag,
   },
@@ -110,20 +111,23 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="flex min-h-screen w-[260px] shrink-0 flex-col border-r border-[#1a2744] bg-[#0b1224]">
-      <div className="flex h-16 items-center px-6">
-        <h1 className="text-[17px] font-extrabold tracking-[0.12em] text-white uppercase">
-          ANDIMA
-        </h1>
+    <aside className="flex min-h-screen w-[260px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
+      <div className="mx-4 flex h-[102px] items-center gap-4 border-b border-white/10">
+        <Image src="/andima-logo.png" alt="PT Andima Transportindo" width={470} height={300} className="h-12 w-[54px] shrink-0 object-contain" priority />
+        <div className="leading-tight text-white">
+          <h1 className="text-[17px] font-extrabold tracking-wide">ANDIMA</h1>
+          <p className="text-[13px] font-bold tracking-[0.04em]">TRANSPORTINDO</p>
+          <p className="mt-1 text-[6px] tracking-[0.18em] text-slate-400">ENTERPRISE DIGITAL ECOSYSTEM</p>
+        </div>
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pt-2 pb-4">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pt-14 pb-4">
         {topMenuItems.map((item) => {
           const Icon = item.icon;
-          const isActive =
-            item.href !== "#" &&
-            (pathname === item.href ||
-              pathname.startsWith(`${item.href}/`));
+          const isActive = item.href !== "#" && (
+            pathname === item.href ||
+            (item.href !== "/dashboard" && pathname.startsWith(`${item.href}/`))
+          );
 
           if (item.href === "#") {
             return (
@@ -164,7 +168,7 @@ export function Sidebar() {
             onClick={() => setCrmOpen((value) => !value)}
             className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors ${
               isSalesExecutiveActive
-                ? "bg-white/[0.04] text-white"
+                ? "bg-blue-600 text-white"
                 : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
             }`}
           >
@@ -192,7 +196,7 @@ export function Sidebar() {
                 onClick={handleSalesExecutiveClick}
                 className={`flex flex-1 items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors ${
                   isSalesExecutiveDashboard
-                    ? "bg-blue-600/15 text-blue-300"
+                    ? "bg-[#b4c9d4] text-slate-700"
                     : isSalesExecutiveActive
                       ? "text-white"
                       : "text-slate-400 hover:text-slate-200"
@@ -202,7 +206,7 @@ export function Sidebar() {
                   <span
                     className={`h-2 w-2 rounded-full ${
                       isSalesExecutiveDashboard
-                        ? "bg-blue-400"
+                        ? "bg-teal-500"
                         : "bg-blue-500"
                     }`}
                   />

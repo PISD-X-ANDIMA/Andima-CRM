@@ -2,12 +2,13 @@
 
 import React, { useState, useCallback } from "react";
 import { X, Building2, User, Phone, Mail, Briefcase, MapPin, Loader2, AlertCircle } from "lucide-react";
-import { CreateCustomerInput, ApiResponse } from "@/types/customer";
+import { CreateCustomerInput, CustomerListItem, ApiResponse } from "@/types/customer";
 
 interface CustomerFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (companyId: string) => void;
+  customer?: CustomerListItem | null;
 }
 
 interface FormErrors {
@@ -34,16 +35,29 @@ function validate(data: CreateCustomerInput): FormErrors {
   if (!data.pic_full_name.trim()) errors.pic_full_name = "PIC name is required";
   if (!data.pic_phone_number.trim()) {
     errors.pic_phone_number = "PIC phone number is required";
-  } else if (!/^[0-9+\-\s()]{7,20}$/.test(data.pic_phone_number.trim())) {
+  } else if (!/^(?:0|\+62)[0-9\s()-]{7,18}$/.test(data.pic_phone_number.trim())) {
     errors.pic_phone_number = "Invalid phone number format";
   }
   return errors;
 }
 
-export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormModalProps) {
+export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: CustomerFormModalProps) {
   const [form, setForm] = useState<CreateCustomerInput>(INITIAL_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    setForm(customer ? {
+      company_name: customer.companyName,
+      address: customer.address || "",
+      pic_full_name: customer.primaryPic?.fullName || "",
+      pic_phone_number: customer.primaryPic?.phoneNumber || "",
+      pic_position: customer.primaryPic?.position || "",
+      pic_email: customer.primaryPic?.email || "",
+    } : INITIAL_FORM);
+    setErrors({});
+  }, [customer, isOpen]);
 
   const handleChange = useCallback(
     (field: keyof CreateCustomerInput, value: string) => {
@@ -66,13 +80,13 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
       setErrors({});
 
       try {
-        const res = await fetch("/api/v1/customers/create", {
-          method: "POST",
+        const res = await fetch(customer ? `/api/v1/customers/${customer.id}` : "/api/v1/customers/create", {
+          method: customer ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(form),
         });
 
-        const json: ApiResponse<{ companyId: string }> = await res.json();
+        const json: ApiResponse<{ companyId?: string }> = await res.json();
 
         if (!json.success) {
           if (json.code === "DUPLICATE_001") {
@@ -84,14 +98,14 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
         }
 
         setForm(INITIAL_FORM);
-        onSuccess(json.data.companyId);
+        onSuccess(json.data.companyId || customer!.id);
       } catch {
         setErrors({ general: "A connection error occurred. Please try again." });
       } finally {
         setIsSubmitting(false);
       }
     },
-    [form, onSuccess]
+    [form, onSuccess, customer]
   );
 
   const handleClose = useCallback(() => {
@@ -126,7 +140,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
               <Building2 className="w-4 h-4" />
             </div>
             <h2 id="customer-modal-title" className="text-base font-semibold text-slate-900">
-              Add New Customer
+              {customer ? "Edit Company" : "Add New Company"}
             </h2>
           </div>
           <button
@@ -348,7 +362,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
                   <span>Saving...</span>
                 </>
               ) : (
-                <span>Save Customer</span>
+                <span>{customer ? "Save Changes" : "Add Company"}</span>
               )}
             </button>
           </div>

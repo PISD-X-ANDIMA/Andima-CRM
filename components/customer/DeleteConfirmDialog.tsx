@@ -45,14 +45,14 @@ export function DeleteConfirmDialog({
                 id="delete-dialog-title"
                 className="text-sm font-semibold text-slate-900"
               >
-                Delete Customer
+                Delete Company
               </h3>
               <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">
                 You are about to delete{" "}
                 <strong className="text-slate-800 font-semibold">
                   {companyName}
                 </strong>{" "}
-                from the customer list. This action cannot be undone.
+                from the company list. Its record will be archived, and existing history will be retained.
               </p>
             </div>
           </div>

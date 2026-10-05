@@ -138,6 +138,10 @@ export interface CreateCustomerInput {
 export interface UpdateCustomerInput {
   company_name?: string;
   address?: string;
+  pic_full_name?: string;
+  pic_phone_number?: string;
+  pic_position?: string;
+  pic_email?: string;
 }
 
 export interface ApiResponseSuccess<T> {
