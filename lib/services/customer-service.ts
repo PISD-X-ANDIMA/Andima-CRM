@@ -73,6 +73,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
     company_name: string;
     address: string | null;
     name: string | null;
+    pic_phone_number: string | null;
     customer_code: string | null;
     job_number: string | null;
     created_by: string | null;
@@ -88,12 +89,12 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
       .is("deleted_at", null);
     let dataQuery = (supabase as any)
       .from("a1_company_list")
-      .select("company_list_id, company_name, address, name, customer_code, job_number, created_by, created_at");
+      .select("company_list_id, company_name, address, name, pic_phone_number, customer_code, job_number, created_by, created_at");
     dataQuery = dataQuery.is("deleted_at", null);
 
     if (search.trim()) {
       const term = `%${search.trim()}%`;
-      const searchFilter = `company_name.ilike.${term},name.ilike.${term}`;
+      const searchFilter = `company_name.ilike.${term},name.ilike.${term},pic_phone_number.ilike.${term}`;
       countQuery = countQuery.or(searchFilter);
       dataQuery = dataQuery.or(searchFilter);
     }
@@ -138,7 +139,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
       createdBy: item.created_by,
       createdDate: item.created_at,
       primaryPic: item.name ? {
-        id: item.company_list_id, fullName: item.name, phoneNumber: "",
+        id: item.company_list_id, fullName: item.name, phoneNumber: item.pic_phone_number || "",
       } : null,
       meetings: (meetingsByCompany.get(item.company_list_id) || []).map((meeting) => ({
           id: meeting.id,
@@ -262,7 +263,7 @@ export async function getCustomerById(
     // columns are optional so a saved customer remains viewable on the shared schema.
     const { data, error } = await (supabase as any)
       .from("a1_company_list")
-      .select("company_list_id, company_name, name, address, customer_code, job_number, created_by, created_at, updated_at")
+      .select("company_list_id, company_name, name, pic_phone_number, address, customer_code, job_number, created_by, created_at, updated_at")
       .eq("company_list_id", customerId)
       .is("deleted_at", null)
       .maybeSingle();
@@ -279,7 +280,7 @@ export async function getCustomerById(
     const primaryPic = data.name ? {
       id: data.company_list_id,
       fullName: data.name,
-      phoneNumber: "",
+      phoneNumber: data.pic_phone_number || "",
     } : null;
 
     const meetings = (meetingRows || []).map((meeting: any) => ({
@@ -342,6 +343,9 @@ export async function createCustomer(
 ): Promise<{ success: boolean; companyId?: string; error?: string }> {
   const supabase = await createServerSupabaseClient();
   if (!supabase) return { success: false, error: "Database client unavailable" };
+  if (!/^[+\d][+\d\s().-]{5,19}$/.test(input.pic_phone_number.trim())) {
+    return { success: false, error: "A valid PIC phone number is required" };
+  }
 
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -363,7 +367,7 @@ export async function createCustomer(
     const { data: existing, error: duplicateCheckError } = await (supabase as any)
       .from("a1_company_list")
       .select("company_list_id")
-      .ilike("company_name", input.company_name.trim())
+      .ilike("company_name", input.company_name.trim().replace(/[\\%_]/g, "\\$&"))
       .is("deleted_at", null);
     if (duplicateCheckError) return { success: false, error: duplicateCheckError.message };
     if (existing?.length) {
@@ -382,9 +386,10 @@ export async function createCustomer(
         company_name: input.company_name.trim(),
         address: input.address.trim(),
         name: input.pic_full_name.trim(),
+        pic_phone_number: input.pic_phone_number.trim(),
         created_by: createdBy,
       });
-    if (companyInsertErr) return { success: false, error: companyInsertErr.message };
+    if (companyInsertErr) return { success: false, error: companyInsertErr.message.includes("a1_company_list_unique_active_company_name") ? "DUPLICATE_COMPANY: This company is already on the company list" : companyInsertErr.message };
 
     return { success: true, companyId: newCompanyId };
   } catch (error: unknown) {
@@ -413,13 +418,14 @@ export async function updateCustomer(
     if (input.company_name) updatePayload.company_name = input.company_name.trim();
     if (input.address !== undefined) updatePayload.address = input.address.trim();
     if (input.pic_full_name) updatePayload.name = input.pic_full_name.trim();
+    if (input.pic_phone_number !== undefined) updatePayload.pic_phone_number = input.pic_phone_number.trim();
 
     const { error } = await (supabase as any)
       .from("a1_company_list")
       .update(updatePayload)
       .eq("company_list_id", customerId);
 
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: error.message.includes("a1_company_list_unique_active_company_name") ? "DUPLICATE_COMPANY: This company is already on the company list" : error.message };
 
     return { success: true };
   } catch (err: any) {

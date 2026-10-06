@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const endExclusiveDate = `${endExclusive.getFullYear()}-${String(endExclusive.getMonth() + 1).padStart(2, "0")}-${String(endExclusive.getDate()).padStart(2, "0")}`;
     let companyQuery = (supabase as any)
       .from("a1_company_list")
-      .select("company_list_id, company_name, name, customer_code, job_number, created_by, created_at")
+      .select("company_list_id, company_name, name, pic_phone_number, customer_code, job_number, created_by, created_at")
       .is("deleted_at", null)
       .gte("created_at", `${from}T00:00:00Z`)
       .lt("created_at", `${endExclusiveDate}T00:00:00Z`)
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       customerCode: company.customer_code,
       jobNumber: company.job_number,
       createdDate: company.created_at,
-      primaryPic: company.name ? { fullName: company.name } : null,
+      primaryPic: company.name ? { fullName: company.name, phoneNumber: company.pic_phone_number || "" } : null,
     }));
     return createSuccessResponse(companies);
   } catch (error) {

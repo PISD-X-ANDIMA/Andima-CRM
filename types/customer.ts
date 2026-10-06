@@ -141,12 +141,14 @@ export interface CreateCustomerInput {
   company_name: string;
   address: string;
   pic_full_name: string;
+  pic_phone_number: string;
 }
 
 export interface UpdateCustomerInput {
   company_name?: string;
   address?: string;
   pic_full_name?: string;
+  pic_phone_number?: string;
 }
 
 export interface ApiResponseSuccess<T> {

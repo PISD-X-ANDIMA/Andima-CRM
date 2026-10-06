@@ -54,10 +54,10 @@ function getWeeklyMeetings(customers: CustomerListItem[]): WeeklyMeeting[] {
 }
 
 function downloadExport(customers: CustomerListItem[], format: "xlsx" | "pdf") {
-  const headers = ["Customer Code", "Job Number", "Company", "PIC"];
+  const headers = ["Customer Code", "Job Number", "Company", "PIC", "PIC Phone Number"];
   const values = customers.map((customer) => [
     customer.customerCode || "", customer.jobNumber || "", customer.companyName,
-    customer.primaryPic?.fullName || "",
+    customer.primaryPic?.fullName || "", customer.primaryPic?.phoneNumber || "",
   ]);
   if (format === "xlsx") {
     const worksheet = XLSX.utils.aoa_to_sheet([headers, ...values]);
@@ -259,7 +259,7 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
     </section>
 
     <div className="mb-2 flex items-center justify-between gap-4 px-1 sm:px-2">
-      <label className="relative block w-full max-w-[720px]"><Search aria-hidden="true" className="absolute left-7 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" /><input type="search" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search Company or PIC" aria-label="Search company or PIC" className="h-[70px] w-full rounded-2xl border border-[#bdbdbd] bg-white pl-16 pr-5 text-base font-medium text-slate-700 outline-none placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:text-lg" /></label>
+      <label className="relative block w-full max-w-[720px]"><Search aria-hidden="true" className="absolute left-7 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" /><input type="search" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search Company, PIC or Phone Number" aria-label="Search company, PIC, or phone number" className="h-[70px] w-full rounded-2xl border border-[#bdbdbd] bg-white pl-16 pr-5 text-base font-medium text-slate-700 outline-none placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:text-lg" /></label>
       <button type="button" onClick={() => { setExportError(""); setExportOpen(true); }} disabled={!customers.length} className="inline-flex h-[52px] shrink-0 items-center gap-3 rounded-2xl border border-slate-300 bg-white px-5 text-base font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"><Download className="h-5 w-5" />Export</button>
     </div>
 
@@ -285,7 +285,7 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
       <div className="flex items-start justify-between gap-4"><h2 id="transaction-detail-title" className="text-3xl font-bold tracking-tight text-black sm:text-4xl">Company Details</h2><button type="button" aria-label="Close" onClick={() => setDetailOpen(false)} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X className="h-6 w-6" /></button></div>
       {detailLoading ? <div role="status" className="grid min-h-72 place-items-center text-slate-500">Loading company details...</div> : detailError ? <p role="alert" className="mt-8 rounded-lg bg-rose-50 p-4 text-sm text-rose-700">{detailError}</p> : detailCustomer && <>
         <div className="mt-7 grid gap-5 border-b border-slate-100 pb-6 sm:grid-cols-2 lg:grid-cols-4">{[["Customer Code", detailCustomer.customerCode], ["Job Number", detailCustomer.jobNumber], ["Company", detailCustomer.companyName], ["PIC", detailCustomer.primaryPic?.fullName]].map(([label, value]) => <div key={label}><h3 className="text-base text-[#707070] sm:text-lg">{label}</h3><p className="mt-1 break-words text-sm font-medium text-[#303030] sm:text-base">{value || "—"}</p></div>)}</div>
-        <div className="mt-6 grid gap-5 lg:grid-cols-2"><DetailInfoCard title="Company Information" rows={[["Address", detailCustomer.address], ["Customer Code", detailCustomer.customerCode], ["Job Number", detailCustomer.jobNumber], ["PIC", detailCustomer.primaryPic?.fullName], ["Created By", detailCustomer.createdBy], ["Created Date", detailCustomer.createdAt]]} /><DetailInfoCard title="Meeting Schedule" rows={detailCustomer.meetings.length ? detailCustomer.meetings.map((meeting) => [meeting.formattedSchedule, [meeting.agenda, meeting.status].filter(Boolean).join(" · ")]) : [["No meeting scheduled", ""]]} /></div>
+        <div className="mt-6 grid gap-5 lg:grid-cols-2"><DetailInfoCard title="Company Information" rows={[["Address", detailCustomer.address], ["Customer Code", detailCustomer.customerCode], ["Job Number", detailCustomer.jobNumber], ["PIC", detailCustomer.primaryPic?.fullName], ["PIC Phone Number", detailCustomer.primaryPic?.phoneNumber], ["Created By", detailCustomer.createdBy], ["Created Date", detailCustomer.createdAt]]} /><DetailInfoCard title="Meeting Schedule" rows={detailCustomer.meetings.length ? detailCustomer.meetings.map((meeting) => [meeting.formattedSchedule, [meeting.agenda, meeting.status].filter(Boolean).join(" · ")]) : [["No meeting scheduled", ""]]} /></div>
       </>}
       <div className="mt-7 flex justify-end"><button type="button" onClick={() => setDetailOpen(false)} className="h-14 w-full rounded-lg bg-[#3e6df5] text-lg font-semibold text-white hover:bg-blue-700 sm:w-[300px]">Close</button></div>
     </section></div>}

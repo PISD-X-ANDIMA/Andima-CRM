@@ -28,8 +28,15 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     const { customerId } = await params;
     const body = await request.json();
 
+    if (body.pic_phone_number !== undefined && (typeof body.pic_phone_number !== "string" || !/^[+\d][+\d\s().-]{5,19}$/.test(body.pic_phone_number.trim()))) {
+      return createErrorResponse("VALIDATION_001", "Enter a valid PIC phone number", undefined, 400);
+    }
+
     const result = await updateCustomer(customerId, body);
     if (!result.success) {
+      if (result.error?.includes("DUPLICATE_COMPANY")) {
+        return createErrorResponse("DUPLICATE_001", "This company is already registered", undefined, 409);
+      }
       return createErrorResponse("UPDATE_001", result.error || "Failed to update the customer", undefined, 500);
     }
     return createSuccessResponse({ customerId });

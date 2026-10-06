@@ -127,6 +127,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                       <p className="text-sm font-semibold text-slate-800 truncate">
                         {customer.primaryPic.fullName}
                       </p>
+                      {customer.primaryPic.phoneNumber && <p className="text-xs text-slate-500">{customer.primaryPic.phoneNumber}</p>}
                     </div>
                   </div>
                 </li>

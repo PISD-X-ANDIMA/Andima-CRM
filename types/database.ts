@@ -26,6 +26,7 @@ export interface Database {
           customer_code: string | null;
           company_name: string;
           name: string;
+          pic_phone_number: string | null;
           address: string | null;
           job_number: string | null;
           created_by: string;
@@ -38,6 +39,7 @@ export interface Database {
           customer_code?: string | null;
           company_name: string;
           name: string;
+          pic_phone_number?: string | null;
           address?: string | null;
           job_number?: string | null;
           created_by: string;
@@ -50,6 +52,7 @@ export interface Database {
           customer_code?: string | null;
           company_name?: string;
           name?: string | null;
+          pic_phone_number?: string | null;
           address?: string | null;
           job_number?: string | null;
           created_by?: string | null;

@@ -108,6 +108,7 @@ export default function CompanyListPage() {
         PIC: customer.primaryPic?.fullName || "",
         "Meeting Schedule": customer.meetingSchedule?.formattedSchedule || "Unscheduled",
         "Customer Code": customer.customerCode || "",
+        "PIC Phone Number": customer.primaryPic?.phoneNumber || "",
         "Meeting Schedules": (customer.meetings || []).map((meeting) => meeting.formattedSchedule).join("; "),
         "Job Number": customer.jobNumber || "",
       }));
@@ -130,7 +131,7 @@ export default function CompanyListPage() {
       <button type="button" onClick={() => { setModalCustomer(null); setIsModalOpen(true); }} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-base font-semibold text-white hover:bg-blue-700"><Plus className="h-4 w-4" />Add Company</button>
     </div>
     <div className="flex items-center justify-between gap-4 pt-1">
-      <label className="relative block w-full max-w-[425px]"><Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" /><input type="search" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} placeholder="Search Company or PIC" className="h-[52px] w-full rounded-full border border-slate-300 bg-white pl-14 pr-5 text-base font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>
+      <label className="relative block w-full max-w-[425px]"><Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" /><input type="search" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} placeholder="Search Company, PIC or Phone Number" className="h-[52px] w-full rounded-full border border-slate-300 bg-white pl-14 pr-5 text-base font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>
       <button type="button" onClick={() => void exportExcel()} disabled={!total || isExporting} className="inline-flex h-[52px] items-center gap-3 rounded-2xl border border-slate-300 bg-white px-5 text-base font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"><Download className="h-5 w-5" />{isExporting ? "Exporting..." : "Export"}</button>
     </div>
     {exportError && <p role="alert" className="-mt-4 text-sm text-red-600">{exportError}</p>}

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { X, Building2, User, MapPin, Loader2, AlertCircle } from "lucide-react";
+import { X, Building2, User, MapPin, Phone, Loader2, AlertCircle } from "lucide-react";
 import { CreateCustomerInput, CustomerListItem, ApiResponse } from "@/types/customer";
 
 interface CustomerFormModalProps {
@@ -15,6 +15,7 @@ interface FormErrors {
   company_name?: string;
   address?: string;
   pic_full_name?: string;
+  pic_phone_number?: string;
   general?: string;
 }
 
@@ -22,6 +23,7 @@ const INITIAL_FORM: CreateCustomerInput = {
   company_name: "",
   address: "",
   pic_full_name: "",
+  pic_phone_number: "",
 };
 
 function validate(data: CreateCustomerInput): FormErrors {
@@ -29,6 +31,8 @@ function validate(data: CreateCustomerInput): FormErrors {
   if (!data.company_name.trim()) errors.company_name = "Company name is required";
   if (!data.address.trim()) errors.address = "Address is required";
   if (!data.pic_full_name.trim()) errors.pic_full_name = "PIC name is required";
+  if (!data.pic_phone_number.trim()) errors.pic_phone_number = "PIC phone number is required";
+  else if (!/^[+\d][+\d\s().-]{5,19}$/.test(data.pic_phone_number.trim())) errors.pic_phone_number = "Enter a valid phone number";
   return errors;
 }
 
@@ -43,6 +47,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
       company_name: customer.companyName,
       address: customer.address || "",
       pic_full_name: customer.primaryPic?.fullName || "",
+      pic_phone_number: customer.primaryPic?.phoneNumber || "",
     } : INITIAL_FORM);
     setErrors({});
   }, [customer, isOpen]);
@@ -229,6 +234,26 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
                   {errors.pic_full_name && (
                     <p className="mt-1.5 text-[11px] text-red-600">{errors.pic_full_name}</p>
                   )}
+                </div>
+
+                <div>
+                  <label htmlFor="field-pic_phone_number" className="mb-1.5 block text-xs font-medium text-slate-700">
+                    PIC Phone Number <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><Phone className="h-4 w-4" /></div>
+                    <input
+                      id="field-pic_phone_number"
+                      type="tel"
+                      maxLength={20}
+                      autoComplete="tel"
+                      value={form.pic_phone_number}
+                      onChange={(event) => handleChange("pic_phone_number", event.target.value)}
+                      placeholder="e.g. +62 812 3456 7890"
+                      className={`w-full rounded-lg border py-2.5 pl-9 pr-4 text-sm transition-all focus:outline-none focus:ring-2 ${errors.pic_phone_number ? "border-red-300 focus:border-red-400 focus:ring-red-500/20" : "border-slate-200 focus:border-blue-400 focus:ring-blue-500/20"}`}
+                    />
+                  </div>
+                  {errors.pic_phone_number && <p className="mt-1.5 text-[11px] text-red-600">{errors.pic_phone_number}</p>}
                 </div>
 
                 <div>
