@@ -28,6 +28,7 @@ export default function CRMDashboard() {
     role: 'Sales Exc',
   });
   const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     async function checkAuth() {
@@ -36,8 +37,8 @@ export default function CRMDashboard() {
         const cached = typeof window !== 'undefined' ? localStorage.getItem('andima_user') : null;
         const { data: { session } } = await supabase.auth.getSession();
 
-        // Jika belum ada tanda login aktif pada browser dan tidak ada session supabase, wajib login dulu
-        if (!isSessionLoggedIn && !session) {
+        // Wajib ada sesi login aktif di session browser saat ini
+        if (!isSessionLoggedIn) {
           router.replace('/login');
           return;
         }
@@ -74,10 +75,11 @@ export default function CRMDashboard() {
           setCurrentUser(userData);
           if (typeof window !== 'undefined') {
             localStorage.setItem('andima_user', JSON.stringify(userData));
-            sessionStorage.setItem('andima_logged_in', 'true');
           }
+          setIsAuthenticated(true);
         } else if (parsedUser) {
           setCurrentUser(parsedUser);
+          setIsAuthenticated(true);
         } else {
           router.replace('/login');
           return;
@@ -103,19 +105,9 @@ export default function CRMDashboard() {
       localStorage.removeItem('andima_user');
       sessionStorage.removeItem('andima_logged_in');
     }
+    setIsAuthenticated(false);
     router.replace('/login');
   };
-
-  if (isAuthChecking) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-[#07111F] text-white">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-[#3B6FF5] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-semibold tracking-wide text-slate-300">Menghubungkan ke Andima CRM...</p>
-        </div>
-      </div>
-    );
-  }
 
   const pageBreadcrumb = page === 'RecordConversation' 
     ? 'Record Coversation' 
@@ -123,7 +115,7 @@ export default function CRMDashboard() {
     ? 'Monitoring Issue' 
     : 'Need Backup';
 
-  if (isAuthChecking) {
+  if (isAuthChecking || !isAuthenticated) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-[#07111F] text-white">
         <div className="flex flex-col items-center gap-3">
