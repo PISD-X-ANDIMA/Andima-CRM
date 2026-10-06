@@ -148,32 +148,45 @@ export async function createConversation(payload: NewConversationPayload): Promi
   error?: string;
 }> {
   try {
-    // Dapatkan ID pegawai dari d3_employee (ambil baris paling atas) atau dari baris yang sudah ada
+    // Dapatkan ID pegawai dari d3_employee (cocokkan nama jika ada)
     let activeEmployeeId: string | null = null;
-    const { data: empData, error: empError } = await supabase
-      .from('d3_employee')
-      .select('id')
-      .limit(1);
-
-    if (empData && empData.length > 0 && empData[0]?.id) {
-      activeEmployeeId = empData[0].id;
-    } else {
-      if (empError) {
-        console.warn('Query ke d3_employee dibatasi RLS/permission:', empError.message);
+    if (payload.sales_pic_name) {
+      const { data: matchedEmp } = await supabase
+        .from('d3_employee')
+        .select('id')
+        .ilike('full_name', `%${payload.sales_pic_name.trim()}%`)
+        .limit(1);
+      if (matchedEmp && matchedEmp.length > 0 && matchedEmp[0]?.id) {
+        activeEmployeeId = matchedEmp[0].id;
       }
-      // Fallback: ambil sales_pic_id valid yang sudah ada di a2_record_conversations (hindari dummy UUID)
-      const { data: convFallback } = await supabase
-        .from('a2_record_conversations')
-        .select('sales_pic_id')
-        .not('sales_pic_id', 'is', null)
-        .neq('sales_pic_id', 'a0000000-0000-0000-0000-000000000001')
+    }
+
+    if (!activeEmployeeId) {
+      const { data: empData, error: empError } = await supabase
+        .from('d3_employee')
+        .select('id')
         .limit(1);
 
-      if (convFallback && convFallback.length > 0 && convFallback[0]?.sales_pic_id) {
-        activeEmployeeId = convFallback[0].sales_pic_id;
+      if (empData && empData.length > 0 && empData[0]?.id) {
+        activeEmployeeId = empData[0].id;
       } else {
-        // Fallback default: ID karyawan yang terdaftar di d3_employee
-        activeEmployeeId = '9c274330-44f1-474d-91c0-523aac3ea9cf';
+        if (empError) {
+          console.warn('Query ke d3_employee dibatasi RLS/permission:', empError.message);
+        }
+        // Fallback: ambil sales_pic_id valid yang sudah ada di a2_record_conversations (hindari dummy UUID)
+        const { data: convFallback } = await supabase
+          .from('a2_record_conversations')
+          .select('sales_pic_id')
+          .not('sales_pic_id', 'is', null)
+          .neq('sales_pic_id', 'a0000000-0000-0000-0000-000000000001')
+          .limit(1);
+
+        if (convFallback && convFallback.length > 0 && convFallback[0]?.sales_pic_id) {
+          activeEmployeeId = convFallback[0].sales_pic_id;
+        } else {
+          // Fallback default: ID karyawan yang terdaftar di d3_employee
+          activeEmployeeId = '9c274330-44f1-474d-91c0-523aac3ea9cf';
+        }
       }
     }
 
@@ -247,7 +260,13 @@ export async function createConversation(payload: NewConversationPayload): Promi
       }
     }
 
-    return { success: true, data: convData as RecordConversationItem };
+    return {
+      success: true,
+      data: {
+        ...(convData as RecordConversationItem),
+        sales_pic_name: payload.sales_pic_name,
+      },
+    };
   } catch (err: any) {
     console.error('Unexpected error in createConversation:', err);
     return { success: false, error: err.message || 'Gagal menyimpan percakapan' };

@@ -147,6 +147,7 @@ export interface NewConversationPayload {
   urgency_level: 'high_priority' | 'average' | 'critical' | 'standard';
   synced_to_ctrack?: boolean;
   job_number?: string;
+  sales_pic_name?: string;
   uploaded_file?: {
     file_name: string;
     file_type: string;

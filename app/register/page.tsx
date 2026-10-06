@@ -17,7 +17,7 @@ const DEFAULT_POSITIONS: OptionItem[] = [
   { id: '0ec333af-8737-413f-adab-841a3067e485', name: 'Director' },
   { id: '10da1bac-a6a8-472e-a171-e4984ab768d9', name: 'Accounting Associate' },
   { id: '58706b7f-950b-4e71-b066-792fbd91424d', name: 'Sales Executive' },
-  { id: '56f0fe6d-crm1-48d4-b81d-aecfc1091611', name: 'CRM Staff' },
+  { id: '1978f4a2-13ad-4fcc-a9e4-e03b6940cce0', name: 'CRM Staff' },
 ];
 
 const DEFAULT_DEPARTMENTS: OptionItem[] = [
@@ -90,22 +90,27 @@ export default function RegisterPage() {
     fetchOptions();
   }, []);
 
-  // Fungsi untuk Generate Employee ID otomatis (EMP-001, EMP-002, dst.)
+  // Fungsi untuk Generate Employee ID otomatis (AND-001, AND-002, dst.)
   const generateNextEmployeeId = async (): Promise<string> => {
     const { data, error } = await supabase
       .from('b2_register')
       .select('employee_id')
-      .like('employee_id', 'AND-%')
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .like('employee_id', 'AND-%');
 
     if (error) throw new Error('Gagal menyiapkan ID registrasi: ' + error.message);
     if (!data?.length) return 'AND-001';
 
-    const last = data[0].employee_id;
-    const match = /^EMP-(\d+)$/.exec(data[0].employee_id ?? '');
-    if (!match) throw new Error('Format ID registrasi terakhir tidak valid. Hubungi administrator.');
-    return `AND-${String(Number(match[1]) + 1).padStart(4, '0')}`;
+    let maxNum = 0;
+    for (const row of data) {
+      const match = /^AND-(\d+)$/i.exec(row.employee_id?.trim() ?? '');
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    }
+
+    if (maxNum === 0) return 'AND-001';
+    return `AND-${String(maxNum + 1).padStart(3, '0')}`;
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -186,35 +191,56 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
+      // Normalisasi ID CRM Staff jika form browser masih menyimpan value lama
+      let finalPositionId = positionId;
+      if (
+        positionId === '56f0fe6d-crm1-48d4-b81d-aecfc1091611' ||
+        positionId === '56f0fe6d-6a8e-48d4-b81d-aecfc1091611'
+      ) {
+        finalPositionId = '1978f4a2-13ad-4fcc-a9e4-e03b6940cce0';
+      }
+
       // 1. Generate Employee ID
       const autoEmployeeId = await generateNextEmployeeId();
 
-      // 2. Buat akun Supabase Auth (diubah: tangkap data untuk mengambil UUID)
+      // 2. Buat akun Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: emailLower,
         password: password,
         options: {
           data: {
             full_name: fullName.trim(),
-            position_id: positionId,
+            position_id: finalPositionId,
           },
         },
       });
 
-      if (authError) {
-        throw new Error('Registration failed: ' + authError.message);
+      let userId = authData?.user?.id;
+
+      // Jika user sudah terdaftar di auth (misalnya dari percobaan sebelumnya yang gagal simpan DB)
+      if (authError || (authData?.user && authData.user.identities && authData.user.identities.length === 0)) {
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: emailLower,
+          password: password,
+        });
+
+        if (!signInError && signInData?.user?.id) {
+          userId = signInData.user.id;
+        } else if (authError) {
+          throw new Error('Registration failed: ' + authError.message);
+        } else {
+          throw new Error('Email sudah terdaftar. Silakan langsung login.');
+        }
       }
 
-      // Ambil ID user dari auth
-      const userId = authData?.user?.id;
       if (!userId) {
         throw new Error('User ID tidak ditemukan setelah pendaftaran auth.');
       }
 
-      // 3. Simpan data ke b2_register (diubah: tambahkan id: userId bertipe UUID)
+      // 3. Simpan data ke b2_register (upsert agar aman jika id sudah tercatat)
       const { error: dbError } = await supabase
         .from('b2_register')
-        .insert([
+        .upsert([
           {
             id: userId,
             employee_id: autoEmployeeId,
@@ -222,7 +248,7 @@ export default function RegisterPage() {
             email: emailLower,
             phone: phone.trim(),
             employment_status: employmentStatus,
-            position_id: positionId,
+            position_id: finalPositionId,
             departement_id: departementId,
           },
         ]);

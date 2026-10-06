@@ -1,33 +1,22 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Bell, HelpCircle, Users, Briefcase, Settings, LayoutGrid, Receipt, MonitorSmartphone, Headphones, ChevronUp, Box, Monitor, ShieldAlert, LogOut } from 'lucide-react';
+import { 
+  Search, Bell, HelpCircle, Users, Briefcase, 
+  LayoutGrid, Headphones, ChevronUp, ChevronRight, 
+  Monitor, ShieldAlert 
+} from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import InteractionTab from '../components/InteractionTab';
-import FollowUpTab from '../components/FollowUpTab';
-import ComplaintsTab from '../components/ComplaintsTab';
 import MonitoringIssueTab from '../components/MonitoringIssueTab';
 import NeedBackupTab from '../components/NeedBackupTab';
-
-const NavItem = ({ Icon, text }: any) => (
-  <a href="#" className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white group">
-    <Icon size={18} className="text-slate-400 group-hover:text-white" />
-    <span className="text-sm font-medium">{text}</span>
-  </a>
-);
-
-const TabBtn = ({ label, id, active, setTab, count }: any) => (
-  <button onClick={() => setTab(id)} className={`pb-3 text-sm font-medium flex items-center gap-2 ${active ? 'text-teal-600 border-b-2 border-teal-600' : 'text-slate-500 hover:text-slate-700'}`}>
-    {label} {count && <span className={`py-0.5 px-2 rounded-full text-xs font-semibold ${active ? 'bg-teal-50 text-teal-700' : 'bg-slate-100 text-slate-600'}`}>{count}</span>}
-  </button>
-);
 
 type PageKey = 'RecordConversation' | 'MonitoringIssue' | 'NeedBackup';
 
 export default function CRMDashboard() {
   const router = useRouter();
   const [page, setPage] = useState<PageKey>('RecordConversation');
-  const [tab, setTab] = useState('Interaction');
+  const [crmOpen, setCrmOpen] = useState(true);
   const [needBackupSub, setNeedBackupSub] = useState<'eskalasi' | 'pengalihan'>('eskalasi');
 
   const [currentUser, setCurrentUser] = useState<{
@@ -36,26 +25,36 @@ export default function CRMDashboard() {
     email?: string;
   }>({
     name: 'CRM Staff',
-    role: 'Customer Relationship Management',
+    role: 'Sales Exc',
   });
   const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   useEffect(() => {
     async function checkAuth() {
       try {
+        const isSessionLoggedIn = typeof window !== 'undefined' ? sessionStorage.getItem('andima_logged_in') : null;
         const cached = typeof window !== 'undefined' ? localStorage.getItem('andima_user') : null;
+        const { data: { session } } = await supabase.auth.getSession();
+
+        // Jika belum ada tanda login aktif pada browser dan tidak ada session supabase, wajib login dulu
+        if (!isSessionLoggedIn && !session) {
+          router.replace('/login');
+          return;
+        }
+
+        let parsedUser: { name: string; role: string; email?: string } | null = null;
         if (cached) {
           try {
-            setCurrentUser(JSON.parse(cached));
+            parsedUser = JSON.parse(cached);
           } catch {
             // Ignore parse error
           }
         }
 
-        const { data: { user } } = await supabase.auth.getUser();
+        const user = session?.user;
         if (user) {
-          let name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'CRM Staff';
-          let role = 'CRM Staff';
+          let name = user.user_metadata?.full_name || parsedUser?.name || 'CRM Staff';
+          let role = parsedUser?.role || 'Sales Exc';
 
           try {
             const { data: profile } = await supabase
@@ -73,13 +72,19 @@ export default function CRMDashboard() {
 
           const userData = { name, role, email: user.email };
           setCurrentUser(userData);
-          localStorage.setItem('andima_user', JSON.stringify(userData));
-        } else if (!cached) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('andima_user', JSON.stringify(userData));
+            sessionStorage.setItem('andima_logged_in', 'true');
+          }
+        } else if (parsedUser) {
+          setCurrentUser(parsedUser);
+        } else {
           router.replace('/login');
           return;
         }
       } catch (err) {
         console.error('Auth verification error:', err);
+        router.replace('/login');
       } finally {
         setIsAuthChecking(false);
       }
@@ -96,184 +101,245 @@ export default function CRMDashboard() {
     }
     if (typeof window !== 'undefined') {
       localStorage.removeItem('andima_user');
+      sessionStorage.removeItem('andima_logged_in');
     }
     router.replace('/login');
   };
 
-  const pageName = page === 'RecordConversation' ? tab : page === 'MonitoringIssue' ? 'Monitoring Issue' : 'Need Backup';
+  if (isAuthChecking) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-[#07111F] text-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-[#3B6FF5] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-semibold tracking-wide text-slate-300">Menghubungkan ke Andima CRM...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const pageBreadcrumb = page === 'RecordConversation' 
+    ? 'Record Coversation' 
+    : page === 'MonitoringIssue' 
+    ? 'Monitoring Issue' 
+    : 'Need Backup';
 
   if (isAuthChecking) {
-    const cached = typeof window !== 'undefined' ? localStorage.getItem('andima_user') : null;
-    if (!cached) {
-      return (
-        <div className="flex h-screen w-full items-center justify-center bg-[#07111F] text-white">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-10 h-10 border-4 border-[#3B6FF5] border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-semibold tracking-wide text-slate-300">Menghubungkan ke Andima CRM...</p>
-          </div>
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-[#07111F] text-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-[#3B6FF5] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-semibold tracking-wide text-slate-300">Menghubungkan ke Andima CRM...</p>
         </div>
-      );
-    }
+      </div>
+    );
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans">
-      <aside className="w-64 bg-[#0B1120] text-slate-300 flex flex-col h-full shrink-0 shadow-xl z-20">
-        <div className="p-6 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white"><Box size={22} /></div>
-          <div>
-            <h1 className="text-white font-bold text-sm leading-tight">ANDIMA<br/>TRANSPORTINDO</h1>
-            <p className="text-[7px] text-slate-400 font-medium tracking-widest mt-0.5">ENTERPRISE DIGITAL ECOSYSTEM</p>
-          </div>
+    <div className="flex h-screen bg-[#f4f7fa] font-sans antialiased text-slate-800">
+      {/* SIDEBAR */}
+      <aside className="w-56 bg-[#07111e] text-slate-300 flex flex-col h-full shrink-0 z-20 select-none">
+        {/* LOGO BRAND */}
+        <div className="pt-7 pb-6 px-6">
+          <h1 className="text-white font-extrabold text-[15px] tracking-[0.14em] leading-tight">ANDIMA</h1>
+          <h2 className="text-white font-extrabold text-xs tracking-[0.09em] leading-tight mt-0.5">TRANSPORTINDO</h2>
+          <p className="text-[7.5px] text-[#38bdf8] font-bold tracking-[0.19em] mt-1.5 uppercase">EMPOWER DIGITAL ECOSYSTEM</p>
         </div>
 
-        <nav className="flex-1 px-4 space-y-5 overflow-y-auto">
+        {/* NAVIGATION */}
+        <nav className="flex-1 px-3 space-y-1.5 overflow-y-auto">
+          {/* Dashboard */}
+          <a
+            href="#"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors text-xs font-medium"
+          >
+            <LayoutGrid size={16} className="text-slate-400" />
+            <span>Dashboard</span>
+          </a>
+
+          {/* CCR */}
+          <a
+            href="#"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors text-xs font-medium"
+          >
+            <Headphones size={16} className="text-slate-400" />
+            <span>CCR</span>
+          </a>
+
+          {/* CRM ACCORDION */}
           <div>
-            <div className="text-[10px] text-slate-500 font-bold tracking-wider mb-2 px-3">MAIN</div>
-            <NavItem Icon={LayoutGrid} text="General Dashboard" />
-          </div>
-
-          <div>
-            <div className="text-[10px] text-slate-500 font-bold tracking-wider mb-2 px-3">BUSINESS MODUL</div>
-            <div className="space-y-1">
-              <NavItem Icon={Receipt} text="POS" />
-              <div>
-                <a href="#" className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-800 text-white">
-                  <div className="flex items-center gap-3"><Users size={18} /><span className="text-sm font-bold">CRM</span></div>
-                  <ChevronUp size={16} className="text-slate-400" />
-                </a>
-                <div className="ml-5 pl-4 mt-1 space-y-0.5 border-l border-slate-700">
-                  <div className="text-[10px] font-bold text-slate-500 tracking-wider py-2">SALES EXECUTIVE</div>
-                  <a href="#" className="block py-2 text-sm text-slate-400 hover:text-white">Company List</a>
-
-                  <button
-                    onClick={() => setPage('RecordConversation')}
-                    className={`w-full text-left flex items-center justify-between py-2.5 px-3 -ml-3 rounded-lg text-sm font-semibold transition-colors ${page === 'RecordConversation' ? 'bg-blue-500 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
-                  >
-                    <span>Record Conversation</span>
-                    {page === 'RecordConversation' && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm" />}
-                  </button>
-
-                  <a href="#" className="block py-2 text-sm text-slate-400 hover:text-white">Task of Field Agent</a>
-
-                  <button
-                    onClick={() => setPage('MonitoringIssue')}
-                    className={`w-full text-left flex items-center gap-2 py-2 text-sm font-medium transition-colors ${page === 'MonitoringIssue' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
-                  >
-                    <Monitor size={14} className={page === 'MonitoringIssue' ? 'text-teal-400' : 'text-slate-500'} />
-                    Monitoring Issue
-                  </button>
-
-                  <div>
-                    <button
-                      onClick={() => setPage('NeedBackup')}
-                      className={`w-full text-left flex items-center gap-2 py-2 text-sm font-medium transition-colors ${page === 'NeedBackup' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
-                    >
-                      <ShieldAlert size={14} className={page === 'NeedBackup' ? 'text-teal-400' : 'text-slate-500'} />
-                      Need Backup
-                    </button>
-                    {page === 'NeedBackup' && (
-                      <div className="ml-5 pl-3 space-y-0.5 border-l border-slate-700 mt-0.5">
-                        <button
-                          onClick={() => setNeedBackupSub('eskalasi')}
-                          className={`block w-full text-left py-1.5 text-xs font-medium transition-colors ${needBackupSub === 'eskalasi' ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
-                        >
-                          Eskalasi
-                        </button>
-                        <button
-                          onClick={() => setNeedBackupSub('pengalihan')}
-                          className={`block w-full text-left py-1.5 text-xs font-medium transition-colors ${needBackupSub === 'pengalihan' ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
-                        >
-                          Pengalihan Penanggung Jawab
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <a href="#" className="block py-2 text-sm text-slate-400 hover:text-white">Field Agent</a>
-                </div>
+            <button
+              onClick={() => setCrmOpen(!crmOpen)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-md bg-[#1d4ed8] text-white shadow-xs font-semibold text-xs cursor-pointer transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                <Users size={16} className="text-white" />
+                <span className="font-bold tracking-wide">CRM</span>
               </div>
-              <NavItem Icon={Briefcase} text="HRMS" />
-              <NavItem Icon={MonitorSmartphone} text="MID" />
-            </div>
+              <ChevronUp size={15} className={`text-white transition-transform ${crmOpen ? '' : 'rotate-180'}`} />
+            </button>
+
+            {crmOpen && (
+              <div className="ml-4 pl-3 mt-1.5 space-y-0.5 border-l border-slate-700/60 text-xs">
+                <button
+                  type="button"
+                  className="w-full text-left py-1.5 px-2 text-slate-400 hover:text-white transition-colors flex items-center gap-2 text-xs cursor-pointer"
+                >
+                  <span className="text-[10px] text-slate-500">•</span>
+                  <span>Sales Eksekutif</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="w-full text-left py-1.5 px-2 text-slate-400 hover:text-white transition-colors flex items-center gap-2 text-xs cursor-pointer"
+                >
+                  <span className="text-[10px] text-slate-500">•</span>
+                  <span>Company List</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="w-full text-left py-1.5 px-2 text-slate-400 hover:text-white transition-colors flex items-center gap-2 text-xs cursor-pointer"
+                >
+                  <span className="text-[10px] text-slate-500">•</span>
+                  <span>Meeting Schedule</span>
+                </button>
+
+                {/* Record Conversation (Active) */}
+                <button
+                  type="button"
+                  onClick={() => setPage('RecordConversation')}
+                  className={`w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                    page === 'RecordConversation'
+                      ? 'bg-[#c5d8ec] text-[#0f172a] shadow-xs'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                  }`}
+                >
+                  <span className={`text-[11px] ${page === 'RecordConversation' ? 'text-[#0f172a]' : 'text-slate-500'}`}>•</span>
+                  <span>Record Conversation</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPage('MonitoringIssue')}
+                  className={`w-full text-left py-1.5 px-2 rounded-lg text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                    page === 'MonitoringIssue' ? 'bg-[#c5d8ec] text-[#0f172a] font-bold' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span className="text-[10px] text-slate-500">•</span>
+                  <span>Task Field Agent</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPage('NeedBackup')}
+                  className={`w-full text-left py-1.5 px-2 rounded-lg text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                    page === 'NeedBackup' ? 'bg-[#c5d8ec] text-[#0f172a] font-bold' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span className="text-[10px] text-slate-500">•</span>
+                  <span>Need Back up</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="w-full text-left py-1.5 px-2 text-slate-400 hover:text-white transition-colors flex items-center justify-between text-xs cursor-pointer"
+                >
+                  <span>Field Agent</span>
+                  <ChevronRight size={13} className="text-slate-500" />
+                </button>
+              </div>
+            )}
           </div>
 
-          <div>
-            <div className="text-[10px] text-slate-500 font-bold tracking-wider mb-2 px-3">SYSTEM</div>
-            <NavItem Icon={Settings} text="Settings" />
-          </div>
+          {/* HRMS */}
+          <a
+            href="#"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors text-xs font-medium"
+          >
+            <Briefcase size={16} className="text-slate-400" />
+            <span>HRMS</span>
+          </a>
         </nav>
 
-        <div className="p-4 mt-auto">
-          <div className="flex items-center gap-3 px-4 py-3 bg-slate-800 rounded-xl border border-slate-700 cursor-pointer">
-            <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-teal-400"><Headphones size={16} /></div>
-            <div>
-              <div className="text-xs font-bold text-white">Customer Support</div>
-              <div className="text-[9px] text-slate-400">24/7 Operations Line</div>
-            </div>
-          </div>
+        {/* LOGOUT BUTTON */}
+        <div className="p-6 mt-auto">
+          <button
+            onClick={handleLogout}
+            className="w-full py-2 px-4 rounded-full border border-red-500 text-red-500 hover:bg-red-500/10 text-xs font-bold transition-all text-center cursor-pointer"
+          >
+            Logout
+          </button>
         </div>
       </aside>
 
+      {/* MAIN CONTAINER */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <header className="bg-white border-b px-6 py-3 flex items-center justify-between shrink-0 z-10">
-          <div className="flex items-center gap-4 flex-1 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-            <span className="font-bold text-slate-800">ANDIMA CRM</span> / CRM / C-Track / <span className="text-teal-600 font-bold">{pageName}</span>
-            <div className="relative w-96 ml-8">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input type="text" placeholder="Global search..." className="w-full bg-slate-100 py-1.5 pl-9 pr-4 rounded-full text-sm outline-none" />
+        {/* TOP HEADER */}
+        <header className="bg-white border-b border-slate-200/80 px-8 py-3.5 flex items-center justify-between shrink-0 z-10">
+          {/* Left: Breadcrumbs & Global Search */}
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="font-extrabold text-slate-900 tracking-tight">ANDIMA CRM</span>
+              <span className="text-slate-400 font-medium">CRM</span>
+              <span className="text-slate-400 font-medium">/</span>
+              <span className="text-slate-400 font-medium">C-Track</span>
+              <span className="text-slate-400 font-medium">/</span>
+              <span className="text-[#2563eb] font-semibold">{pageBreadcrumb}</span>
+            </div>
+
+            {/* Global Search Pill */}
+            <div className="relative w-80">
+              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Global search waybill, PIC..."
+                className="w-full bg-[#f0f4f9] py-1.5 pl-9 pr-4 rounded-full text-xs text-slate-700 outline-none placeholder:text-slate-400 font-medium border border-transparent focus:border-blue-400 transition-colors"
+              />
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <button className="relative text-slate-400 hover:text-slate-600 transition-colors"><Bell size={20} /><span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">3</span></button>
-            <button className="text-slate-400 hover:text-slate-600 transition-colors"><HelpCircle size={20} /></button>
-            <div className="h-6 w-px bg-slate-200" />
-            <div className="flex items-center gap-3 text-right">
-              <div>
-                <div className="text-sm font-bold text-slate-700">{currentUser.name}</div>
-                <div className="text-[10px] font-medium text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded inline-block">{currentUser.role}</div>
+
+          {/* Right: Notifications, Help, User Profile */}
+          <div className="flex items-center gap-5">
+            <button 
+              type="button"
+              className="relative text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              title="Notifications"
+            >
+              <Bell size={18} />
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                3
+              </span>
+            </button>
+
+            <button 
+              type="button"
+              className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              title="Help"
+            >
+              <HelpCircle size={18} />
+            </button>
+
+            {/* User Profile */}
+            <div className="flex items-center gap-2.5 pl-1">
+              <div className="w-8 h-8 rounded-full bg-[#a7f3d0] text-[#065f46] flex items-center justify-center font-bold text-xs shadow-2xs">
+                {currentUser.name.trim().charAt(0) || 'A'}
               </div>
-              <div className="w-9 h-9 rounded-full bg-[#3B6FF5] text-white flex items-center justify-center font-bold text-sm shadow-md uppercase">
-                {currentUser.name.trim().charAt(0) || 'C'}
+              <div className="text-left">
+                <div className="text-xs font-bold text-slate-800 leading-tight">{currentUser.name}</div>
+                <div className="text-[10px] text-slate-400 font-medium leading-tight">{currentUser.role}</div>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              title="Logout from CRM"
-              className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-red-600 hover:bg-red-50 hover:text-red-700 transition-all border border-red-200"
-            >
-              <LogOut size={15} />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
           </div>
         </header>
 
-        {page === 'RecordConversation' && (
-          <div className="bg-white border-b px-8 pt-6 shrink-0 z-10 shadow-sm flex gap-8">
-            <button
-              onClick={() => setTab('Overview')}
-              className={`pb-3 text-sm font-medium transition-all ${tab === 'Overview' ? 'text-teal-600 border-b-2 border-teal-600 font-bold' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              Overview
-            </button>
-            <TabBtn id="Interaction" label="Interactions" active={tab === 'Interaction'} setTab={setTab} count="24" />
-          </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto p-8 z-10">
-          {page === 'RecordConversation' && tab === 'Interaction' && <InteractionTab />}
-          {page === 'RecordConversation' && tab === 'Overview' && (
-            <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500 shadow-xs">
-              <h2 className="text-base font-bold text-slate-800 mb-1">Overview Dashboard</h2>
-              <p className="text-xs text-slate-400">Silakan beralih ke tab Interactions untuk memantau rekaman percakapan dan koordinasi agen lapangan.</p>
-            </div>
-          )}
+        {/* CONTENT AREA */}
+        <div className="flex-1 overflow-y-auto px-8 py-6 z-10 bg-[#f4f7fa]">
+          {page === 'RecordConversation' && <InteractionTab currentUser={currentUser} />}
           {page === 'MonitoringIssue' && <MonitoringIssueTab />}
           {page === 'NeedBackup' && <NeedBackupTab initialSub={needBackupSub} onSubChange={setNeedBackupSub} />}
-          {false && <FollowUpTab />}
-          {false && <ComplaintsTab />}
         </div>
       </main>
     </div>
   );
 }
+

@@ -122,6 +122,7 @@ export default function LoginPage() {
           role: userAccount.role,
           email: email.toLowerCase().trim(),
         }));
+        sessionStorage.setItem('andima_logged_in', 'true');
       } catch (err) {
         console.error(err);
       }
@@ -168,6 +169,7 @@ export default function LoginPage() {
             role: displayRole,
             email: email.toLowerCase().trim(),
           }));
+          sessionStorage.setItem('andima_logged_in', 'true');
         } catch (err) {
           console.error(err);
         }
