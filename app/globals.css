@@ -29,12 +29,15 @@ textarea {
   display: flex;
   width: 100%;
   align-items: center;
-  gap: 6px;
-  padding: 5px 1px;
+  gap: 10px;
+  border-radius: 12px;
+  padding: 11px 12px;
   text-align: left;
+  font-weight: 700;
+  transition: background-color .18s ease, color .18s ease, box-shadow .18s ease;
 }
 
-.side-link svg { width: 9px; height: 9px; }
+.side-link svg { width: 17px; height: 17px; flex: 0 0 auto; }
 
 .form-card {
   border: 1px solid #eaf0f6;
