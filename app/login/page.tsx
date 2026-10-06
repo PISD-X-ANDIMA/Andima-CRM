@@ -201,10 +201,15 @@ export default function LoginPage() {
 
       {/* 2. BRAND TEXT (TITLE) MENGGUNAKAN FONT SYNE */}
       <div className="hidden md:flex absolute top-1/2 -translate-y-1/2 right-8 lg:right-16 xl:right-24 z-20 pointer-events-none flex-col items-end text-right max-w-lg">
-        <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl flex items-center justify-center text-white font-bold shadow-xl shadow-[#3B6FF5]/30 bg-[#3B6FF5] shrink-0 mb-4">
-          <svg className="w-8 h-8 lg:w-9 lg:h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457-.39-2.823-1.07-4" />
-          </svg>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center p-2.5 shadow-xl shadow-[#3B6FF5]/30 bg-white/10 backdrop-blur-md border border-white/20 shrink-0 mb-4">
+          <img
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo-ANDIMA-wzx4gpZx20EFE5IYcH3jqabixELIo3.png"
+            alt="Logo ANDIMA"
+            className="w-full h-auto object-contain"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = '/Logo-ANDIMA.png';
+            }}
+          />
         </div>
         <h1 className="font-[family-name:var(--font-syne)] text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-wider text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)] leading-tight">
           PT. ANDIMA<br />

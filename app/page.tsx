@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import InteractionTab from '../components/InteractionTab';
-import MonitoringIssueTab from '../components/MonitoringIssueTab';
+import TaskOfFieldAgent from '../components/TaskOfFieldAgent';
 import NeedBackupTab from '../components/NeedBackupTab';
 
 type PageKey = 'RecordConversation' | 'MonitoringIssue' | 'NeedBackup';
@@ -139,10 +139,22 @@ export default function CRMDashboard() {
       {/* SIDEBAR */}
       <aside className="w-56 bg-[#07111e] text-slate-300 flex flex-col h-full shrink-0 z-20 select-none">
         {/* LOGO BRAND */}
-        <div className="pt-7 pb-6 px-6">
-          <h1 className="text-white font-extrabold text-[15px] tracking-[0.14em] leading-tight">ANDIMA</h1>
-          <h2 className="text-white font-extrabold text-xs tracking-[0.09em] leading-tight mt-0.5">TRANSPORTINDO</h2>
-          <p className="text-[7.5px] text-[#38bdf8] font-bold tracking-[0.19em] mt-1.5 uppercase">EMPOWER DIGITAL ECOSYSTEM</p>
+        <div className="pt-6 pb-5 px-5">
+          <div className="flex items-center gap-2.5">
+            <img
+              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo-ANDIMA-wzx4gpZx20EFE5IYcH3jqabixELIo3.png"
+              alt="Logo ANDIMA"
+              className="w-10 h-auto object-contain shrink-0"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/Logo-ANDIMA.png';
+              }}
+            />
+            <div className="flex flex-col justify-center">
+              <h1 className="text-white font-extrabold text-[14px] tracking-[0.12em] leading-tight">ANDIMA</h1>
+              <h2 className="text-white font-extrabold text-[10.5px] tracking-[0.08em] leading-tight mt-0.5">TRANSPORTINDO</h2>
+            </div>
+          </div>
+          <p className="text-[7px] text-[#38bdf8] font-bold tracking-[0.16em] mt-2 uppercase">ENTERPRISE DIGITAL ECOSYSTEM</p>
         </div>
 
         {/* NAVIGATION */}
@@ -237,7 +249,7 @@ export default function CRMDashboard() {
                   }`}
                 >
                   <span className="text-[10px] text-slate-500">•</span>
-                  <span>Need Back up</span>
+                  <span>Need Backup</span>
                 </button>
 
                 <button
@@ -278,13 +290,19 @@ export default function CRMDashboard() {
         <header className="bg-white border-b border-slate-200/80 px-8 py-3.5 flex items-center justify-between shrink-0 z-10">
           {/* Left: Breadcrumbs & Global Search */}
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2.5 text-xs">
+              <img
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo-ANDIMA-wzx4gpZx20EFE5IYcH3jqabixELIo3.png"
+                alt="Logo ANDIMA"
+                className="w-5 h-auto object-contain inline-block shrink-0"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/Logo-ANDIMA.png';
+                }}
+              />
               <span className="font-extrabold text-slate-900 tracking-tight">ANDIMA CRM</span>
               <span className="text-slate-400 font-medium">CRM</span>
               <span className="text-slate-400 font-medium">/</span>
-              <span className="text-slate-400 font-medium">C-Track</span>
-              <span className="text-slate-400 font-medium">/</span>
-              <span className="text-[#2563eb] font-semibold">{pageBreadcrumb}</span>
+              <span className="text-[#2563eb] font-semibold">{page === 'NeedBackup' ? 'Task Field' : pageBreadcrumb}</span>
             </div>
 
             {/* Global Search Pill */}
@@ -335,7 +353,7 @@ export default function CRMDashboard() {
         {/* CONTENT AREA */}
         <div className="flex-1 overflow-y-auto px-8 py-6 z-10 bg-[#f4f7fa]">
           {page === 'RecordConversation' && <InteractionTab currentUser={currentUser} />}
-          {page === 'MonitoringIssue' && <MonitoringIssueTab />}
+          {page === 'MonitoringIssue' && <TaskOfFieldAgent currentUser={currentUser} />}
           {page === 'NeedBackup' && <NeedBackupTab initialSub={needBackupSub} onSubChange={setNeedBackupSub} />}
         </div>
       </main>

@@ -189,3 +189,84 @@ export interface PaginatedResult<T> {
   limit: number;
   totalPages: number;
 }
+
+export type TaskStatus = 'Assigned' | 'Unassigned' | 'In Progress' | 'Completed';
+
+export interface TimelineEvent {
+  id: string;
+  title: string;
+  description: string;
+  timestamp: string;
+  author: string;
+  status: 'completed' | 'current' | 'pending' | 'alert';
+}
+
+export interface FieldTaskItem {
+  id: string;
+  task_id_code?: string;
+  job_number: string;
+  customer_name: string;
+  customer_code?: string;
+  shipper?: string;
+  consignee?: string;
+  mawb?: string;
+  hawb?: string;
+  handover_datetime: string;
+  handover_location: string;
+  field_agent_name?: string;
+  status: TaskStatus;
+  has_issue: boolean;
+  issue_type?: string;
+  issue_category?: string;
+  issue_note?: string;
+  issue_photos?: string[];
+  issue_files?: {
+    name: string;
+    size: string;
+    type: string;
+    badge: string;
+    url: string;
+  }[];
+  issue_document_status?: string;
+  variance_tolerance?: string;
+  issue_reported_at?: string;
+  photo_count: number;
+  doc_count: number;
+  result_photos?: string[];
+  result_docs?: { name: string; size: string; url: string }[];
+  gross_weight?: string;
+  cargo_pieces?: string;
+  packaging_type?: string;
+  special_handling?: string;
+  checklists?: { label: string; is_verified: boolean }[];
+  timeline: TimelineEvent[];
+  notes?: string;
+}
+
+export interface NeedBackupTicketLog {
+  id: string;
+  author: string;
+  role?: string;
+  timestamp: string;
+  message: string;
+  is_active?: boolean;
+}
+
+export interface NeedBackupTicket {
+  id: string;
+  ticket_id: string;
+  job_number: string;
+  customer_name?: string;
+  category: string;
+  priority: 'High' | 'Medium' | 'Low';
+  date: string;
+  time?: string;
+  status: 'Open' | 'Inprogress' | 'Resolved';
+  connected_job?: string;
+  sla_description?: string;
+  description?: string;
+  requested_by?: string;
+  logs?: NeedBackupTicketLog[];
+  created_at?: string;
+}
+

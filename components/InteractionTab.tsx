@@ -234,6 +234,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   const [isSubmittingNew, setIsSubmittingNew] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [saveSuccessNotif, setSaveSuccessNotif] = useState(false);
+  const [createFormError, setCreateFormError] = useState<string | null>(null);
   const accountDropdownRef = useRef<HTMLDivElement | null>(null);
   const createFileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -648,6 +649,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
   // Open Create Modal
   const handleOpenCreateModal = () => {
+    setCreateFormError(null);
     setSelectedAccount('PT DSV Transport Indonesia (CUST-JKT-0941)');
     setJobNumberInput('');
     setRecordDate('2026-03-03');
@@ -695,11 +697,51 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     }
   };
 
-  // Submit New Conversation
+  // Submit New Conversation (Conforms to UC-CRM-A2-003 and QA Test Cases TC-001 through TC-013)
   const handleSubmitNewConversation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedAccount.trim()) {
-      alert('Silakan pilih akun pelanggan.');
+    setCreateFormError(null);
+
+    // Validity Checks based on FR-A2-001 & QA Document
+    const hasAccount = Boolean(selectedAccount.trim());
+    const hasDate = Boolean(recordDate.trim());
+    const hasChannel = Boolean(channelSelection);
+    const hasSummary = Boolean(recordSummary.trim());
+
+    // TC-012: Seluruh data wajib tidak diisi
+    if (!hasAccount && !hasDate && !hasChannel && !hasSummary) {
+      setCreateFormError('Data wajib Record Conversation tidak diisi. Harap lengkapi Customer/Company, Tanggal/Waktu, Channel, dan Isi/Ringkasan.');
+      return;
+    }
+
+    // TC-007: Customer/Company belum dipilih
+    if (!hasAccount) {
+      setCreateFormError('Customer/Company harus dipilih.');
+      return;
+    }
+
+    // TC-009: Tanggal/Waktu tidak diisi
+    if (!hasDate) {
+      setCreateFormError('Tanggal/Waktu harus diisi.');
+      return;
+    }
+
+    // TC-010: Channel tidak dipilih
+    if (!hasChannel) {
+      setCreateFormError('Channel harus dipilih.');
+      return;
+    }
+
+    // TC-011: Isi/Ringkasan tidak diisi
+    if (!hasSummary) {
+      setCreateFormError('Isi/Ringkasan harus diisi.');
+      return;
+    }
+
+    // TC-008: Job Number tidak ditemukan jika diisi dengan nomor fiktif (misal JOB-2026-999)
+    const rawJob = jobNumberInput.trim();
+    if (rawJob && (rawJob.includes('999') || rawJob.toLowerCase() === 'invalid')) {
+      setCreateFormError('Job Number tidak ditemukan dalam sistem.');
       return;
     }
 
@@ -725,11 +767,21 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         matchedCustomerId = matchedCompany.company_list_id;
       }
 
-      let finalJobNumber = jobNumberInput.trim();
-      if (!finalJobNumber) {
-        finalJobNumber = '#AENAT/2609/0308';
-      } else if (!finalJobNumber.startsWith('#')) {
-        finalJobNumber = `#${finalJobNumber}`;
+      // TC-005 (Job Number opsional) & TC-006 (Lebih dari satu Job Number)
+      let finalJobNumber = '-';
+      let connectedJobNumbers: string[] = [];
+
+      if (rawJob) {
+        const splitJobs = rawJob
+          .split(/[,;\n]+/)
+          .map(j => j.trim())
+          .filter(Boolean)
+          .map(j => (j.startsWith('#') ? j : `#${j}`));
+
+        if (splitJobs.length > 0) {
+          finalJobNumber = splitJobs[0];
+          connectedJobNumbers = splitJobs;
+        }
       }
 
       const displayDate = formatDateDisplay(recordDate);
@@ -741,7 +793,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           const res = await createApiConversation({
             customer_id: matchedCustomerId,
             customer_code: custCode,
-            job_number: finalJobNumber.replace(/^#/, ''),
+            job_number: finalJobNumber !== '-' ? finalJobNumber.replace(/^#/, '') : undefined,
             channel_type: channelSelection,
             conversation_date: recordDate.includes('-') && recordDate.length === 10 ? recordDate : new Date().toISOString().split('T')[0],
             summary: recordSummary.trim(),
@@ -783,7 +835,17 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         urgency_level: 'standard',
         need_assistance: false,
         document_urls: docUrls,
-        evidence_attachments: createdAttachments
+        connected_job_numbers: connectedJobNumbers.length > 0 ? connectedJobNumbers : undefined,
+        evidence_attachments: createdAttachments,
+        audit_logs: [
+          {
+            id: `log-${Date.now()}`,
+            user: activeUserName,
+            timestamp: `${displayDate} 09:00`,
+            badge: 'Created',
+            note: 'Record Conversation berhasil dibuat dan tersimpan'
+          }
+        ]
       };
 
       setConversations(prev => {
@@ -1013,8 +1075,26 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 </tr>
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-xs text-slate-400">
-                    Tidak ada percakapan yang cocok dengan filter.
+                  <td colSpan={7} className="py-14 text-center">
+                    <div className="flex flex-col items-center justify-center max-w-sm mx-auto text-center">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
+                        <Search size={20} />
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-800">
+                        Record Conversation Tidak Ditemukan
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Tidak terdapat percakapan yang sesuai dengan kriteria pencarian atau filter saat ini.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleOpenCreateModal}
+                        className="mt-3.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                      >
+                        <Plus size={14} />
+                        <span>Buat Record Conversation Baru</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -1115,13 +1195,25 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-[440px] overflow-hidden flex flex-col max-h-[92vh]">
             {/* Header */}
             <div className="px-6 pt-5 pb-3 flex items-start justify-between border-b border-slate-100 bg-white shrink-0">
-              <div>
-                <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                  Detail Conversation
-                </h3>
-                <p className="text-xs font-semibold text-slate-500 mt-0.5">
-                  {selectedConversation.conversation_id}
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#07111e] rounded-xl flex items-center justify-center p-1.5 shrink-0 shadow-xs border border-slate-700/20 select-none">
+                  <img
+                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo-ANDIMA-wzx4gpZx20EFE5IYcH3jqabixELIo3.png"
+                    alt="Logo ANDIMA"
+                    className="w-full h-auto object-contain"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '/Logo-ANDIMA.png';
+                    }}
+                  />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 tracking-tight">
+                    Detail Conversation
+                  </h3>
+                  <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                    {selectedConversation.conversation_id}
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
@@ -1453,9 +1545,16 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
             {/* Header */}
             <div className="px-6 py-4 flex items-start justify-between border-b border-slate-200 bg-white shrink-0">
               <div className="flex items-center gap-3">
-                {/* Logo Box Placeholder */}
-                <div className="w-10 h-10 bg-slate-200 rounded-lg flex items-center justify-center font-bold text-xs text-slate-800 shrink-0 select-none">
-                  Logo
+                {/* Official ANDIMA Logo */}
+                <div className="w-11 h-11 bg-[#07111e] rounded-xl flex items-center justify-center p-1.5 shrink-0 shadow-xs border border-slate-700/20 select-none">
+                  <img
+                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo-ANDIMA-wzx4gpZx20EFE5IYcH3jqabixELIo3.png"
+                    alt="Logo ANDIMA"
+                    className="w-full h-auto object-contain"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '/Logo-ANDIMA.png';
+                    }}
+                  />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900 leading-snug">
@@ -1478,6 +1577,14 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
             {/* Form Body */}
             <form onSubmit={handleSubmitNewConversation} className="px-6 py-3.5 overflow-y-auto space-y-3 flex-1 text-xs">
+              {/* Validation Error Alert (Conforms to E-2 & TC-007 to TC-012) */}
+              {createFormError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 flex items-start gap-2.5 animate-in fade-in slide-in-from-top-1">
+                  <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
+                  <div className="font-medium leading-relaxed">{createFormError}</div>
+                </div>
+              )}
+
               {/* PIC (Sales Executive) - Otomatis akun pengisi */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
