@@ -47,6 +47,7 @@ export interface GetCustomersOptions {
   sortBy?: "company_name" | "created_at";
   sortOrder?: "asc" | "desc";
   requireMeetings?: boolean;
+  requireTransactions?: boolean;
 }
 
 /**
@@ -66,6 +67,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
     sortBy = "company_name",
     sortOrder = "asc",
     requireMeetings = false,
+    requireTransactions = false,
   } = options;
 
   const validPerPage = Math.min(Math.max(perPage, 1), 100);
@@ -122,6 +124,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
         .from("a2_worksheets")
         .select("transaction_no, job_no")
         .in("transaction_no", customerCodes);
+      if (worksheetError && requireTransactions) throw worksheetError;
       if (!worksheetError) {
         for (const worksheet of worksheetRows || []) {
           if (worksheet.transaction_no) worksheetByTransaction.set(worksheet.transaction_no, {

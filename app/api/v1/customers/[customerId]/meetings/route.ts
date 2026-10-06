@@ -38,14 +38,14 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     if (!(["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"].includes(body.meeting_day)) || !["one_day", "weekly"].includes(body.schedule_type)) {
-      return createErrorResponse("VALIDATION_001", "A valid meeting day and frequency are required", undefined, 400);
+      return createErrorResponse("SCH_002", "A valid meeting day and frequency are required", undefined, 400);
     }
 
     if (!body.meeting_date && body.schedule_type === "one_day") {
-      return createErrorResponse("VALIDATION_001", "meeting_date is required for a one-day meeting", undefined, 400);
+      return createErrorResponse("SCH_002", "meeting_date is required for a one-day meeting", undefined, 400);
     }
     if (!body.effective_start_date && body.schedule_type === "weekly") {
-      return createErrorResponse("VALIDATION_001", "effective_start_date is required for a weekly meeting", undefined, 400);
+      return createErrorResponse("SCH_002", "effective_start_date is required for a weekly meeting", undefined, 400);
     }
     if (body.end_time <= body.start_time) {
       return createErrorResponse("VALIDATION_001", "End time must be after start time", undefined, 400);
@@ -67,8 +67,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     const conflict = await detectMeetingConflict(body);
-    if (conflict.error) return createErrorResponse("CONFLICT_CHECK_001", "Could not verify meeting availability", undefined, 503);
-    if (conflict.hasConflict) return createErrorResponse("MEET_001", `This time overlaps with a meeting for ${conflict.conflictWith}.`, undefined, 409);
+    if (conflict.error) return createErrorResponse("SCH_003", "Could not verify meeting availability", undefined, 503);
+    if (conflict.hasConflict) return createErrorResponse("SCH_CLASH_001", `This time overlaps with a meeting for ${conflict.conflictWith}.`, undefined, 409);
 
     const result = await createMeeting(customerId, {
       meeting_day: body.meeting_day,
@@ -113,7 +113,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     if (!supabase) return createErrorResponse("DATABASE_001", "Database client unavailable", undefined, 500);
     const { data: existing, error: existingError } = await (supabase as any)
       .from("a1_customer_meetings")
-      .select("status, meeting_type, location, meeting_link, start_time, end_time, schedule_type, meeting_day, meeting_date, effective_start_date")
+      .select("status, meeting_type, location, meeting_link, start_time, end_time, schedule_type, meeting_day, meeting_date, effective_start_date, representative_name")
       .eq("id", meetingId)
       .eq("company_id", customerId)
       .maybeSingle();
@@ -152,7 +152,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       return createErrorResponse("VALIDATION_001", "End time must be after start time", undefined, 400);
     }
     if (input.schedule_type && !["one_day", "weekly"].includes(input.schedule_type)) {
-      return createErrorResponse("VALIDATION_001", "A valid meeting frequency is required", undefined, 400);
+      return createErrorResponse("SCH_002", "A valid meeting frequency is required", undefined, 400);
     }
     if (input.schedule_type === "one_day" && !input.meeting_date) {
       return createErrorResponse("VALIDATION_001", "Meeting date is required for a one-time meeting", undefined, 400);
@@ -161,7 +161,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       return createErrorResponse("VALIDATION_001", "Start date is required for a weekly meeting", undefined, 400);
     }
 
-    const scheduleChanged = ["meeting_day", "schedule_type", "meeting_date", "effective_start_date", "start_time", "end_time"].some((field) => input[field] !== undefined);
+    const scheduleChanged = ["meeting_day", "schedule_type", "meeting_date", "effective_start_date", "start_time", "end_time", "representative_name"].some((field) => input[field] !== undefined);
     if (scheduleChanged) {
       const conflict = await detectMeetingConflict({
         meeting_day: input.meeting_day ?? existing.meeting_day,
@@ -170,9 +170,10 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         effective_start_date: input.effective_start_date !== undefined ? input.effective_start_date : existing.effective_start_date,
         start_time: startTime,
         end_time: endTime,
+        representative_name: input.representative_name ?? existing.representative_name,
       }, meetingId);
-      if (conflict.error) return createErrorResponse("CONFLICT_CHECK_001", "Could not verify meeting availability", undefined, 503);
-      if (conflict.hasConflict) return createErrorResponse("MEET_001", `This time overlaps with a meeting for ${conflict.conflictWith}.`, undefined, 409);
+      if (conflict.error) return createErrorResponse("SCH_003", "Could not verify meeting availability", undefined, 503);
+      if (conflict.hasConflict) return createErrorResponse("SCH_CLASH_001", `This time overlaps with a meeting for ${conflict.conflictWith}.`, undefined, 409);
     }
 
     const result = await updateMeeting(customerId, meetingId, input);

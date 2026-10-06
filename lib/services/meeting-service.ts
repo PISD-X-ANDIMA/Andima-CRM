@@ -77,7 +77,7 @@ export async function getMeetingsByCustomerId(
  * Checks whether another customer's meeting schedule conflicts.
  */
 export async function detectMeetingConflict(
-  input: Pick<MeetingInput, "meeting_day" | "schedule_type" | "meeting_date" | "effective_start_date" | "start_time" | "end_time">,
+  input: Pick<MeetingInput, "meeting_day" | "schedule_type" | "meeting_date" | "effective_start_date" | "start_time" | "end_time"> & { representative_name?: string },
   excludeMeetingId?: string
 ): Promise<{ hasConflict: boolean; conflictWith?: string; error?: string }> {
   const supabase = await createServerSupabaseClient();
@@ -86,7 +86,7 @@ export async function detectMeetingConflict(
   try {
     let query = (supabase as any)
       .from("a1_customer_meetings")
-      .select("id, company_id, meeting_day, schedule_type, meeting_date, effective_start_date, start_time, end_time, a1_company_list!inner(company_name)")
+      .select("id, company_id, meeting_day, schedule_type, meeting_date, effective_start_date, start_time, end_time, representative_name, a1_company_list!inner(company_name)")
       .eq("is_active", true)
       .is("deleted_at", null)
       .neq("status", "cancelled");
@@ -110,6 +110,10 @@ export async function detectMeetingConflict(
     if (!inputStartDate) return { hasConflict: false };
 
     for (const m of allMeetings) {
+      // Conflicts are scoped to the same representative (the executive identity
+      // currently stored by A1), so separate executives may use the same slot.
+      if (input.representative_name?.trim()
+        && (m.representative_name || "").trim().toLocaleLowerCase() !== input.representative_name.trim().toLocaleLowerCase()) continue;
       let repeatsOnCommonDate = false;
       if (input.schedule_type === "one_day") {
         repeatsOnCommonDate = m.schedule_type === "one_day"

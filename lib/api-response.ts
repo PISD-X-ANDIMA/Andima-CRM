@@ -3,10 +3,15 @@ import { ApiResponseError, ApiResponseSuccess } from "@/types/customer";
 
 export const ERROR_CODES = {
   NAV_001: "Failed to load navigation menu",
+  AUTH_001: "Authentication is required or the session has expired.",
   AUTH_004: "Profile session expired. Please sign in again.",
   STAT_001: "Statistical data unavailable",
   SCH_001: "Failed to fetch weekly schedule",
+  SCH_002: "Meeting schedule data is invalid or incomplete",
+  SCH_003: "Could not verify meeting availability",
+  SCH_CLASH_001: "Meeting schedule overlaps another meeting for this representative",
   SRCH_001: "No customer or PIC found",
+  SRCH_002: "The customer or transaction search failed",
   LIST_001: "Failed to load the customer list",
   CAL_001: "Schedule data is unavailable for this period",
   MEET_001: "Meeting schedule overlap",

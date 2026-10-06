@@ -10,22 +10,14 @@ import {
   ShoppingBag,
   Users,
   ChevronDown,
-  ChevronRight,
-  Building2,
-  Mic,
-  ClipboardList,
-  ShieldAlert,
-  UserCog,
   Briefcase,
   Settings,
-  Calendar,
   LogOut,
 } from "lucide-react";
 
 interface SubMenuItem {
   name: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
 }
 
 interface MenuItem {
@@ -38,27 +30,18 @@ const salesExecutiveMenus: SubMenuItem[] = [
   {
     name: "Company List",
     href: "/dashboard/company-list",
-    icon: Building2,
   },
   {
     name: "Meeting Schedule",
     href: "/dashboard/meeting-schedule",
-    icon: Calendar,
   },
   {
     name: "Record Conversation",
     href: "/dashboard/record-conversation",
-    icon: Mic,
-  },
-  {
-    name: "Task of Field Agent",
-    href: "/dashboard/task-of-field-agent",
-    icon: ClipboardList,
   },
   {
     name: "Need Backup",
     href: "/dashboard/need-backup",
-    icon: ShieldAlert,
   },
 ];
 
@@ -77,11 +60,6 @@ const topMenuItems: MenuItem[] = [
 
 const bottomMenuItems: MenuItem[] = [
   {
-    name: "Field Agent",
-    href: "#",
-    icon: UserCog,
-  },
-  {
     name: "HRMS",
     href: "#",
     icon: Briefcase,
@@ -94,6 +72,7 @@ export function Sidebar() {
 
   const [crmOpen, setCrmOpen] = useState(true);
   const [salesExecOpen, setSalesExecOpen] = useState(true);
+  const [fieldAgentOpen, setFieldAgentOpen] = useState(() => pathname.startsWith("/dashboard/task-of-field-agent"));
 
   const isSalesExecutiveDashboard =
     pathname === "/dashboard/sales-executive";
@@ -103,11 +82,12 @@ export function Sidebar() {
     pathname.startsWith("/dashboard/company-list") ||
     pathname.startsWith("/dashboard/meeting-schedule") ||
     pathname.startsWith("/dashboard/record-conversation") ||
-    pathname.startsWith("/dashboard/task-of-field-agent") ||
     pathname.startsWith("/dashboard/need-backup");
+  const isFieldAgentActive = pathname.startsWith("/dashboard/task-of-field-agent");
+  const isCrmActive = isSalesExecutiveActive || isFieldAgentActive;
 
   return (
-    <aside className="flex min-h-screen w-[260px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
+    <aside className="sticky top-0 flex h-screen w-[260px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
       <div className="mx-4 flex h-[102px] items-center gap-4 border-b border-white/10">
         <Image src="/andima-logo.png" alt="PT Andima Transportindo" width={470} height={300} className="h-12 w-[54px] shrink-0 object-contain" priority />
         <div className="leading-tight text-white">
@@ -163,7 +143,7 @@ export function Sidebar() {
             type="button"
             onClick={() => setCrmOpen((value) => !value)}
             className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors ${
-              isSalesExecutiveActive
+              isCrmActive
                 ? "bg-blue-600 text-white"
                 : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
             }`}
@@ -171,7 +151,7 @@ export function Sidebar() {
             <span className="flex items-center gap-3">
               <Users
                 className={`h-[18px] w-[18px] ${
-                  isSalesExecutiveActive ? "text-blue-400" : "text-slate-500"
+                  isCrmActive ? "text-blue-400" : "text-slate-500"
                 }`}
               />
             <span>CRM</span>
@@ -202,16 +182,7 @@ export function Sidebar() {
                       : "text-slate-400 hover:text-slate-200"
                 }`}
               >
-                <span className="flex items-center gap-2.5">
-                  <span
-                    className={`h-2 w-2 rounded-full ${
-                      isSalesExecutiveDashboard
-                        ? "bg-teal-500"
-                        : "bg-blue-500"
-                    }`}
-                  />
-                  <span>Sales Executive</span>
-                </span>
+                <span>Sales Executive</span>
 
               </Link>
                 <button
@@ -238,8 +209,6 @@ export function Sidebar() {
               {salesExecOpen && (
                 <div className="mt-0.5 ml-3 space-y-0.5">
                   {salesExecutiveMenus.map((item) => {
-                    const Icon = item.icon;
-
                     const isActive =
                       pathname === item.href ||
                       pathname.startsWith(`${item.href}/`);
@@ -248,23 +217,35 @@ export function Sidebar() {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150 ${
+                        className={`flex items-center rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150 ${
                           isActive
                             ? "bg-blue-600 text-white shadow-sm shadow-blue-600/25"
                             : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
                         }`}
                       >
-                        <Icon
-                          className={`h-4 w-4 ${
-                            isActive ? "text-white" : "text-slate-500"
-                          }`}
-                        />
                         <span>{item.name}</span>
                       </Link>
                     );
                   })}
                 </div>
               )}
+
+              <div className="mt-0.5">
+                <button
+                  type="button"
+                  aria-expanded={fieldAgentOpen}
+                  onClick={() => setFieldAgentOpen((value) => !value)}
+                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${isFieldAgentActive ? "bg-[#b4c9d4] text-slate-700" : "text-slate-400 hover:text-slate-200"}`}
+                >
+                  <span>Field Agent</span>
+                  <ChevronDown className={`h-3.5 w-3.5 text-slate-500 transition-transform ${fieldAgentOpen ? "rotate-0" : "-rotate-90"}`} />
+                </button>
+                {fieldAgentOpen && <div className="mt-0.5 ml-3 space-y-0.5">
+                  <Link href="/dashboard/task-of-field-agent" className={`flex items-center rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${isFieldAgentActive ? "bg-blue-600 text-white shadow-sm shadow-blue-600/25" : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"}`}>
+                    <span>Task of Field Agent</span>
+                  </Link>
+                </div>}
+              </div>
             </div>
           )}
         </div>
@@ -272,8 +253,6 @@ export function Sidebar() {
         <div className="space-y-0.5 pt-0.5">
           {bottomMenuItems.map((item) => {
             const Icon = item.icon;
-            const hasChevron = item.name === "Field Agent";
-
             return (
               <button
                 key={item.name}
@@ -284,10 +263,6 @@ export function Sidebar() {
                   <Icon className="h-[18px] w-[18px] text-slate-500" />
                   <span>{item.name}</span>
                 </span>
-
-                {hasChevron && (
-                  <ChevronRight className="h-4 w-4 text-slate-600" />
-                )}
               </button>
             );
           })}

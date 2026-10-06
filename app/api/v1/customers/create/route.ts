@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     if (!result.success) {
       if (result.error?.includes("No login session")) {
-        return createErrorResponse("AUTH_004", "Your profile session has expired. Please sign in again.", undefined, 401);
+        return createErrorResponse("AUTH_001", "Your profile session has expired. Please sign in again.", undefined, 401);
       }
       if (result.error?.includes("DUPLICATE_COMPANY")) {
         return createErrorResponse("CUSTOMER_003", "This company is already registered", undefined, 409);

@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search") || "";
     const page = parseInt(searchParams.get("page") || "1", 10);
-    const perPage = parseInt(searchParams.get("perPage") || "20", 10);
+    const perPage = parseInt(searchParams.get("limit") || searchParams.get("perPage") || "20", 10);
     const sortBy = (searchParams.get("sortBy") || "company_name") as
       | "company_name"
       | "created_at";
