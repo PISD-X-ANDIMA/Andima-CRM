@@ -40,6 +40,10 @@ const salesExecutiveMenus: SubMenuItem[] = [
     href: "/dashboard/record-conversation",
   },
   {
+    name: "Task of Field Agent",
+    href: "/dashboard/task-of-field-agent",
+  },
+  {
     name: "Need Backup",
     href: "/dashboard/need-backup",
   },
@@ -72,7 +76,6 @@ export function Sidebar() {
 
   const [crmOpen, setCrmOpen] = useState(true);
   const [salesExecOpen, setSalesExecOpen] = useState(true);
-  const [fieldAgentOpen, setFieldAgentOpen] = useState(() => pathname.startsWith("/dashboard/task-of-field-agent"));
 
   const isSalesExecutiveDashboard =
     pathname === "/dashboard/sales-executive";
@@ -82,9 +85,9 @@ export function Sidebar() {
     pathname.startsWith("/dashboard/company-list") ||
     pathname.startsWith("/dashboard/meeting-schedule") ||
     pathname.startsWith("/dashboard/record-conversation") ||
+    pathname.startsWith("/dashboard/task-of-field-agent") ||
     pathname.startsWith("/dashboard/need-backup");
-  const isFieldAgentActive = pathname.startsWith("/dashboard/task-of-field-agent");
-  const isCrmActive = isSalesExecutiveActive || isFieldAgentActive;
+  const isCrmActive = isSalesExecutiveActive;
 
   return (
     <aside className="sticky top-0 flex h-screen w-[260px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
@@ -230,22 +233,6 @@ export function Sidebar() {
                 </div>
               )}
 
-              <div className="mt-0.5">
-                <button
-                  type="button"
-                  aria-expanded={fieldAgentOpen}
-                  onClick={() => setFieldAgentOpen((value) => !value)}
-                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${isFieldAgentActive ? "bg-[#b4c9d4] text-slate-700" : "text-slate-400 hover:text-slate-200"}`}
-                >
-                  <span>Field Agent</span>
-                  <ChevronDown className={`h-3.5 w-3.5 text-slate-500 transition-transform ${fieldAgentOpen ? "rotate-0" : "-rotate-90"}`} />
-                </button>
-                {fieldAgentOpen && <div className="mt-0.5 ml-3 space-y-0.5">
-                  <Link href="/dashboard/task-of-field-agent" className={`flex items-center rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${isFieldAgentActive ? "bg-blue-600 text-white shadow-sm shadow-blue-600/25" : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"}`}>
-                    <span>Task of Field Agent</span>
-                  </Link>
-                </div>}
-              </div>
             </div>
           )}
         </div>
