@@ -19,7 +19,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     const meetings = await getMeetingsByCustomerId(customerId);
     return createSuccessResponse(meetings, { total: meetings.length });
   } catch {
-    return createErrorResponse("GET_001", "Failed to load the meeting schedule", undefined, 500);
+    return createErrorResponse("CAL_001", "Schedule data is unavailable for this period", undefined, 500);
   }
 }
 
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     const conflict = await detectMeetingConflict(body);
     if (conflict.error) return createErrorResponse("CONFLICT_CHECK_001", "Could not verify meeting availability", undefined, 503);
-    if (conflict.hasConflict) return createErrorResponse("MEETING_CONFLICT_001", `This time overlaps with a meeting for ${conflict.conflictWith}.`, undefined, 409);
+    if (conflict.hasConflict) return createErrorResponse("MEET_001", `This time overlaps with a meeting for ${conflict.conflictWith}.`, undefined, 409);
 
     const result = await createMeeting(customerId, {
       meeting_day: body.meeting_day,
@@ -104,6 +104,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
     if (!meetingId) {
       return createErrorResponse("VALIDATION_001", "meetingId is required", undefined, 400);
+    }
+    if (input.status !== undefined && !["scheduled", "completed", "cancelled"].includes(input.status)) {
+      return createErrorResponse("VALIDATION_001", "A valid meeting status is required", undefined, 400);
     }
 
     const supabase = await createServerSupabaseClient();
@@ -155,16 +158,19 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       return createErrorResponse("VALIDATION_001", "Start date is required for a weekly meeting", undefined, 400);
     }
 
-    const conflict = await detectMeetingConflict({
-      meeting_day: input.meeting_day ?? existing.meeting_day,
-      schedule_type: input.schedule_type ?? existing.schedule_type,
-      meeting_date: input.meeting_date !== undefined ? input.meeting_date : existing.meeting_date,
-      effective_start_date: input.effective_start_date !== undefined ? input.effective_start_date : existing.effective_start_date,
-      start_time: startTime,
-      end_time: endTime,
-    }, meetingId);
-    if (conflict.error) return createErrorResponse("CONFLICT_CHECK_001", "Could not verify meeting availability", undefined, 503);
-    if (conflict.hasConflict) return createErrorResponse("MEETING_CONFLICT_001", `This time overlaps with a meeting for ${conflict.conflictWith}.`, undefined, 409);
+    const scheduleChanged = ["meeting_day", "schedule_type", "meeting_date", "effective_start_date", "start_time", "end_time"].some((field) => input[field] !== undefined);
+    if (scheduleChanged) {
+      const conflict = await detectMeetingConflict({
+        meeting_day: input.meeting_day ?? existing.meeting_day,
+        schedule_type: input.schedule_type ?? existing.schedule_type,
+        meeting_date: input.meeting_date !== undefined ? input.meeting_date : existing.meeting_date,
+        effective_start_date: input.effective_start_date !== undefined ? input.effective_start_date : existing.effective_start_date,
+        start_time: startTime,
+        end_time: endTime,
+      }, meetingId);
+      if (conflict.error) return createErrorResponse("CONFLICT_CHECK_001", "Could not verify meeting availability", undefined, 503);
+      if (conflict.hasConflict) return createErrorResponse("MEET_001", `This time overlaps with a meeting for ${conflict.conflictWith}.`, undefined, 409);
+    }
 
     const result = await updateMeeting(customerId, meetingId, input);
     if (!result.success) {

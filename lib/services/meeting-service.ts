@@ -16,6 +16,7 @@ export interface MeetingInput {
   location?: string | null;
   meeting_link?: string | null;
   notes?: string | null;
+  status?: "scheduled" | "completed" | "cancelled";
 }
 
 /**
@@ -206,6 +207,7 @@ export async function updateMeeting(
     if (input.location !== undefined) updatePayload.location = input.location || null;
     if (input.meeting_link !== undefined) updatePayload.meeting_link = input.meeting_link || null;
     if (input.notes !== undefined) updatePayload.notes = input.notes || null;
+    if (input.status !== undefined) updatePayload.status = input.status;
 
     const { error } = await (supabase as any)
       .from("a1_customer_meetings")

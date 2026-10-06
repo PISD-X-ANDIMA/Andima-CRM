@@ -5,6 +5,7 @@ import {
   deleteCustomer,
 } from "@/lib/services/customer-service";
 import { createSuccessResponse, createErrorResponse } from "@/lib/api-response";
+import { isValidPicPhoneNumber } from "@/lib/validation/pic-phone";
 
 interface RouteContext {
   params: Promise<{ customerId: string }>;
@@ -28,16 +29,25 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     const { customerId } = await params;
     const body = await request.json();
 
-    if (body.pic_phone_number !== undefined && (typeof body.pic_phone_number !== "string" || !/^[+\d][+\d\s().-]{5,19}$/.test(body.pic_phone_number.trim()))) {
-      return createErrorResponse("VALIDATION_001", "Enter a valid PIC phone number", undefined, 400);
+    for (const field of ["company_name", "address", "pic_full_name", "pic_phone_number"] as const) {
+      if (body[field] !== undefined && (typeof body[field] !== "string" || !body[field].trim())) {
+        return createErrorResponse("CUSTOMER_001", "All company, address, and PIC fields are required", undefined, 400);
+      }
+    }
+
+    if (body.pic_phone_number !== undefined && (typeof body.pic_phone_number !== "string" || !isValidPicPhoneNumber(body.pic_phone_number))) {
+      return createErrorResponse("CUSTOMER_002", "Use a PIC phone number beginning with 0 or +62", undefined, 400);
     }
 
     const result = await updateCustomer(customerId, body);
     if (!result.success) {
-      if (result.error?.includes("DUPLICATE_COMPANY")) {
-        return createErrorResponse("DUPLICATE_001", "This company is already registered", undefined, 409);
+      if (result.error?.includes("No login session")) {
+        return createErrorResponse("AUTH_004", "Your profile session has expired. Please sign in again.", undefined, 401);
       }
-      return createErrorResponse("UPDATE_001", result.error || "Failed to update the customer", undefined, 500);
+      if (result.error?.includes("DUPLICATE_COMPANY")) {
+        return createErrorResponse("CUSTOMER_003", "This company is already registered", undefined, 409);
+      }
+      return createErrorResponse("CUSTOMER_004", result.error || "Failed to save customer data", undefined, 500);
     }
     return createSuccessResponse({ customerId });
   } catch {

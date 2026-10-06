@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -48,15 +48,15 @@ function getWeeklyMeetings(customers: CustomerListItem[]): WeeklyMeeting[] {
     }
     const dayFromMonday = Math.round((date.getTime() - monday.getTime()) / 86_400_000);
     const effectiveStart = schedule.effectiveStartDate ? dateFromDatabase(schedule.effectiveStartDate) : null;
-    if (schedule.status === "cancelled" || dayFromMonday < 0 || dayFromMonday > 6 || (effectiveStart && date < effectiveStart)) return [];
+    if (schedule.status === "cancelled" || schedule.status === "completed" || dayFromMonday < 0 || dayFromMonday > 6 || (effectiveStart && date < effectiveStart)) return [];
     return [{ customer, date, time: schedule.startTime?.slice(0, 5) || "09:00" }];
   })).sort((a, b) => a.date.getTime() - b.date.getTime() || a.time.localeCompare(b.time));
 }
 
 function downloadExport(customers: CustomerListItem[], format: "xlsx" | "pdf") {
-  const headers = ["Customer Code", "Job Number", "Company", "PIC", "PIC Phone Number"];
+  const headers = ["Transaction ID", "Job Number", "Company", "PIC", "PIC Phone Number"];
   const values = customers.map((customer) => [
-    customer.customerCode || "", customer.jobNumber || "", customer.companyName,
+    customer.transactionNo || "", customer.jobNumber || "", customer.companyName,
     customer.primaryPic?.fullName || "", customer.primaryPic?.phoneNumber || "",
   ]);
   if (format === "xlsx") {
@@ -107,6 +107,9 @@ function DetailInfoCard({ title, rows }: { title: string; rows: [string, string 
 export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
   const router = useRouter();
   const [customers, setCustomers] = useState(initialCustomers);
+  const [scheduleCustomers, setScheduleCustomers] = useState<CustomerListItem[]>([]);
+  const [scheduleLoading, setScheduleLoading] = useState(true);
+  const [scheduleLoadError, setScheduleLoadError] = useState("");
   const [search, setSearch] = useState("");
   const [searchError, setSearchError] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -132,6 +135,38 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
   const [selectedAgent, setSelectedAgent] = useState("all");
   const [appliedAgent, setAppliedAgent] = useState("all");
   const [profile, setProfile] = useState<StoredUser>({ name: MOCK_SALES_USER.name, role: MOCK_SALES_USER.role });
+
+  const refreshSchedule = useCallback(async () => {
+    setScheduleLoading(true);
+    try {
+      const params = new URLSearchParams({ perPage: "100", page: "1", context: "weeklySchedule" });
+      const response = await fetch(`/api/v1/customers?${params}`, { cache: "no-store" });
+      const result: ApiResponse<CustomerListItem[]> = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.success ? "Could not refresh the meeting schedule." : result.message);
+      const latestCustomers = [...result.data];
+      const totalPages = result.meta?.totalPages || 1;
+      for (let pageNumber = 2; pageNumber <= totalPages; pageNumber += 1) {
+        params.set("page", String(pageNumber));
+        const nextResponse = await fetch(`/api/v1/customers?${params}`, { cache: "no-store" });
+        const nextResult: ApiResponse<CustomerListItem[]> = await nextResponse.json();
+        if (!nextResponse.ok || !nextResult.success) throw new Error(nextResult.success ? "Could not refresh the complete meeting schedule." : nextResult.message);
+        latestCustomers.push(...nextResult.data);
+      }
+      setScheduleCustomers(latestCustomers);
+      setScheduleLoadError("");
+    } catch (error) {
+      setScheduleCustomers([]);
+      setScheduleLoadError(error instanceof Error ? error.message : "Could not refresh the meeting schedule.");
+    } finally {
+      setScheduleLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshSchedule();
+    window.addEventListener("focus", refreshSchedule);
+    return () => window.removeEventListener("focus", refreshSchedule);
+  }, [refreshSchedule]);
 
   useEffect(() => {
     try {
@@ -205,11 +240,12 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
     }
   };
 
-  const weeklyMeetings = useMemo(() => getWeeklyMeetings(initialCustomers).slice(0, 2), [initialCustomers]);
+  const weeklyMeetings = useMemo(() => getWeeklyMeetings(scheduleCustomers).slice(0, 2), [scheduleCustomers]);
   const filteredAgents = fieldAgents.filter((agent) => agent.toLowerCase().includes(agentSearch.toLowerCase()));
   const firstRow = total === 0 ? 0 : (page - 1) * 5 + 1;
   const lastRow = Math.min(page * 5, total);
   const displayName = profile.name || MOCK_SALES_USER.name;
+  const statisticsUnavailable = metrics.totalCustomers === null || metrics.meetingsThisWeek === null;
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -246,16 +282,17 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
     <section aria-label="Key performance indicators" className="mb-3 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {[
         { label: "Total Customer", value: metrics.totalCustomers, hint: "Company records", icon: UsersRound, color: "bg-blue-50 text-blue-500" },
-        { label: "Upcoming Meeting", value: metrics.upcomingMeetings, hint: "Next scheduled meetings", icon: CalendarDays, color: "bg-emerald-50 text-emerald-500" },
         { label: "Meeting this week", value: metrics.meetingsThisWeek, hint: "Scheduled meetings", icon: CalendarDays, color: "bg-rose-100 text-rose-500" },
+        { label: "Total Job", value: 0, hint: "Tasks", icon: BriefcaseBusiness, color: "bg-sky-50 text-sky-500" },
       ].map(({ label, value, hint, icon: Icon, color }) => <article key={label} className="min-h-[112px] rounded-xl border border-[#aaa] bg-white px-4 py-2">
         <h2 className="text-lg font-semibold text-[#505050] sm:text-xl">{label}</h2><div className="mt-2 flex items-center gap-3"><span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${color}`}><Icon className="h-5 w-5" /></span><p className="text-3xl font-bold text-[#202020]">{value ?? "—"}</p><span className="ml-auto text-right text-[10px] leading-tight text-slate-400">{hint}</span></div>
       </article>)}
     </section>
+    {statisticsUnavailable && <div role="alert" className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><span>Statistical data unavailable.</span><button type="button" onClick={() => router.refresh()} className="font-semibold underline">Try again later</button></div>}
 
     <section aria-labelledby="weekly-schedule-title" className="mb-4">
       <div className="mb-4 flex items-center justify-between"><h2 id="weekly-schedule-title" className="text-xl font-bold text-[#505050] sm:text-2xl">Schedule this week</h2><Link href="/dashboard/meeting-schedule" aria-label="Open Meeting Schedule" className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50"><CalendarDays className="h-5 w-5" /></Link></div>
-      <div className="space-y-2.5">{weeklyMeetings.length ? weeklyMeetings.map(({ customer, date, time }) => <Link key={`${customer.id}-${date.toISOString()}`} href={`/dashboard/company-list/${customer.id}`} className="flex min-h-[70px] items-center justify-between gap-5 rounded-2xl border border-[#d0d0d0] px-4 py-4 text-[#555] transition-colors hover:border-blue-300 sm:px-5"><span className="truncate text-lg font-semibold sm:text-2xl">{customer.companyName}</span><span className="shrink-0 text-sm sm:text-xl">{date.toLocaleDateString("en-GB", { weekday: "long" })}, {time}</span></Link>) : <div className="rounded-2xl border border-dashed border-slate-300 px-5 py-6 text-sm text-slate-500">No meeting scheduled this week.</div>}</div>
+      <div className="space-y-2.5">{scheduleLoadError ? <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">{scheduleLoadError}<button type="button" onClick={() => void refreshSchedule()} className="ml-2 underline">Retry</button></div> : scheduleLoading ? <div role="status" className="rounded-2xl border border-slate-200 px-5 py-6 text-sm text-slate-500">Refreshing this week’s schedule...</div> : weeklyMeetings.length ? weeklyMeetings.map(({ customer, date, time }) => <Link key={`${customer.id}-${date.toISOString()}`} href={`/dashboard/company-list/${customer.id}`} className="flex min-h-[70px] items-center justify-between gap-5 rounded-2xl border border-[#d0d0d0] px-4 py-4 text-[#555] transition-colors hover:border-blue-300 sm:px-5"><span className="truncate text-lg font-semibold sm:text-2xl">{customer.companyName}</span><span className="shrink-0 text-sm sm:text-xl">{date.toLocaleDateString("en-GB", { weekday: "long" })}, {time}</span></Link>) : <div className="rounded-2xl border border-dashed border-slate-300 px-5 py-6 text-sm text-slate-500">No meeting scheduled this week.</div>}</div>
     </section>
 
     <div className="mb-2 flex items-center justify-between gap-4 px-1 sm:px-2">
@@ -264,9 +301,9 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
     </div>
 
     <section aria-label="Company records" className="overflow-x-auto rounded-lg border border-[#d0d0d0]">
-      <table className="w-full min-w-[1000px] table-fixed text-left"><thead className="bg-[#edf4f8] text-[#333]"><tr>
-        <th className="w-[21%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Customer Code</th><th className="w-[21%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Job Number</th><th className="w-[24%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Company</th><th className="w-[17%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">PIC</th><th className="w-[17%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Detail</th>
-      </tr></thead><tbody className="text-[#383838]">{customers.map((customer) => <tr key={customer.id} className="border-t border-[#d0d0d0]"><td className="px-4 py-5 text-center text-base sm:text-lg">{customer.transactionNo || "—"}</td><td className="break-words px-4 py-5 text-center text-base sm:text-lg">{customer.jobNumber || "—"}</td><td className="px-4 py-3 text-base leading-tight sm:text-lg">{customer.companyName}</td><td className="px-4 py-5 text-center text-base sm:text-lg">{customer.primaryPic?.fullName || "—"}</td><td className="px-4 py-5 text-center"><button type="button" onClick={() => void openCustomerDetail(customer.id)} className="text-base text-blue-600 underline underline-offset-2 hover:text-blue-800 sm:text-lg">See more...</button></td></tr>)}</tbody></table>
+      <table className="w-full min-w-[1100px] table-fixed text-left"><thead className="bg-[#edf4f8] text-[#333]"><tr>
+        <th className="w-[18%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Transaction ID</th><th className="w-[18%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Job Number</th><th className="w-[22%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Company</th><th className="w-[12%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">PIC</th><th className="w-[17%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">PIC Number</th><th className="w-[13%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Detail</th>
+      </tr></thead><tbody className="text-[#383838]">{customers.map((customer) => <tr key={customer.id} className="border-t border-[#d0d0d0]"><td className="break-words px-4 py-5 text-center text-base sm:text-lg">{customer.transactionNo || "—"}</td><td className="break-words px-4 py-5 text-center text-base sm:text-lg">{customer.jobNumber || "—"}</td><td className="px-4 py-3 text-base leading-tight sm:text-lg">{customer.companyName}</td><td className="px-4 py-5 text-center text-base sm:text-lg">{customer.primaryPic?.fullName || "—"}</td><td className="break-words px-4 py-5 text-center text-base sm:text-lg">{customer.primaryPic?.phoneNumber || "—"}</td><td className="px-4 py-5 text-center"><button type="button" onClick={() => void openCustomerDetail(customer.id)} className="text-base text-blue-600 underline underline-offset-2 hover:text-blue-800 sm:text-lg">See more...</button></td></tr>)}</tbody></table>
       {searchError ? <div role="alert" className="border-t border-slate-200 p-6 text-center text-sm text-red-700">{searchError}</div> : customers.length === 0 ? <div className="border-t border-slate-200 p-8 text-center text-slate-500"><FileText className="mx-auto mb-2 h-5 w-5" />{search ? "No customer or PIC found." : "No company records available."}</div> : null}
       {isSearching && <p className="sr-only" role="status">Searching customers</p>}
     </section>
@@ -284,8 +321,8 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
     {detailOpen && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="transaction-detail-title" className="my-auto w-full max-w-7xl rounded-xl bg-white p-6 shadow-2xl sm:px-12 sm:py-10">
       <div className="flex items-start justify-between gap-4"><h2 id="transaction-detail-title" className="text-3xl font-bold tracking-tight text-black sm:text-4xl">Company Details</h2><button type="button" aria-label="Close" onClick={() => setDetailOpen(false)} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X className="h-6 w-6" /></button></div>
       {detailLoading ? <div role="status" className="grid min-h-72 place-items-center text-slate-500">Loading company details...</div> : detailError ? <p role="alert" className="mt-8 rounded-lg bg-rose-50 p-4 text-sm text-rose-700">{detailError}</p> : detailCustomer && <>
-        <div className="mt-7 grid gap-5 border-b border-slate-100 pb-6 sm:grid-cols-2 lg:grid-cols-4">{[["Customer Code", detailCustomer.customerCode], ["Job Number", detailCustomer.jobNumber], ["Company", detailCustomer.companyName], ["PIC", detailCustomer.primaryPic?.fullName]].map(([label, value]) => <div key={label}><h3 className="text-base text-[#707070] sm:text-lg">{label}</h3><p className="mt-1 break-words text-sm font-medium text-[#303030] sm:text-base">{value || "—"}</p></div>)}</div>
-        <div className="mt-6 grid gap-5 lg:grid-cols-2"><DetailInfoCard title="Company Information" rows={[["Address", detailCustomer.address], ["Customer Code", detailCustomer.customerCode], ["Job Number", detailCustomer.jobNumber], ["PIC", detailCustomer.primaryPic?.fullName], ["PIC Phone Number", detailCustomer.primaryPic?.phoneNumber], ["Created By", detailCustomer.createdBy], ["Created Date", detailCustomer.createdAt]]} /><DetailInfoCard title="Meeting Schedule" rows={detailCustomer.meetings.length ? detailCustomer.meetings.map((meeting) => [meeting.formattedSchedule, [meeting.agenda, meeting.status].filter(Boolean).join(" · ")]) : [["No meeting scheduled", ""]]} /></div>
+        <div className="mt-7 grid gap-5 border-b border-slate-100 pb-6 sm:grid-cols-2 lg:grid-cols-4">{[["Transaction ID", detailCustomer.transactionNo], ["Job Number", detailCustomer.jobNumber], ["Company", detailCustomer.companyName], ["PIC", detailCustomer.primaryPic?.fullName]].map(([label, value]) => <div key={label}><h3 className="text-base text-[#707070] sm:text-lg">{label}</h3><p className="mt-1 break-words text-sm font-medium text-[#303030] sm:text-base">{value || "—"}</p></div>)}</div>
+        <div className="mt-6 grid gap-5 lg:grid-cols-2"><DetailInfoCard title="Company Information" rows={[["Address", detailCustomer.address], ["Transaction ID", detailCustomer.transactionNo], ["Job Number", detailCustomer.jobNumber], ["PIC", detailCustomer.primaryPic?.fullName], ["PIC Phone Number", detailCustomer.primaryPic?.phoneNumber], ["Created By", detailCustomer.createdBy], ["Created Date", detailCustomer.createdAt]]} /><DetailInfoCard title="Meeting Schedule" rows={detailCustomer.meetings.length ? detailCustomer.meetings.map((meeting) => [meeting.formattedSchedule, [meeting.agenda, meeting.status].filter(Boolean).join(" · ")]) : [["No meeting scheduled", ""]]} /></div>
       </>}
       <div className="mt-7 flex justify-end"><button type="button" onClick={() => setDetailOpen(false)} className="h-14 w-full rounded-lg bg-[#3e6df5] text-lg font-semibold text-white hover:bg-blue-700 sm:w-[300px]">Close</button></div>
     </section></div>}

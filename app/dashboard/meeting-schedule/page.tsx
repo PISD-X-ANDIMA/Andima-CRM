@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react";
 import type { ApiResponse, CustomerListItem, MeetingDay, ScheduleType } from "@/types/customer";
 
@@ -32,6 +33,7 @@ function newForm(date: string, startTime: string, customer?: CustomerListItem, r
 }
 
 export default function MeetingSchedulePage() {
+  const router = useRouter();
   const [month, setMonth] = useState(() => new Date());
   const [selected, setSelected] = useState(() => dateKey(new Date()));
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
@@ -47,7 +49,7 @@ export default function MeetingSchedulePage() {
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const response = await fetch("/api/v1/customers?perPage=100");
+      const response = await fetch("/api/v1/customers?perPage=100&context=calendar", { cache: "no-store" });
       const result: ApiResponse<CustomerListItem[]> = await response.json();
       if (!response.ok || !result.success) throw new Error(result.success ? "Failed to load the schedule." : result.message);
       setCustomers(result.data);
@@ -150,6 +152,26 @@ export default function MeetingSchedulePage() {
     finally { setSaving(false); }
   }
 
+  async function changeMeetingStatus(status: "scheduled" | "completed" | "cancelled") {
+    if (!selectedMeeting || selectedMeeting.meeting.status === status) return;
+    setSaving(true); setMutationError("");
+    try {
+      const response = await fetch(`/api/v1/customers/${selectedMeeting.customer.id}/meetings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ meetingId: selectedMeeting.meeting.id, status }),
+      });
+      const result: ApiResponse<{ meetingId: string }> = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.success ? "Failed to update the meeting status." : result.message);
+      setSelectedMeeting((current) => current ? { ...current, meeting: { ...current.meeting, status } } : null);
+      await load();
+    } catch (cause) {
+      setMutationError(cause instanceof Error ? cause.message : "Failed to update the meeting status.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const formatDate = (date: Date) => date.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const meetingAtHour = (hour: number) => agenda.filter(({ meeting }) => {
     const start = Number(meeting.startTime?.slice(0, 2)) * 60 + Number(meeting.startTime?.slice(3, 5));
@@ -157,6 +179,7 @@ export default function MeetingSchedulePage() {
     return start < (hour + 1) * 60 && end > hour * 60;
   });
   const updateForm = (field: keyof MeetingFormState, value: string) => setForm((current) => ({ ...current, [field]: value }));
+  const selectedMeetingEnded = selectedMeeting ? new Date(`${selected}T${selectedMeeting.meeting.endTime?.slice(0, 8) || "00:00:00"}`) <= new Date() : false;
 
   return <div className="space-y-8">
     <header className="flex flex-wrap items-end justify-between gap-5"><div><h1 className="text-3xl font-bold tracking-tight text-black">{formatDate(selectedDate)}</h1><p className="mt-1 text-lg text-slate-500">Meeting schedule and availability for this date</p></div><button type="button" onClick={() => beginAdd("09:00")} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-lg font-semibold text-white hover:bg-blue-700"><Plus className="h-5 w-5" />Add Meeting</button></header>
@@ -211,8 +234,8 @@ export default function MeetingSchedulePage() {
         {mutationError && <p role="alert" className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{mutationError}</p>}
         <div className="mt-5 flex justify-end gap-3 border-t border-slate-100 pt-5"><button type="button" onClick={() => setEditingMeeting(false)} className="rounded-lg border border-slate-300 px-6 py-2.5 text-sm font-semibold text-slate-600">Cancel</button><button type="submit" disabled={saving} className="rounded-lg bg-blue-600 px-8 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{saving ? "Saving..." : "Save Changes"}</button></div>
       </form> : <div className="my-auto w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"><div className="flex items-center justify-between border-b border-slate-100 px-6 py-5"><h2 className="text-xl font-bold text-slate-900">Meeting Details</h2><button type="button" aria-label="Close" onClick={() => setSelectedMeeting(null)} className="text-slate-400 hover:text-slate-700"><X className="h-5 w-5" /></button></div>
-        <div className="space-y-5 px-6 py-6"><div className="grid grid-cols-[minmax(130px,0.75fr)_minmax(0,1.25fr)] gap-x-4 gap-y-5 text-sm"><DetailRow label="Company" value={selectedMeeting.customer.companyName} /><DetailRow label="Date & Time" value={`${formatDate(selectedMeeting.meeting.scheduleType === "one_day" && selectedMeeting.meeting.meetingDate ? dateForInput(selectedMeeting.meeting.meetingDate) : selectedDate)}, ${selectedMeeting.meeting.startTime?.slice(0, 5)} – ${selectedMeeting.meeting.endTime?.slice(0, 5)}`} /><DetailRow label="Agenda / Topic" value={selectedMeeting.meeting.agenda || "Not provided"} /><DetailRow label="PIC" value={selectedMeeting.meeting.picName || selectedMeeting.customer.primaryPic?.fullName || "Not provided"} /><DetailRow label="PIC Phone Number" value={selectedMeeting.customer.primaryPic?.phoneNumber || "Not provided"} /><DetailRow label="Andima Representative" value={selectedMeeting.meeting.representativeName || "Not provided"} /><DetailRow label="Meeting Type" value={selectedMeeting.meeting.meetingType === "online" ? "Online (Link)" : "Offline (Location)"} /><DetailRow label={selectedMeeting.meeting.meetingType === "online" ? "Meeting Link" : "Location"} value={selectedMeeting.meeting.meetingType === "online" ? selectedMeeting.meeting.meetingLink || "Not provided" : selectedMeeting.meeting.location || selectedMeeting.customer.address || "Not provided"} /><DetailRow label="Status" value={selectedMeeting.meeting.status || "Scheduled"} /><DetailRow label="Frequency" value={selectedMeeting.meeting.scheduleType === "weekly" ? "Weekly" : "One-time"} /><DetailRow label="Notes" value={selectedMeeting.meeting.notes || "No notes"} /></div>{mutationError && <p role="alert" className="text-sm text-rose-600">{mutationError}</p>}</div>
-        <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4"><button type="button" disabled={saving} onClick={() => void deleteSelectedMeeting()} className="inline-flex items-center gap-2 rounded-lg border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 disabled:opacity-50"><Trash2 className="h-4 w-4" />Delete</button><button type="button" onClick={beginEdit} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white"><Pencil className="h-4 w-4" />Edit</button></div>
+        <div className="space-y-5 px-6 py-6"><div className="grid grid-cols-[minmax(130px,0.75fr)_minmax(0,1.25fr)] gap-x-4 gap-y-5 text-sm"><DetailRow label="Company" value={selectedMeeting.customer.companyName} /><DetailRow label="Date & Time" value={`${formatDate(selectedMeeting.meeting.scheduleType === "one_day" && selectedMeeting.meeting.meetingDate ? dateForInput(selectedMeeting.meeting.meetingDate) : selectedDate)}, ${selectedMeeting.meeting.startTime?.slice(0, 5)} – ${selectedMeeting.meeting.endTime?.slice(0, 5)}`} /><DetailRow label="Agenda / Topic" value={selectedMeeting.meeting.agenda || "Not provided"} /><DetailRow label="PIC" value={selectedMeeting.meeting.picName || selectedMeeting.customer.primaryPic?.fullName || "Not provided"} /><DetailRow label="PIC Phone Number" value={selectedMeeting.customer.primaryPic?.phoneNumber || "Not provided"} /><DetailRow label="Andima Representative" value={selectedMeeting.meeting.representativeName || "Not provided"} /><DetailRow label="Meeting Type" value={selectedMeeting.meeting.meetingType === "online" ? "Online (Link)" : "Offline (Location)"} /><DetailRow label={selectedMeeting.meeting.meetingType === "online" ? "Meeting Link" : "Location"} value={selectedMeeting.meeting.meetingType === "online" ? selectedMeeting.meeting.meetingLink || "Not provided" : selectedMeeting.meeting.location || selectedMeeting.customer.address || "Not provided"} /><dt className="text-slate-500">Status</dt><dd><select aria-label="Meeting status" disabled={saving} value={selectedMeeting.meeting.status || "scheduled"} onChange={(event) => void changeMeetingStatus(event.target.value as "scheduled" | "completed" | "cancelled")} className="rounded-full border border-slate-200 bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700 disabled:opacity-60"><option value="scheduled">Scheduled</option><option value="completed">Completed</option><option value="cancelled">Canceled</option></select></dd><DetailRow label="Frequency" value={selectedMeeting.meeting.scheduleType === "weekly" ? "Weekly" : "One-time"} /><DetailRow label="Notes" value={selectedMeeting.meeting.notes || "No notes"} /></div>{mutationError && <p role="alert" className="text-sm text-rose-600">{mutationError}</p>}</div>
+        <div className="flex flex-wrap justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4">{(selectedMeeting.meeting.status === "completed" || selectedMeetingEnded) && <button type="button" onClick={() => router.push(`/dashboard/record-conversation?customer_id=${encodeURIComponent(selectedMeeting.customer.id)}&meeting_id=${encodeURIComponent(selectedMeeting.meeting.id)}`)} className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">+ Record Conversation</button>}<button type="button" disabled={saving} onClick={() => void deleteSelectedMeeting()} className="inline-flex items-center gap-2 rounded-lg border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 disabled:opacity-50"><Trash2 className="h-4 w-4" />Delete</button><button type="button" onClick={beginEdit} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white"><Pencil className="h-4 w-4" />Edit</button></div>
       </div>}
     </div>}
   </div>;

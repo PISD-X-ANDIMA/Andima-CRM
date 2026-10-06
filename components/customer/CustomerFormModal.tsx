@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from "react";
 import { X, Building2, User, MapPin, Phone, Loader2, AlertCircle } from "lucide-react";
 import { CreateCustomerInput, CustomerListItem, ApiResponse } from "@/types/customer";
+import { isValidPicPhoneNumber } from "@/lib/validation/pic-phone";
 
 interface CustomerFormModalProps {
   isOpen: boolean;
@@ -32,7 +33,7 @@ function validate(data: CreateCustomerInput): FormErrors {
   if (!data.address.trim()) errors.address = "Address is required";
   if (!data.pic_full_name.trim()) errors.pic_full_name = "PIC name is required";
   if (!data.pic_phone_number.trim()) errors.pic_phone_number = "PIC phone number is required";
-  else if (!/^[+\d][+\d\s().-]{5,19}$/.test(data.pic_phone_number.trim())) errors.pic_phone_number = "Enter a valid phone number";
+  else if (!isValidPicPhoneNumber(data.pic_phone_number)) errors.pic_phone_number = "Use a number beginning with 0 or +62, followed by digits";
   return errors;
 }
 
@@ -82,8 +83,10 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
         const json: ApiResponse<{ companyId?: string }> = await res.json();
 
         if (!json.success) {
-          if (json.code === "DUPLICATE_001") {
-            setErrors({ company_name: "This company is already registered" });
+          if (json.code === "DUPLICATE_001" || json.code === "CUSTOMER_003") {
+            setErrors({ company_name: json.message || "This company is already registered" });
+          } else if (json.code === "CUSTOMER_002") {
+            setErrors({ pic_phone_number: json.message || "Enter a valid PIC phone number" });
           } else {
             setErrors({ general: json.message || "Failed to save the customer" });
           }

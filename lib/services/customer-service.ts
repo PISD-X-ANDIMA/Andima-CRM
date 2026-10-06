@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { isValidPicPhoneNumber } from "@/lib/validation/pic-phone";
 import {
   CustomerListItem,
   CustomerDetailItem,
@@ -45,6 +46,7 @@ export interface GetCustomersOptions {
   perPage?: number;
   sortBy?: "company_name" | "created_at";
   sortOrder?: "asc" | "desc";
+  requireMeetings?: boolean;
 }
 
 /**
@@ -63,6 +65,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
     perPage = 10,
     sortBy = "company_name",
     sortOrder = "asc",
+    requireMeetings = false,
   } = options;
 
   const validPerPage = Math.min(Math.max(perPage, 1), 100);
@@ -110,6 +113,25 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
     const rows = (data || []) as CompanyRow[];
     const companyIds = rows.map((item) => item.company_list_id);
 
+    // Dashboard transaction identifiers are owned by Squad A2. The existing
+    // customer_code is the shared identifier used to associate those records.
+    const worksheetByTransaction = new Map<string, { transactionNo: string; jobNumber: string | null }>();
+    const customerCodes = rows.map((item) => item.customer_code).filter((code): code is string => Boolean(code));
+    if (customerCodes.length) {
+      const { data: worksheetRows, error: worksheetError } = await (supabase as any)
+        .from("a2_worksheets")
+        .select("transaction_no, job_no")
+        .in("transaction_no", customerCodes);
+      if (!worksheetError) {
+        for (const worksheet of worksheetRows || []) {
+          if (worksheet.transaction_no) worksheetByTransaction.set(worksheet.transaction_no, {
+            transactionNo: worksheet.transaction_no,
+            jobNumber: worksheet.job_no || null,
+          });
+        }
+      }
+    }
+
     const meetingsByCompany = new Map<string, any[]>();
     if (companyIds.length) {
       try {
@@ -121,12 +143,15 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
           .is("deleted_at", null);
         let result = await meetingQuery("id, company_id, meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date, is_active, agenda, pic_name, representative_name, meeting_type, location, meeting_link, notes, status");
         if (result.error) result = await meetingQuery("id, company_id, meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date, is_active");
+        if (result.error && requireMeetings) throw result.error;
         for (const meeting of result.data || []) {
           const companyMeetings = meetingsByCompany.get(meeting.company_id) || [];
           companyMeetings.push(meeting);
           meetingsByCompany.set(meeting.company_id, companyMeetings);
         }
-      } catch { /* optional meeting relation */ }
+      } catch (error) {
+        if (requireMeetings) throw error;
+      }
     }
 
     const customers: CustomerListItem[] = rows.map((item) => ({
@@ -134,8 +159,8 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
       companyName: item.company_name,
       customerCode: item.customer_code,
       address: item.address,
-      transactionNo: item.customer_code,
-      jobNumber: item.job_number,
+      transactionNo: worksheetByTransaction.get(item.customer_code || "")?.transactionNo || null,
+      jobNumber: worksheetByTransaction.get(item.customer_code || "")?.jobNumber || null,
       createdBy: item.created_by,
       createdDate: item.created_at,
       primaryPic: item.name ? {
@@ -283,6 +308,19 @@ export async function getCustomerById(
       phoneNumber: data.pic_phone_number || "",
     } : null;
 
+    let transactionNo: string | null = null;
+    let worksheetJobNumber: string | null = null;
+    if (data.customer_code) {
+      const { data: worksheet } = await (supabase as any)
+        .from("a2_worksheets")
+        .select("transaction_no, job_no")
+        .eq("transaction_no", data.customer_code)
+        .limit(1)
+        .maybeSingle();
+      transactionNo = worksheet?.transaction_no || null;
+      worksheetJobNumber = worksheet?.job_no || null;
+    }
+
     const meetings = (meetingRows || []).map((meeting: any) => ({
       id: meeting.id,
       companyId: customerId,
@@ -317,8 +355,8 @@ export async function getCustomerById(
       id: data.company_list_id,
       companyName: data.company_name,
       customerCode: data.customer_code,
-      transactionNo: data.customer_code,
-      jobNumber: data.job_number,
+      transactionNo,
+      jobNumber: worksheetJobNumber,
       createdBy: data.created_by,
       address: data.address || "Address not provided",
       salesId: null,
@@ -343,7 +381,7 @@ export async function createCustomer(
 ): Promise<{ success: boolean; companyId?: string; error?: string }> {
   const supabase = await createServerSupabaseClient();
   if (!supabase) return { success: false, error: "Database client unavailable" };
-  if (!/^[+\d][+\d\s().-]{5,19}$/.test(input.pic_phone_number.trim())) {
+  if (!isValidPicPhoneNumber(input.pic_phone_number)) {
     return { success: false, error: "A valid PIC phone number is required" };
   }
 
@@ -411,6 +449,10 @@ export async function updateCustomer(
   if (!supabase) return { success: false, error: "Database client unavailable" };
 
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user && process.env.NODE_ENV !== "development") {
+      return { success: false, error: "No login session found. Please sign in again." };
+    }
     const updatePayload: Record<string, any> = {
       updated_at: new Date().toISOString(),
     };

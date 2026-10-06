@@ -2,10 +2,19 @@ import { NextResponse } from "next/server";
 import { ApiResponseError, ApiResponseSuccess } from "@/types/customer";
 
 export const ERROR_CODES = {
-  CUSTOMER_001: "Customer data is required",
-  CUSTOMER_002: "Failed to save customer data",
-  CUSTOMER_003: "Failed to delete customer",
-  CUSTOMER_004: "You do not have access to this customer",
+  NAV_001: "Failed to load navigation menu",
+  AUTH_004: "Profile session expired. Please sign in again.",
+  STAT_001: "Statistical data unavailable",
+  SCH_001: "Failed to fetch weekly schedule",
+  SRCH_001: "No customer or PIC found",
+  LIST_001: "Failed to load the customer list",
+  CAL_001: "Schedule data is unavailable for this period",
+  MEET_001: "Meeting schedule overlap",
+  INT_001: "Record Conversation module is unavailable",
+  CUSTOMER_001: "Customer data is incomplete",
+  CUSTOMER_002: "PIC phone number format is invalid",
+  CUSTOMER_003: "Company name is already registered",
+  CUSTOMER_004: "Customer data could not be saved",
   CONTACT_001: "PIC name and phone number are required",
   CONTACT_002: "The primary PIC is invalid or the last contact cannot be deleted",
   CONTACT_003: "Failed to save the PIC contact",

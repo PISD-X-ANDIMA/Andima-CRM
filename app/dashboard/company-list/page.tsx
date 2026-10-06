@@ -26,6 +26,7 @@ export default function CompanyListPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [refreshVersion, setRefreshVersion] = useState(0);
   const perPage = 5;
 
@@ -58,12 +59,14 @@ export default function CompanyListPage() {
   useEffect(() => { void fetchCustomers(); }, [fetchCustomers, refreshVersion]);
 
   const handleSaved = () => {
+    setSuccessMessage(modalCustomer ? "Company updated successfully." : "Company added successfully.");
     setIsModalOpen(false);
     setModalCustomer(null);
     setSearchKeyword("");
     setDebouncedSearch("");
     setPage(1);
     setRefreshVersion((version) => version + 1);
+    window.setTimeout(() => setSuccessMessage(""), 5000);
   };
 
   const handleDelete = async () => {
@@ -128,14 +131,15 @@ export default function CompanyListPage() {
 
   return <div className="space-y-7">
     <div className="flex items-start justify-between gap-4"><div><h1 className="text-4xl font-bold tracking-tight text-black">Company List</h1></div>
-      <button type="button" onClick={() => { setModalCustomer(null); setIsModalOpen(true); }} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-base font-semibold text-white hover:bg-blue-700"><Plus className="h-4 w-4" />Add Company</button>
+      <button type="button" onClick={() => { setSuccessMessage(""); setModalCustomer(null); setIsModalOpen(true); }} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-base font-semibold text-white hover:bg-blue-700"><Plus className="h-4 w-4" />Add Company</button>
     </div>
+    {successMessage && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{successMessage}</p>}
     <div className="flex items-center justify-between gap-4 pt-1">
       <label className="relative block w-full max-w-[425px]"><Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" /><input type="search" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} placeholder="Search Company, PIC or Phone Number" className="h-[52px] w-full rounded-full border border-slate-300 bg-white pl-14 pr-5 text-base font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>
       <button type="button" onClick={() => void exportExcel()} disabled={!total || isExporting} className="inline-flex h-[52px] items-center gap-3 rounded-2xl border border-slate-300 bg-white px-5 text-base font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"><Download className="h-5 w-5" />{isExporting ? "Exporting..." : "Export"}</button>
     </div>
     {exportError && <p role="alert" className="-mt-4 text-sm text-red-600">{exportError}</p>}
-    <CustomerTable customers={customers} isLoading={isLoading} error={error} onRetry={() => void fetchCustomers()} searchKeyword={debouncedSearch} onResetSearch={() => setSearchKeyword("")} onEdit={(customer) => { setModalCustomer(customer); setIsModalOpen(true); }} onDetails={(customer) => { setActionCustomer(customer); setActionMode("details"); }} onViewTasks={(customer) => { setActionCustomer(customer); setActionMode("tasks"); }} onDelete={setDeleteTarget} />
+    <CustomerTable customers={customers} isLoading={isLoading} error={error} onRetry={() => void fetchCustomers()} searchKeyword={debouncedSearch} onResetSearch={() => setSearchKeyword("")} onEdit={(customer) => { setSuccessMessage(""); setModalCustomer(customer); setIsModalOpen(true); }} onDetails={(customer) => { setActionCustomer(customer); setActionMode("details"); }} onViewTasks={(customer) => { setActionCustomer(customer); setActionMode("tasks"); }} onDelete={setDeleteTarget} />
     <div className="flex flex-wrap items-center justify-between gap-4 px-4 pt-2 text-xs text-slate-500"><span>Showing {firstRow}-{lastRow} of {total} customers</span><nav className="flex items-center gap-1" aria-label="Company list pages">
       <button type="button" aria-label="Previous page" disabled={page <= 1 || isLoading} onClick={() => setPage((value) => value - 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>
       {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
