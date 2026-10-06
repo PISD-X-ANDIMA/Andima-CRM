@@ -88,7 +88,8 @@ export async function detectMeetingConflict(
       .from("a1_customer_meetings")
       .select("id, company_id, meeting_day, schedule_type, meeting_date, effective_start_date, start_time, end_time, a1_company_list!inner(company_name)")
       .eq("is_active", true)
-      .is("deleted_at", null);
+      .is("deleted_at", null)
+      .neq("status", "cancelled");
     if (excludeMeetingId) query = query.neq("id", excludeMeetingId);
     const { data: allMeetings, error } = await query;
     if (error) return { hasConflict: false, error: error.message };

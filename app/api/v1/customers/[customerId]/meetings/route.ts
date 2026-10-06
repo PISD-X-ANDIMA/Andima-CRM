@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+﻿import { NextRequest } from "next/server";
 import {
   getMeetingsByCustomerId,
   detectMeetingConflict,
@@ -113,11 +113,14 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     if (!supabase) return createErrorResponse("DATABASE_001", "Database client unavailable", undefined, 500);
     const { data: existing, error: existingError } = await (supabase as any)
       .from("a1_customer_meetings")
-      .select("meeting_type, location, meeting_link, start_time, end_time, schedule_type, meeting_day, meeting_date, effective_start_date")
+      .select("status, meeting_type, location, meeting_link, start_time, end_time, schedule_type, meeting_day, meeting_date, effective_start_date")
       .eq("id", meetingId)
       .eq("company_id", customerId)
       .maybeSingle();
     if (existingError || !existing) return createErrorResponse("NOT_FOUND_001", "Meeting not found", undefined, 404);
+    if (existing.status === "completed") {
+      return createErrorResponse("MEETING_LOCKED_001", "Completed meetings cannot be edited or have their status changed.", undefined, 409);
+    }
 
     if (input.agenda !== undefined && !input.agenda?.trim()) {
       return createErrorResponse("VALIDATION_001", "Agenda is required", undefined, 400);
@@ -191,6 +194,19 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
 
     if (!meetingId) {
       return createErrorResponse("VALIDATION_001", "meetingId is required", undefined, 400);
+    }
+
+    const supabase = await createServerSupabaseClient();
+    if (!supabase) return createErrorResponse("DATABASE_001", "Database client unavailable", undefined, 500);
+    const { data: existing, error } = await (supabase as any)
+      .from("a1_customer_meetings")
+      .select("status")
+      .eq("id", meetingId)
+      .eq("company_id", customerId)
+      .maybeSingle();
+    if (error || !existing) return createErrorResponse("NOT_FOUND_001", "Meeting not found", undefined, 404);
+    if (existing.status === "completed") {
+      return createErrorResponse("MEETING_LOCKED_001", "Completed meetings cannot be deleted.", undefined, 409);
     }
 
     const result = await deleteMeeting(customerId, meetingId);
