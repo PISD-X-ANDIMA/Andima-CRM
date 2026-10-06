@@ -94,35 +94,49 @@ export async function detectMeetingConflict(
     const { data: allMeetings, error } = await query;
     if (error) return { hasConflict: false, error: error.message };
 
-    for (const m of allMeetings) {
-      const startDate = input.schedule_type === "one_day" ? input.meeting_date : input.effective_start_date;
-      if (!startDate) continue;
-      const start = new Date(`${startDate}T00:00:00Z`);
-      const weekday = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][start.getUTCDay()];
-      if (input.schedule_type === "one_day" && weekday !== input.meeting_day) continue;
-      const targetDate = new Date(start);
-      if (input.schedule_type === "weekly") {
-        const targetDay = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"].indexOf(input.meeting_day);
-        targetDate.setUTCDate(targetDate.getUTCDate() + ((targetDay - targetDate.getUTCDay() + 7) % 7));
-      }
-      const targetDateString = `${targetDate.getUTCFullYear()}-${String(targetDate.getUTCMonth() + 1).padStart(2, "0")}-${String(targetDate.getUTCDate()).padStart(2, "0")}`;
+    const weekdays = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+    const getFirstWeeklyDate = (date: string, weekday: string) => {
+      const firstDate = new Date(`${date}T00:00:00Z`);
+      const targetDay = weekdays.indexOf(weekday);
+      firstDate.setUTCDate(firstDate.getUTCDate() + ((targetDay - firstDate.getUTCDay() + 7) % 7));
+      return `${firstDate.getUTCFullYear()}-${String(firstDate.getUTCMonth() + 1).padStart(2, "0")}-${String(firstDate.getUTCDate()).padStart(2, "0")}`;
+    };
+    const overlaps = (aStart: string, aEnd: string, bStart: string, bEnd: string) => aStart < bEnd && aEnd > bStart;
+    const inputStartDate = input.schedule_type === "one_day"
+      ? input.meeting_date
+      : input.effective_start_date
+        ? getFirstWeeklyDate(input.effective_start_date, input.meeting_day)
+        : null;
+    if (!inputStartDate) return { hasConflict: false };
 
-      let repeatsOnTarget = false;
-      if (m.schedule_type === "one_day") {
+    for (const m of allMeetings) {
+      let repeatsOnCommonDate = false;
+      if (input.schedule_type === "one_day") {
+        repeatsOnCommonDate = m.schedule_type === "one_day"
+          ? m.meeting_date === input.meeting_date
+          : Boolean(m.meeting_day === weekdays[new Date(`${input.meeting_date}T00:00:00Z`).getUTCDay()]
+            && m.effective_start_date
+            && input.meeting_date! >= getFirstWeeklyDate(m.effective_start_date, m.meeting_day));
+      } else if (m.schedule_type === "one_day") {
         const existingDate = m.meeting_date;
-        const existingWeekday = existingDate
-          ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date(`${existingDate}T00:00:00Z`).getUTCDay()]
+        repeatsOnCommonDate = Boolean(existingDate
+          && weekdays[new Date(`${existingDate}T00:00:00Z`).getUTCDay()] === input.meeting_day
+          && existingDate >= inputStartDate);
+      } else {
+        const existingFirstDate = m.effective_start_date
+          ? getFirstWeeklyDate(m.effective_start_date, m.meeting_day)
           : null;
-        repeatsOnTarget = input.schedule_type === "one_day"
-          ? existingDate === input.meeting_date
-          : Boolean(existingDate && existingDate >= targetDateString && existingWeekday === input.meeting_day);
-      } else if (m.schedule_type === "weekly") {
-        repeatsOnTarget = input.schedule_type === "weekly"
-          ? m.meeting_day === input.meeting_day && (!m.effective_start_date || targetDateString >= m.effective_start_date)
-          : Boolean(m.meeting_day === weekday && input.meeting_date && (!m.effective_start_date || input.meeting_date >= m.effective_start_date));
+        // Two weekly meetings only intersect when they repeat on the same weekday.
+        repeatsOnCommonDate = m.meeting_day === input.meeting_day
+          && Boolean(existingFirstDate)
+          && input.start_time < m.end_time
+          && input.end_time > m.start_time;
+        if (repeatsOnCommonDate) {
+          // Both schedules recur indefinitely; the later first occurrence is their first shared date.
+          repeatsOnCommonDate = true;
+        }
       }
-      const overlap = input.start_time < m.end_time && input.end_time > m.start_time;
-      if (repeatsOnTarget && overlap) {
+      if (repeatsOnCommonDate && overlaps(input.start_time, input.end_time, m.start_time, m.end_time)) {
         return {
           hasConflict: true,
           conflictWith: m.a1_company_list?.company_name || "Another company",
