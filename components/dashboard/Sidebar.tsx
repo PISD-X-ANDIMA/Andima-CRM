@@ -85,7 +85,6 @@ export function Sidebar() {
     pathname.startsWith("/dashboard/company-list") ||
     pathname.startsWith("/dashboard/meeting-schedule") ||
     pathname.startsWith("/dashboard/record-conversation") ||
-    pathname.startsWith("/dashboard/task-of-field-agent") ||
     pathname.startsWith("/dashboard/need-backup");
   const isCrmActive = isSalesExecutiveActive;
 
@@ -232,6 +231,10 @@ export function Sidebar() {
                   })}
                 </div>
               )}
+
+              <div className="mt-0.5 flex w-full items-center rounded-lg px-3 py-2 text-[13px] font-medium text-slate-400">
+                <span>Field Agent</span>
+              </div>
 
             </div>
           )}
