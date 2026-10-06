@@ -17,7 +17,7 @@ const DEFAULT_POSITIONS: OptionItem[] = [
   { id: '0ec333af-8737-413f-adab-841a3067e485', name: 'Director' },
   { id: '10da1bac-a6a8-472e-a171-e4984ab768d9', name: 'Accounting Associate' },
   { id: '58706b7f-950b-4e71-b066-792fbd91424d', name: 'Sales Executive' },
-  { id: '56f0fe6d-crm1-48d4-b81d-aecfc1091611', name: 'CRM Staff' },
+  { id: '56f0fe6d-ca01-48d4-b81d-aecfc1091611', name: 'CRM Staff' },
 ];
 
 const DEFAULT_DEPARTMENTS: OptionItem[] = [
@@ -90,23 +90,36 @@ export default function RegisterPage() {
     fetchOptions();
   }, []);
 
-  // Fungsi untuk Generate Employee ID otomatis (EMP-001, EMP-002, dst.)
+  // Fungsi untuk Generate Employee ID otomatis (AND-0001, AND-0002, dst.)
   const generateNextEmployeeId = async (): Promise<string> => {
-    const { data, error } = await supabase
-      .from('b2_register')
-      .select('employee_id')
-      .like('employee_id', 'AND-%')
-      .order('created_at', { ascending: false })
-      .limit(1);
+    try {
+      const { data, error } = await supabase
+        .from('b2_register')
+        .select('employee_id')
+        .or('employee_id.like.AND-%,employee_id.like.EMP-%')
+        .order('created_at', { ascending: false })
+        .limit(1)
 
-    if (error) throw new Error('Gagal menyiapkan ID registrasi: ' + error.message);
-    if (!data?.length) return 'AND-001';
+      if (error) {
+        return `AND-${String(Date.now()).slice(-4)}`
+      }
 
-    const last = data[0].employee_id;
-    const match = /^EMP-(\d+)$/.exec(data[0].employee_id ?? '');
-    if (!match) throw new Error('Format ID registrasi terakhir tidak valid. Hubungi administrator.');
-    return `AND-${String(Number(match[1]) + 1).padStart(4, '0')}`;
-  };
+      if (!data || data.length === 0 || !data[0]?.employee_id) {
+        return 'AND-0001'
+      }
+
+      const lastId = data[0].employee_id
+      const match = /(?:AND|EMP)-(\d+)/.exec(lastId)
+      if (!match) {
+        return `AND-${String(Date.now()).slice(-4)}`
+      }
+
+      const nextNum = Number(match[1]) + 1
+      return `AND-${String(nextNum).padStart(4, '0')}`
+    } catch {
+      return `AND-${String(Date.now()).slice(-4)}`
+    }
+  }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -211,24 +224,37 @@ export default function RegisterPage() {
         throw new Error('User ID tidak ditemukan setelah pendaftaran auth.');
       }
 
-      // 3. Simpan data ke b2_register (diubah: tambahkan id: userId bertipe UUID)
-      const { error: dbError } = await supabase
+      // 3. Simpan data ke b2_register (dengan penanganan tipe id UUID/bigint)
+      const isValidUuid = (val: string): boolean =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
+
+      const safePositionId = isValidUuid(positionId) ? positionId : '56f0fe6d-ca01-48d4-b81d-aecfc1091611'
+      const safeDeptId = isValidUuid(departementId) ? departementId : '56f0fe6d-6a8e-48d4-b81d-aecfc1091610'
+
+      const insertPayload: Record<string, unknown> = {
+        employee_id: autoEmployeeId,
+        full_name: fullName.trim(),
+        email: emailLower,
+        phone: phone.trim(),
+        employment_status: employmentStatus,
+        position_id: safePositionId,
+        departement_id: safeDeptId,
+      }
+
+      let { error: dbError } = await supabase
         .from('b2_register')
-        .insert([
-          {
-            id: userId,
-            employee_id: autoEmployeeId,
-            full_name: fullName.trim(),
-            email: emailLower,
-            phone: phone.trim(),
-            employment_status: employmentStatus,
-            position_id: positionId,
-            departement_id: departementId,
-          },
-        ]);
+        .insert([{ ...insertPayload, id: userId }])
+
+      // Fallback jika id di database adalah bigint auto-increment (bukan UUID)
+      if (dbError && dbError.message.toLowerCase().includes('bigint')) {
+        const retry = await supabase
+          .from('b2_register')
+          .insert([insertPayload])
+        dbError = retry.error
+      }
 
       if (dbError) {
-        throw new Error('Gagal menyimpan ke b2_register: ' + dbError.message);
+        throw new Error('Gagal menyimpan ke b2_register: ' + dbError.message)
       }
 
       // 4. Berhasil
