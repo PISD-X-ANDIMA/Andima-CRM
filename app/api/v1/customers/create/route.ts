@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const { company_name, address, pic_full_name, pic_phone_number, pic_position, pic_email } = body;
+    const { company_name, address, pic_full_name } = body;
 
     if (!company_name?.trim()) {
       return createErrorResponse("VALIDATION_001", "Company name is required", undefined, 400);
@@ -17,17 +17,10 @@ export async function POST(request: NextRequest) {
     if (!pic_full_name?.trim()) {
       return createErrorResponse("VALIDATION_001", "PIC name is required", undefined, 400);
     }
-    if (!pic_phone_number?.trim()) {
-      return createErrorResponse("VALIDATION_001", "PIC phone number is required", undefined, 400);
-    }
-
     const result = await createCustomer({
       company_name,
       address,
       pic_full_name,
-      pic_phone_number,
-      pic_position,
-      pic_email,
     });
 
     if (!result.success) {

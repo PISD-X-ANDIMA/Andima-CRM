@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { X, Building2, User, Phone, Mail, Briefcase, MapPin, Loader2, AlertCircle } from "lucide-react";
+import { X, Building2, User, MapPin, Loader2, AlertCircle } from "lucide-react";
 import { CreateCustomerInput, CustomerListItem, ApiResponse } from "@/types/customer";
 
 interface CustomerFormModalProps {
@@ -15,7 +15,6 @@ interface FormErrors {
   company_name?: string;
   address?: string;
   pic_full_name?: string;
-  pic_phone_number?: string;
   general?: string;
 }
 
@@ -23,9 +22,6 @@ const INITIAL_FORM: CreateCustomerInput = {
   company_name: "",
   address: "",
   pic_full_name: "",
-  pic_phone_number: "",
-  pic_position: "",
-  pic_email: "",
 };
 
 function validate(data: CreateCustomerInput): FormErrors {
@@ -33,11 +29,6 @@ function validate(data: CreateCustomerInput): FormErrors {
   if (!data.company_name.trim()) errors.company_name = "Company name is required";
   if (!data.address.trim()) errors.address = "Address is required";
   if (!data.pic_full_name.trim()) errors.pic_full_name = "PIC name is required";
-  if (!data.pic_phone_number.trim()) {
-    errors.pic_phone_number = "PIC phone number is required";
-  } else if (!/^(?:0|\+62)[0-9\s()-]{7,18}$/.test(data.pic_phone_number.trim())) {
-    errors.pic_phone_number = "Invalid phone number format";
-  }
   return errors;
 }
 
@@ -52,9 +43,6 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
       company_name: customer.companyName,
       address: customer.address || "",
       pic_full_name: customer.primaryPic?.fullName || "",
-      pic_phone_number: customer.primaryPic?.phoneNumber || "",
-      pic_position: customer.primaryPic?.position || "",
-      pic_email: customer.primaryPic?.email || "",
     } : INITIAL_FORM);
     setErrors({});
   }, [customer, isOpen]);
@@ -140,7 +128,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
               <Building2 className="w-4 h-4" />
             </div>
             <h2 id="customer-modal-title" className="text-base font-semibold text-slate-900">
-              {customer ? "Edit Company" : "Add New Company"}
+              {customer ? "Edit Company" : "Add Company"}
             </h2>
           </div>
           <button
@@ -210,7 +198,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
             {/* Section: PIC */}
             <div>
               <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                Primary PIC Contact
+                    Company PIC
               </p>
               <div className="space-y-3">
                 {/* PIC Name */}
@@ -241,83 +229,6 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
                   {errors.pic_full_name && (
                     <p className="mt-1.5 text-[11px] text-red-600">{errors.pic_full_name}</p>
                   )}
-                </div>
-
-                {/* Phone */}
-                <div>
-                  <label
-                    htmlFor="field-pic_phone"
-                    className="block text-xs font-medium text-slate-700 mb-1.5"
-                  >
-                    Phone Number <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                      <Phone className="w-4 h-4" />
-                    </div>
-                    <input
-                      id="field-pic_phone"
-                      type="tel"
-                      value={form.pic_phone_number}
-                      onChange={(e) => handleChange("pic_phone_number", e.target.value)}
-                      placeholder="08xxxxxxxxxx"
-                      className={`w-full pl-9 pr-4 py-2.5 border rounded-lg text-sm transition-all focus:outline-none focus:ring-2 ${
-                        errors.pic_phone_number
-                          ? "border-red-300 focus:border-red-400 focus:ring-red-500/20"
-                          : "border-slate-200 focus:border-blue-400 focus:ring-blue-500/20"
-                      }`}
-                    />
-                  </div>
-                  {errors.pic_phone_number && (
-                    <p className="mt-1.5 text-[11px] text-red-600">{errors.pic_phone_number}</p>
-                  )}
-                </div>
-
-                {/* Position + Email */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label
-                      htmlFor="field-pic_position"
-                      className="block text-xs font-medium text-slate-700 mb-1.5"
-                    >
-                      Job Title
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                        <Briefcase className="w-4 h-4" />
-                      </div>
-                      <input
-                        id="field-pic_position"
-                        type="text"
-                        value={form.pic_position || ""}
-                        onChange={(e) => handleChange("pic_position", e.target.value)}
-                        placeholder="Manager / General Manager..."
-                        className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-blue-400 focus:ring-blue-500/20 transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="field-pic_email"
-                      className="block text-xs font-medium text-slate-700 mb-1.5"
-                    >
-                      Email
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                        <Mail className="w-4 h-4" />
-                      </div>
-                      <input
-                        id="field-pic_email"
-                        type="email"
-                        value={form.pic_email || ""}
-                        onChange={(e) => handleChange("pic_email", e.target.value)}
-                        placeholder="email@company.com"
-                        className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-blue-400 focus:ring-blue-500/20 transition-all"
-                      />
-                    </div>
-                  </div>
                 </div>
 
                 <div>

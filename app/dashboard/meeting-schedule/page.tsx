@@ -1,13 +1,35 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock3, MapPin, Pencil, Plus, Trash2, UserRound, X } from "lucide-react";
-import type { ApiResponse, CustomerListItem } from "@/types/customer";
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { ChevronLeft, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react";
+import type { ApiResponse, CustomerListItem, MeetingDay, ScheduleType } from "@/types/customer";
 
 const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const hours = Array.from({ length: 10 }, (_, index) => 8 + index);
-const dayKeys = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
+const dayKeys: MeetingDay[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+type MeetingType = "offline" | "online";
+interface MeetingFormState {
+  companyId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  agenda: string;
+  picName: string;
+  representative: string;
+  meetingType: MeetingType;
+  location: string;
+  meetingLink: string;
+  frequency: ScheduleType;
+  notes: string;
+}
+
 function dateKey(date: Date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`; }
+function dateForInput(value: string) { return new Date(`${value}T12:00:00`); }
+function newForm(date: string, startTime: string, customer?: CustomerListItem, representative = ""): MeetingFormState {
+  const [hour, minutes] = startTime.split(":").map(Number);
+  const endTime = `${String(Math.min(hour + 1, 23)).padStart(2, "0")}:${String(minutes || 0).padStart(2, "0")}`;
+  return { companyId: customer?.id || "", date, startTime, endTime, agenda: "", picName: customer?.primaryPic?.fullName || "", representative, meetingType: "offline", location: "", meetingLink: "", frequency: "one_day", notes: "" };
+}
 
 export default function MeetingSchedulePage() {
   const [month, setMonth] = useState(() => new Date());
@@ -20,6 +42,7 @@ export default function MeetingSchedulePage() {
   const [mutationError, setMutationError] = useState("");
   const [selectedMeeting, setSelectedMeeting] = useState<{ customer: CustomerListItem; meeting: NonNullable<CustomerListItem["meetingSchedule"]> } | null>(null);
   const [editingMeeting, setEditingMeeting] = useState(false);
+  const [form, setForm] = useState<MeetingFormState>(() => newForm(dateKey(new Date()), "09:00"));
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
@@ -37,51 +60,83 @@ export default function MeetingSchedulePage() {
     const start = new Date(month.getFullYear(), month.getMonth(), 1);
     return Array.from({ length: 42 }, (_, index) => new Date(start.getFullYear(), start.getMonth(), index - start.getDay() + 1));
   }, [month]);
-  const selectedDate = new Date(`${selected}T00:00:00`);
-  const agenda = customers.flatMap((customer) => {
-    const meeting = customer.meetingSchedule;
-    if (!meeting || (meeting.effectiveStartDate && selected < meeting.effectiveStartDate)) return [];
+  const selectedDate = dateForInput(selected);
+  const agenda = customers.flatMap((customer) => (customer.meetings || []).flatMap((meeting) => {
+    if (meeting.status === "cancelled" || (meeting.effectiveStartDate && selected < meeting.effectiveStartDate)) return [];
     const isScheduled = meeting.scheduleType === "one_day" ? meeting.meetingDate === selected : meeting.meetingDay === dayKeys[selectedDate.getDay()];
     return isScheduled ? [{ customer, meeting }] : [];
-  }).sort((a, b) => (a.meeting.startTime || "").localeCompare(b.meeting.startTime || ""));
+  })).sort((a, b) => (a.meeting.startTime || "").localeCompare(b.meeting.startTime || ""));
+  const availableCustomers = customers;
 
-  async function saveMeeting(formData: FormData) {
-    const companyId = String(formData.get("companyId") || "");
-    const startTime = slotToBook || "09:00";
-    const endHour = Math.min(Number(startTime.slice(0, 2)) + 1, 23);
-    const endTime = `${String(endHour).padStart(2, "0")}:${startTime.slice(3, 5)}`;
-    const scheduleType = String(formData.get("scheduleType") || "one_day");
-    setSaving(true); setMutationError("");
-    try {
-      const response = await fetch(`/api/v1/customers/${companyId}/meetings`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ meeting_day: dayKeys[selectedDate.getDay()], schedule_type: scheduleType, meeting_date: scheduleType === "one_day" ? selected : null, start_time: `${startTime}:00`, end_time: `${endTime}:00` }) });
-      const result: ApiResponse<{ meetingId: string }> = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.success ? "Failed to save the meeting." : result.message);
-      setSlotToBook(null); await load();
-    } catch (cause) { setMutationError(cause instanceof Error ? cause.message : "Failed to save the meeting."); }
-    finally { setSaving(false); }
-  }
+  const beginAdd = (time: string) => {
+    const representative = (() => { try { return JSON.parse(localStorage.getItem("andima_user") || "{}").name || ""; } catch { return ""; } })();
+    setForm(newForm(selected, time, undefined, representative));
+    setMutationError("");
+    setSlotToBook(time);
+  };
 
-  async function updateSelectedMeeting(formData: FormData) {
+  const beginEdit = () => {
     if (!selectedMeeting) return;
-    const date = String(formData.get("meetingDate") || selected);
-    const startTime = String(formData.get("startTime") || "09:00");
-    const endTime = String(formData.get("endTime") || "10:00");
-    const scheduleType = String(formData.get("scheduleType") || selectedMeeting.meeting.scheduleType);
-    const dateParts = date.split("-").map(Number);
-    const weekday = dayKeys[new Date(dateParts[0], dateParts[1] - 1, dateParts[2]).getDay()];
+    const meeting = selectedMeeting.meeting;
+    const representative = (() => { try { return JSON.parse(localStorage.getItem("andima_user") || "{}").name || ""; } catch { return ""; } })();
+    setForm({
+      companyId: selectedMeeting.customer.id,
+      date: meeting.scheduleType === "one_day" ? meeting.meetingDate || selected : meeting.effectiveStartDate || selected,
+      startTime: meeting.startTime?.slice(0, 5) || "09:00",
+      endTime: meeting.endTime?.slice(0, 5) || "10:00",
+      agenda: meeting.agenda || "",
+      picName: selectedMeeting.customer.primaryPic?.fullName || meeting.picName || "",
+      representative: meeting.representativeName || representative,
+      meetingType: meeting.meetingType || "offline",
+      location: meeting.location || "",
+      meetingLink: meeting.meetingLink || "",
+      frequency: meeting.scheduleType,
+      notes: meeting.notes || "",
+    });
+    setMutationError("");
+    setEditingMeeting(true);
+  };
+
+  const handleSaveMeeting = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const customer = customers.find((item) => item.id === form.companyId);
+    if (!customer) { setMutationError("Select a company."); return; }
+    if (form.meetingType === "offline" && !form.location.trim()) { setMutationError("Location is required for an offline meeting."); return; }
+    if (form.meetingType === "online" && !form.meetingLink.trim()) { setMutationError("A meeting link is required for an online meeting."); return; }
+    if (form.endTime <= form.startTime) { setMutationError("End time must be after start time."); return; }
+    const meetingDate = dateForInput(form.date);
+    const payload = {
+      meeting_day: dayKeys[meetingDate.getDay()],
+      schedule_type: form.frequency,
+      meeting_date: form.frequency === "one_day" ? form.date : null,
+      effective_start_date: form.frequency === "weekly" ? form.date : null,
+      start_time: `${form.startTime}:00`,
+      end_time: `${form.endTime}:00`,
+      agenda: form.agenda.trim(),
+      pic_name: form.picName.trim(),
+      representative_name: form.representative.trim(),
+      meeting_type: form.meetingType,
+      location: form.meetingType === "offline" ? form.location.trim() : null,
+      meeting_link: form.meetingType === "online" ? form.meetingLink.trim() : null,
+      notes: form.notes.trim(),
+    };
     setSaving(true); setMutationError("");
     try {
-      const response = await fetch(`/api/v1/customers/${selectedMeeting.customer.id}/meetings`, {
-        method: "PATCH",
+      const editMeeting = editingMeeting ? selectedMeeting : null;
+      const response = await fetch(`/api/v1/customers/${editMeeting ? editMeeting.customer.id : customer.id}/meetings`, {
+        method: editMeeting ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ meetingId: selectedMeeting.meeting.id, meeting_day: weekday, schedule_type: scheduleType, meeting_date: scheduleType === "one_day" ? date : null, start_time: `${startTime}:00`, end_time: `${endTime}:00` }),
+        body: JSON.stringify(editMeeting ? { meetingId: editMeeting.meeting.id, ...payload } : payload),
       });
       const result: ApiResponse<{ meetingId: string }> = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.success ? "Failed to update the meeting." : result.message);
-      setSelected(date); setEditingMeeting(false); setSelectedMeeting(null); await load();
-    } catch (cause) { setMutationError(cause instanceof Error ? cause.message : "Failed to update the meeting."); }
+      if (!response.ok || !result.success) throw new Error(result.success ? "Failed to save the meeting." : result.message);
+      setSelected(form.date);
+      setMonth(new Date(meetingDate.getFullYear(), meetingDate.getMonth(), 1));
+      setSlotToBook(null); setEditingMeeting(false); setSelectedMeeting(null);
+      await load();
+    } catch (cause) { setMutationError(cause instanceof Error ? cause.message : "Failed to save the meeting."); }
     finally { setSaving(false); }
-  }
+  };
 
   async function deleteSelectedMeeting() {
     if (!selectedMeeting || !window.confirm("Delete this meeting schedule?")) return;
@@ -101,29 +156,78 @@ export default function MeetingSchedulePage() {
     const end = Number(meeting.endTime?.slice(0, 2)) * 60 + Number(meeting.endTime?.slice(3, 5));
     return start < (hour + 1) * 60 && end > hour * 60;
   });
+  const updateForm = (field: keyof MeetingFormState, value: string) => setForm((current) => ({ ...current, [field]: value }));
 
   return <div className="space-y-8">
-    <header className="flex flex-wrap items-end justify-between gap-5"><div><h1 className="text-3xl font-bold tracking-tight text-black">{formatDate(selectedDate)}</h1><p className="mt-1 text-lg text-slate-500">Meeting schedule and availability for this date</p></div><button onClick={() => setSlotToBook("09:00")} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-lg font-semibold text-white hover:bg-blue-700"><Plus className="h-5 w-5" />Add Meeting</button></header>
+    <header className="flex flex-wrap items-end justify-between gap-5"><div><h1 className="text-3xl font-bold tracking-tight text-black">{formatDate(selectedDate)}</h1><p className="mt-1 text-lg text-slate-500">Meeting schedule and availability for this date</p></div><button type="button" onClick={() => beginAdd("09:00")} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-lg font-semibold text-white hover:bg-blue-700"><Plus className="h-5 w-5" />Add Meeting</button></header>
     <div className="grid items-start gap-8 lg:grid-cols-[minmax(350px,0.76fr)_minmax(500px,1.24fr)]">
       <section className="rounded-2xl border border-slate-200 bg-white p-7"><div className="mb-7 flex items-center justify-between"><button aria-label="Previous month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="rounded p-2 text-slate-400 hover:bg-slate-100"><ChevronLeft className="h-7 w-7" /></button><h2 className="text-2xl font-semibold text-slate-950">{month.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h2><button aria-label="Next month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="rounded p-2 text-slate-400 hover:bg-slate-100"><ChevronRight className="h-7 w-7" /></button></div>
-        <div className="grid grid-cols-7 gap-y-3 text-center">{weekdayNames.map((day) => <span key={day} className="pb-2 text-sm font-medium text-slate-600">{day}</span>)}{calendarDays.map((date) => { const key = dateKey(date); const inMonth = date.getMonth() === month.getMonth(); const hasMeeting = customers.some(({ meetingSchedule: meeting }) => meeting && (meeting.scheduleType === "one_day" ? meeting.meetingDate === key : meeting.meetingDay === dayKeys[date.getDay()])); return <button key={key} onClick={() => setSelected(key)} className={`relative mx-auto grid h-10 w-10 place-items-center rounded-full text-sm ${!inMonth ? "text-slate-300" : "text-slate-700 hover:bg-blue-50"} ${key === selected ? "bg-blue-600 font-semibold text-white hover:bg-blue-700" : ""}`} aria-pressed={key === selected}><span>{date.getDate()}</span>{hasMeeting && key !== selected && <span className="absolute bottom-0.5 h-1 w-1 rounded-full bg-blue-500" />}</button>; })}</div>
+        <div className="grid grid-cols-7 gap-y-3 text-center">{weekdayNames.map((day) => <span key={day} className="pb-2 text-sm font-medium text-slate-600">{day}</span>)}{calendarDays.map((date) => { const key = dateKey(date); const inMonth = date.getMonth() === month.getMonth(); const hasMeeting = customers.some((customer) => (customer.meetings || []).some((meeting) => meeting.status !== "cancelled" && (meeting.scheduleType === "one_day" ? meeting.meetingDate === key : meeting.meetingDay === dayKeys[date.getDay()] && (!meeting.effectiveStartDate || key >= meeting.effectiveStartDate)))); return <button key={key} onClick={() => setSelected(key)} className={`relative mx-auto grid h-10 w-10 place-items-center rounded-full text-sm ${!inMonth ? "text-slate-300" : "text-slate-700 hover:bg-blue-50"} ${key === selected ? "bg-blue-600 font-semibold text-white hover:bg-blue-700" : ""}`} aria-pressed={key === selected}><span>{date.getDate()}</span>{hasMeeting && key !== selected && <span className="absolute bottom-0.5 h-1 w-1 rounded-full bg-blue-500" />}</button>; })}</div>
       </section>
       <section className="space-y-3">
         {loading ? <div className="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center text-slate-500">Loading schedule...</div> : error ? <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-700">{error}<button className="ml-3 underline" onClick={() => void load()}>Try again</button></div> : null}
         {!loading && !error && agenda.length === 0 && <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-center text-slate-500">No meetings are scheduled for this date.</div>}
         {!loading && !error && hours.map((hour) => {
           const slotMeetings = meetingAtHour(hour);
-          return slotMeetings.length ? slotMeetings.map(({ customer, meeting }) => <button key={`${meeting.id}-${hour}`} type="button" onClick={() => { setSelectedMeeting({ customer, meeting }); setEditingMeeting(false); setMutationError(""); }} className="flex min-h-[70px] w-full items-center justify-between gap-4 rounded-xl border border-blue-200 bg-blue-50/60 px-5 py-4 text-left text-slate-700 hover:border-blue-400"><span className="flex items-center gap-4"><i className="h-3 w-3 shrink-0 rounded-full bg-blue-500" /><span className="font-medium">{customer.companyName}<small className="ml-2 text-slate-500">Scheduled · View details</small></span></span><span className="whitespace-nowrap text-slate-600">{meeting.startTime?.slice(0, 5)}–{meeting.endTime?.slice(0, 5)}</span></button>) : <div key={hour} className="flex min-h-[70px] items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-slate-500"><span className="flex items-center gap-4"><i className="h-3 w-3 rounded-full bg-slate-400" />Available</span><span className="whitespace-nowrap">{String(hour).padStart(2, "0")}:00–{String(hour + 1).padStart(2, "0")}:00</span><button onClick={() => setSlotToBook(`${String(hour).padStart(2, "0")}:00`)} className="rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50">+Add</button></div>;
+          return slotMeetings.length ? slotMeetings.map(({ customer, meeting }) => {
+            const slotEnd = new Date(`${selected}T${meeting.endTime?.slice(0, 8) || "10:00:00"}`);
+            const meetingStatus = meeting.status === "completed" || (meeting.status !== "cancelled" && slotEnd <= new Date()) ? "completed" : (meeting.status || "scheduled");
+            return <button key={`${meeting.id}-${hour}`} type="button" onClick={() => { setSelectedMeeting({ customer, meeting }); setEditingMeeting(false); setMutationError(""); }} className={`flex min-h-[70px] w-full items-center justify-between gap-4 rounded-xl border px-5 py-4 text-left text-slate-700 hover:border-blue-400 ${meetingStatus === "completed" ? "border-emerald-200 bg-emerald-50/70" : "border-blue-200 bg-blue-50/60"}`}><span className="flex items-center gap-4"><i className={`h-3 w-3 shrink-0 rounded-full ${meetingStatus === "completed" ? "bg-emerald-500" : "bg-blue-500"}`} /><span className="font-medium">{customer.companyName}<small className="ml-2 text-slate-500">{meetingStatus === "completed" ? "Completed" : "Scheduled"} · View details</small></span></span><span className="whitespace-nowrap text-slate-600">{meeting.startTime?.slice(0, 5)}–{meeting.endTime?.slice(0, 5)}</span></button>;
+          }) : <div key={hour} className="flex min-h-[70px] items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-slate-500"><span className="flex items-center gap-4"><i className="h-3 w-3 rounded-full bg-slate-400" />Available</span><span className="whitespace-nowrap">{String(hour).padStart(2, "0")}:00–{String(hour + 1).padStart(2, "0")}:00</span><button type="button" onClick={() => beginAdd(`${String(hour).padStart(2, "0")}:00`)} className="rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50">+Add</button></div>;
         })}
       </section>
     </div>
-    {slotToBook && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/40 p-4"><form action={saveMeeting} className="w-full max-w-md space-y-4 rounded-2xl bg-white p-6 shadow-xl"><div className="flex items-start justify-between"><div><h2 className="text-xl font-bold text-slate-900">Add Meeting</h2><p className="mt-1 text-sm text-slate-500">{formatDate(selectedDate)} · {slotToBook}</p></div><button type="button" aria-label="Close" onClick={() => setSlotToBook(null)} className="rounded p-1 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button></div><label className="block text-sm font-medium text-slate-700">Company<select required name="companyId" defaultValue="" className="mt-1 w-full rounded-lg border border-slate-300 p-2.5"><option value="" disabled>Select a company</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.companyName}</option>)}</select></label><input type="hidden" name="startTime" value={slotToBook} /><label className="block text-sm font-medium text-slate-700">Schedule Type<select name="scheduleType" className="mt-1 w-full rounded-lg border border-slate-300 p-2.5"><option value="one_day">One day</option><option value="weekly">Weekly</option></select></label>{mutationError && <p role="alert" className="text-sm text-red-600">{mutationError}</p>}<div className="flex justify-end gap-2"><button type="button" onClick={() => setSlotToBook(null)} className="rounded-lg border px-4 py-2 text-slate-600">Cancel</button><button disabled={saving || customers.length === 0} className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white disabled:opacity-50">{saving ? "Saving..." : "Save Meeting"}</button></div></form></div>}
-    {selectedMeeting && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) { setSelectedMeeting(null); setEditingMeeting(false); } }}>
-      {editingMeeting ? <form action={updateSelectedMeeting} className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"><div className="flex items-center justify-between border-b border-slate-100 px-6 py-4"><h2 className="text-lg font-bold text-slate-900">Edit Meeting</h2><button type="button" aria-label="Close" onClick={() => setEditingMeeting(false)} className="text-slate-400 hover:text-slate-700"><X /></button></div><div className="space-y-4 px-6 py-5"><label className="block text-sm font-semibold text-slate-700">Date <span className="text-red-500">*</span><input required type="date" name="meetingDate" defaultValue={selectedMeeting.meeting.scheduleType === "one_day" ? selectedMeeting.meeting.meetingDate || selected : selected} className="mt-1.5 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" /></label><div className="grid grid-cols-2 gap-3"><label className="block text-sm font-semibold text-slate-700">Start time<input required type="time" name="startTime" defaultValue={selectedMeeting.meeting.startTime?.slice(0, 5) || "09:00"} className="mt-1.5 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" /></label><label className="block text-sm font-semibold text-slate-700">End time<input required type="time" name="endTime" defaultValue={selectedMeeting.meeting.endTime?.slice(0, 5) || "10:00"} className="mt-1.5 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" /></label></div><label className="block text-sm font-semibold text-slate-700">Company<input readOnly value={selectedMeeting.customer.companyName} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 font-normal text-slate-600" /></label><label className="block text-sm font-semibold text-slate-700">Schedule Type<select name="scheduleType" defaultValue={selectedMeeting.meeting.scheduleType} className="mt-1.5 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"><option value="one_day">One day</option><option value="weekly">Weekly</option></select></label>{mutationError && <p role="alert" className="text-sm text-red-600">{mutationError}</p>}</div><div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4"><button type="button" onClick={() => setEditingMeeting(false)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600">Cancel</button><button disabled={saving} className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">{saving ? "Saving..." : "Save Changes"}</button></div></form> : <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"><div className="flex items-center justify-between border-b border-slate-100 px-6 py-4"><h2 className="text-lg font-bold text-slate-900">Meeting Details</h2><button type="button" aria-label="Close" onClick={() => setSelectedMeeting(null)} className="text-slate-400 hover:text-slate-700"><X /></button></div><div className="space-y-4 px-6 py-5"><DetailRow icon={<CalendarDays className="h-4 w-4" />} label="Date" value={formatDate(selectedDate)} /><DetailRow icon={<Clock3 className="h-4 w-4" />} label="Time" value={`${selectedMeeting.meeting.startTime?.slice(0, 5)} – ${selectedMeeting.meeting.endTime?.slice(0, 5)}`} /><DetailRow icon={<CalendarDays className="h-4 w-4" />} label="Customer" value={selectedMeeting.customer.companyName} /><DetailRow icon={<UserRound className="h-4 w-4" />} label="PIC" value={selectedMeeting.customer.primaryPic?.fullName || "Not provided"} /><DetailRow icon={<MapPin className="h-4 w-4" />} label="Location" value={selectedMeeting.customer.address || "Not provided"} /><DetailRow icon={<CalendarDays className="h-4 w-4" />} label="Schedule Type" value={selectedMeeting.meeting.scheduleType === "weekly" ? "Weekly" : "One day"} /><p className="border-t border-slate-100 pt-4 text-xs text-slate-500">Agenda, meeting status, and modification history are not stored in the current database schema.</p>{mutationError && <p role="alert" className="text-sm text-red-600">{mutationError}</p>}</div><div className="flex justify-between border-t border-slate-100 bg-slate-50 px-6 py-4"><button type="button" disabled={saving} onClick={() => void deleteSelectedMeeting()} className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 disabled:opacity-50"><Trash2 className="h-4 w-4" />Delete</button><button type="button" onClick={() => { setEditingMeeting(true); setMutationError(""); }} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white"><Pencil className="h-4 w-4" />Edit</button></div></div>}
+
+    {slotToBook && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/75 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setSlotToBook(null); }}><form onSubmit={handleSaveMeeting} className="my-auto w-full max-w-5xl rounded-2xl bg-white px-6 py-6 shadow-2xl sm:px-8"><div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4"><h2 className="text-2xl font-bold text-slate-900">Add Meeting</h2><button type="button" aria-label="Close" onClick={() => setSlotToBook(null)} className="text-slate-400 hover:text-slate-700"><X className="h-6 w-6" /></button></div>
+      <div className="space-y-4">
+        <MeetingField label="Company" required><select required value={form.companyId} onChange={(event) => { const customer = customers.find((item) => item.id === event.target.value); updateForm("companyId", event.target.value); if (customer) updateForm("picName", customer.primaryPic?.fullName || ""); }} className={inputClass}><option value="">Select company</option>{availableCustomers.map((customer) => <option key={customer.id} value={customer.id}>{customer.companyName}</option>)}</select></MeetingField>
+        <MeetingField label="Date" required><input required type="date" value={form.date} onChange={(event) => updateForm("date", event.target.value)} className={inputClass} /></MeetingField>
+        <MeetingField label="Time" required><div className="grid grid-cols-2 gap-3"><input required type="time" value={form.startTime} onChange={(event) => updateForm("startTime", event.target.value)} className={inputClass} /><input required type="time" value={form.endTime} onChange={(event) => updateForm("endTime", event.target.value)} className={inputClass} /></div></MeetingField>
+        <MeetingField label="Agenda / Topic" required><input required maxLength={200} value={form.agenda} onChange={(event) => updateForm("agenda", event.target.value)} placeholder="Enter agenda" className={inputClass} /></MeetingField>
+        <MeetingField label="PIC Name" required><input required readOnly value={form.picName} placeholder="Select a company first" className={`${inputClass} cursor-not-allowed bg-slate-50`} /></MeetingField>
+        <MeetingField label="Andima Representative" required><input required value={form.representative} onChange={(event) => updateForm("representative", event.target.value)} placeholder="Representative name" className={inputClass} /></MeetingField>
+        <MeetingField label="Meeting Type" required><div className="flex flex-wrap gap-6 pt-2"><RadioChoice name="meeting-type" checked={form.meetingType === "offline"} onChange={() => updateForm("meetingType", "offline")} label="Offline (Location)" /><RadioChoice name="meeting-type" checked={form.meetingType === "online"} onChange={() => updateForm("meetingType", "online")} label="Online (Link)" /></div></MeetingField>
+        {form.meetingType === "offline" ? <MeetingField label="Location" required><input required value={form.location} onChange={(event) => updateForm("location", event.target.value)} placeholder="Enter location" className={inputClass} /></MeetingField> : <MeetingField label="Meeting Link" required><input required type="url" value={form.meetingLink} onChange={(event) => updateForm("meetingLink", event.target.value)} placeholder="https://" className={inputClass} /></MeetingField>}
+        <MeetingField label="Frequency" required><div className="flex gap-6 pt-2"><RadioChoice name="meeting-frequency" checked={form.frequency === "one_day"} onChange={() => updateForm("frequency", "one_day")} label="One-time" /><RadioChoice name="meeting-frequency" checked={form.frequency === "weekly"} onChange={() => updateForm("frequency", "weekly")} label="Weekly" /></div></MeetingField>
+        <MeetingField label="Notes"><div><textarea maxLength={500} rows={3} value={form.notes} onChange={(event) => updateForm("notes", event.target.value)} placeholder="Enter notes (optional)" className={`${inputClass} resize-y`} /><p className="mt-1 text-right text-xs text-slate-400">{form.notes.length}/500</p></div></MeetingField>
+      </div>
+      {mutationError && <p role="alert" className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{mutationError}</p>}
+      <div className="mt-5 flex justify-end gap-3 border-t border-slate-100 pt-5"><button type="button" onClick={() => setSlotToBook(null)} className="rounded-lg border border-slate-300 px-6 py-2.5 text-sm font-semibold text-slate-600">Cancel</button><button type="submit" disabled={saving || availableCustomers.length === 0} className="rounded-lg bg-blue-600 px-8 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{saving ? "Saving..." : "Save Meeting"}</button></div>
+    </form></div>}
+
+    {selectedMeeting && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/75 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) { setSelectedMeeting(null); setEditingMeeting(false); } }}>
+      {editingMeeting ? <form onSubmit={handleSaveMeeting} className="my-auto w-full max-w-5xl rounded-2xl bg-white px-6 py-6 shadow-2xl sm:px-8"><div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4"><h2 className="text-2xl font-bold text-slate-900">Edit Meeting</h2><button type="button" aria-label="Close" onClick={() => setEditingMeeting(false)} className="text-slate-400 hover:text-slate-700"><X className="h-6 w-6" /></button></div>
+        <div className="space-y-4"><MeetingField label="Company" required><select required value={form.companyId} onChange={(event) => updateForm("companyId", event.target.value)} className={inputClass}><option value={selectedMeeting.customer.id}>{selectedMeeting.customer.companyName}</option></select></MeetingField>
+          <MeetingField label="Date" required><input required type="date" value={form.date} onChange={(event) => updateForm("date", event.target.value)} className={inputClass} /></MeetingField>
+          <MeetingField label="Time" required><div className="grid grid-cols-2 gap-3"><input required type="time" value={form.startTime} onChange={(event) => updateForm("startTime", event.target.value)} className={inputClass} /><input required type="time" value={form.endTime} onChange={(event) => updateForm("endTime", event.target.value)} className={inputClass} /></div></MeetingField>
+          <MeetingField label="Agenda / Topic" required><input required maxLength={200} value={form.agenda} onChange={(event) => updateForm("agenda", event.target.value)} placeholder="Enter agenda" className={inputClass} /></MeetingField>
+          <MeetingField label="PIC Name" required><input required readOnly value={form.picName} className={`${inputClass} cursor-not-allowed bg-slate-50`} /></MeetingField>
+          <MeetingField label="Andima Representative" required><input required value={form.representative} onChange={(event) => updateForm("representative", event.target.value)} className={inputClass} /></MeetingField>
+          <MeetingField label="Meeting Type" required><div className="flex flex-wrap gap-6 pt-2"><RadioChoice name="edit-meeting-type" checked={form.meetingType === "offline"} onChange={() => updateForm("meetingType", "offline")} label="Offline (Location)" /><RadioChoice name="edit-meeting-type" checked={form.meetingType === "online"} onChange={() => updateForm("meetingType", "online")} label="Online (Link)" /></div></MeetingField>
+          {form.meetingType === "offline" ? <MeetingField label="Location" required><input required value={form.location} onChange={(event) => updateForm("location", event.target.value)} className={inputClass} /></MeetingField> : <MeetingField label="Meeting Link" required><input required type="url" value={form.meetingLink} onChange={(event) => updateForm("meetingLink", event.target.value)} className={inputClass} /></MeetingField>}
+          <MeetingField label="Frequency" required><div className="flex gap-6 pt-2"><RadioChoice name="edit-meeting-frequency" checked={form.frequency === "one_day"} onChange={() => updateForm("frequency", "one_day")} label="One-time" /><RadioChoice name="edit-meeting-frequency" checked={form.frequency === "weekly"} onChange={() => updateForm("frequency", "weekly")} label="Weekly" /></div></MeetingField>
+          <MeetingField label="Notes"><div><textarea maxLength={500} rows={3} value={form.notes} onChange={(event) => updateForm("notes", event.target.value)} placeholder="Enter notes (optional)" className={`${inputClass} resize-y`} /><p className="mt-1 text-right text-xs text-slate-400">{form.notes.length}/500</p></div></MeetingField>
+        </div>
+        {mutationError && <p role="alert" className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{mutationError}</p>}
+        <div className="mt-5 flex justify-end gap-3 border-t border-slate-100 pt-5"><button type="button" onClick={() => setEditingMeeting(false)} className="rounded-lg border border-slate-300 px-6 py-2.5 text-sm font-semibold text-slate-600">Cancel</button><button type="submit" disabled={saving} className="rounded-lg bg-blue-600 px-8 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{saving ? "Saving..." : "Save Changes"}</button></div>
+      </form> : <div className="my-auto w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"><div className="flex items-center justify-between border-b border-slate-100 px-6 py-5"><h2 className="text-xl font-bold text-slate-900">Meeting Details</h2><button type="button" aria-label="Close" onClick={() => setSelectedMeeting(null)} className="text-slate-400 hover:text-slate-700"><X className="h-5 w-5" /></button></div>
+        <div className="space-y-5 px-6 py-6"><div className="grid grid-cols-[minmax(130px,0.75fr)_minmax(0,1.25fr)] gap-x-4 gap-y-5 text-sm"><DetailRow label="Company" value={selectedMeeting.customer.companyName} /><DetailRow label="Date & Time" value={`${formatDate(selectedMeeting.meeting.scheduleType === "one_day" && selectedMeeting.meeting.meetingDate ? dateForInput(selectedMeeting.meeting.meetingDate) : selectedDate)}, ${selectedMeeting.meeting.startTime?.slice(0, 5)} – ${selectedMeeting.meeting.endTime?.slice(0, 5)}`} /><DetailRow label="Agenda / Topic" value={selectedMeeting.meeting.agenda || "Not provided"} /><DetailRow label="PIC" value={selectedMeeting.meeting.picName || selectedMeeting.customer.primaryPic?.fullName || "Not provided"} /><DetailRow label="Andima Representative" value={selectedMeeting.meeting.representativeName || "Not provided"} /><DetailRow label="Meeting Type" value={selectedMeeting.meeting.meetingType === "online" ? "Online (Link)" : "Offline (Location)"} /><DetailRow label={selectedMeeting.meeting.meetingType === "online" ? "Meeting Link" : "Location"} value={selectedMeeting.meeting.meetingType === "online" ? selectedMeeting.meeting.meetingLink || "Not provided" : selectedMeeting.meeting.location || selectedMeeting.customer.address || "Not provided"} /><DetailRow label="Status" value={selectedMeeting.meeting.status || "Scheduled"} /><DetailRow label="Frequency" value={selectedMeeting.meeting.scheduleType === "weekly" ? "Weekly" : "One-time"} /><DetailRow label="Notes" value={selectedMeeting.meeting.notes || "No notes"} /></div>{mutationError && <p role="alert" className="text-sm text-rose-600">{mutationError}</p>}</div>
+        <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4"><button type="button" disabled={saving} onClick={() => void deleteSelectedMeeting()} className="inline-flex items-center gap-2 rounded-lg border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 disabled:opacity-50"><Trash2 className="h-4 w-4" />Delete</button><button type="button" onClick={beginEdit} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white"><Pencil className="h-4 w-4" />Edit</button></div>
+      </div>}
     </div>}
   </div>;
 }
 
-function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-600">{icon}</span><div><p className="text-xs text-slate-400">{label}</p><p className="mt-0.5 text-sm font-semibold text-slate-800">{value}</p></div></div>;
+const inputClass = "h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+
+function MeetingField({ label, required, children }: { label: string; required?: boolean; children: ReactNode }) {
+  return <div className="grid gap-2 sm:grid-cols-[minmax(180px,0.62fr)_minmax(0,1fr)] sm:items-center"><label className="text-sm font-semibold text-slate-700">{label}{required && <span className="ml-1 text-rose-500">*</span>}</label>{children}</div>;
+}
+
+function RadioChoice({ name, checked, onChange, label }: { name: string; checked: boolean; onChange: () => void; label: string }) {
+  return <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="radio" name={name} checked={checked} onChange={onChange} className="h-4 w-4 accent-blue-600" />{label}</label>;
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return <><dt className="text-slate-500">{label}</dt><dd className="break-words font-semibold text-slate-800">{value}</dd></>;
 }

@@ -106,12 +106,6 @@ export function Sidebar() {
     pathname.startsWith("/dashboard/task-of-field-agent") ||
     pathname.startsWith("/dashboard/need-backup");
 
-  const handleSalesExecutiveClick = () => {
-    setCrmOpen(true);
-    setSalesExecOpen(true);
-    router.push("/dashboard/sales-executive");
-  };
-
   return (
     <aside className="flex min-h-screen w-[260px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
       <div className="mx-4 flex h-[102px] items-center gap-4 border-b border-white/10">
@@ -193,9 +187,13 @@ export function Sidebar() {
           {crmOpen && (
             <div className="mt-0.5 ml-2">
               <div className="flex w-full items-center rounded-lg text-[13px] font-medium">
-              <button
-                type="button"
-                onClick={handleSalesExecutiveClick}
+              <Link
+                href="/dashboard/sales-executive"
+                prefetch
+                onClick={() => {
+                  setCrmOpen(true);
+                  setSalesExecOpen(true);
+                }}
                 className={`flex flex-1 items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors ${
                   isSalesExecutiveDashboard
                     ? "bg-[#b4c9d4] text-slate-700"
@@ -215,7 +213,7 @@ export function Sidebar() {
                   <span>Sales Executive</span>
                 </span>
 
-              </button>
+              </Link>
                 <button
                   type="button"
                   aria-label="Toggle Sales Executive submenu"

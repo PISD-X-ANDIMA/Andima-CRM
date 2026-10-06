@@ -76,6 +76,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
     customer_code: string | null;
     job_number: string | null;
     created_by: string | null;
+    created_at: string | null;
   };
 
   const supabase = await createServerSupabaseClient();
@@ -83,10 +84,12 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
   if (supabase) {
     let countQuery = (supabase as any)
       .from("a1_company_list")
-      .select("company_list_id", { count: "exact", head: true });
+      .select("company_list_id", { count: "exact", head: true })
+      .is("deleted_at", null);
     let dataQuery = (supabase as any)
       .from("a1_company_list")
-      .select("company_list_id, company_name, address, name, customer_code, job_number, created_by");
+      .select("company_list_id, company_name, address, name, customer_code, job_number, created_by, created_at");
+    dataQuery = dataQuery.is("deleted_at", null);
 
     if (search.trim()) {
       const term = `%${search.trim()}%`;
@@ -99,37 +102,29 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
     if (countError) throw countError;
     const total = count || 0;
     const { data, error } = await dataQuery
-      .order("company_name", { ascending: sortOrder === "asc" })
+      .order(sortBy, { ascending: sortOrder === "asc", nullsFirst: false })
       .range(offset, offset + validPerPage - 1);
     if (error) throw error;
 
     const rows = (data || []) as CompanyRow[];
     const companyIds = rows.map((item) => item.company_list_id);
 
-    // These additive tables may not be present in older shared database instances.
-    // Keep the list usable with the legacy PIC value when either lookup is unavailable.
-    let contactsByCompany = new Map<string, any>();
-    let meetingsByCompany = new Map<string, any>();
+    const meetingsByCompany = new Map<string, any[]>();
     if (companyIds.length) {
       try {
-        const { data: contacts } = await (supabase as any)
-          .from("a1_company_contacts")
-          .select("id, company_id, full_name, phone_number, position, email, is_primary")
-          .in("company_id", companyIds)
-          .is("deleted_at", null)
-          .order("is_primary", { ascending: false });
-        for (const contact of contacts || []) {
-          if (!contactsByCompany.has(contact.company_id)) contactsByCompany.set(contact.company_id, contact);
-        }
-      } catch { /* optional contact relation */ }
-      try {
-        const { data: meetings } = await (supabase as any)
+        const meetingQuery = (columns: string) => (supabase as any)
           .from("a1_customer_meetings")
-          .select("id, company_id, meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date, is_active")
+          .select(columns)
           .in("company_id", companyIds)
           .eq("is_active", true)
           .is("deleted_at", null);
-        for (const meeting of meetings || []) meetingsByCompany.set(meeting.company_id, meeting);
+        let result = await meetingQuery("id, company_id, meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date, is_active, agenda, pic_name, representative_name, meeting_type, location, meeting_link, notes, status");
+        if (result.error) result = await meetingQuery("id, company_id, meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date, is_active");
+        for (const meeting of result.data || []) {
+          const companyMeetings = meetingsByCompany.get(meeting.company_id) || [];
+          companyMeetings.push(meeting);
+          meetingsByCompany.set(meeting.company_id, companyMeetings);
+        }
       } catch { /* optional meeting relation */ }
     }
 
@@ -141,19 +136,11 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
       transactionNo: item.customer_code,
       jobNumber: item.job_number,
       createdBy: item.created_by,
-      createdDate: null,
-      primaryPic: contactsByCompany.get(item.company_list_id) ? {
-        id: contactsByCompany.get(item.company_list_id).id,
-        fullName: contactsByCompany.get(item.company_list_id).full_name,
-        phoneNumber: contactsByCompany.get(item.company_list_id).phone_number || "",
-        position: contactsByCompany.get(item.company_list_id).position,
-        email: contactsByCompany.get(item.company_list_id).email,
-      } : item.name ? {
-        id: item.company_list_id, fullName: item.name, phoneNumber: "", position: null, email: null,
+      createdDate: item.created_at,
+      primaryPic: item.name ? {
+        id: item.company_list_id, fullName: item.name, phoneNumber: "",
       } : null,
-      meetingSchedule: meetingsByCompany.get(item.company_list_id) ? (() => {
-        const meeting = meetingsByCompany.get(item.company_list_id);
-        return {
+      meetings: (meetingsByCompany.get(item.company_list_id) || []).map((meeting) => ({
           id: meeting.id,
           meetingDay: meeting.meeting_day,
           scheduleType: meeting.schedule_type,
@@ -161,10 +148,87 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
           startTime: meeting.start_time,
           endTime: meeting.end_time,
           effectiveStartDate: meeting.effective_start_date,
+          agenda: meeting.agenda,
+          picName: meeting.pic_name,
+          representativeName: meeting.representative_name,
+          meetingType: meeting.meeting_type,
+          location: meeting.location,
+          meetingLink: meeting.meeting_link,
+          notes: meeting.notes,
+          status: meeting.status,
           formattedSchedule: formatMeetingSchedule(meeting.meeting_day, meeting.schedule_type, meeting.meeting_date, meeting.start_time, meeting.end_time),
+        })),
+      meetingSchedule: (() => {
+        const meetings = meetingsByCompany.get(item.company_list_id) || [];
+        if (!meetings.length) return null;
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const nextMeeting = meetings
+          .filter((meeting) => meeting.status !== "cancelled")
+          .map((meeting) => {
+            let occurrence: Date | null = null;
+            if (meeting.schedule_type === "one_day" && meeting.meeting_date) {
+              const [year, month, day] = meeting.meeting_date.split("-").map(Number);
+              occurrence = new Date(year, month - 1, day);
+            } else if (meeting.schedule_type === "weekly") {
+              const weekdays: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+              const weekday = weekdays[meeting.meeting_day];
+              if (weekday !== undefined) {
+                occurrence = new Date(today);
+                occurrence.setDate(today.getDate() + ((weekday - today.getDay() + 7) % 7));
+                const [hours, minutes] = (meeting.start_time || "09:00").split(":").map(Number);
+                occurrence.setHours(hours, minutes, 0, 0);
+                if (occurrence < now) occurrence.setDate(occurrence.getDate() + 7);
+              }
+            }
+            if (occurrence && meeting.effective_start_date) {
+              const [year, month, day] = meeting.effective_start_date.split("-").map(Number);
+              const effectiveStart = new Date(year, month - 1, day);
+              while (meeting.schedule_type === "weekly" && occurrence < effectiveStart) occurrence.setDate(occurrence.getDate() + 7);
+              if (meeting.schedule_type === "one_day" && occurrence < effectiveStart) occurrence = null;
+            }
+            if (occurrence && meeting.schedule_type === "one_day") {
+              const [hours, minutes] = (meeting.start_time || "09:00").split(":").map(Number);
+              occurrence.setHours(hours, minutes, 0, 0);
+            }
+            return { meeting, occurrence };
+          })
+          .filter((item) => item.occurrence && item.occurrence >= now)
+          .sort((a, b) => a.occurrence!.getTime() - b.occurrence!.getTime())[0]?.meeting;
+        if (!nextMeeting) return null;
+        return {
+          id: nextMeeting.id,
+          meetingDay: nextMeeting.meeting_day,
+          scheduleType: nextMeeting.schedule_type,
+          meetingDate: nextMeeting.meeting_date,
+          startTime: nextMeeting.start_time,
+          endTime: nextMeeting.end_time,
+          effectiveStartDate: nextMeeting.effective_start_date,
+          agenda: nextMeeting.agenda,
+          picName: nextMeeting.pic_name,
+          representativeName: nextMeeting.representative_name,
+          meetingType: nextMeeting.meeting_type,
+          location: nextMeeting.location,
+          meetingLink: nextMeeting.meeting_link,
+          notes: nextMeeting.notes,
+          status: nextMeeting.status,
+          occurrenceDate: (() => {
+            const date = nextMeeting.schedule_type === "one_day"
+              ? new Date(`${nextMeeting.meeting_date}T00:00:00`)
+              : new Date(nextMeeting.effective_start_date || today);
+            if (nextMeeting.schedule_type === "weekly") {
+              const weekday: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+              date.setDate(date.getDate() + ((weekday[nextMeeting.meeting_day] - date.getDay() + 7) % 7));
+              const [hours, minutes] = (nextMeeting.start_time || "09:00").split(":").map(Number);
+              date.setHours(hours, minutes, 0, 0);
+              while (date < now) date.setDate(date.getDate() + 7);
+            }
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+          })(),
+          formattedSchedule: formatMeetingSchedule(nextMeeting.meeting_day, nextMeeting.schedule_type, nextMeeting.meeting_date, nextMeeting.start_time, nextMeeting.end_time),
         };
-      })() : null,
-      createdAt: "",
+      })(),
+      createdAt: item.created_at || "",
     }));
 
     return {
@@ -185,7 +249,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
 }
 
 /**
- * Retrieves a customer's profile, contacts, active meeting schedule, and jobs by ID.
+ * Retrieves a company's profile and all active meeting schedules by ID.
  */
 export async function getCustomerById(
   customerId: string
@@ -194,151 +258,75 @@ export async function getCustomerById(
   if (!supabase) return null;
 
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    const currentSalesId = user?.id || null;
-
-    let query = (supabase as any)
+    // Load the legacy Company List columns first. Related tables and migration-added
+    // columns are optional so a saved customer remains viewable on the shared schema.
+    const { data, error } = await (supabase as any)
       .from("a1_company_list")
-      .select(
-        `
-        company_list_id,
-        id,
-        company_name,
-        name,
-        address,
-        sales_id,
-        created_at,
-        updated_at,
-        deleted_at,
-        a1_company_contacts (
-          id,
-          full_name,
-          phone_number,
-          position,
-          email,
-          is_primary,
-          created_at,
-          updated_at
-        ),
-        a1_customer_meetings (
-          id,
-          meeting_day,
-          schedule_type,
-          meeting_date,
-          start_time,
-          end_time,
-          effective_start_date,
-          is_active,
-          created_at,
-          updated_at
-        ),
-        a1_customer_jobs (
-          id,
-          transaction_no,
-          job_number,
-          title,
-          status,
-          agent_id,
-          scheduled_date,
-          created_at
-        )
-      `
-      )
-      .or(`company_list_id.eq.${customerId},id.eq.${customerId}`)
-      .is("deleted_at", null);
-
-    if (currentSalesId) {
-      query = query.or(`sales_id.eq.${currentSalesId},sales_id.is.null`);
-    }
-
-    const { data, error } = await query.single();
-
+      .select("company_list_id, company_name, name, address, customer_code, job_number, created_by, created_at, updated_at")
+      .eq("company_list_id", customerId)
+      .is("deleted_at", null)
+      .maybeSingle();
     if (error || !data) return null;
 
-    const contacts = Array.isArray(data.a1_company_contacts)
-      ? data.a1_company_contacts.map((c: any) => ({
-          id: c.id,
-          companyId: customerId,
-          fullName: c.full_name,
-          phoneNumber: c.phone_number,
-          position: c.position,
-          email: c.email,
-          isPrimary: c.is_primary,
-          createdAt: c.created_at,
-          updatedAt: c.updated_at,
-        }))
-      : [];
+    const { data: meetingRows, error: meetingError } = await (supabase as any)
+      .from("a1_customer_meetings")
+      .select("*")
+      .eq("company_id", customerId)
+      .eq("is_active", true)
+      .is("deleted_at", null);
+    if (meetingError) throw meetingError;
 
-    // Fall back to the legacy PIC fields when no related contact exists.
-    if (contacts.length === 0 && data.name) {
-      contacts.push({
-        id: "primary-" + data.company_list_id,
-        companyId: customerId,
-        fullName: data.name,
-        phoneNumber: "",
-        position: "Primary PIC",
-        email: null,
-        isPrimary: true,
-      });
-    }
+    const primaryPic = data.name ? {
+      id: data.company_list_id,
+      fullName: data.name,
+      phoneNumber: "",
+    } : null;
 
-    const primaryPic = contacts.find((c: any) => c.isPrimary) || contacts[0] || null;
+    const meetings = (meetingRows || []).map((meeting: any) => ({
+      id: meeting.id,
+      companyId: customerId,
+      meetingDay: meeting.meeting_day,
+      scheduleType: meeting.schedule_type,
+      meetingDate: meeting.meeting_date,
+      startTime: meeting.start_time,
+      endTime: meeting.end_time,
+      effectiveStartDate: meeting.effective_start_date,
+      agenda: meeting.agenda,
+      picName: meeting.pic_name,
+      representativeName: meeting.representative_name,
+      meetingType: meeting.meeting_type,
+      location: meeting.location,
+      meetingLink: meeting.meeting_link,
+      notes: meeting.notes,
+      status: meeting.status,
+      isActive: meeting.is_active,
+      formattedSchedule: formatMeetingSchedule(meeting.meeting_day, meeting.schedule_type, meeting.meeting_date, meeting.start_time, meeting.end_time),
+      createdAt: meeting.created_at,
+      updatedAt: meeting.updated_at,
+    }));
+    const activeMeeting = meetings.find((meeting: any) => meeting.status !== "cancelled") || null;
 
-    const meetings = Array.isArray(data.a1_customer_meetings)
-      ? data.a1_customer_meetings
-      : [];
-    const activeMeetingRaw = meetings.find((m: any) => m.is_active);
-
-    const activeMeeting = activeMeetingRaw
-      ? {
-          id: activeMeetingRaw.id,
-          companyId: customerId,
-          meetingDay: activeMeetingRaw.meeting_day,
-          scheduleType: activeMeetingRaw.schedule_type,
-          meetingDate: activeMeetingRaw.meeting_date,
-          startTime: activeMeetingRaw.start_time,
-          endTime: activeMeetingRaw.end_time,
-          effectiveStartDate: activeMeetingRaw.effective_start_date,
-          isActive: activeMeetingRaw.is_active,
-          formattedSchedule: formatMeetingSchedule(
-            activeMeetingRaw.meeting_day,
-            activeMeetingRaw.schedule_type,
-            activeMeetingRaw.meeting_date,
-            activeMeetingRaw.start_time,
-            activeMeetingRaw.end_time
-          ),
-          createdAt: activeMeetingRaw.created_at,
-          updatedAt: activeMeetingRaw.updated_at,
-        }
-      : null;
-
-    const jobs = Array.isArray(data.a1_customer_jobs)
-      ? data.a1_customer_jobs.map((j: any) => ({
-          id: j.id,
-          companyId: customerId,
-          transactionNo: j.transaction_no,
-          jobNumber: j.job_number,
-          title: j.title,
-          status: j.status,
-          agentId: j.agent_id,
-          scheduledDate: j.scheduled_date,
-          createdAt: j.created_at,
-        }))
-      : [];
+    /*
+     * Transaction/job data belongs to its own source table, which is not in the
+     * confirmed A1 schema. Do not query an unprovisioned table or invent rows.
+     */
+    const jobs: CustomerDetailItem["jobs"] = [];
 
     return {
-      id: data.company_list_id || data.id,
+      id: data.company_list_id,
       companyName: data.company_name,
+      customerCode: data.customer_code,
+      transactionNo: data.customer_code,
+      jobNumber: data.job_number,
+      createdBy: data.created_by,
       address: data.address || "Address not provided",
-      salesId: data.sales_id,
+      salesId: null,
       createdAt: data.created_at || "",
       updatedAt: data.updated_at || data.created_at || "",
       primaryPic,
-      contacts,
+      meetings,
       activeMeeting,
+      // No transaction/job table exists in the confirmed A1 schema.
       jobs,
     };
   } catch {
@@ -347,7 +335,7 @@ export async function getCustomerById(
 }
 
 /**
- * Creates a customer and stores its primary PIC.
+ * Creates a company with its single PIC in the legacy name column.
  */
 export async function createCustomer(
   input: CreateCustomerInput
@@ -375,7 +363,8 @@ export async function createCustomer(
     const { data: existing, error: duplicateCheckError } = await (supabase as any)
       .from("a1_company_list")
       .select("company_list_id")
-      .ilike("company_name", input.company_name.trim());
+      .ilike("company_name", input.company_name.trim())
+      .is("deleted_at", null);
     if (duplicateCheckError) return { success: false, error: duplicateCheckError.message };
     if (existing?.length) {
       return {
@@ -394,19 +383,8 @@ export async function createCustomer(
         address: input.address.trim(),
         name: input.pic_full_name.trim(),
         created_by: createdBy,
-        customer_code: `CUST-${Date.now().toString().slice(-5)}`,
       });
     if (companyInsertErr) return { success: false, error: companyInsertErr.message };
-
-    // Store the PIC phone number and details in the related contacts table.
-    await (supabase as any).from("a1_company_contacts").insert({
-      company_id: newCompanyId,
-      full_name: input.pic_full_name.trim(),
-      phone_number: input.pic_phone_number.trim(),
-      position: input.pic_position?.trim() || null,
-      email: input.pic_email?.trim() || null,
-      is_primary: true,
-    });
 
     return { success: true, companyId: newCompanyId };
   } catch (error: unknown) {
@@ -439,39 +417,9 @@ export async function updateCustomer(
     const { error } = await (supabase as any)
       .from("a1_company_list")
       .update(updatePayload)
-      .or(`company_list_id.eq.${customerId},id.eq.${customerId}`);
+      .eq("company_list_id", customerId);
 
     if (error) return { success: false, error: error.message };
-
-    if (input.pic_full_name || input.pic_phone_number !== undefined || input.pic_position !== undefined || input.pic_email !== undefined) {
-      const contacts = await (supabase as any)
-        .from("a1_company_contacts")
-        .select("id")
-        .eq("company_id", customerId)
-        .eq("is_primary", true)
-        .is("deleted_at", null)
-        .limit(1);
-      if (contacts.error) return { success: false, error: contacts.error.message };
-      const existingContact = contacts.data?.[0];
-      if (existingContact) {
-        const contactUpdate: Record<string, unknown> = { updated_at: new Date().toISOString() };
-        if (input.pic_full_name !== undefined) contactUpdate.full_name = input.pic_full_name.trim();
-        if (input.pic_phone_number !== undefined) contactUpdate.phone_number = input.pic_phone_number.trim();
-        if (input.pic_position !== undefined) contactUpdate.position = input.pic_position.trim() || null;
-        if (input.pic_email !== undefined) contactUpdate.email = input.pic_email.trim() || null;
-        const { error: contactError } = await (supabase as any)
-          .from("a1_company_contacts")
-          .update(contactUpdate)
-          .eq("id", existingContact.id)
-          .eq("company_id", customerId);
-        if (contactError) return { success: false, error: contactError.message };
-      } else if (input.pic_full_name && input.pic_phone_number) {
-        const { error: contactError } = await (supabase as any)
-          .from("a1_company_contacts")
-          .insert({ company_id: customerId, full_name: input.pic_full_name.trim(), phone_number: input.pic_phone_number.trim(), position: input.pic_position?.trim() || null, email: input.pic_email?.trim() || null, is_primary: true });
-        if (contactError) return { success: false, error: contactError.message };
-      }
-    }
 
     return { success: true };
   } catch (err: any) {
@@ -495,7 +443,7 @@ export async function deleteCustomer(
     const { error: companyErr } = await (supabase as any)
       .from("a1_company_list")
       .update({ deleted_at: now, updated_at: now })
-      .or(`company_list_id.eq.${customerId},id.eq.${customerId}`);
+      .eq("company_list_id", customerId);
 
     if (companyErr) return { success: false, error: companyErr.message };
 

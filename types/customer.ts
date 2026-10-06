@@ -5,9 +5,7 @@ export type { MeetingDay, ScheduleType };
 export interface PrimaryContact {
   id: string;
   fullName: string;
-  phoneNumber: string;
-  position?: string | null;
-  email?: string | null;
+  phoneNumber?: string;
   isPrimary?: boolean;
 }
 
@@ -19,6 +17,15 @@ export interface ActiveMeeting {
   startTime?: string;
   endTime?: string;
   effectiveStartDate?: string | null;
+  agenda?: string | null;
+  picName?: string | null;
+  representativeName?: string | null;
+  meetingType?: "offline" | "online";
+  location?: string | null;
+  meetingLink?: string | null;
+  notes?: string | null;
+  status?: "scheduled" | "completed" | "cancelled";
+  occurrenceDate?: string | null;
   formattedSchedule: string;
 }
 
@@ -27,7 +34,7 @@ export interface CustomerListItem {
   companyName: string;
   customerCode?: string | null;
   address?: string | null;
-  /** Transaction number from the legacy customer_code field. */
+  /** Customer code from the existing customer_code field. */
   transactionNo?: string | null;
   /** Job number from the job_number field. */
   jobNumber?: string | null;
@@ -36,20 +43,11 @@ export interface CustomerListItem {
   /** Formatted creation date. */
   createdDate?: string | null;
   primaryPic: PrimaryContact | null;
+  /** All active one-time and recurring meeting schedules for this company. */
+  meetings?: ActiveMeeting[];
+  /** Next upcoming active schedule, kept for compact Company List summaries. */
   meetingSchedule: ActiveMeeting | null;
   createdAt: string;
-  updatedAt?: string;
-}
-
-export interface CompanyContactItem {
-  id: string;
-  companyId: string;
-  fullName: string;
-  phoneNumber: string;
-  position: string | null;
-  email: string | null;
-  isPrimary: boolean;
-  createdAt?: string;
   updatedAt?: string;
 }
 
@@ -62,6 +60,14 @@ export interface CustomerMeetingItem {
   startTime: string;
   endTime: string;
   effectiveStartDate: string | null;
+  agenda?: string | null;
+  picName?: string | null;
+  representativeName?: string | null;
+  meetingType?: "offline" | "online";
+  location?: string | null;
+  meetingLink?: string | null;
+  notes?: string | null;
+  status?: "scheduled" | "completed" | "cancelled";
   isActive: boolean;
   formattedSchedule: string;
   createdAt?: string;
@@ -76,6 +82,7 @@ export interface CustomerJobItem {
   title: string;
   status: string;
   agentId?: string | null;
+  agentName?: string | null;
   scheduledDate?: string | null;
   createdAt: string;
 }
@@ -83,13 +90,17 @@ export interface CustomerJobItem {
 export interface CustomerDetailItem {
   id: string;
   companyName: string;
+  customerCode?: string | null;
+  transactionNo?: string | null;
+  jobNumber?: string | null;
+  createdBy?: string | null;
   address: string;
   salesId?: string | null;
   createdAt: string;
   updatedAt: string;
   primaryPic: PrimaryContact | null;
-  contacts: CompanyContactItem[];
   activeMeeting: CustomerMeetingItem | null;
+  meetings: CustomerMeetingItem[];
   jobs: CustomerJobItem[];
 }
 
@@ -130,18 +141,12 @@ export interface CreateCustomerInput {
   company_name: string;
   address: string;
   pic_full_name: string;
-  pic_phone_number: string;
-  pic_position?: string;
-  pic_email?: string;
 }
 
 export interface UpdateCustomerInput {
   company_name?: string;
   address?: string;
   pic_full_name?: string;
-  pic_phone_number?: string;
-  pic_position?: string;
-  pic_email?: string;
 }
 
 export interface ApiResponseSuccess<T> {

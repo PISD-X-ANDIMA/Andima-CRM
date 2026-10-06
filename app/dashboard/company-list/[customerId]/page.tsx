@@ -6,8 +6,6 @@ import {
   Users,
   Calendar,
   Briefcase,
-  Phone,
-  Mail,
   Clock,
   CheckCircle2,
   User,
@@ -114,42 +112,24 @@ export default async function CustomerDetailPage({ params }: PageProps) {
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-4">
             <Users className="w-4 h-4 text-emerald-600" />
-            <span>Contact & PIC ({customer.contacts.length})</span>
+            <span>Company PIC</span>
           </div>
-          {customer.contacts.length === 0 ? (
-            <p className="text-xs text-slate-400 italic">No contacts yet</p>
+          {!customer.primaryPic ? (
+            <p className="text-xs text-slate-400 italic">No PIC recorded</p>
           ) : (
             <ul className="space-y-3">
-              {customer.contacts.slice(0, 3).map((c) => (
-                <li key={c.id} className="flex items-start gap-3">
+                <li className="flex items-start gap-3">
                   <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
                     <User className="w-3.5 h-3.5" />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <p className="text-sm font-semibold text-slate-800 truncate">
-                        {c.fullName}
+                        {customer.primaryPic.fullName}
                       </p>
-                      {c.isPrimary && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-600">
-                          PIC
-                        </span>
-                      )}
                     </div>
-                    {c.position && (
-                      <p className="text-[11px] text-slate-400">{c.position}</p>
-                    )}
-                    <p className="text-[11px] text-slate-600 font-mono mt-0.5">
-                      {c.phoneNumber}
-                    </p>
                   </div>
                 </li>
-              ))}
-              {customer.contacts.length > 3 && (
-                <li className="text-[11px] text-slate-400 italic">
-                  +{customer.contacts.length - 3} more contacts
-                </li>
-              )}
             </ul>
           )}
         </div>
@@ -160,22 +140,14 @@ export default async function CustomerDetailPage({ params }: PageProps) {
             <Calendar className="w-4 h-4 text-purple-600" />
             <span>Meeting Schedule</span>
           </div>
-          {customer.activeMeeting ? (
+          {customer.meetings.length ? (
             <div className="space-y-2.5">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span className="text-xs font-semibold text-slate-800">Active Schedule</span>
-              </div>
-              <div className="p-3 rounded-xl bg-purple-50 border border-purple-100">
-                <p className="text-sm font-semibold text-purple-800">
-                  {customer.activeMeeting.formattedSchedule}
-                </p>
-                <p className="text-[11px] text-purple-600 mt-1 flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {customer.activeMeeting.startTime?.slice(0, 5)} –{" "}
-                  {customer.activeMeeting.endTime?.slice(0, 5)}
-                </p>
-              </div>
+              {customer.meetings.map((meeting) => <div key={meeting.id} className="rounded-xl border border-purple-100 bg-purple-50 p-3">
+                <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /><span className="text-xs font-semibold text-slate-800">{meeting.status || "Scheduled"}</span></div>
+                <p className="mt-1 text-sm font-semibold text-purple-800">{meeting.formattedSchedule}</p>
+                <p className="mt-1 flex items-center gap-1 text-[11px] text-purple-600"><Clock className="h-3 w-3" />{meeting.startTime.slice(0, 5)} – {meeting.endTime.slice(0, 5)}</p>
+                {meeting.agenda && <p className="mt-1 text-xs text-slate-600">{meeting.agenda}</p>}
+              </div>)}
             </div>
           ) : (
             <p className="text-xs text-slate-400 italic">No meeting schedule yet</p>
@@ -183,7 +155,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Jobs Section */}
+      {/* Jobs are owned by a separate source system and are not part of confirmed A1 data. */}
       {customer.jobs.length > 0 && (
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <div className="flex items-center justify-between mb-4">
@@ -253,36 +225,6 @@ export default async function CustomerDetailPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Contact Detail — Phone/Email */}
-      {customer.primaryPic && (
-        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
-          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3">
-            Primary Contact
-          </p>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2 text-sm text-slate-700">
-              <Phone className="w-4 h-4 text-slate-400" />
-              <a
-                href={`tel:${customer.primaryPic.phoneNumber}`}
-                className="hover:text-blue-600 font-mono transition-colors"
-              >
-                {customer.primaryPic.phoneNumber}
-              </a>
-            </div>
-            {customer.primaryPic.email && (
-              <div className="flex items-center gap-2 text-sm text-slate-700">
-                <Mail className="w-4 h-4 text-slate-400" />
-                <a
-                  href={`mailto:${customer.primaryPic.email}`}
-                  className="hover:text-blue-600 transition-colors"
-                >
-                  {customer.primaryPic.email}
-                </a>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

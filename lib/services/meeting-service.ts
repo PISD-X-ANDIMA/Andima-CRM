@@ -9,16 +9,23 @@ export interface MeetingInput {
   start_time: string;
   end_time: string;
   effective_start_date?: string | null;
+  agenda: string;
+  pic_name: string;
+  representative_name: string;
+  meeting_type: "offline" | "online";
+  location?: string | null;
+  meeting_link?: string | null;
+  notes?: string | null;
 }
 
 /**
  * Retrieves the active meeting schedule for a customer.
  */
-export async function getMeetingByCustomerId(
+export async function getMeetingsByCustomerId(
   customerId: string
-): Promise<CustomerMeetingItem | null> {
+): Promise<CustomerMeetingItem[]> {
   const supabase = await createServerSupabaseClient();
-  if (!supabase) return null;
+  if (!supabase) return [];
 
   try {
     const { data, error } = await (supabase as any)
@@ -27,32 +34,41 @@ export async function getMeetingByCustomerId(
       .eq("company_id", customerId)
       .eq("is_active", true)
       .is("deleted_at", null)
-      .single();
+      .order("meeting_date", { ascending: true, nullsFirst: false })
+      .order("start_time", { ascending: true });
 
-    if (error || !data) return null;
+    if (error || !data) return [];
 
-    return {
-      id: data.id,
-      companyId: data.company_id,
-      meetingDay: data.meeting_day,
-      scheduleType: data.schedule_type,
-      meetingDate: data.meeting_date,
-      startTime: data.start_time,
-      endTime: data.end_time,
-      effectiveStartDate: data.effective_start_date,
-      isActive: data.is_active,
+    return data.map((meeting: any): CustomerMeetingItem => ({
+      id: meeting.id,
+      companyId: meeting.company_id,
+      meetingDay: meeting.meeting_day,
+      scheduleType: meeting.schedule_type,
+      meetingDate: meeting.meeting_date,
+      startTime: meeting.start_time,
+      endTime: meeting.end_time,
+      effectiveStartDate: meeting.effective_start_date,
+      agenda: meeting.agenda,
+      picName: meeting.pic_name,
+      representativeName: meeting.representative_name,
+      meetingType: meeting.meeting_type,
+      location: meeting.location,
+      meetingLink: meeting.meeting_link,
+      notes: meeting.notes,
+      status: meeting.status,
+      isActive: meeting.is_active,
       formattedSchedule: formatMeetingSchedule(
-        data.meeting_day,
-        data.schedule_type,
-        data.meeting_date,
-        data.start_time,
-        data.end_time
+        meeting.meeting_day,
+        meeting.schedule_type,
+        meeting.meeting_date,
+        meeting.start_time,
+        meeting.end_time
       ),
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-    };
+      createdAt: meeting.created_at,
+      updatedAt: meeting.updated_at,
+    }));
   } catch {
-    return null;
+    return [];
   }
 }
 
@@ -60,44 +76,61 @@ export async function getMeetingByCustomerId(
  * Checks whether another customer's meeting schedule conflicts.
  */
 export async function detectMeetingConflict(
-  salesId: string,
-  input: MeetingInput,
-  excludeCompanyId?: string
-): Promise<{ hasConflict: boolean; conflictWith?: string }> {
+  input: Pick<MeetingInput, "meeting_day" | "schedule_type" | "meeting_date" | "effective_start_date" | "start_time" | "end_time">,
+  excludeMeetingId?: string
+): Promise<{ hasConflict: boolean; conflictWith?: string; error?: string }> {
   const supabase = await createServerSupabaseClient();
-  if (!supabase) return { hasConflict: false };
+  if (!supabase) return { hasConflict: false, error: "Database client unavailable" };
 
   try {
-    const { data: allMeetings } = await (supabase as any)
+    let query = (supabase as any)
       .from("a1_customer_meetings")
-      .select("id, company_id, meeting_day, start_time, end_time, a1_company_list!inner(company_name, sales_id)")
-      .eq("a1_company_list.sales_id", salesId)
+      .select("id, company_id, meeting_day, schedule_type, meeting_date, effective_start_date, start_time, end_time, a1_company_list!inner(company_name)")
       .eq("is_active", true)
       .is("deleted_at", null);
-
-    if (!allMeetings) return { hasConflict: false };
+    if (excludeMeetingId) query = query.neq("id", excludeMeetingId);
+    const { data: allMeetings, error } = await query;
+    if (error) return { hasConflict: false, error: error.message };
 
     for (const m of allMeetings) {
-      if (excludeCompanyId && m.company_id === excludeCompanyId) continue;
-      if (m.meeting_day !== input.meeting_day) continue;
+      const startDate = input.schedule_type === "one_day" ? input.meeting_date : input.effective_start_date;
+      if (!startDate) continue;
+      const start = new Date(`${startDate}T00:00:00Z`);
+      const weekday = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][start.getUTCDay()];
+      if (input.schedule_type === "one_day" && weekday !== input.meeting_day) continue;
+      const targetDate = new Date(start);
+      if (input.schedule_type === "weekly") {
+        const targetDay = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"].indexOf(input.meeting_day);
+        targetDate.setUTCDate(targetDate.getUTCDate() + ((targetDay - targetDate.getUTCDay() + 7) % 7));
+      }
+      const targetDateString = `${targetDate.getUTCFullYear()}-${String(targetDate.getUTCMonth() + 1).padStart(2, "0")}-${String(targetDate.getUTCDate()).padStart(2, "0")}`;
 
-      const newStart = input.start_time;
-      const newEnd = input.end_time;
-      const existStart = m.start_time;
-      const existEnd = m.end_time;
-
-      const overlap = newStart < existEnd && newEnd > existStart;
-      if (overlap) {
+      let repeatsOnTarget = false;
+      if (m.schedule_type === "one_day") {
+        const existingDate = m.meeting_date;
+        const existingWeekday = existingDate
+          ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date(`${existingDate}T00:00:00Z`).getUTCDay()]
+          : null;
+        repeatsOnTarget = input.schedule_type === "one_day"
+          ? existingDate === input.meeting_date
+          : Boolean(existingDate && existingDate >= targetDateString && existingWeekday === input.meeting_day);
+      } else if (m.schedule_type === "weekly") {
+        repeatsOnTarget = input.schedule_type === "weekly"
+          ? m.meeting_day === input.meeting_day && (!m.effective_start_date || targetDateString >= m.effective_start_date)
+          : Boolean(m.meeting_day === weekday && input.meeting_date && (!m.effective_start_date || input.meeting_date >= m.effective_start_date));
+      }
+      const overlap = input.start_time < m.end_time && input.end_time > m.start_time;
+      if (repeatsOnTarget && overlap) {
         return {
           hasConflict: true,
-          conflictWith: m.a1_company_list?.company_name || "Another customer",
+          conflictWith: m.a1_company_list?.company_name || "Another company",
         };
       }
     }
 
     return { hasConflict: false };
-  } catch {
-    return { hasConflict: false };
+  } catch (error) {
+    return { hasConflict: false, error: error instanceof Error ? error.message : "Failed to check meeting conflicts" };
   }
 }
 
@@ -112,13 +145,6 @@ export async function createMeeting(
   if (!supabase) return { success: false, error: "Database client unavailable" };
 
   try {
-    // Deactivate any existing active schedule.
-    await (supabase as any)
-      .from("a1_customer_meetings")
-      .update({ is_active: false, updated_at: new Date().toISOString() })
-      .eq("company_id", customerId)
-      .eq("is_active", true);
-
     const { data, error } = await (supabase as any)
       .from("a1_customer_meetings")
       .insert({
@@ -129,6 +155,14 @@ export async function createMeeting(
         start_time: input.start_time || "09:00:00",
         end_time: input.end_time || "10:00:00",
         effective_start_date: input.effective_start_date || null,
+        agenda: input.agenda,
+        pic_name: input.pic_name,
+        representative_name: input.representative_name,
+        meeting_type: input.meeting_type,
+        location: input.location || null,
+        meeting_link: input.meeting_link || null,
+        notes: input.notes || null,
+        status: "scheduled",
         is_active: true,
       })
       .select("id")
@@ -165,6 +199,13 @@ export async function updateMeeting(
     if (input.end_time) updatePayload.end_time = input.end_time;
     if (input.effective_start_date !== undefined)
       updatePayload.effective_start_date = input.effective_start_date;
+    if (input.agenda !== undefined) updatePayload.agenda = input.agenda;
+    if (input.pic_name !== undefined) updatePayload.pic_name = input.pic_name;
+    if (input.representative_name !== undefined) updatePayload.representative_name = input.representative_name;
+    if (input.meeting_type !== undefined) updatePayload.meeting_type = input.meeting_type;
+    if (input.location !== undefined) updatePayload.location = input.location || null;
+    if (input.meeting_link !== undefined) updatePayload.meeting_link = input.meeting_link || null;
+    if (input.notes !== undefined) updatePayload.notes = input.notes || null;
 
     const { error } = await (supabase as any)
       .from("a1_customer_meetings")
