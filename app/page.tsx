@@ -1,812 +1,114 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { 
-  Bell, Box, Camera, CheckCircle2, FileText, LayoutDashboard, 
-  MapPin, PackageCheck, Search, Users, ArrowLeft, 
-  CheckCircle, ChevronUp, ChevronRight, Monitor, Settings, PhoneCall,
-  ImagePlus, Plus, X, ClipboardList, Clock3, CircleAlert, CircleCheckBig
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Bell, Check, ChevronDown, ChevronRight, ClipboardCheck, FileText, LayoutDashboard, MapPin, Search, Upload, Users, X, AlertTriangle, Camera, Trash2 } from "lucide-react";
 
-type Status = "Draft" | "In Progress" | "Completed" | "Has Issue";
-type View = "dashboard" | "list" | "detail" | "history";
+type Status = "Assigned" | "In Progress" | "Completed" | "Has Issue" | "Draft";
+type Screen = "dashboard" | "tasks" | "detail" | "handover" | "documentation" | "verification" | "history";
+type Job = { id: string; job_number?: string; customer?: string; mawb?: string; mawb_hawb?: string; location?: string; date?: string; status?: Status; created_at?: string };
 
-type Job = {
-  id: string;
-  job_number?: string;
-  customer: string;
-  mawb: string;
-  location: string;
-  date: string;
-  status: Status;
-};
+const sampleJobs: Job[] = [
+  { id: "DSVEXP/2605/2551", job_number: "DSVEXP/2605/2551", customer: "PT DSV Transport Indonesia", mawb: "123-45678901", location: "Kantor PT DSV, Jakarta", date: "7 Oct 2026 09:00", status: "Assigned" },
+  { id: "GEOSEAXP/2605/2551", job_number: "GEOSEAXP/2605/2551", customer: "PT Geodis Freight Forwarding", mawb: "DSV-2506-001", location: "Kantor Geodis, Jakarta", date: "7 Oct 2026 08:30", status: "In Progress" },
+  { id: "MBL/2605/1042", job_number: "MBL/2605/1042", customer: "PT Maju Bersama Logistics", mawb: "789-456321", location: "Jakarta", date: "6 Oct 2026 10:00", status: "Assigned" },
+  { id: "NUSCARGO/2605/1188", job_number: "NUSCARGO/2605/1188", customer: "PT Nusantara Cargo", mawb: "001-23456789", location: "Jakarta", date: "5 Oct 2026 14:20", status: "Completed" },
+  { id: "GEXP/2605/3301", job_number: "GEXP/2605/3301", customer: "PT Global Express", mawb: "777-88990011", location: "Jakarta", date: "5 Oct 2026 09:10", status: "Has Issue" },
+];
+const statusClass: Record<string, string> = { Assigned: "bg-amber-50 text-amber-700 border-amber-200", "In Progress": "bg-blue-50 text-blue-700 border-blue-200", Completed: "bg-emerald-50 text-emerald-700 border-emerald-200", "Has Issue": "bg-red-50 text-red-700 border-red-200", Draft: "bg-slate-100 text-slate-600 border-slate-200" };
+const no = (job: Job | null) => job?.job_number || job?.id || "DSVEXP/2605/2551";
+const mawb = (job: Job) => job.mawb || job.mawb_hawb || "-";
+function StatusBadge({ status, onClick }: { status?: Status; onClick?: () => void }) { const className = `inline-flex whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-bold ${statusClass[status || "Assigned"]}`; return onClick ? <button type="button" onClick={onClick} title="Buka detail job" className={`${className} cursor-pointer transition hover:brightness-95 hover:ring-2 hover:ring-blue-100`}>{status || "Assigned"}</button> : <span className={className}>{status || "Assigned"}</span>; }
 
 export default function Home() {
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<string>("All");
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  
-  // State untuk Navigasi Halaman Utama & Detail
-  const [currentView, setCurrentView] = useState<View>("list");
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  
-  // State untuk Tab di dalam halaman Job Detail
-  const [activeDetailTab, setActiveDetailTab] = useState<string>("Overview");
-  const [isIssueModalOpen, setIsIssueModalOpen] = useState<boolean>(false);
-  const [issueSaved, setIssueSaved] = useState<boolean>(false);
-  const [isSavingIssue, setIsSavingIssue] = useState<boolean>(false);
-  const [issueError, setIssueError] = useState<string>("");
-  const [issueCategory, setIssueCategory] = useState<string>("Damaged Package");
-  const [issueDescription, setIssueDescription] = useState<string>("The package is damaged on the left side.");
-
-  // State untuk toggle Sidebar Menu
-  const [isCrmOpen, setIsCrmOpen] = useState<boolean>(true);
-  const [isFieldAgentOpen, setIsFieldAgentOpen] = useState<boolean>(true);
-
-  useEffect(() => {
-    async function fetchJobs() {
-      try {
-        const res = await fetch("/api/feature/jobs");
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setJobs(data);
-        }
-      } catch (err) {
-        console.error("Gagal memuat data jobs:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchJobs();
-  }, []);
-
-  const filteredJobs = jobs.filter((job: any) => {
-    const matchesTab = activeTab === "All" || job.status === activeTab;
-    const matchesSearch = 
-      job.customer?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.mawb?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.job_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.id?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTab && matchesSearch;
-  });
-
-  const handleJobAction = (job: Job) => {
-    setSelectedJob(job);
-    setCurrentView("detail");
-    setActiveDetailTab("Overview");
-    setIsIssueModalOpen(false);
-  };
-
-  const openJobHistory = () => {
-    setSelectedJob(null);
-    setCurrentView("history");
-    setIsIssueModalOpen(false);
-  };
-
-  const selectDetailTab = (tab: string) => {
-    setActiveDetailTab(tab);
-    setIsIssueModalOpen(tab === "Issue");
-    if (tab === "Issue") { setIssueSaved(false); setIssueError(""); }
-  };
-
-  const handleSaveIssue = async () => {
-    setIsSavingIssue(true);
-    setIssueError("");
-    try {
-      const response = await fetch("/api/feature/A3-issues", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobNumber: selectedJob?.job_number || selectedJob?.id || "JOB-JKT-2401", category: issueCategory, description: issueDescription }),
-      });
-      if (!response.ok) throw new Error("Gagal menyimpan issue.");
-      setIssueSaved(true);
-      setIsIssueModalOpen(false);
-    } catch (error) {
-      setIssueError(error instanceof Error ? error.message : "Gagal menyimpan issue.");
-    } finally {
-      setIsSavingIssue(false);
-    }
-  };
-
-  // ==========================================
-  // RENDER: JOB LIST 
-  // ==========================================
-  const renderJobList = () => (
-    <div className="flex-1 overflow-y-auto p-8">
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">My Jobs</h1>
-          <p className="text-sm text-gray-500">View and manage your assigned jobs.</p>
-        </div>
-      </div>
-
-      <div className="flex gap-4 mb-6 items-center justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search job number, customer, or MAWB/HAWB..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
-          />
-        </div>
-      </div>
-
-      <div className="flex gap-2 mb-6">
-        {["All", "Draft", "In Progress", "Completed", "Has Issue"].map((status) => (
-          <button
-            key={status}
-            type="button"
-            onClick={() => setActiveTab(status)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm ${
-              activeTab === status
-                ? "bg-blue-600 text-white"
-                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-            }`}
-          >
-            {status} {status === "All" ? `(${jobs.length})` : `(${jobs.filter(j => j.status === status).length})`}
-          </button>
-        ))}
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-gray-200 bg-gray-50/70 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                <th className="p-4">No.</th>
-                <th className="p-4">Job Number</th>
-                <th className="p-4">Customer</th>
-                <th className="p-4">MAWB / HAWB</th>
-                <th className="p-4">Pick Up / Delivery</th>
-                <th className="p-4">Date</th>
-                <th className="p-4">Status</th>
-                <th className="p-4 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 text-sm">
-              {loading ? (
-                <tr><td colSpan={8} className="p-12 text-center text-gray-500">Memuat data...</td></tr>
-              ) : filteredJobs.length === 0 ? (
-                <tr><td colSpan={8} className="p-16 text-center text-gray-500">Tidak ada job ditemukan.</td></tr>
-              ) : (
-                filteredJobs.map((job: any, index: number) => (
-                  <tr key={job.id || index} className="hover:bg-gray-50/80 transition-colors">
-                    <td className="p-4 text-gray-500">{index + 1}</td>
-                    <td className="p-4 font-semibold text-blue-600">{job.job_number || job.id}</td>
-                    <td className="p-4 text-gray-800 font-medium">{job.customer || "-"}</td>
-                    <td className="p-4 text-gray-600">{job.mawb || job.mawb_hawb || "-"}</td>
-                    <td className="p-4 text-gray-600">{job.location || job.pickup_delivery || "-"}</td>
-                    <td className="p-4 text-gray-600">{job.date || (job.created_at ? job.created_at.slice(0, 10) : "-")}</td>
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        job.status === 'Completed' ? 'bg-green-100 text-green-700' :
-                        job.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
-                        job.status === 'Has Issue' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {job.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right">
-                      <button 
-                        type="button"
-                        onClick={() => handleJobAction(job)}
-                        className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-semibold transition"
-                      >
-                        {job.status === 'Draft' ? 'Continue' : 'View'}
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-
-  // ==========================================
-  // RENDER: JOB DETAIL CONTAINER & TABS 
-  // ==========================================
-  const renderJobDetail = () => {
-    const tabs = ['Overview', 'Hand Over', 'Dokumentasi', 'Dokumen', 'Verifikasi', 'Issue', 'History'];
-
-    return (
-      <div className="flex-1 overflow-y-auto p-8 bg-gray-50 relative">
-        <button 
-          type="button"
-          onClick={() => setCurrentView("list")} 
-          className="flex items-center text-sm text-gray-500 hover:text-blue-600 mb-6 transition cursor-pointer"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" /> Back to Job List
-        </button>
-
-        {/* Header Job Detail */}
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900">{selectedJob?.job_number || selectedJob?.id || 'JOB-JKT-2403'}</h1>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                selectedJob?.status === 'Completed' ? 'bg-green-100 text-green-700' :
-                selectedJob?.status === 'In Progress' ? 'bg-gray-200 text-gray-700' :
-                selectedJob?.status === 'Has Issue' ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-700'
-              }`}>
-                {selectedJob?.status || 'In Progress'}
-              </span>
-              <span className="px-2.5 py-1 bg-red-50 text-red-600 rounded-full text-xs font-semibold border border-red-100">High Priority</span>
-            </div>
-          </div>
-          <button 
-            type="button"
-            onClick={() => selectDetailTab("Hand Over")}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition shadow-sm cursor-pointer"
-          >
-            Mulai Proses Handover
-          </button>
-        </div>
-
-        {/* Navigation Tabs Interaktif */}
-        <div className="flex border-b border-gray-200 mb-6 gap-6 relative z-10">
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => selectDetailTab(tab)}
-              className={`pb-3 text-sm font-medium transition-colors border-b-2 cursor-pointer outline-none select-none ${
-                activeDetailTab === tab 
-                  ? 'text-blue-600 border-blue-600' 
-                  : 'text-gray-500 border-transparent hover:text-blue-600 hover:border-blue-300'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        {/* Konten Dinamis Berdasarkan Tab Terpilih */}
-        <div className="mt-6 relative z-0">
-          {activeDetailTab === 'Overview' && renderOverviewTab()}
-          {activeDetailTab === 'Hand Over' && renderHandoverTab()}
-          {activeDetailTab === 'Dokumentasi' && renderDokumentasiTab()}
-          {activeDetailTab === 'Verifikasi' && renderVerifikasiTab()}
-          {activeDetailTab === 'Issue' && renderIssueTab()}
-          {activeDetailTab === 'History' && renderHistoryTab()}
-          {activeDetailTab === 'Dokumen' && (
-            <div className="p-12 text-center text-gray-500 bg-white rounded-xl border border-gray-200 shadow-sm">
-              <PackageCheck className="h-10 w-10 mx-auto text-gray-300 mb-3" />
-              <p>Halaman <span className="font-semibold text-gray-700">Dokumen</span> sedang dalam tahap pengembangan.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // ==========================================
-  // KONTEN TAB
-  // ==========================================
-  const renderIssueTab = () => (
-    <div className="animate-in fade-in duration-300">
-      <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">Issue Report</h2>
-          <p className="mt-1 text-sm text-gray-500">Laporkan kendala yang ditemukan selama proses verifikasi.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setIsIssueModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" /> Report Issue
-        </button>
-      </div>
-
-      {issueSaved && (
-        <div className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-          Issue berhasil disimpan dan akan tercatat pada Job History.
-        </div>
-      )}
-
-      {isIssueModalOpen && (
-        <div className="absolute inset-0 z-30 flex min-h-[460px] items-start justify-center bg-slate-900/45 px-4 pt-8 backdrop-blur-[1px]">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="issue-modal-title"
-            className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-2xl"
-          >
-            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-              <h2 id="issue-modal-title" className="text-base font-bold text-slate-800">Report Issue</h2>
-              <button
-                type="button"
-                aria-label="Close report issue"
-                onClick={() => setIsIssueModalOpen(false)}
-                className="rounded p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <form onSubmit={(event) => { event.preventDefault(); handleSaveIssue(); }} className="space-y-4 px-6 py-5">
-              {issueError && <p role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{issueError}</p>}
-              <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold text-slate-700">Issue Category <span className="text-red-500">*</span></span>
-                <select
-                  required
-                  value={issueCategory}
-                  onChange={(event) => setIssueCategory(event.target.value)}
-                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                >
-                  <option>Damaged Package</option>
-                  <option>Missing Package</option>
-                  <option>Document Discrepancy</option>
-                  <option>Other</option>
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold text-slate-700">Description <span className="text-red-500">*</span></span>
-                <textarea
-                  required
-                  maxLength={500}
-                  value={issueDescription}
-                  onChange={(event) => setIssueDescription(event.target.value)}
-                  className="min-h-24 w-full resize-none rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                />
-                <span className="mt-1 block text-right text-[10px] text-slate-400">{issueDescription.length}/500</span>
-              </label>
-
-              <div>
-                <p className="mb-2 text-xs font-semibold text-slate-700">Evidence Photo <span className="font-normal text-slate-400">(Max. 2 MB/file)</span></p>
-                <div className="flex gap-3">
-                  <div className="flex h-20 w-24 items-end rounded-md border border-slate-200 bg-gradient-to-br from-amber-100 via-stone-200 to-stone-400 p-2 shadow-inner">
-                    <span className="rounded bg-slate-800/65 px-1.5 py-0.5 text-[9px] font-medium text-white">Cargo photo</span>
-                  </div>
-                  <label className="flex h-20 w-24 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-slate-300 text-slate-500 transition hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600">
-                    <ImagePlus className="mb-1 h-5 w-5" />
-                    <span className="text-xs">Add Photo</span>
-                    <input type="file" accept="image/*" className="sr-only" />
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex gap-3 border-t border-slate-100 pt-4">
-                <button type="button" onClick={() => setIsIssueModalOpen(false)} className="flex-1 rounded-md border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50">Cancel</button>
-                <button type="submit" disabled={isSavingIssue} className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">{isSavingIssue ? "Saving..." : "Save Issue"}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderHistoryTab = () => {
-    const history = [
-      ["1", "28 Sep 2026, 10:30", "Handover Completed", "Rizky Pratama", "-"],
-      ["2", "28 Sep 2026, 10:45", "Document Uploaded", "Rizky Pratama", "4 photos, 3 documents"],
-      ["3", "28 Sep 2026, 11:10", "Verification Completed", "Rizky Pratama", "All checklist valid"],
-      ["4", "28 Sep 2026, 11:15", "Job Completed", "Rizky Pratama", "-"],
-    ];
-
-    return (
-      <div className="animate-in fade-in duration-300">
-        <div className="mb-5">
-          <h2 className="text-xl font-bold text-slate-900">Job History — {selectedJob?.job_number || selectedJob?.id || "JOB-JKT-2401"}</h2>
-          <p className="mt-1 text-sm text-slate-500">Riwayat pengerjaan job.</p>
-        </div>
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500">
-                <tr>
-                  <th className="px-5 py-3">No.</th><th className="px-5 py-3">Date &amp; Time</th><th className="px-5 py-3">Activity</th><th className="px-5 py-3">Performed By</th><th className="px-5 py-3">Notes</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-600">
-                {history.map(([number, date, activity, performer, notes]) => (
-                  <tr key={number} className="transition hover:bg-slate-50/80">
-                    <td className="px-5 py-3.5">{number}</td><td className="px-5 py-3.5">{date}</td><td className="px-5 py-3.5 font-medium text-slate-700">{activity}</td><td className="px-5 py-3.5">{performer}</td><td className="px-5 py-3.5">{notes}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderDashboard = () => {
-    const recentJobs = [
-      ["JOB-JKT-2401", "PT DSV Transport", "28 Sep 2026", "In Progress"],
-      ["JOB-JKT-2403", "PT Andalan Logistik", "26 Sep 2026", "Completed"],
-      ["JOB-JKT-2410", "PT Nusantara Cargo", "25 Sep 2026", "Has Issue"],
-    ];
-    const summaries = [
-      ["Total Jobs", "12", ClipboardList, "text-blue-600", "bg-blue-50"],
-      ["In Progress", "4", Clock3, "text-blue-600", "bg-blue-50"],
-      ["Completed", "6", CircleCheckBig, "text-emerald-600", "bg-emerald-50"],
-      ["Has Issue", "1", CircleAlert, "text-red-600", "bg-red-50"],
-    ] as const;
-
-    return (
-      <div className="flex-1 overflow-y-auto p-8">
-        <div className="mb-6"><h1 className="text-2xl font-bold text-slate-900">Field Agent Dashboard</h1><p className="mt-1 text-sm text-slate-500">Ringkasan pekerjaan untuk Field Agent.</p></div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {summaries.map(([label, value, Icon, color, background]) => <div key={label} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className={`rounded-lg p-2.5 ${background} ${color}`}><Icon className="h-5 w-5" /></div><div><p className="text-xs text-slate-500">{label}</p><p className="text-xl font-bold text-slate-800">{value}</p></div></div>)}
-        </div>
-        <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm xl:col-span-2"><div className="flex items-center justify-between border-b border-slate-100 px-5 py-4"><h2 className="font-bold text-slate-800">Recent Jobs</h2><button type="button" onClick={() => setCurrentView("list")} className="text-sm font-semibold text-blue-600 hover:text-blue-700">View all</button></div><div className="overflow-x-auto"><table className="w-full min-w-[600px] text-left text-sm"><thead className="bg-slate-50 text-[11px] text-slate-500"><tr><th className="px-5 py-3">Job Number</th><th className="px-5 py-3">Customer</th><th className="px-5 py-3">Date</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Action</th></tr></thead><tbody className="divide-y divide-slate-100">{recentJobs.map(([number, customer, date, status]) => <tr key={number}><td className="px-5 py-3 font-semibold text-blue-600">{number}</td><td className="px-5 py-3">{customer}</td><td className="px-5 py-3">{date}</td><td className="px-5 py-3"><span className={`rounded-full px-2 py-1 text-xs font-semibold ${status === "Completed" ? "bg-green-100 text-green-700" : status === "Has Issue" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"}`}>{status}</span></td><td className="px-5 py-3"><button type="button" onClick={() => handleJobAction({ id: number, job_number: number, customer, mawb: "618-9921", location: "Delivery", date, status: status as Status })} className="rounded border border-blue-200 px-2.5 py-1 text-xs font-semibold text-blue-600 hover:bg-blue-50">View</button></td></tr>)}</tbody></table></div></div>
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-bold text-slate-800">Job Status Overview</h2><div className="mx-auto mt-5 flex h-40 w-40 items-center justify-center rounded-full bg-[conic-gradient(#2f80ed_0_33%,#22c55e_33%_83%,#ef4444_83%_92%,#dbe4ef_92%_100%)]"><div className="flex h-28 w-28 flex-col items-center justify-center rounded-full bg-white"><b className="text-2xl text-slate-800">12</b><span className="text-xs text-slate-500">Total Jobs</span></div></div><div className="mt-5 grid grid-cols-2 gap-y-3 text-xs text-slate-600"><span><i className="mr-2 inline-block h-2 w-2 rounded-full bg-slate-300" />Draft <b className="float-right">3</b></span><span><i className="mr-2 inline-block h-2 w-2 rounded-full bg-blue-500" />In Progress <b className="float-right">4</b></span><span><i className="mr-2 inline-block h-2 w-2 rounded-full bg-green-500" />Completed <b className="float-right">6</b></span><span><i className="mr-2 inline-block h-2 w-2 rounded-full bg-red-500" />Has Issue <b className="float-right">1</b></span></div></div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderOverviewTab = () => (
-    <div className="grid grid-cols-3 gap-6 animate-in fade-in duration-300">
-      <div className="col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-        <h3 className="font-bold text-gray-800 mb-6">Cargo Information</h3>
-        <div className="grid grid-cols-2 gap-y-5 text-sm">
-          <div className="text-gray-500">Job Number</div><div className="font-medium text-gray-900">{selectedJob?.job_number || 'JOB-JKT-2403'}</div>
-          <div className="text-gray-500">Customer</div><div className="font-medium text-gray-900">{selectedJob?.customer || '-'}</div>
-          <div className="text-gray-500">MAWB</div><div className="font-medium text-gray-900">{selectedJob?.mawb || '-'}</div>
-          <div className="text-gray-500">Shipper</div><div className="font-medium text-gray-900">PT ABC Co., Ltd.</div>
-          <div className="text-gray-500">Consignee</div><div className="font-medium text-gray-900">PT XYZ Indonesia</div>
-          <div className="text-gray-500">Cargo Description</div><div className="font-medium text-gray-900">General Cargo</div>
-          <div className="text-gray-500">Planned Pieces</div><div className="font-medium text-gray-900">10 Koli</div>
-          <div className="text-gray-500">Planned Gross Weight</div><div className="font-medium text-gray-900">2,000 kg</div>
-        </div>
-      </div>
-      <div className="space-y-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <h3 className="font-bold text-gray-800 mb-4">Progress</h3>
-          <div className="flex items-start justify-between text-center text-[10px] text-gray-500"><div><span className="mx-auto mb-1 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white">1</span>Hand Over</div><div className="mt-3 h-px flex-1 bg-gray-200" /><div><span className="mx-auto mb-1 flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white">2</span>Dokumentasi</div><div className="mt-3 h-px flex-1 bg-gray-200" /><div><span className="mx-auto mb-1 flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white">3</span>Verifikasi</div></div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <h3 className="font-bold text-gray-800 mb-6">Delivery Information</h3>
-          <div className="flex items-start gap-3 mb-6">
-            <MapPin className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-gray-900">Delivery Location</p>
-              <p className="text-xs text-gray-500 mt-1">{selectedJob?.location || 'Gate 3, Terminal 2, Soekarno-Hatta'}</p>
-            </div>
-          </div>
-          <div className="w-full h-36 bg-blue-50/50 rounded-lg border border-blue-100 flex items-center justify-center text-blue-400 font-medium text-sm">
-            <MapPin className="mr-2 h-5 w-5" /> Gate 3, Terminal 2
-          </div>
-          <p className="mt-3 text-xs text-gray-500">Planned Date &amp; Time<br /><span className="font-medium text-gray-700">28 Sep 2026, 10:30 WIB</span></p>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderHandoverTab = () => (
-    <div className="flex justify-center animate-in fade-in duration-300">
-      <div className="bg-white w-full max-w-3xl rounded-xl shadow-sm border border-gray-200 p-8">
-        <div className="flex justify-center items-center mb-10 text-sm">
-          <div className="flex flex-col items-center"><div className="w-8 h-8 rounded-full bg-blue-600 text-white flex justify-center items-center font-bold mb-1">1</div><span className="text-blue-600 font-medium">Hand Over</span></div>
-          <div className="w-16 h-0.5 bg-gray-200 mx-2 -mt-5"></div>
-          <div className="flex flex-col items-center"><div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex justify-center items-center font-bold mb-1">2</div><span className="text-gray-400">Dokumentasi</span></div>
-          <div className="w-16 h-0.5 bg-gray-200 mx-2 -mt-5"></div>
-          <div className="flex flex-col items-center"><div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex justify-center items-center font-bold mb-1">3</div><span className="text-gray-400">Verifikasi</span></div>
-        </div>
-
-        <form onSubmit={(e) => e.preventDefault()}>
-          <div className="grid grid-cols-2 gap-6 mb-6">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Name of Delivering Party *</label>
-              <input type="text" className="w-full border border-gray-300 rounded-md p-2.5 text-sm focus:ring-blue-500" defaultValue="Budi Santoso" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Name of Receiving Party *</label>
-              <input type="text" className="w-full border border-gray-300 rounded-md p-2.5 text-sm focus:ring-blue-500" defaultValue="Andi Wijaya" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Actual Pieces (Koli) *</label>
-              <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
-                <input type="number" className="w-full p-2.5 text-sm focus:outline-none" defaultValue="12" />
-                <span className="bg-gray-50 px-4 text-sm text-gray-500 border-l border-gray-300 h-full py-2.5">Koli</span>
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Actual Gross Weight *</label>
-              <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
-                <input type="number" className="w-full p-2.5 text-sm focus:outline-none" defaultValue="2450" />
-                <span className="bg-gray-50 px-4 text-sm text-gray-500 border-l border-gray-300 h-full py-2.5">kg</span>
-              </div>
-            </div>
-          </div>
-          <div className="mb-8">
-            <label className="block text-xs font-medium text-gray-700 mb-2">Location & Time (Automatic) <span className="text-[10px] text-green-600 bg-green-50 px-2 py-0.5 rounded border border-green-200 ml-2">Location Detected</span></label>
-            <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded flex items-center justify-center"><MapPin className="h-6 w-6"/></div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-800">Gate 3, Terminal 2</p>
-                <p className="text-xs text-gray-500">Soekarno-Hatta International Airport</p>
-                <p className="mt-1 text-xs font-medium text-gray-700">28 Sep 2026, 10:30 WIB</p>
-              </div>
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>
-            <textarea placeholder="Enter notes (optional)..." className="min-h-20 w-full resize-none rounded-md border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-          </div>
-          <div className="flex justify-end mt-8 pt-4 border-t">
-            <button type="button" onClick={() => selectDetailTab("Dokumentasi")} className="px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 shadow-sm flex items-center transition cursor-pointer">
-              Next ➔
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-
-  const renderDokumentasiTab = () => (
-    <div className="flex justify-center animate-in fade-in duration-300">
-      <div className="bg-white w-full max-w-3xl rounded-xl shadow-sm border border-gray-200 p-8">
-        <div className="flex justify-center items-center mb-10 text-sm">
-          <div className="flex flex-col items-center"><div className="w-8 h-8 rounded-full bg-blue-600 text-white flex justify-center items-center font-bold mb-1"><CheckCircle2 className="h-5 w-5"/></div><span className="text-blue-600 font-medium">Hand Over</span></div>
-          <div className="w-16 h-0.5 bg-blue-600 mx-2 -mt-5"></div>
-          <div className="flex flex-col items-center"><div className="w-8 h-8 rounded-full bg-blue-600 text-white flex justify-center items-center font-bold mb-1">2</div><span className="text-blue-600 font-medium">Dokumentasi</span></div>
-          <div className="w-16 h-0.5 bg-gray-200 mx-2 -mt-5"></div>
-          <div className="flex flex-col items-center"><div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex justify-center items-center font-bold mb-1">3</div><span className="text-gray-400">Verifikasi</span></div>
-        </div>
-        <h3 className="font-semibold text-gray-800 mb-1 text-sm">Foto Kargo <span className="text-red-500 font-normal text-xs">(Required 4 Photos)</span></h3>
-        <div className="grid grid-cols-4 gap-4 mb-8">
-          {['1. Kesesuaian Cargo', '2. Marking & Label', '3. Seal / Segel', '4. Area Kerusakan (Optional)'].map((label, index) => (
-            <label key={label} className="cursor-pointer rounded-lg border border-gray-200 bg-gray-50 p-2 text-center transition hover:border-blue-400 hover:bg-blue-50">
-              <span className="mb-2 block text-[10px] font-medium text-gray-600">{label}</span>
-              {index < 3 ? <div className="relative h-14 rounded bg-gradient-to-br from-amber-100 via-stone-300 to-stone-500"><Camera className="absolute right-1 top-1 h-3 w-3 text-white" /><CheckCircle className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-green-500 p-0.5 text-white" /></div> : <div className="flex h-14 flex-col items-center justify-center rounded border border-dashed border-gray-300 text-gray-400"><ImagePlus className="h-4 w-4" /><span className="text-[10px]">Add Photo</span></div>}
-              <span className="mt-1 block text-[10px] font-medium text-blue-600">{index < 3 ? 'Change Photo' : 'Add Photo'}</span><input type="file" accept="image/*" className="sr-only" />
-            </label>
-          ))}
-        </div>
-        <h3 className="font-semibold text-gray-800 mb-1 text-sm">Dokumen Pendukung</h3><p className="mb-3 text-[10px] text-gray-400">Format: PDF, JPG, PNG (Max. 10 MB/file)</p>
-        <div className="space-y-3 mb-8">
-          {['Packing List', 'Commercial Invoice', 'MSDS (Jika barang kimia/DG)'].map((doc, index) => (
-            <div key={doc} className="flex justify-between items-center p-3 border border-gray-200 rounded-lg bg-gray-50">
-              <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-blue-500" />
-                <span className="text-sm font-medium text-gray-700">{doc} <span className="text-red-500">*</span></span>
-              </div>
-              <label className="flex cursor-pointer items-center gap-3 text-xs text-gray-500"><span>{index === 0 ? 'packing_list.pdf' : index === 1 ? 'invoice.pdf' : 'msds.pdf'}</span><CheckCircle className="h-4 w-4 text-green-500" /><input type="file" accept=".pdf,image/*" className="sr-only" /></label>
-            </div>
-          ))}
-        </div>
-        <div className="flex justify-between items-center mt-8 pt-4 border-t">
-          <button type="button" onClick={() => setActiveDetailTab("Hand Over")} className="px-4 py-2 text-gray-600 text-sm font-medium hover:bg-gray-100 rounded-md transition cursor-pointer">Back</button>
-          <button type="button" onClick={() => setActiveDetailTab("Verifikasi")} className="px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 shadow-sm flex items-center transition cursor-pointer">
-            Next ➔
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderVerifikasiTab = () => (
-    <div className="flex justify-center animate-in fade-in duration-300">
-      <div className="bg-white w-full max-w-3xl rounded-xl shadow-sm border border-gray-200 p-8">
-        <div className="flex justify-center items-center mb-10 text-sm">
-          <div className="flex flex-col items-center"><div className="w-8 h-8 rounded-full bg-blue-600 text-white flex justify-center items-center font-bold mb-1"><CheckCircle2 className="h-5 w-5"/></div><span className="text-blue-600 font-medium">Hand Over</span></div>
-          <div className="w-16 h-0.5 bg-blue-600 mx-2 -mt-5"></div>
-          <div className="flex flex-col items-center"><div className="w-8 h-8 rounded-full bg-blue-600 text-white flex justify-center items-center font-bold mb-1"><CheckCircle2 className="h-5 w-5"/></div><span className="text-blue-600 font-medium">Dokumentasi</span></div>
-          <div className="w-16 h-0.5 bg-blue-600 mx-2 -mt-5"></div>
-          <div className="flex flex-col items-center"><div className="w-8 h-8 rounded-full bg-blue-600 text-white flex justify-center items-center font-bold mb-1">3</div><span className="text-blue-600 font-medium">Verifikasi</span></div>
-        </div>
-        <div className="space-y-6">
-          <div>
-            <p className="text-sm font-semibold text-gray-800 mb-3">1. Kesesuaian Dokumen</p>
-            <div className="flex gap-6">
-              <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="dokumen" defaultChecked className="text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" /> Sesuai</label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="dokumen" className="text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" /> Tidak Sesuai</label>
-            </div>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-800 mb-3">2. Kondisi Kemasan</p>
-            <div className="flex gap-6">
-              <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="kemasan" defaultChecked className="text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" /> Baik</label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="kemasan" className="text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" /> Rusak / Basah</label>
-            </div>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-800 mb-3">3. Standar Maskapai</p>
-            <div className="flex gap-6">
-              <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="standar" defaultChecked className="text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" /> Sesuai</label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="standar" className="text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" /> Perlu Repacking</label>
-            </div>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-800 mb-3">4. Dangerous Goods (DG)</p>
-            <div className="flex gap-6">
-              <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="dg" className="text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" /> Ya</label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="dg" defaultChecked className="text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" /> Tidak</label>
-            </div>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-800 mb-3">5. Special Handling</p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {['Cold Chain', 'Fragile', 'Live Animals', 'Perishable'].map((item, index) => <label key={item} className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-xs ${index === 1 ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'}`}><input type="checkbox" defaultChecked={index === 1} className="text-blue-600 focus:ring-blue-500" /> {item}</label>)}
-            </div>
-          </div>
-        </div>
-        <div className="flex justify-between items-center mt-10 pt-4 border-t">
-          <button type="button" onClick={() => setActiveDetailTab("Dokumentasi")} className="px-4 py-2 text-gray-600 text-sm font-medium hover:bg-gray-100 rounded-md transition cursor-pointer">Back</button>
-          <button type="button" onClick={() => selectDetailTab("Issue")} className="px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 shadow-sm flex items-center gap-2 transition cursor-pointer">
-            Next →
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  // ==========================================
-  // RENDER UTAMA KESELURUHAN HALAMAN
-  // ==========================================
-  return (
-    <div className="flex h-screen bg-gray-100 font-sans overflow-hidden">
-      
-      {/* SIDEBAR */}
-      <aside className="w-72 bg-[#09162a] text-gray-400 flex flex-col justify-between border-r border-gray-800 select-none overflow-y-auto">
-        <div>
-          {/* Logo & Header */}
-          <div className="p-6 flex items-center gap-4 border-b border-gray-800/60 pb-8">
-            <div className="bg-blue-500 p-2.5 rounded-xl text-white shadow-lg">
-              <Box className="h-6 w-6" />
-            </div>
-            <div>
-              <h2 className="text-white font-bold text-[15px] tracking-wide leading-tight">ANDIMA</h2>
-              <h2 className="text-white font-bold text-[15px] tracking-wide leading-tight">TRANSPORTINDO</h2>
-              <p className="text-[8px] text-gray-500 tracking-widest mt-1">ENTERPRISE DIGITAL ECOSYSTEM</p>
-            </div>
-          </div>
-
-          <div className="px-6 py-6 space-y-6">
-            
-            {/* MAIN */}
-            <div>
-              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Main</div>
-              <button type="button" onClick={() => setCurrentView("dashboard")} className="w-full flex items-center gap-4 px-3 py-2.5 rounded-lg hover:text-white transition cursor-pointer">
-                <LayoutDashboard className="h-4 w-4" />
-                <span className="text-sm font-medium">General Dashboard</span>
-              </button>
-            </div>
-
-            {/* BUSINESS MODUL */}
-            <div>
-              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Business Modul</div>
-              
-              <button type="button" className="w-full flex items-center gap-4 px-3 py-2.5 rounded-lg hover:text-white transition cursor-pointer">
-                <Box className="h-4 w-4" />
-                <span className="text-sm font-medium">POS</span>
-              </button>
-              
-              {/* CRM MENU DROPDOWN */}
-              <div className="mt-1">
-                <button 
-                  type="button" 
-                  onClick={() => setIsCrmOpen(!isCrmOpen)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition cursor-pointer ${isCrmOpen ? 'text-white' : 'hover:text-white'}`}
-                >
-                  <div className="flex items-center gap-4">
-                    <Users className="h-4 w-4" />
-                    <span className="text-sm font-bold">CRM</span>
-                  </div>
-                  {isCrmOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </button>
-                
-                {/* Isi Dropdown CRM */}
-                {isCrmOpen && (
-                  <div className="pl-11 pr-2 py-2 space-y-3">
-                    <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider pt-2 mb-2">Sales Executive</div>
-                    
-                    <button type="button" className="w-full text-left px-4 py-1.5 text-sm text-gray-400 hover:text-white transition cursor-pointer">Company List</button>
-                    <button type="button" className="w-full text-left px-4 py-1.5 text-sm text-gray-400 hover:text-white transition cursor-pointer">Meeting Schedule</button>
-                    <button type="button" className="w-full text-left px-4 py-1.5 text-sm text-gray-400 hover:text-white transition cursor-pointer">Record Conversation</button>
-                    <button type="button" className="w-full text-left px-4 py-1.5 text-sm text-gray-400 hover:text-white transition cursor-pointer">Task of Field Agent</button>
-                    <button type="button" className="w-full text-left px-4 py-1.5 text-sm text-gray-400 hover:text-white transition cursor-pointer">Need Backup</button>
-                    
-                    {/* FIELD AGENT DROPDOWN */}
-                    <button 
-                      type="button" 
-                      onClick={() => setIsFieldAgentOpen(!isFieldAgentOpen)}
-                      className={`w-full flex items-center justify-between px-4 pt-3 pb-1 text-sm transition cursor-pointer ${isFieldAgentOpen ? 'text-white' : 'text-gray-400 hover:text-white'}`}
-                    >
-                      <span className="font-medium">Field Agent</span>
-                      {isFieldAgentOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                    </button>
-                    
-                    {/* ANAK MENU FIELD AGENT */}
-                    {isFieldAgentOpen && (
-                      <div className="pl-4 pr-2 space-y-1">
-                        <button 
-                          type="button" 
-                          onClick={() => setCurrentView("list")}
-                          className={`w-full flex items-center justify-between px-4 py-2 rounded-lg transition cursor-pointer ${
-                            currentView === 'list' || currentView === 'detail' 
-                              ? 'bg-blue-600 text-white' 
-                              : 'text-gray-400 hover:text-white'
-                          }`}
-                        >
-                          <span className="text-sm font-medium">Job List</span>
-                          {(currentView === 'list' || currentView === 'detail') && (
-                            <div className="h-1.5 w-1.5 bg-white rounded-full"></div>
-                          )}
-                        </button>
-                        <button 
-                          type="button" 
-                          onClick={openJobHistory}
-                          aria-current={currentView === "history" ? "page" : undefined}
-                          className={`w-full rounded-lg px-4 py-2 text-left text-sm font-medium transition cursor-pointer ${currentView === "history" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
-                        >
-                          History
-                        </button>
-                      </div>
-                    )}
-                    
-                    <button type="button" className="w-full text-left px-4 pt-2 text-sm text-gray-400 hover:text-white transition cursor-pointer">HRMS</button>
-                  </div>
-                )}
-              </div>
-
-              <button type="button" className="w-full flex items-center gap-4 px-3 py-2.5 mt-1 rounded-lg hover:text-white transition cursor-pointer">
-                <Monitor className="h-4 w-4" />
-                <span className="text-sm font-medium">MID</span>
-              </button>
-            </div>
-
-            {/* SYSTEM */}
-            <div>
-              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-3">System</div>
-              <button type="button" className="w-full flex items-center gap-4 px-3 py-2.5 rounded-lg hover:text-white transition cursor-pointer">
-                <Settings className="h-4 w-4" />
-                <span className="text-sm font-medium">Settings</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Customer Support Footer */}
-        <div className="p-6 mb-2">
-          <div className="bg-[#12233f] rounded-xl p-3.5 flex items-center gap-3.5 cursor-pointer hover:bg-[#1a3055] transition shadow-md border border-gray-700/50">
-            <div className="bg-blue-600/20 p-2.5 rounded-full text-blue-400">
-              <PhoneCall className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-[13px] font-semibold text-white">Customer Support</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">24/7 Operations Line</p>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 z-20 shadow-sm relative">
-          <div className="text-xs text-gray-500 font-medium flex items-center gap-2">
-            <span className="text-gray-800 font-bold">Field Agent</span><span>→</span>
-            <span className="text-blue-600 capitalize">
-              {currentView === 'list' ? 'Job List' : currentView === 'detail' ? 'Job Detail' : currentView === 'history' ? 'History' : 'Dashboard'}
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <button type="button" className="p-2 text-gray-400 hover:text-gray-600 relative cursor-pointer"><Bell className="h-5 w-5" /></button>
-            <div className="flex items-center gap-3 border-l pl-4 border-gray-200">
-              <div className="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs">RP</div>
-              <div className="text-left"><p className="text-xs font-bold text-gray-800">Rizky Pratama</p><p className="text-[10px] text-gray-500">Field Agent</p></div>
-            </div>
-          </div>
-        </header>
-
-        {currentView === "dashboard" && renderDashboard()}
-        {currentView === "list" && renderJobList()}
-        {currentView === "detail" && renderJobDetail()}
-        {currentView === "history" && <div className="flex-1 overflow-y-auto p-8">{renderHistoryTab()}</div>}
-      </div>
-    </div>
-  );
+  const [jobs, setJobs] = useState<Job[]>(sampleJobs), [screen, setScreen] = useState<Screen>("dashboard"), [selected, setSelected] = useState<Job | null>(sampleJobs[1]);
+  const [filter, setFilter] = useState("All"), [query, setQuery] = useState(""), [issueOpen, setIssueOpen] = useState(false), [category, setCategory] = useState("Damaged Package"), [description, setDescription] = useState(""), [saving, setSaving] = useState(false), [notice, setNotice] = useState("");
+  useEffect(() => { fetch("/api/feature/jobs").then(r => r.ok ? r.json() : []).then(data => { if (Array.isArray(data) && data.length) setJobs(data); }).catch(() => undefined); }, []);
+  useEffect(() => { const previous: Partial<Record<Screen, Screen>> = { tasks: "dashboard", detail: "tasks", handover: "detail", documentation: "handover", verification: "documentation", history: "tasks" }; const goBack = () => { const destination = previous[screen]; if (destination) setScreen(destination); }; window.addEventListener("field-agent:back", goBack); return () => window.removeEventListener("field-agent:back", goBack); }, [screen]);
+  const counts = useMemo(() => ({ All: jobs.length, Assigned: jobs.filter(j => j.status === "Assigned" || j.status === "Draft").length, "In Progress": jobs.filter(j => j.status === "In Progress").length, Completed: jobs.filter(j => j.status === "Completed").length, "Has Issue": jobs.filter(j => j.status === "Has Issue").length }), [jobs]);
+  const shown = useMemo(() => jobs.filter(j => (filter === "All" || (filter === "Assigned" ? j.status === "Assigned" || j.status === "Draft" : j.status === filter)) && `${no(j)} ${j.customer || ""} ${mawb(j)}`.toLowerCase().includes(query.toLowerCase())), [jobs, filter, query]);
+  const openJob = (job: Job) => { setSelected(job); setScreen("detail"); setNotice(""); };
+  const saveIssue = async () => { setSaving(true); try { const r = await fetch("/api/feature/A3-issues", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jobNumber: no(selected), category, description: description || "Issue reported by field agent" }) }); if (!r.ok) throw new Error(); setIssueOpen(false); setNotice("Issue berhasil disimpan dan tercatat pada Job History."); } catch { setNotice("Issue belum dapat disimpan. Silakan coba lagi."); } finally { setSaving(false); } };
+  const saveWorkflow = async (endpoint: string, payload: Record<string, unknown>, next: Screen) => { setScreen(next); setSaving(true); try { const r = await fetch(`/api/feature/${endpoint}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jobNumber: no(selected), ...payload }) }); if (!r.ok) throw new Error(); setNotice("Data berhasil disimpan."); } catch { setNotice("Halaman berikutnya tetap dibuka; data belum dapat disimpan. Periksa koneksi lalu coba lagi."); } finally { setSaving(false); } };
+  return <div className="min-h-screen bg-white text-[#15213a]"><Sidebar screen={screen} navigate={setScreen} /><main className="ml-[116px] min-h-screen border-t-[3px] border-[#222] bg-white"><Topbar screen={screen} /><div className="mx-auto max-w-[1060px] px-5 pb-10 pt-5 md:px-9">
+    {screen === "dashboard" && <Dashboard jobs={jobs} openJob={openJob} showTasks={() => setScreen("tasks")} />}
+    {screen === "tasks" && <TaskList jobs={shown} filter={filter} counts={counts} query={query} setFilter={setFilter} setQuery={setQuery} openJob={openJob} />}
+    {screen === "detail" && <JobDetail job={selected} onHandover={() => setScreen("handover")} />}
+    {screen === "handover" && <Handover job={selected} back={() => setScreen("detail")} next={() => saveWorkflow("A3-handover", { deliveringParty: "Budi Santoso", receivingParty: "Andi Pratama", actualPieces: 10, actualGrossWeight: 250, location: selected?.location || "Kantor PT DSV, Jakarta" }, "documentation")} />}
+    {screen === "documentation" && <Documentation back={() => setScreen("handover")} next={() => saveWorkflow("A3-documentation", { photos: ["Box 1", "Pallet Side", "Loading Area", "Seal & Wrap"], documents: ["PackingList_DSV.pdf", "Invoice_DSV.pdf"] }, "verification")} />}
+    {screen === "verification" && <Verification back={() => setScreen("documentation")} next={() => saveWorkflow("A3-verification", { documentVerification: "Sesuai", packageCondition: "Baik", airlineStandard: "Sesuai", dangerousGoods: false, specialHandling: [] }, "history")} onIssue={() => setIssueOpen(true)} />}
+    {screen === "history" && <HistoryList jobs={shown} filter={filter} query={query} setFilter={setFilter} setQuery={setQuery} openJob={openJob} />}
+  </div></main>{issueOpen && <IssueModal category={category} description={description} setCategory={setCategory} setDescription={setDescription} close={() => setIssueOpen(false)} save={saveIssue} saving={saving} />}{notice && <div className="fixed bottom-6 right-6 z-50 rounded-lg border border-blue-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-lg">{notice}</div>}</div>;
 }
+
+function Sidebar({ screen, navigate }: { screen: Screen; navigate: (s: Screen) => void }) { const active = screen === "dashboard" ? "dashboard" : screen === "history" ? "history" : "tasks"; return <aside className="fixed inset-y-0 left-0 z-30 flex w-[116px] flex-col bg-[#0c294e] text-white"><div className="px-3 pt-4 text-center"><div className="text-[10px] font-extrabold leading-[10px] tracking-tight">ANDIMA<br />TRANSPORTINDO</div><div className="mt-2 border-t border-white/10 pt-3 text-[4px] tracking-[.12em] text-white/50">ENTERPRISE DIGITAL ECOSYSTEM</div></div><nav className="mt-5 space-y-1 px-2 text-[7px]"><button onClick={() => navigate("dashboard")} className="side-link"><LayoutDashboard />Dashboard</button><button className="side-link"><Users />CCR</button><div className="rounded bg-[#2166ef] py-1"><button className="side-link font-bold"><ClipboardCheck />CRM<ChevronDown className="ml-auto" /></button></div><div className="ml-4 border-l border-white/20 pl-2 text-[6px] text-white/50"><p className="py-1">• Sales Executive</p><p className="py-1 font-bold text-white">Field Agent</p><button onClick={() => navigate("tasks")} className={`block w-full rounded px-1 py-1 text-left ${active === "tasks" ? "bg-[#b9d1e1] text-[#173057]" : ""}`}>• My Task</button><button onClick={() => navigate("history")} className={`block w-full rounded px-1 py-1 text-left ${active === "history" ? "bg-[#b9d1e1] text-[#173057]" : ""}`}>• Job History</button></div><button className="side-link mt-6"><Users />HRMS</button></nav><button className="mx-2 mb-3 mt-auto rounded-full border border-rose-500 py-1 text-[8px] font-bold text-rose-400">Logout</button></aside>; }
+function Topbar({ screen }: { screen: Screen }) { const labels: Record<Screen, string[]> = { dashboard: ["CRM", "SALES EXECUTIVE", "TASK FIELD AGENT"], tasks: ["CRM", "Field Agent", "My Task"], detail: ["CRM", "Field Agent", "My Task", "Detail Job"], handover: ["CRM", "Field Agent", "My Task", "Detail Job", "Handover"], documentation: ["CRM", "Field Agent", "My Task", "Detail Job", "Dokumentasi"], verification: ["CRM", "Field Agent", "My Task", "Detail Job", "Verifikasi"], history: ["CRM", "Field Agent", "Job History"] }; return <header className="flex h-[67px] items-center justify-between border-b border-slate-100 px-9"><div className="flex items-center gap-3">{screen !== "dashboard" && <button type="button" aria-label="Kembali ke halaman sebelumnya" title="Kembali" onClick={() => window.dispatchEvent(new Event("field-agent:back"))} className="grid h-9 w-9 place-items-center rounded-md text-[#173057] transition hover:bg-slate-100"><ArrowLeft size={28} strokeWidth={2.5} /></button>}<div className="flex gap-2 text-[10px] font-medium text-slate-500">{labels[screen].map((label, i) => <span key={label} className={i === labels[screen].length - 1 ? "text-[#2764e8]" : ""}>{i > 0 && <span className="mr-2 text-slate-400">/</span>}{label}</span>)}</div></div><div className="flex items-center gap-4"><div className="relative rounded-full bg-slate-100 p-2.5"><Bell size={19} className="text-slate-500" /><i className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" /></div><div className="flex items-center gap-2"><span className="grid h-7 w-7 place-items-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700">R</span><div className="text-[10px]"><b className="block">Rian</b><span className="text-slate-400">Field Agent</span></div><ChevronDown size={15} className="text-slate-400" /></div></div></header>; }
+
+function Dashboard({ jobs, openJob, showTasks }: { jobs: Job[]; openJob: (j: Job) => void; showTasks: () => void }) { const inProgress = jobs.filter(j => j.status === "In Progress").length || 4, complete = jobs.filter(j => j.status === "Completed").length || 3, issues = jobs.filter(j => j.status === "Has Issue").length || 2, assigned = Math.max(1, jobs.length - inProgress - complete - issues); const cards = [["Total Task", jobs.length || 12, "↑ +2 dari minggu lalu", "text-emerald-600"], ["In Progress", inProgress, "2 sedang dikerjakan", "text-blue-600"], ["Completed", complete, "↑ +3 dari minggu lalu", "text-emerald-600"], ["Has Issue", issues, "↑ +1 dari minggu lalu", "text-red-500"]]; return <><section className="mb-4"><h1 className="text-[21px] font-extrabold">Dashboard Field Agent</h1><p className="text-[12px] text-slate-500">Ringkasan pekerjaan dan status Anda hari ini.</p></section><div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{cards.map(([title, value, sub, color]) => <button onClick={showTasks} key={String(title)} className="h-[155px] rounded-xl border border-slate-100 bg-white p-5 text-left shadow-sm transition hover:border-blue-200 hover:shadow"><p className="pt-2 text-[13px] font-bold text-slate-600">{title}</p><b className="mt-5 block text-[23px]">{value}</b><p className={`mt-2 text-[10px] font-bold ${color}`}>{sub}</p></button>)}</div><div className="mt-7 grid gap-4 lg:grid-cols-[320px_1fr]"><section className="rounded-xl border border-slate-100 p-5 shadow-sm"><h2 className="text-[13px] font-extrabold">Status Task</h2><div className="mx-auto mt-6 grid h-48 w-48 place-items-center rounded-full" style={{ background: "conic-gradient(#3d7cf0 0 25%,#0785c3 25% 58%,#12b981 58% 83%,#f34545 83% 100%)" }}><div className="grid h-32 w-32 place-items-center rounded-full bg-white text-center"><b className="text-xl">{jobs.length || 12}</b><span className="-mt-8 text-[10px] text-slate-500">Total Task</span></div></div><div className="mt-6 space-y-4 text-[11px]">{[["bg-blue-500", "Assigned", assigned, "25%"], ["bg-sky-600", "In Progress", inProgress, "33%"], ["bg-emerald-500", "Completed", complete, "25%"], ["bg-red-500", "Has Issue", issues, "17%"]].map(([color, label, value, percent]) => <div className="flex items-center gap-2" key={String(label)}><i className={`h-3 w-3 rounded-full ${color}`} /><span className="w-20">{label}</span><b>{value}</b><span className="text-slate-400">({percent})</span></div>)}</div></section><section className="self-start rounded-xl border border-slate-100 p-5 shadow-sm"><div className="mb-4 flex justify-between"><h2 className="text-[13px] font-extrabold">Recent Jobs</h2><button onClick={showTasks} className="text-[10px] font-bold text-blue-600">Lihat Semua</button></div><table className="w-full text-left text-[11px]"><thead className="border-b border-slate-100 text-[10px] text-slate-500"><tr><th className="pb-3">Job Number</th><th>Customer</th><th>MAWB/HAWB</th><th>Status</th></tr></thead><tbody>{jobs.slice(0,4).map(j => <tr key={j.id} className="border-b border-slate-50 last:border-0"><td className="py-4 font-bold"><button onClick={() => openJob(j)}>{no(j)}</button></td><td>{j.customer}</td><td className="text-slate-500">{mawb(j)}</td><td><StatusBadge status={j.status} onClick={() => openJob(j)} /></td></tr>)}</tbody></table></section></div></>; }
+
+function Tabs({ filter, counts, setFilter }: { filter: string; counts: Record<string, number>; setFilter: (v: string) => void }) { return <div className="mb-5 flex flex-wrap gap-2">{["All", "Assigned", "In Progress", "Completed", "Has Issue"].map(tab => <button key={tab} onClick={() => setFilter(tab)} className={`rounded-md border px-3 py-2 text-[11px] font-bold ${filter === tab ? "border-blue-600 bg-blue-600 text-white" : "border-slate-100 bg-white text-slate-600"}`}>{tab} <span className={`ml-1 rounded px-1.5 py-0.5 ${filter === tab ? "bg-blue-800/40" : tab === "Has Issue" ? "bg-red-100 text-red-600" : "bg-slate-100"}`}>{counts[tab]}</span></button>)}</div>; }
+function Searchbar({ query, setQuery }: { query: string; setQuery: (v: string) => void }) { return <div className="mb-5 flex rounded-lg border border-slate-100 bg-white p-2"><label className="relative flex-1"><Search size={16} className="absolute left-3 top-3 text-slate-500" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search Job Number, Customer, or MAWB/HAWB" className="w-full rounded-md border border-slate-200 py-2 pl-9 pr-2 text-[11px] outline-none" /></label><button className="ml-4 rounded-md border border-slate-200 bg-slate-50 px-4 text-[11px] font-bold">⚙ Filter ▼</button></div>; }
+function TaskList({ jobs, filter, counts, query, setFilter, setQuery, openJob }: { jobs: Job[]; filter: string; counts: Record<string, number>; query: string; setFilter: (v: string) => void; setQuery: (v: string) => void; openJob: (j: Job) => void }) { return <><section className="mb-6"><h1 className="text-[20px] font-extrabold">My Task</h1><p className="text-[12px] text-slate-500">Daftar task yang ditugaskan kepada Anda.</p></section><Tabs filter={filter} counts={counts} setFilter={setFilter} /><Searchbar query={query} setQuery={setQuery} /><JobsTable jobs={jobs} action={openJob} history={false} /></>; }
+function JobsTable({ jobs, action, history }: { jobs: Job[]; action?: (j: Job) => void; history: boolean }) { return <div className="overflow-hidden rounded-lg border border-slate-100"><table className="w-full text-left text-[11px]"><thead className="bg-[#eff5fa] text-slate-600"><tr><th className="px-3 py-3">Job Number</th><th>Customer</th><th>MAWB/HAWB</th><th>{history ? "Tanggal" : <>Tanggal<br />Penugasan</>}</th><th>Status</th></tr></thead><tbody>{jobs.slice(0,5).map(j => <tr key={j.id} className="border-t border-slate-100"><td className="px-3 py-4 font-bold text-blue-600">{action ? <button onClick={() => action(j)}>{no(j)}</button> : no(j)}</td><td className="max-w-28 py-3 font-medium">{j.customer}</td><td className="text-slate-500">{mawb(j)}</td><td className="text-slate-600">{j.date || "7 Oct 2026"}</td><td><StatusBadge status={j.status} onClick={action ? () => action(j) : undefined} /></td></tr>)}</tbody></table><div className="flex items-center justify-between bg-[#f7fafc] px-4 py-3 text-[10px] text-slate-500"><span>Showing 1–{Math.min(5,jobs.length)} of {history ? 20 : countsText(jobs)} tasks</span><span className="flex gap-1"><button className="pager">‹</button><button className="pager active">1</button><button className="pager">2</button><button className="pager">3</button><button className="pager">›</button></span></div></div>; }
+const countsText = (jobs: Job[]) => Math.max(jobs.length, 12);
+
+function JobDetail({ job, onHandover }: { job: Job | null; onHandover: () => void }) { const steps = [["✓", "Detail", "Job", "Selesai", true], ["", "Handover", "", "Sedang dikerjakan", false], ["▣", "Dokumentasi", "", "Belum dikerjakan", false], ["□", "Verifikasi", "", "Belum dikerjakan", false], ["▦", "Complete", "", "Belum dikerjakan", false]]; return <div className="max-w-[535px] rounded-xl bg-[#f6f9fc] p-5"><div className="mb-5 flex items-center justify-between"><div><h1 className="text-[18px] font-extrabold">Detail Job</h1><p className="text-[11px] text-slate-500">Informasi lengkap pekerjaan dan progress pengerjaan.</p></div><StatusBadge status={job?.status || "In Progress"} /></div><section className="rounded-xl border border-slate-100 bg-white p-5"><h2 className="mb-5 text-[14px] font-extrabold">Informasi Job</h2><div className="grid grid-cols-2 gap-x-7 text-[11px]">{[["Job Number",no(job)],["Tanggal Penugasan","7 Oct 2026, 09:00"],["Customer",job?.customer || "PT DSV Transport Indonesia"],["Estimasi Serah Terima","7 Oct 2026, 14:00"],["MAWB Number",mawb(job || sampleJobs[0])],["Lokasi",job?.location || "Kantor PT DSV, Jakarta"],["HAWB Number","DSV-2506-001"],["PIC Customer","Aida (081231903090)"],["Jenis Kargo","Electronics"],["Sales Executive","Yuliana"]].map(([label,value]) => <div className="border-b border-slate-50 py-2.5" key={label}><span className="text-slate-500">{label}</span><b className={`float-right max-w-[120px] text-right ${label === "Jenis Kargo" ? "rounded bg-blue-50 px-1 text-blue-600" : ""}`}>{value}</b></div>)}</div></section><section className="mt-4 rounded-xl border border-slate-100 bg-white p-5"><h2 className="mb-5 text-[14px] font-extrabold">Progress Tracker</h2><div className="relative grid grid-cols-5 text-center before:absolute before:left-6 before:right-6 before:top-8 before:h-1 before:bg-[#cdddff]">{steps.map(([icon,title,sub,caption,complete], i) => <div className="relative z-10" key={String(title)}><div className={`mx-auto grid h-9 w-9 place-items-center rounded-full text-[13px] ${complete ? "bg-emerald-500 text-white" : i === 1 ? "bg-[#2864e8] text-white ring-4 ring-blue-100" : "bg-slate-100 text-slate-400"}`}>{icon}</div><b className={`mt-2 block text-[11px] ${i === 1 ? "text-blue-600" : ""}`}>{title}<br />{sub}</b><span className={`block text-[10px] ${complete ? "text-emerald-600" : "text-slate-400"}`}>{caption}</span></div>)}</div><div className="mt-9 text-right"><button onClick={onHandover} className="primary">Lanjutkan ke Handover <ChevronRight size={14}/></button></div></section></div>; }
+
+function Handover({ job, back, next }: { job: Job | null; back: () => void; next: () => void }) {
+  const [gps, setGps] = useState<{ latitude: number; longitude: number; accuracy: number; recordedAt: Date } | null>(null);
+  const [gpsError, setGpsError] = useState("");
+  const [recording, setRecording] = useState(true);
+  const recordGps = () => {
+    setRecording(true); setGpsError("");
+    if (!navigator.geolocation) { setGpsError("GPS tidak tersedia pada perangkat ini."); setRecording(false); return; }
+    navigator.geolocation.getCurrentPosition(
+      (position) => { const coordinates = `${position.coords.latitude.toFixed(5)}, ${position.coords.longitude.toFixed(5)}`; if (job) job.location = coordinates; setGps({ latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy: position.coords.accuracy, recordedAt: new Date() }); setRecording(false); },
+      (error) => { const message = error.code === error.PERMISSION_DENIED ? "Izin lokasi ditolak. Aktifkan izin lokasi lalu klik Refresh GPS." : error.code === error.TIMEOUT ? "Pengambilan lokasi melebihi 10 detik. Klik Refresh GPS untuk mencoba lagi." : "GPS gagal direkam. Pastikan layanan lokasi aktif lalu klik Refresh GPS."; setGpsError(message); setRecording(false); },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
+  };
+  // GPS hanya direkam saat form Handover pertama kali dibuka.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { const timer = window.setTimeout(recordGps, 0); return () => window.clearTimeout(timer); }, []);
+  useEffect(() => {
+    const handoverInput = document.querySelectorAll<HTMLInputElement>("input")[5];
+    const handoverMapButton = document.querySelector<HTMLButtonElement>("button.ml-2.rounded.border.border-slate-200.bg-blue-50");
+    handoverInput?.removeAttribute("readonly");
+    const syncLocation = () => {
+      const value = handoverInput?.value.trim() || "";
+      if (job) job.location = value;
+    };
+    const openTypedLocation = () => {
+      syncLocation();
+      const query = handoverInput?.value.trim();
+      if (query) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, "_blank", "noopener,noreferrer");
+    };
+    const onLocationKeyDown = (event: KeyboardEvent) => { if (event.key === "Enter") { event.preventDefault(); openTypedLocation(); } };
+    handoverInput?.addEventListener("input", syncLocation);
+    handoverInput?.addEventListener("keydown", onLocationKeyDown);
+    handoverMapButton?.addEventListener("click", openTypedLocation);
+    return () => { handoverInput?.removeEventListener("input", syncLocation); handoverInput?.removeEventListener("keydown", onLocationKeyDown); handoverMapButton?.removeEventListener("click", openTypedLocation); };
+    const initialLocation = job?.location || "Kantor PT DSV, Jakarta";
+    const locationInput = document.querySelectorAll<HTMLInputElement>("input")[5];
+    const mapButton = Array.from(document.querySelectorAll<HTMLButtonElement>("button")).find((button) => button.textContent?.includes("🗺"));
+    locationInput?.removeAttribute("readonly");
+    if (locationInput?.value === initialLocation) locationInput.value = "";
+    const openMap = () => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationInput?.value || initialLocation)}`, "_blank", "noopener,noreferrer");
+    const handleLocationKey = (event: KeyboardEvent) => { if (event.key === "Enter") { event.preventDefault(); openMap(); } };
+    const mapsButton = mapButton ?? document.querySelector<HTMLButtonElement>("button.ml-2.rounded.border.border-slate-200.bg-blue-50");
+    mapsButton?.addEventListener("click", openMap);
+    locationInput?.addEventListener("keydown", handleLocationKey);
+    return () => { mapsButton?.removeEventListener("click", openMap); locationInput?.removeEventListener("keydown", handleLocationKey); };
+  }, [gps, job]);
+  const timestamp = gps?.recordedAt.toLocaleString("id-ID", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).replace(/\//g, "-").replace(",", "") + " WIB";
+  return <div className="max-w-[1050px] bg-[#f7fafc] px-5 pb-6"><h1 className="pt-4 text-[18px] font-extrabold">Handover</h1><p className="mb-4 text-[11px] text-slate-500">Isi data penyerah dan penerima serta data aktual kargo.</p><div className="grid grid-cols-2 gap-4"><PersonCard title="Data Penyerah" dot="bg-blue-600" name="Budi Santoso" /><PersonCard title="Data Penerima" dot="bg-emerald-500" name="Andi Pratama" /></div><section className="form-card mt-5"><h2>Detail Handover</h2><div className="grid grid-cols-2 gap-4"><Field label="Waktu Serah Terima *" value="7 Oct 2026, 10:30" /><div><label>Lokasi Serah Terima *</label><button onClick={recordGps} className="float-right text-[10px] font-bold text-blue-600"><MapPin size={11} className="inline text-red-500"/> Gunakan Lokasi Saat Ini</button><div className="flex"><input value={job?.location || "Kantor PT DSV, Jakarta"} readOnly/><button className="ml-2 rounded border border-slate-200 bg-blue-50 px-3">🗺️</button></div></div></div></section><section className="form-card mt-5"><h2>Data Kargo Aktual</h2><div className="grid grid-cols-2 gap-4"><Field label="Jumlah Koli (Pieces) *" value="10" /><Field label="Berat Aktual (kg) *" value="250" /></div></section><section className="mt-5 rounded-[18px] border border-[#e4eaf2] bg-white p-4 shadow-sm"><div className="flex flex-wrap items-center gap-3"><span className="grid h-[43px] w-[43px] place-items-center rounded-xl bg-[#eef7ff] text-blue-600"><MapPin size={24}/></span><div className="flex-1"><h2 className="text-[16px] font-extrabold">Perekaman Otomatis Lokasi GPS &amp; Timestamp Handover</h2><p className="text-[11px] text-slate-500">Terekam otomatis saat Handover dibuka untuk keabsahan berita acara (US-A3-013)</p></div><button onClick={recordGps} disabled={recording} className="rounded-xl border border-blue-100 bg-[#f4faff] px-4 py-2 text-[11px] font-bold text-blue-600 disabled:opacity-60">⟳ {recording ? "Merekam GPS..." : "Refresh GPS"}</button><button onClick={() => { setGps(null); setGpsError("Simulasi GPS gagal. Klik Refresh GPS untuk merekam ulang."); }} className="rounded-xl border border-red-100 bg-red-50 px-4 py-2 text-[11px] font-bold text-red-500">Simulasi GPS Gagal</button></div><div className="mt-5 grid grid-cols-3 gap-3">{[["Koordinat Satelit:", gps ? `${gps.latitude.toFixed(5)},  ${gps.longitude.toFixed(5)}` : recording ? "Merekam lokasi..." : "GPS belum tersedia", gps ? `Akurasi: ±${gps.accuracy.toFixed(1)} meter` : gpsError || "Menunggu izin lokasi"],["Waktu Aktual Handover:", gps ? timestamp : "—", gps ? "◉ Timestamp Tersertifikasi" : "Menunggu rekaman GPS"],["Fasilitas / Terminal:", "Terminal Kargo Domestik Lini 1 Bandara Soekarno-Hatta (CGK)", ""]].map(([label, value, sub]) => <div key={label} className="rounded-xl border border-slate-100 bg-[#fbfcfe] p-4"><p className="text-[11px] font-medium text-slate-500">{label}</p><b className="mt-2 block text-[14px] leading-6">{value}</b><small className={label.startsWith("Waktu") && gps ? "mt-1 block text-[11px] font-bold text-emerald-500" : "mt-1 block text-[11px] text-slate-500"}>{sub}</small></div>)}</div><div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4"><p className={`text-[11px] font-bold ${gps ? "text-emerald-600" : "text-red-500"}`}><AlertTriangle className="mr-2 inline" size={17}/>{gps ? "GPS berhasil direkam. Anda dapat melanjutkan ke dokumentasi." : "Tombol lanjut terkunci: Lengkapi seluruh nama pihak, koli, berat, dan pastikan GPS berhasil direkam."}</p><button onClick={next} disabled={!gps} className="primary disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none">Simpan &amp; Lanjut ke Dokumentasi <ChevronRight size={17}/></button></div></section><div className="mt-5 flex justify-end"><button onClick={back} className="secondary">Kembali</button></div></div>;
+}
+function PersonCard({ title, dot, name }: { title: string; dot: string; name: string }) { return <section className="form-card !p-4"><h2><i className={`mr-1 inline-block h-2 w-2 rounded-full ${dot}`} />{title}</h2><Field label="Nama Penyerah *" value={name} /><Field label="Perusahaan *" value="PT DSV Transport Indonesia" /></section>; }
+function Field({ label, value }: { label: string; value: string }) { const isAutomaticTime = label.startsWith("Waktu Serah Terima"); const [selectedAt] = useState(() => new Date()); const [date, setDate] = useState(() => selectedAt.toISOString().slice(0, 10)); const [time, setTime] = useState(() => selectedAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false })); if (isAutomaticTime) return <div className="mb-3"><label>{label}</label><div className="grid grid-cols-2 gap-2"><input aria-label="Tanggal handover" type="date" value={date} onChange={event => setDate(event.target.value)} className="h-10 !rounded-[11px] !border-slate-200 !px-3 !text-[15px] font-semibold focus:!border-blue-500 focus:!ring-2 focus:!ring-blue-100" /><input aria-label="Jam handover" type="time" value={time} onChange={event => setTime(event.target.value)} className="h-10 !rounded-[11px] !border-blue-500 !px-3 !text-[15px] font-semibold focus:!ring-2 focus:!ring-blue-100" /></div></div>; return <div className="mb-3"><label>{label}</label><input defaultValue={value} /></div>; }
+
+function Documentation({ back, next }: { back: () => void; next: () => void }) { return <div className="max-w-[505px] bg-[#f7fafc] px-4 pb-6"><h1 className="pt-4 text-[18px] font-extrabold">Dokumentasi</h1><p className="mb-4 text-[11px] text-slate-500">Unggah foto dan dokumen pendukung.</p><section className="form-card"><h2>Foto Dokumentasi (Minimal 4 foto) <span className="text-slate-400">ℹ</span></h2><div className="flex gap-3">{["Box 1","Pallet Side","Loading Area","Seal & Wrap"].map((label, i) => <div className="relative h-20 w-20 rounded-md bg-slate-800 p-2 text-[9px] text-white" key={label}><i className="absolute right-2 top-2 h-5 w-5 rounded-full bg-red-500" />{i === 3 ? "🗑" : ""}<span className="absolute bottom-1 left-2">{label}</span></div>)}<label className="grid h-24 w-20 place-items-center rounded-lg bg-blue-50 text-center text-[11px] font-bold text-blue-600"><span><Upload className="mx-auto"/>Tambah<br />Foto</span><input type="file" className="sr-only" /></label></div></section><section className="form-card mt-4"><h2>Dokumen Pendukung</h2>{[["Packing List *","PackingList_DSV.pdf","1.2 MB"],["Commercial Invoice *","Invoice_DSV.pdf","840 KB"],["MSDS (Jika DG)","",""],["DG Declaration (Jika DG)","",""]].map(([title,file,size]) => <div className="mb-3 grid grid-cols-[145px_1fr] items-center gap-2 text-[11px]" key={title}><b>{title}</b>{file ? <div className="flex items-center rounded border border-slate-200 bg-slate-50 px-3 py-2 text-slate-600"><FileText size={14}/><span className="ml-1 flex-1">{file}</span><small className="text-slate-400">{size}</small><button className="ml-3 rounded bg-red-50 p-1 text-red-400"><Trash2 size={12}/></button></div> : <label className="rounded border border-dashed border-blue-200 py-2 text-center font-bold text-blue-600">📥 Pilih file<input className="sr-only" type="file" /></label>}</div>)}</section><div className="mt-7 flex justify-end gap-3"><button onClick={back} className="secondary">Kembali</button><button onClick={next} className="primary">Simpan & Lanjut <ChevronRight size={14}/></button></div></div>; }
+
+function Verification({ back, next, onIssue }: { back: () => void; next: () => void; onIssue: () => void }) { const items = [["Kesesuaian Dokumen","Packing list, invoice, dan dokumen sesuai dengan fisik barang."],["Kondisi Visual Barang","Tidak ada kerusakan pada kemasan dan barang."],["Standar Maskapai","Sesuai dengan ketentuan maskapai untuk pengiriman."],["Dangerous Goods (Jika ada)","Label, dokumen DG, dan penanganan sesuai standar."],["Special Handling (Jika ada)","Penanganan khusus (fragile, temperature, dll) sesuai."]]; return <div className="max-w-[532px] bg-[#f7fafc] px-5 pb-5"><h1 className="pt-4 text-[18px] font-extrabold">Verifikasi</h1><p className="mb-4 text-[11px] text-slate-500">Pastikan seluruh checklist sesuai dengan kondisi barang dan dokumen.</p><div className="space-y-3">{items.map(([title,sub]) => <button className="flex w-full items-center rounded-lg border border-emerald-500 bg-white px-3 py-3 text-left" key={title}><span className="mr-3 grid h-6 w-6 place-items-center rounded bg-emerald-500 text-white"><Check size={15}/></span><span className="flex-1"><b className="block text-[12px]">{title}</b><small className="text-[10px] text-slate-500">{sub}</small></span><ChevronRight size={15} className="text-slate-400"/></button>)}</div><div className="mt-7 flex items-center justify-between"><button onClick={onIssue} className="rounded-md border border-red-400 px-3 py-2 text-[11px] font-bold text-red-500"><AlertTriangle className="mr-1 inline" size={13}/>Laporkan Finding / Issue</button><div className="flex gap-3"><button onClick={back} className="secondary">Kembali</button><button onClick={next} className="primary">Simpan & Lanjut <ChevronRight size={14}/></button></div></div></div>; }
+
+function HistoryList({ jobs, filter, query, setFilter, setQuery, openJob }: { jobs: Job[]; filter: string; query: string; setFilter: (v: string) => void; setQuery: (v: string) => void; openJob: (job: Job) => void }) { return <div className="max-w-[530px] bg-[#f7fafc] px-5 pb-5"><h1 className="pt-4 text-[18px] font-extrabold">Job History</h1><p className="mb-5 text-[11px] text-slate-500">Lihat daftar pekerjaan yang sudah diselesaikan.</p><Tabs filter={filter === "In Progress" || filter === "Assigned" ? "All" : filter} counts={{ All: 20, Assigned: 0, "In Progress": 0, Completed: 15, "Has Issue": 3 }} setFilter={setFilter} /><Searchbar query={query} setQuery={setQuery} /><JobsTable jobs={jobs.filter(j => j.status === "Completed" || j.status === "Has Issue")} action={openJob} history /></div>; }
+
+function IssueModal({ category, description, setCategory, setDescription, close, save, saving }: { category: string; description: string; setCategory: (x: string) => void; setDescription: (x: string) => void; close: () => void; save: () => void; saving: boolean }) { return <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4"><div className="w-full max-w-md rounded-xl bg-white shadow-2xl"><div className="flex items-center justify-between border-b border-slate-100 px-5 py-4"><b>Report Issue</b><button onClick={close}><X size={17}/></button></div><div className="space-y-4 p-5"><label className="block text-xs font-bold">Issue Category *<select value={category} onChange={e => setCategory(e.target.value)} className="mt-2 w-full rounded border border-slate-200 p-2 text-sm font-normal"><option>Damaged Package</option><option>Missing Package</option><option>Document Discrepancy</option><option>Other</option></select></label><label className="block text-xs font-bold">Description *<textarea value={description} onChange={e => setDescription(e.target.value)} className="mt-2 min-h-24 w-full rounded border border-slate-200 p-2 text-sm font-normal" placeholder="Jelaskan issue yang ditemukan..." /></label><label className="flex h-20 cursor-pointer flex-col items-center justify-center rounded border border-dashed border-slate-300 text-xs text-slate-500"><Camera size={20}/>Tambah foto bukti<input className="sr-only" type="file" accept="image/*" /></label><div className="flex gap-3"><button onClick={close} className="secondary flex-1">Batal</button><button disabled={saving} onClick={save} className="primary flex-1 justify-center">{saving ? "Menyimpan..." : "Simpan Issue"}</button></div></div></div></div>; }
