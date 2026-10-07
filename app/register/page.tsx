@@ -16,7 +16,6 @@ const DEFAULT_POSITIONS: OptionItem[] = [
   { id: '265c9357-105c-437c-a244-6897122f17c1', name: 'Information Technology' },
   { id: '0ec333af-8737-413f-adab-841a3067e485', name: 'Director' },
   { id: '10da1bac-a6a8-472e-a171-e4984ab768d9', name: 'Accounting Associate' },
-  { id: '58706b7f-950b-4e71-b066-792fbd91424d', name: 'Sales Executive' },
   { id: '1978f4a2-13ad-4fcc-a9e4-e03b6940cce0', name: 'CRM Staff' },
 ];
 
@@ -57,6 +56,13 @@ export default function RegisterPage() {
 
   const submitting = useRef(false);
 
+  // Cek jika sudah login, langsung redirect ke dashboard
+  useEffect(() => {
+    const isSessionLoggedIn = typeof window !== 'undefined' ? sessionStorage.getItem('andima_logged_in') : null;
+    if (isSessionLoggedIn) {
+      router.replace('/dashboard');
+    }
+  }, [router]);
   // States Error UI
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [generalError, setGeneralError] = useState<string>('');
@@ -191,15 +197,6 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      // Normalisasi ID CRM Staff jika form browser masih menyimpan value lama
-      let finalPositionId = positionId;
-      if (
-        positionId === '56f0fe6d-crm1-48d4-b81d-aecfc1091611' ||
-        positionId === '56f0fe6d-6a8e-48d4-b81d-aecfc1091611'
-      ) {
-        finalPositionId = '1978f4a2-13ad-4fcc-a9e4-e03b6940cce0';
-      }
-
       // 1. Generate Employee ID
       const autoEmployeeId = await generateNextEmployeeId();
 
@@ -210,7 +207,7 @@ export default function RegisterPage() {
         options: {
           data: {
             full_name: fullName.trim(),
-            position_id: finalPositionId,
+            position_id: positionId,
           },
         },
       });
@@ -248,7 +245,7 @@ export default function RegisterPage() {
             email: emailLower,
             phone: phone.trim(),
             employment_status: employmentStatus,
-            position_id: finalPositionId,
+            position_id: positionId,
             departement_id: departementId,
           },
         ]);

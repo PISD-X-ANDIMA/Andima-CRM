@@ -4,19 +4,18 @@ import React, { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-
 const REGISTERED_USERS = {
   'crm@andima.co.id': {
     passwordRole: 'Crm123!@#$',
     role: 'CRM Staff',
     name: 'Andima CRM Specialist',
-    redirectTo: '/',
+    redirectTo: '/dashboard',
   },
   'manajemen@andima.co.id': {
     passwordRole: 'Manajemen123!@#',
     role: 'Manajemen',
     name: 'Management Officer',
-    redirectTo: '/',
+    redirectTo: '/dashboard',
   },
 };
 
@@ -34,6 +33,13 @@ export default function LoginPage() {
   const [countdown, setCountdown] = useState<number>(0);
   const [greeting, setGreeting] = useState<string>('Good Morning');
 
+  // Cek jika sudah login di session ini, langsung redirect ke dashboard
+  useEffect(() => {
+    const isSessionLoggedIn = typeof window !== 'undefined' ? sessionStorage.getItem('andima_logged_in') : null;
+    if (isSessionLoggedIn) {
+      router.replace('/dashboard');
+    }
+  }, [router]);
   useEffect(() => {
     const hour = new Date().getHours();
     if (hour >= 3 && hour < 12) setGreeting('Good Morning');
@@ -127,58 +133,88 @@ export default function LoginPage() {
         console.error(err);
       }
       setSuccessMessage(`Login successful! Redirecting to ${userAccount.role} Dashboard...`);
-      window.setTimeout(() => { router.push(userAccount.redirectTo); }, 1000);
+      window.setTimeout(() => { router.push('/dashboard'); }, 1000);
       return;
     }
 
     setIsSigningIn(true);
-    void supabase.auth.signInWithPassword({ email: email.toLowerCase().trim(), password })
-      .then(async ({ data: authData, error }) => {
-        if (error) {
-          const message = error.message.toLowerCase().includes('email not confirmed')
-            ? 'Email belum dikonfirmasi. Selesaikan konfirmasi melalui email terlebih dahulu.'
-            : 'Email atau password salah.';
-          handleFailedAttempt(message);
-          return;
-        }
 
-        setLoginAttempts(0);
+    try {
+      // Login via Supabase Auth
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
+        password,
+      });
 
-        let displayName = authData?.user?.user_metadata?.full_name || email.split('@')[0];
-        let displayRole = 'CRM Staff';
+      if (error) {
+        const message = error.message.toLowerCase().includes('email not confirmed')
+          ? 'Email belum dikonfirmasi. Selesaikan konfirmasi melalui email terlebih dahulu.'
+          : 'Email atau password salah.';
+        handleFailedAttempt(message);
+        return;
+      }
 
-        try {
-          if (authData?.user?.id) {
-            const { data: profile } = await supabase
-              .from('b2_register')
-              .select('full_name, employment_status, position_id')
-              .eq('id', authData.user.id)
-              .maybeSingle();
+      // Reset login attempts on success
+      setLoginAttempts(0);
 
-            if (profile?.full_name) {
+      // Fetch profil dari b2_register + posisi
+      let displayName = authData?.user?.user_metadata?.full_name || email.split('@')[0];
+      let displayRole = 'CRM Staff';
+      let positionName = '';
+
+      try {
+        if (authData?.user?.id) {
+          const { data: profile } = await supabase
+            .from('b2_register')
+            .select('full_name, employment_status, position_id, departement_id')
+            .eq('id', authData.user.id)
+            .maybeSingle();
+
+          if (profile) {
+            if (profile.full_name) {
               displayName = profile.full_name;
             }
+
+            // Fetch nama posisi dari d3_positions
+            if (profile.position_id) {
+              const { data: posData } = await supabase
+                .from('d3_positions')
+                .select('title, name')
+                .eq('id', profile.position_id)
+                .maybeSingle();
+
+              if (posData) {
+                positionName = posData.title || posData.name || '';
+                displayRole = positionName || displayRole;
+              }
+            }
           }
-        } catch (fetchErr) {
-          console.warn('Profile fetch warning:', fetchErr);
         }
+      } catch (fetchErr) {
+        console.warn('Profile fetch warning:', fetchErr);
+      }
 
-        try {
-          localStorage.setItem('andima_user', JSON.stringify({
-            name: displayName,
-            role: displayRole,
-            email: email.toLowerCase().trim(),
-          }));
-          sessionStorage.setItem('andima_logged_in', 'true');
-        } catch (err) {
-          console.error(err);
-        }
+      // Simpan data user ke localStorage & sessionStorage
+      try {
+        localStorage.setItem('andima_user', JSON.stringify({
+          id: authData?.user?.id,
+          name: displayName,
+          role: displayRole,
+          email: email.toLowerCase().trim(),
+        }));
+        sessionStorage.setItem('andima_logged_in', 'true');
+      } catch (err) {
+        console.error(err);
+      }
 
-        setSuccessMessage('Login berhasil! Mengalihkan ke CRM Dashboard...');
-        window.setTimeout(() => { router.push('/'); }, 1000);
-      })
-      .catch(() => setErrorMessage('Tidak dapat menghubungi server login. Silakan coba lagi.'))
-      .finally(() => setIsSigningIn(false));
+      setSuccessMessage(`Login berhasil! Selamat datang, ${displayName}. Mengalihkan ke Dashboard...`);
+      window.setTimeout(() => { router.push('/dashboard'); }, 1000);
+
+    } catch {
+      setErrorMessage('Tidak dapat menghubungi server login. Silakan coba lagi.');
+    } finally {
+      setIsSigningIn(false);
+    }
   };
 
   return (
@@ -241,7 +277,7 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-6 font-[family-name:var(--font-montserrat)] relative z-10" noValidate>
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#0F172A] mb-2.5">
-                  Username
+                  Email
                 </label>
                 <input
                   type="email"
@@ -342,3 +378,4 @@ export default function LoginPage() {
     </main>
   );
 }
+
