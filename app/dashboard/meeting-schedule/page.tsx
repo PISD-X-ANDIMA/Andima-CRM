@@ -6,7 +6,11 @@ import { ChevronLeft, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react
 import type { ApiResponse, CustomerListItem, MeetingDay, ScheduleType } from "@/types/customer";
 
 const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const hours = Array.from({ length: 10 }, (_, index) => 8 + index);
+const hours = Array.from({ length: 9 }, (_, index) => 8 + index);
+const meetingSlots = hours.map((hour) => ({
+  start: `${String(hour).padStart(2, "0")}:00`,
+  end: `${String(hour + 1).padStart(2, "0")}:00`,
+}));
 const dayKeys: MeetingDay[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 type MeetingType = "offline" | "online";
 interface MeetingFormState {
@@ -25,6 +29,8 @@ interface MeetingFormState {
 }
 
 function dateKey(date: Date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`; }
+function jakartaDateKey(date = new Date()) { const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date); const part = (type: string) => parts.find((item) => item.type === type)?.value || "00"; return `${part("year")}-${part("month")}-${part("day")}`; }
+function jakartaMinutes(date = new Date()) { const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(date); return Number(parts.find((part) => part.type === "hour")?.value || 0) * 60 + Number(parts.find((part) => part.type === "minute")?.value || 0); }
 function dateForInput(value: string) { return new Date(`${value}T12:00:00`); }
 function newForm(date: string, startTime: string, customer?: CustomerListItem, representative = ""): MeetingFormState {
   const [hour, minutes] = startTime.split(":").map(Number);
@@ -35,7 +41,7 @@ function newForm(date: string, startTime: string, customer?: CustomerListItem, r
 export default function MeetingSchedulePage() {
   const router = useRouter();
   const [month, setMonth] = useState(() => new Date());
-  const [selected, setSelected] = useState(() => dateKey(new Date()));
+  const [selected, setSelected] = useState(() => jakartaDateKey());
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -44,7 +50,7 @@ export default function MeetingSchedulePage() {
   const [mutationError, setMutationError] = useState("");
   const [selectedMeeting, setSelectedMeeting] = useState<{ customer: CustomerListItem; meeting: NonNullable<CustomerListItem["meetingSchedule"]> } | null>(null);
   const [editingMeeting, setEditingMeeting] = useState(false);
-  const [form, setForm] = useState<MeetingFormState>(() => newForm(dateKey(new Date()), "09:00"));
+  const [form, setForm] = useState<MeetingFormState>(() => newForm(jakartaDateKey(), "09:00"));
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
@@ -71,6 +77,7 @@ export default function MeetingSchedulePage() {
   const availableCustomers = customers;
 
   const beginAdd = (time: string) => {
+    if (selected < jakartaDateKey() || (selected === jakartaDateKey() && Number(time.slice(0, 2)) * 60 <= jakartaMinutes())) return;
     const representative = (() => { try { return JSON.parse(localStorage.getItem("andima_user") || "{}").name || ""; } catch { return ""; } })();
     setForm(newForm(selected, time, undefined, representative));
     setMutationError("");
@@ -106,6 +113,9 @@ export default function MeetingSchedulePage() {
     if (form.meetingType === "offline" && !form.location.trim()) { setMutationError("Location is required for an offline meeting."); return; }
     if (form.meetingType === "online" && !form.meetingLink.trim()) { setMutationError("A meeting link is required for an online meeting."); return; }
     if (form.endTime <= form.startTime) { setMutationError("End time must be after start time."); return; }
+    if (form.date < jakartaDateKey()) { setMutationError("Meetings cannot be scheduled on a past date."); return; }
+    if (!meetingSlots.some((slot) => slot.start === form.startTime && slot.end === form.endTime)) { setMutationError("Select an available one-hour slot between 08:00 and 17:00."); return; }
+    if (form.date === jakartaDateKey() && Number(form.startTime.slice(0, 2)) * 60 <= jakartaMinutes()) { setMutationError("Meetings cannot be scheduled in a time slot that has already started."); return; }
     const meetingDate = dateForInput(form.date);
     const payload = {
       meeting_day: dayKeys[meetingDate.getDay()],
@@ -178,10 +188,27 @@ export default function MeetingSchedulePage() {
     const end = Number(meeting.endTime?.slice(0, 2)) * 60 + Number(meeting.endTime?.slice(3, 5));
     return start < (hour + 1) * 60 && end > hour * 60;
   });
-  const updateForm = (field: keyof MeetingFormState, value: string) => setForm((current) => ({ ...current, [field]: value }));
+  const updateForm = (field: keyof MeetingFormState, value: string) => setForm((current) => {
+    if (field === "startTime") {
+      const slot = meetingSlots.find((item) => item.start === value);
+      return { ...current, startTime: value, endTime: slot?.end || current.endTime };
+    }
+    if (field === "date") {
+      const firstAvailableSlot = value === jakartaDateKey()
+        ? meetingSlots.find((slot) => Number(slot.start.slice(0, 2)) * 60 > jakartaMinutes())
+        : meetingSlots[0];
+      const currentSlot = meetingSlots.find((slot) => slot.start === current.startTime && slot.end === current.endTime);
+      if (currentSlot && (value !== jakartaDateKey() || Number(currentSlot.start.slice(0, 2)) * 60 > jakartaMinutes())) return { ...current, date: value };
+      return { ...current, date: value, startTime: firstAvailableSlot?.start || current.startTime, endTime: firstAvailableSlot?.end || current.endTime };
+    }
+    return { ...current, [field]: value };
+  });
+  const selectableSlots = meetingSlots.filter((slot) => form.date !== jakartaDateKey() || Number(slot.start.slice(0, 2)) * 60 > jakartaMinutes());
+  const selectedDateIsPast = selected < jakartaDateKey();
+  const isSelectedDateSlotPast = (hour: number) => selectedDateIsPast || (selected === jakartaDateKey() && hour * 60 <= jakartaMinutes());
 
   return <div className="space-y-8">
-    <header className="flex flex-wrap items-end justify-between gap-5"><div><h1 className="text-3xl font-bold tracking-tight text-black">{formatDate(selectedDate)}</h1><p className="mt-1 text-lg text-slate-500">Meeting schedule and availability for this date</p></div><button type="button" onClick={() => beginAdd("09:00")} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-lg font-semibold text-white hover:bg-blue-700"><Plus className="h-5 w-5" />Add Meeting</button></header>
+    <header className="flex flex-wrap items-end justify-between gap-5"><div><h1 className="text-3xl font-bold tracking-tight text-black">{formatDate(selectedDate)}</h1><p className="mt-1 text-lg text-slate-500">Meeting schedule and availability for this date</p></div><button type="button" disabled={selectedDateIsPast || selectableSlots.length === 0} onClick={() => beginAdd(selectableSlots[0]?.start || "09:00")} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-lg font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"><Plus className="h-5 w-5" />Add Meeting</button></header>
     <div className="grid items-start gap-8 lg:grid-cols-[minmax(350px,0.76fr)_minmax(500px,1.24fr)]">
       <section className="rounded-2xl border border-slate-200 bg-white p-7"><div className="mb-7 flex items-center justify-between"><button aria-label="Previous month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="rounded p-2 text-slate-400 hover:bg-slate-100"><ChevronLeft className="h-7 w-7" /></button><h2 className="text-2xl font-semibold text-slate-950">{month.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h2><button aria-label="Next month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="rounded p-2 text-slate-400 hover:bg-slate-100"><ChevronRight className="h-7 w-7" /></button></div>
         <div className="grid grid-cols-7 gap-y-3 text-center">{weekdayNames.map((day) => <span key={day} className="pb-2 text-sm font-medium text-slate-600">{day}</span>)}{calendarDays.map((date) => { const key = dateKey(date); const inMonth = date.getMonth() === month.getMonth(); const statuses = customers.flatMap((customer) => (customer.meetings || []).filter((meeting) => meeting.scheduleType === "one_day" ? meeting.meetingDate === key : meeting.meetingDay === dayKeys[date.getDay()] && (!meeting.effectiveStartDate || key >= meeting.effectiveStartDate)).map((meeting) => meeting.status || "scheduled")); const dotClass = statuses.includes("scheduled") ? "bg-blue-500" : statuses.includes("completed") ? "bg-emerald-500" : statuses.includes("cancelled") ? "border border-slate-500 bg-white" : "bg-slate-400"; return <button key={key} onClick={() => setSelected(key)} className={`relative mx-auto grid h-10 w-10 place-items-center rounded-full text-sm ${!inMonth ? "text-slate-300" : "text-slate-700 hover:bg-blue-50"} ${key === selected ? "bg-blue-600 font-semibold text-white hover:bg-blue-700" : ""}`} aria-pressed={key === selected}><span>{date.getDate()}</span>{inMonth && <span className={`absolute bottom-0.5 h-1.5 w-1.5 rounded-full ${key === selected ? "bg-white" : dotClass}`} />}</button>; })}</div>
@@ -197,7 +224,7 @@ export default function MeetingSchedulePage() {
             const statusStyle = meetingStatus === "completed" ? "border-emerald-200 bg-emerald-50/70 text-emerald-800" : meetingStatus === "cancelled" ? "border-slate-200 bg-slate-100 text-slate-600" : "border-blue-200 bg-blue-50/60 text-blue-800";
             const statusColor = meetingStatus === "completed" ? "bg-emerald-500" : meetingStatus === "cancelled" ? "bg-slate-400" : "bg-blue-500";
             return <div key={`${meeting.id}-${hour}`} className={`flex min-h-[70px] w-full items-center justify-between gap-4 rounded-xl border px-5 py-4 ${statusStyle}`}><button type="button" onClick={() => { setSelectedMeeting({ customer, meeting }); setEditingMeeting(false); setMutationError(""); }} className="flex min-w-0 flex-1 items-center justify-between gap-4 text-left"><span className="flex min-w-0 items-center gap-4"><i className={`h-3 w-3 shrink-0 rounded-full ${statusColor}`} /><span className="truncate font-medium">{customer.companyName}<small className="ml-2 text-slate-500">{meetingStatus === "completed" ? "Completed" : meetingStatus === "cancelled" ? "Canceled" : "Scheduled"} · View details</small></span></span><span className="whitespace-nowrap text-slate-600">{meeting.startTime?.slice(0, 5)} - {meeting.endTime?.slice(0, 5)}</span></button>{meetingStatus === "cancelled" && <button type="button" onClick={() => beginAdd(meeting.startTime?.slice(0, 5) || `${String(hour).padStart(2, "0")}:00`)} className="shrink-0 rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50">+Add</button>}</div>;
-          }) : <div key={hour} className="flex min-h-[70px] items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-slate-500"><span className="flex items-center gap-4"><i className="h-3 w-3 rounded-full bg-slate-400" />Available</span><span className="whitespace-nowrap">{String(hour).padStart(2, "0")}:00 - {String(hour + 1).padStart(2, "0")}:00</span><button type="button" onClick={() => beginAdd(`${String(hour).padStart(2, "0")}:00`)} className="rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50">+Add</button></div>;
+          }) : <div key={hour} className="flex min-h-[70px] items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-slate-500"><span className="flex items-center gap-4"><i className="h-3 w-3 rounded-full bg-slate-400" />Available</span><span className="whitespace-nowrap">{String(hour).padStart(2, "0")}:00 - {String(hour + 1).padStart(2, "0")}:00</span><button type="button" disabled={isSelectedDateSlotPast(hour)} onClick={() => beginAdd(`${String(hour).padStart(2, "0")}:00`)} className="rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40">+Add</button></div>;
         })}
       </section>
     </div>
@@ -205,8 +232,8 @@ export default function MeetingSchedulePage() {
     {slotToBook && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/75 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setSlotToBook(null); }}><form onSubmit={handleSaveMeeting} className="my-auto w-full max-w-5xl rounded-2xl bg-white px-6 py-6 shadow-2xl sm:px-8"><div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4"><h2 className="text-2xl font-bold text-slate-900">Add Meeting</h2><button type="button" aria-label="Close" onClick={() => setSlotToBook(null)} className="text-slate-400 hover:text-slate-700"><X className="h-6 w-6" /></button></div>
       <div className="space-y-4">
         <MeetingField label="Company" required><select required value={form.companyId} onChange={(event) => { const customer = customers.find((item) => item.id === event.target.value); updateForm("companyId", event.target.value); if (customer) updateForm("picName", customer.primaryPic?.fullName || ""); }} className={inputClass}><option value="">Select company</option>{availableCustomers.map((customer) => <option key={customer.id} value={customer.id}>{customer.companyName}</option>)}</select></MeetingField>
-        <MeetingField label="Date" required><input required type="date" value={form.date} onChange={(event) => updateForm("date", event.target.value)} className={inputClass} /></MeetingField>
-        <MeetingField label="Time" required><div className="grid grid-cols-2 gap-3"><input required type="time" value={form.startTime} onChange={(event) => updateForm("startTime", event.target.value)} className={inputClass} /><input required type="time" value={form.endTime} onChange={(event) => updateForm("endTime", event.target.value)} className={inputClass} /></div></MeetingField>
+        <MeetingField label="Date" required><input required type="date" min={jakartaDateKey()} value={form.date} onChange={(event) => updateForm("date", event.target.value)} className={inputClass} /></MeetingField>
+        <MeetingField label="Time" required><select required value={form.startTime} onChange={(event) => updateForm("startTime", event.target.value)} className={inputClass}><option value="" disabled>Select a time slot</option>{selectableSlots.map((slot) => <option key={slot.start} value={slot.start}>{slot.start} - {slot.end}</option>)}</select></MeetingField>
         <MeetingField label="Agenda / Topic" required><input required maxLength={200} value={form.agenda} onChange={(event) => updateForm("agenda", event.target.value)} placeholder="Enter agenda" className={inputClass} /></MeetingField>
         <MeetingField label="PIC Name" required><input required readOnly value={form.picName} placeholder="Select a company first" className={`${inputClass} cursor-not-allowed bg-slate-50`} /></MeetingField>
         <MeetingField label="Andima Representative" required><input required value={form.representative} onChange={(event) => updateForm("representative", event.target.value)} placeholder="Representative name" className={inputClass} /></MeetingField>

@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { cancelExpiredOneTimeMeetings } from "@/lib/services/meeting-service";
 
 export interface SalesExecutiveMetrics {
   totalCustomers: number | null;
@@ -38,6 +39,7 @@ export async function getSalesExecutiveMetrics(): Promise<SalesExecutiveMetrics>
   const supabase = await createServerSupabaseClient();
   if (!supabase) return EMPTY_METRICS;
   try {
+    await cancelExpiredOneTimeMeetings();
     const [customersResult, meetingsResult] = await Promise.all([
       (supabase as any).from("a1_company_list").select("company_list_id", { count: "exact", head: true }).is("deleted_at", null),
       (supabase as any).from("a1_customer_meetings").select("meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date").eq("is_active", true).is("deleted_at", null).eq("status", "scheduled"),

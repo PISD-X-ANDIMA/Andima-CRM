@@ -247,7 +247,7 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
       {[
         { label: "Total Customer", value: metrics.totalCustomers, hint: "Company records", icon: UsersRound, color: "bg-blue-50 text-blue-500" },
         { label: "Meeting this week", value: metrics.meetingsThisWeek, hint: "Scheduled meetings", icon: CalendarDays, color: "bg-rose-100 text-rose-500" },
-        { label: "Total Job", value: 0, hint: "Tasks", icon: BriefcaseBusiness, color: "bg-sky-50 text-sky-500" },
+        { label: "Task", value: 0, hint: "Tasks", icon: BriefcaseBusiness, color: "bg-sky-50 text-sky-500" },
       ].map(({ label, value, hint, icon: Icon, color }) => <article key={label} className="min-h-[112px] rounded-xl border border-[#aaa] bg-white px-4 py-2">
         <h2 className="text-lg font-semibold text-[#505050] sm:text-xl">{label}</h2><div className="mt-2 flex items-center gap-3"><span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${color}`}><Icon className="h-5 w-5" /></span><p className="text-3xl font-bold text-[#202020]">{value ?? "—"}</p><span className="ml-auto text-right text-[10px] leading-tight text-slate-400">{hint}</span></div>
       </article>)}

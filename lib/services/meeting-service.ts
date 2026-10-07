@@ -19,6 +19,61 @@ export interface MeetingInput {
   status?: "scheduled" | "completed" | "cancelled";
 }
 
+const MEETING_SLOT_STARTS = new Set(Array.from({ length: 9 }, (_, index) => `${String(index + 8).padStart(2, "0")}:00`));
+const JAKARTA_WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+function jakartaDateAndMinutes(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(now);
+  const part = (type: string) => parts.find((item) => item.type === type)?.value || "00";
+  return {
+    date: `${part("year")}-${part("month")}-${part("day")}`,
+    minutes: Number(part("hour")) * 60 + Number(part("minute")),
+  };
+}
+
+export function validateMeetingScheduleDateAndSlot(input: Pick<MeetingInput, "meeting_day" | "schedule_type" | "meeting_date" | "effective_start_date" | "start_time" | "end_time">): string | null {
+  const { date: today, minutes: nowMinutes } = jakartaDateAndMinutes();
+  const slotStart = input.start_time?.slice(0, 5);
+  const slotEnd = input.end_time?.slice(0, 5);
+  if (!MEETING_SLOT_STARTS.has(slotStart) || slotEnd !== `${String(Number(slotStart.slice(0, 2)) + 1).padStart(2, "0")}:00`) {
+    return "Select a one-hour meeting slot between 08:00 and 17:00.";
+  }
+
+  const selectedDate = input.schedule_type === "one_day" ? input.meeting_date : input.effective_start_date;
+  if (!selectedDate) return input.schedule_type === "one_day" ? "Meeting date is required." : "Weekly start date is required.";
+  if (selectedDate < today) return "Meetings cannot be scheduled on a past date.";
+  if (selectedDate === today) {
+    let occursToday = input.schedule_type === "one_day";
+    if (input.schedule_type === "weekly") {
+      const [year, month, day] = today.split("-").map(Number);
+      occursToday = JAKARTA_WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()] === input.meeting_day;
+    }
+    if (occursToday && Number(slotStart.slice(0, 2)) * 60 <= nowMinutes) {
+      return "Meetings cannot be scheduled in a time slot that has already started.";
+    }
+  }
+  return null;
+}
+
+/** Mark missed one-time meetings as canceled when schedules are read. Weekly records represent an ongoing series. */
+export async function cancelExpiredOneTimeMeetings() {
+  const supabase = await createServerSupabaseClient();
+  if (!supabase) return;
+  const { date } = jakartaDateAndMinutes();
+  const { error } = await (supabase as any)
+    .from("a1_customer_meetings")
+    .update({ status: "cancelled", updated_at: new Date().toISOString() })
+    .eq("schedule_type", "one_day")
+    .eq("status", "scheduled")
+    .eq("is_active", true)
+    .is("deleted_at", null)
+    .lt("meeting_date", date);
+  if (error) throw error;
+}
+
 /**
  * Retrieves the active meeting schedule for a customer.
  */

@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getCustomers } from "@/lib/services/customer-service";
+import { cancelExpiredOneTimeMeetings } from "@/lib/services/meeting-service";
 import { createSuccessResponse, createErrorResponse } from "@/lib/api-response";
 
 export const dynamic = "force-dynamic";
@@ -7,6 +8,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   const context = request.nextUrl.searchParams.get("context");
   try {
+    await cancelExpiredOneTimeMeetings();
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search") || "";
     const page = parseInt(searchParams.get("page") || "1", 10);
