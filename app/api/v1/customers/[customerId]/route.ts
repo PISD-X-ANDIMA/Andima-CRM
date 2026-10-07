@@ -28,18 +28,23 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   try {
     const { customerId } = await params;
     const body = await request.json();
+    const input = {
+      ...body,
+      pic_full_name: body.pic_name ?? body.pic_full_name,
+      pic_phone_number: body.pic_number ?? body.pic_phone_number,
+    };
 
     for (const field of ["company_name", "address", "pic_full_name", "pic_phone_number"] as const) {
-      if (body[field] !== undefined && (typeof body[field] !== "string" || !body[field].trim())) {
+      if (input[field] !== undefined && (typeof input[field] !== "string" || !input[field].trim())) {
         return createErrorResponse("CUSTOMER_001", "All company, address, and PIC fields are required", undefined, 400);
       }
     }
 
-    if (body.pic_phone_number !== undefined && (typeof body.pic_phone_number !== "string" || !isValidPicPhoneNumber(body.pic_phone_number))) {
+    if (input.pic_phone_number !== undefined && (typeof input.pic_phone_number !== "string" || !isValidPicPhoneNumber(input.pic_phone_number))) {
       return createErrorResponse("CUSTOMER_002", "Use a PIC phone number beginning with 0 or +62", undefined, 400);
     }
 
-    const result = await updateCustomer(customerId, body);
+    const result = await updateCustomer(customerId, input);
     if (!result.success) {
       if (result.error?.includes("No login session")) {
         return createErrorResponse("AUTH_001", "Your profile session has expired. Please sign in again.", undefined, 401);

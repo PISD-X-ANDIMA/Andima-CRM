@@ -40,9 +40,11 @@ export async function getSalesExecutiveMetrics(): Promise<SalesExecutiveMetrics>
   if (!supabase) return EMPTY_METRICS;
   try {
     await cancelExpiredOneTimeMeetings();
-    const [customersResult, meetingsResult] = await Promise.all([
+    const [customersResult, meetingsResult, tasksResult] = await Promise.all([
       (supabase as any).from("a1_company_list").select("company_list_id", { count: "exact", head: true }).is("deleted_at", null),
       (supabase as any).from("a1_customer_meetings").select("meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date").eq("is_active", true).is("deleted_at", null).eq("status", "scheduled"),
+      // Squad A2 owns worksheet/task data; only read its row count for the dashboard KPI.
+      (supabase as any).from("a2_worksheets").select("*", { count: "exact", head: true }),
     ]);
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -65,8 +67,7 @@ export async function getSalesExecutiveMetrics(): Promise<SalesExecutiveMetrics>
       activeCustomers: null,
       upcomingMeetings: meetingsResult.error ? null : upcomingMeetings,
       meetingsThisWeek: meetingsResult.error ? null : meetingsThisWeek,
-      // Squad A2 owns Field Agent tasks; A1 must not count its transaction rows as tasks.
-      tasks: null,
+      tasks: tasksResult.error ? null : tasksResult.count || 0,
     };
   } catch {
     return EMPTY_METRICS;

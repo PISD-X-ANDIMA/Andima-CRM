@@ -74,10 +74,15 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
       setErrors({});
 
       try {
-        const res = await fetch(customer ? `/api/v1/customers/${customer.id}` : "/api/v1/customers/create", {
+        const res = await fetch(customer ? `/api/v1/customers/${customer.id}` : "/api/v1/customers", {
           method: customer ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
+          body: JSON.stringify(customer ? form : {
+            company_name: form.company_name,
+            address: form.address,
+            pic_name: form.pic_full_name,
+            pic_number: form.pic_phone_number,
+          }),
         });
 
         const json: ApiResponse<{ companyId?: string }> = await res.json();

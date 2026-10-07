@@ -44,6 +44,9 @@ export function validateMeetingScheduleDateAndSlot(input: Pick<MeetingInput, "me
 
   const selectedDate = input.schedule_type === "one_day" ? input.meeting_date : input.effective_start_date;
   if (!selectedDate) return input.schedule_type === "one_day" ? "Meeting date is required." : "Weekly start date is required.";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) return "Meeting date must use YYYY-MM-DD format.";
+  const parsedDate = new Date(`${selectedDate}T00:00:00Z`);
+  if (Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== selectedDate) return "Meeting date is invalid.";
   if (selectedDate < today) return "Meetings cannot be scheduled on a past date.";
   if (selectedDate === today) {
     let occursToday = input.schedule_type === "one_day";
