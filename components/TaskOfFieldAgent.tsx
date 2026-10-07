@@ -306,6 +306,8 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
 export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps) {
   const [tasks, setTasks] = useState<FieldTaskItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const tasksPerPage = 5;
 
   // Active User session (fallback to Adelia)
   const activeUserName = currentUser?.name || 'Adelia';
@@ -769,7 +771,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     showToast(`Assignment transferred to ${targetAgent}!`);
   };
 
-  // Filter tasks
+  // Filter & paginate tasks
   const filteredTasks = tasks.filter(t => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
@@ -779,6 +781,15 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       (t.field_agent_name && t.field_agent_name.toLowerCase().includes(q))
     );
   });
+
+  const totalTasks = filteredTasks.length;
+  const totalPages = Math.ceil(totalTasks / tasksPerPage) || 1;
+  const firstRow = totalTasks === 0 ? 0 : (currentPage - 1) * tasksPerPage + 1;
+  const lastRow = Math.min(currentPage * tasksPerPage, totalTasks);
+  const paginatedTasks = filteredTasks.slice(
+    (currentPage - 1) * tasksPerPage,
+    currentPage * tasksPerPage
+  );
 
   return (
     <div className="w-full pb-20 animate-in fade-in duration-200">
@@ -813,7 +824,10 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Search by job number, customer, or field agent..."
             className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 shadow-2xs transition-colors"
           />
@@ -885,7 +899,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 </td>
               </tr>
             ) : (
-              filteredTasks.map((task) => (
+              paginatedTasks.map((task) => (
                 <tr key={task.id} className="hover:bg-slate-50/50 transition-colors">
                   {/* Job Number */}
                   <td className="py-4.5 px-6 text-center">
@@ -999,6 +1013,57 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* 5. PAGINATION (Exact Match with Sales Executive) */}
+      <div className="flex flex-wrap items-center justify-between gap-4 px-3 pt-3 text-xs text-slate-500">
+        <span>Showing {firstRow}-{lastRow} of {totalTasks} tasks</span>
+        <nav className="flex items-center gap-1" aria-label="Tasks pages">
+          <button
+            type="button"
+            aria-label="Previous page"
+            disabled={currentPage <= 1}
+            onClick={() => setCurrentPage((value) => value - 1)}
+            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+          >
+            ‹
+          </button>
+          {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+            const pageNumber = totalPages <= 5 ? index + 1 : Math.max(1, Math.min(currentPage - 2, totalPages - 4)) + index;
+            return (
+              <button
+                type="button"
+                key={pageNumber}
+                aria-current={currentPage === pageNumber ? "page" : undefined}
+                onClick={() => setCurrentPage(pageNumber)}
+                className={`h-8 min-w-8 rounded-md px-2 cursor-pointer ${currentPage === pageNumber ? "bg-blue-600 font-semibold text-white" : "text-slate-600 hover:bg-slate-100"}`}
+              >
+                {pageNumber}
+              </button>
+            );
+          })}
+          {totalPages > 5 && (
+            <>
+              <span className="px-1">...</span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage(totalPages)}
+                className="h-8 min-w-8 rounded-md px-2 text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                {totalPages}
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            aria-label="Next page"
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage((value) => value + 1)}
+            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+          >
+            ›
+          </button>
+        </nav>
       </div>
 
       {/* ========================================================================= */}

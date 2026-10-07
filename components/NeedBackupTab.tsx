@@ -180,6 +180,8 @@ interface NeedBackupProps {
 export default function NeedBackupTab({}: NeedBackupProps = {}) {
   const [tickets, setTickets] = useState<NeedBackupTicket[]>(SEED_TICKETS);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ticketsPerPage = 5;
   const [selectedTicket, setSelectedTicket] = useState<NeedBackupTicket | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -271,6 +273,18 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
       t.status.toLowerCase().includes(q)
     );
   }, [tickets, searchQuery]);
+
+  // Pagination calculations (Exact Match with Sales Executive)
+  const totalTickets = filteredTickets.length;
+  const totalPages = Math.ceil(totalTickets / ticketsPerPage) || 1;
+  const firstRow = totalTickets === 0 ? 0 : (currentPage - 1) * ticketsPerPage + 1;
+  const lastRow = Math.min(currentPage * ticketsPerPage, totalTickets);
+  const paginatedTickets = useMemo(() => {
+    return filteredTickets.slice(
+      (currentPage - 1) * ticketsPerPage,
+      currentPage * ticketsPerPage
+    );
+  }, [filteredTickets, currentPage, ticketsPerPage]);
 
   // Dynamic counts for top cards
   const totalCount = tickets.length;
@@ -518,13 +532,19 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
           <input
             type="text"
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={e => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Customer/Job Number..."
             className="w-full bg-transparent text-sm text-slate-700 placeholder:text-slate-300 font-normal outline-none"
           />
           {searchQuery && (
             <button
-              onClick={() => setSearchQuery('')}
+              onClick={() => {
+                setSearchQuery('');
+                setCurrentPage(1);
+              }}
               className="p-1 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
             >
               <X size={15} />
@@ -551,7 +571,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
 
             <tbody className="divide-y divide-slate-100">
               {filteredTickets.length > 0 ? (
-                filteredTickets.map(item => (
+                paginatedTickets.map(item => (
                   <tr
                     key={item.id}
                     className="hover:bg-slate-50/70 transition-colors group"
@@ -657,6 +677,57 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* PAGINATION (Exact Match with Sales Executive) */}
+      <div className="flex flex-wrap items-center justify-between gap-4 px-3 pt-3 text-xs text-slate-500">
+        <span>Showing {firstRow}-{lastRow} of {totalTickets} tickets</span>
+        <nav className="flex items-center gap-1" aria-label="Tickets pages">
+          <button
+            type="button"
+            aria-label="Previous page"
+            disabled={currentPage <= 1}
+            onClick={() => setCurrentPage((value) => value - 1)}
+            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+          >
+            ‹
+          </button>
+          {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+            const pageNumber = totalPages <= 5 ? index + 1 : Math.max(1, Math.min(currentPage - 2, totalPages - 4)) + index;
+            return (
+              <button
+                type="button"
+                key={pageNumber}
+                aria-current={currentPage === pageNumber ? "page" : undefined}
+                onClick={() => setCurrentPage(pageNumber)}
+                className={`h-8 min-w-8 rounded-md px-2 cursor-pointer ${currentPage === pageNumber ? "bg-blue-600 font-semibold text-white" : "text-slate-600 hover:bg-slate-100"}`}
+              >
+                {pageNumber}
+              </button>
+            );
+          })}
+          {totalPages > 5 && (
+            <>
+              <span className="px-1">...</span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage(totalPages)}
+                className="h-8 min-w-8 rounded-md px-2 text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                {totalPages}
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            aria-label="Next page"
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage((value) => value + 1)}
+            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+          >
+            ›
+          </button>
+        </nav>
       </div>
 
       {/* DETAIL MODAL (Matching User's Uploaded Screenshot Exactly) */}
