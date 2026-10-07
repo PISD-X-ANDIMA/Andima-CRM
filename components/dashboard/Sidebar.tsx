@@ -13,6 +13,7 @@ import {
   Briefcase,
   Settings,
   LogOut,
+  Truck,
 } from "lucide-react";
 
 interface SubMenuItem {
@@ -38,10 +39,6 @@ const salesExecutiveMenus: SubMenuItem[] = [
   {
     name: "Record Conversation",
     href: "/dashboard/record-conversation",
-  },
-  {
-    name: "Task of Field Agent",
-    href: "/dashboard/task-of-field-agent",
   },
   {
     name: "Need Backup",
@@ -86,7 +83,8 @@ export function Sidebar() {
     pathname.startsWith("/dashboard/meeting-schedule") ||
     pathname.startsWith("/dashboard/record-conversation") ||
     pathname.startsWith("/dashboard/need-backup");
-  const isCrmActive = isSalesExecutiveActive;
+  const isFieldAgentActive = pathname.startsWith("/dashboard/task-of-field-agent");
+  const isCrmActive = isSalesExecutiveActive || isFieldAgentActive;
 
   return (
     <aside className="sticky top-0 flex h-screen w-[260px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
@@ -232,9 +230,18 @@ export function Sidebar() {
                 </div>
               )}
 
-              <div className="mt-0.5 flex w-full items-center rounded-lg px-3 py-2 text-[13px] font-medium text-slate-400">
+              <Link
+                href="/dashboard/task-of-field-agent"
+                prefetch
+                className={`mt-1 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
+                  isFieldAgentActive
+                    ? "bg-blue-600 text-white shadow-sm shadow-blue-600/25"
+                    : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
+                }`}
+              >
+                <Truck className={`h-4 w-4 ${isFieldAgentActive ? "text-white" : "text-slate-500"}`} />
                 <span>Field Agent</span>
-              </div>
+              </Link>
 
             </div>
           )}
