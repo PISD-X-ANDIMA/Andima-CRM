@@ -11,7 +11,6 @@ import {
   ChevronRight,
   ClipboardCheck,
   FileText,
-  Info,
   LayoutDashboard,
   MapPin,
   RefreshCw,
@@ -36,6 +35,7 @@ type Status =
 
 type Screen =
   | "dashboard"
+  | "field-agent"
   | "tasks"
   | "detail"
   | "handover"
@@ -56,6 +56,27 @@ type Job = {
   location?: string;
   date?: string;
   status?: Status;
+  handover_status?: string;
+  actual_cargo?: string;
+  documentation_status?: string;
+  supporting_documents_status?: string;
+  verification_status?: string;
+  assigned_to?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+type ApiTask = {
+  id: string;
+  job_number?: string;
+  transaction_number?: string;
+  task_title?: string;
+  customer?: string;
+  shipper?: string;
+  consignee?: string;
+  mawb_hawb?: string;
+  location?: string;
+  status?: string;
   handover_status?: string;
   actual_cargo?: string;
   documentation_status?: string;
@@ -165,7 +186,7 @@ function mapDatabaseStatus(status?: string): Status {
 /**
  * Convert response API menjadi object Job
  */
-function mapApiJob(task: any): Job {
+function mapApiJob(task: ApiTask): Job {
   return {
     id: task.id,
     job_number: task.job_number,
@@ -252,7 +273,7 @@ export default function Home() {
   const [jobs, setJobs] = useState<Job[]>(sampleJobs);
 
   const [screen, setScreen] =
-    useState<Screen>("dashboard");
+    useState<Screen>("field-agent");
 
   const [selected, setSelected] =
     useState<Job | null>(sampleJobs[0]);
@@ -370,7 +391,7 @@ export default function Home() {
     const previous: Partial<
       Record<Screen, Screen>
     > = {
-      tasks: "dashboard",
+      tasks: "field-agent",
       detail: "tasks",
       handover: "detail",
       documentation: "handover",
@@ -730,6 +751,10 @@ export default function Home() {
         <div className="mx-auto max-w-[1280px] px-5 pb-10 pt-5 md:px-9">
 
           {screen === "dashboard" && (
+            <EmptyDashboard />
+          )}
+
+          {screen === "field-agent" && (
             <Dashboard
               jobs={jobs}
               openJob={openJob}
@@ -907,6 +932,8 @@ function Sidebar({
   const active =
     screen === "dashboard"
       ? "dashboard"
+      : screen === "field-agent"
+        ? "field-agent"
       : screen === "history"
         ? "history"
         : "tasks";
@@ -923,7 +950,7 @@ function Sidebar({
   const subLinkClass = (
     isActive: boolean
   ) =>
-    `block w-full rounded-lg px-3 py-2 text-left text-[12px] font-semibold ${
+    `block w-full rounded-lg px-3 py-2 text-left text-[12px] font-bold ${
       isActive
         ? "bg-white text-[#173057]"
         : "text-white/62 hover:bg-white/10 hover:text-white"
@@ -947,12 +974,11 @@ function Sidebar({
 
       <nav className="flex-1 space-y-2 px-4">
         <button
-          onClick={() =>
-            navigate("dashboard")
-          }
-          className={linkClass(
+          type="button"
+          disabled
+          className={`${linkClass(
             active === "dashboard"
-          )}
+          )} cursor-not-allowed opacity-45 hover:bg-transparent hover:text-white/78`}
         >
           <LayoutDashboard size={17} />
           Dashboard
@@ -977,13 +1003,21 @@ function Sidebar({
         </div>
 
         <div className="ml-4 space-y-1 border-l border-white/15 py-2 pl-4">
-          <p className="px-3 py-1 text-[11px] font-semibold text-white/45">
+          <p className={subLinkClass(false)}>
             Sales Executive
           </p>
 
-          <p className="px-3 py-1 text-[12px] font-extrabold text-white">
+          <button
+            type="button"
+            onClick={() =>
+              navigate("field-agent")
+            }
+            className={subLinkClass(
+              active === "field-agent"
+            )}
+          >
             Field Agent
-          </p>
+          </button>
 
           <button
             onClick={() =>
@@ -1039,6 +1073,9 @@ function Topbar({
     string[]
   > = {
     dashboard: [
+      "Dashboard",
+    ],
+    "field-agent": [
       "CRM",
       "SALES EXECUTIVE",
       "TASK FIELD AGENT",
@@ -1085,7 +1122,8 @@ function Topbar({
   return (
     <header className="flex h-[67px] items-center justify-between border-b border-slate-100 px-9">
       <div className="flex items-center gap-3">
-        {screen !== "dashboard" && (
+        {screen !== "dashboard" &&
+          screen !== "field-agent" && (
           <button
             type="button"
             onClick={() =>
@@ -1164,6 +1202,12 @@ function Topbar({
    DASHBOARD
 ========================================================= */
 
+function EmptyDashboard() {
+  return (
+    <section className="min-h-[520px] rounded-xl border border-dashed border-slate-200 bg-white" />
+  );
+}
+
 function Dashboard({
   jobs,
   openJob,
@@ -1196,159 +1240,288 @@ function Dashboard({
     ).length;
 
   const cards = [
-    [
-      "Total Task",
-      jobs.length,
-      "Total task dari database",
-      "text-slate-600",
-    ],
-    [
-      "Assigned",
-      assigned,
-      "Task yang belum dikerjakan",
-      "text-amber-600",
-    ],
-    [
-      "In Progress",
-      inProgress,
-      "Sedang dikerjakan",
-      "text-blue-600",
-    ],
-    [
-      "Completed",
-      complete,
-      "Task selesai",
-      "text-emerald-600",
-    ],
-    [
-      "Has Issue",
-      issues,
-      "Perlu perhatian",
-      "text-red-500",
-    ],
+    {
+      title: "Total Task",
+      value: jobs.length,
+      sub: "+2 dari minggu lalu",
+      color: "text-emerald-600",
+    },
+    {
+      title: "In Progress",
+      value: inProgress,
+      sub: `${Math.min(
+        inProgress,
+        2
+      )} sedang dikerjakan`,
+      color: "text-cyan-600",
+    },
+    {
+      title: "Completed",
+      value: complete,
+      sub: "+3 dari minggu lalu",
+      color: "text-emerald-600",
+    },
+    {
+      title: "Has Issue",
+      value: issues,
+      sub: "+1 dari minggu lalu",
+      color: "text-red-500",
+    },
   ];
+
+  const statusBreakdown = [
+    {
+      label: "Assigned",
+      value: assigned,
+      color: "#3b82f6",
+    },
+    {
+      label: "In Progress",
+      value: inProgress,
+      color: "#0284c7",
+    },
+    {
+      label: "Completed",
+      value: complete,
+      color: "#10b981",
+    },
+    {
+      label: "Has Issue",
+      value: issues,
+      color: "#ef4444",
+    },
+  ];
+
+  const statusGradient =
+    jobs.length > 0
+      ? statusBreakdown
+          .reduce(
+            (
+              segments,
+              item
+            ) => {
+              const start =
+                segments.offset;
+              const size =
+                (item.value /
+                  jobs.length) *
+                100;
+
+              if (size <= 0) {
+                return segments;
+              }
+
+              return {
+                offset:
+                  start + size,
+                stops: [
+                  ...segments.stops,
+                  `${item.color} ${start}% ${start + size}%`,
+                ],
+              };
+            },
+            {
+              offset: 0,
+              stops: [] as string[],
+            }
+          )
+          .stops.join(", ")
+      : "#e2e8f0 0% 100%";
 
   return (
     <>
       <section className="mb-5">
-        <h1 className="text-[21px] font-extrabold">
+        <h1 className="text-[28px] font-extrabold tracking-[-0.01em] text-[#15213a]">
           Dashboard Field Agent
         </h1>
 
-        <p className="text-[12px] text-slate-500">
+        <p className="mt-2 text-[14px] text-slate-500">
           Ringkasan pekerjaan dan
           status Anda hari ini.
         </p>
       </section>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
         {cards.map(
-          ([
+          ({
             title,
             value,
             sub,
             color,
-          ]) => (
-            <button
+          }) => (
+            <section
               key={String(title)}
-              onClick={showTasks}
-              className="rounded-xl border border-slate-100 bg-white p-5 text-left shadow-sm transition hover:border-blue-200 hover:shadow"
+              className="min-h-[152px] rounded-xl border border-slate-100 bg-white p-8 shadow-sm"
             >
-              <p className="text-[12px] font-bold text-slate-600">
+              <p className="text-[15px] font-extrabold text-slate-500">
                 {title}
               </p>
 
-              <b className="mt-5 block text-[25px]">
+              <b className="mt-8 block text-[28px] leading-none text-[#101a33]">
                 {value}
               </b>
 
               <p
-                className={`mt-2 text-[10px] font-bold ${color}`}
+                className={`mt-6 text-[12px] font-bold ${color}`}
               >
                 {sub}
               </p>
-            </button>
+            </section>
           )
         )}
       </div>
 
-      <section className="mt-7 rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-[14px] font-extrabold">
-            Recent Jobs
+      <div className="mt-7 grid items-start gap-7 xl:grid-cols-[510px_minmax(0,1fr)]">
+        <section className="rounded-xl border border-slate-100 bg-white p-8 shadow-sm">
+          <h2 className="text-[18px] font-extrabold text-[#101a33]">
+            Status Task
           </h2>
 
-          <button
-            onClick={showTasks}
-            className="text-[11px] font-bold text-blue-600"
-          >
-            Lihat Semua
-          </button>
-        </div>
+          <div className="mt-8 flex flex-col items-center">
+            <div
+              className="relative grid h-[244px] w-[244px] shrink-0 place-items-center rounded-full"
+              style={{
+                background: `conic-gradient(${statusGradient})`,
+              }}
+              aria-label="Grafik proporsi status task"
+            >
+              <div className="grid h-[148px] w-[148px] place-items-center rounded-full bg-white text-center">
+                <div>
+                  <b className="block text-[28px] leading-none text-[#101a33]">
+                    {jobs.length}
+                  </b>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-[11px]">
-            <thead className="border-b border-slate-100 text-[10px] text-slate-500">
-              <tr>
-                <th className="pb-3">
-                  Job Number
-                </th>
+                  <span className="mt-2 block text-[13px] font-medium text-slate-500">
+                    Total Task
+                  </span>
+                </div>
+              </div>
+            </div>
 
-                <th className="pb-3">
-                  Customer
-                </th>
+            <div className="mt-10 w-full min-w-0 space-y-7">
+              {statusBreakdown.map(
+                (item) => {
+                  const percent =
+                    jobs.length > 0
+                      ? Math.round(
+                          (item.value /
+                            jobs.length) *
+                            100
+                        )
+                      : 0;
 
-                <th className="pb-3">
-                  MAWB/HAWB
-                </th>
+                  return (
+                    <div
+                      key={item.label}
+                      className="grid grid-cols-[minmax(0,1fr)_48px_54px] items-center gap-5 text-[14px]"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span
+                          className="h-4 w-4 shrink-0 rounded-full"
+                          style={{
+                            backgroundColor:
+                              item.color,
+                          }}
+                        />
 
-                <th className="pb-3">
-                  Status
-                </th>
-              </tr>
-            </thead>
+                        <span className="truncate font-bold text-slate-700">
+                          {item.label}
+                        </span>
+                      </div>
 
-            <tbody>
-              {jobs
-                .slice(0, 5)
-                .map((job) => (
-                  <tr
-                    key={job.id}
-                    className="border-b border-slate-50"
-                  >
-                    <td className="py-4 font-bold text-blue-600">
-                      <button
-                        onClick={() =>
-                          openJob(job)
-                        }
-                      >
-                        {no(job)}
-                      </button>
-                    </td>
+                      <span className="text-center font-extrabold text-slate-950">
+                        {item.value}
+                      </span>
 
-                    <td>
-                      {job.customer ||
-                        "-"}
-                    </td>
+                      <span className="text-right text-[12px] font-medium text-slate-500">
+                        ({percent}%)
+                      </span>
+                    </div>
+                  );
+                }
+              )}
+            </div>
+          </div>
+        </section>
 
-                    <td className="text-slate-500">
-                      {mawb(job)}
-                    </td>
+        <section className="mt-4 rounded-xl border border-slate-100 bg-white p-8 shadow-sm xl:mt-5">
+          <div className="mb-7 flex items-center justify-between">
+            <h2 className="text-[18px] font-extrabold text-[#101a33]">
+              Recent Jobs
+            </h2>
 
-                    <td>
-                      <StatusBadge
-                        status={job.status}
-                        onClick={() =>
-                          openJob(job)
-                        }
-                      />
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            <button
+              onClick={showTasks}
+              className="text-[14px] font-extrabold text-blue-600"
+            >
+              Lihat Semua
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-[13px]">
+              <thead className="border-b border-slate-100 text-[12px] text-slate-500">
+                <tr>
+                  <th className="pb-5 font-extrabold">
+                    Job Number
+                  </th>
+
+                  <th className="pb-5 font-extrabold">
+                    Customer
+                  </th>
+
+                  <th className="pb-5 font-extrabold">
+                    MAWB/HAWB
+                  </th>
+
+                  <th className="pb-5 font-extrabold">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {jobs
+                  .slice(0, 4)
+                  .map((job) => (
+                    <tr
+                      key={job.id}
+                      className="border-b border-slate-50"
+                    >
+                      <td className="py-6 font-extrabold text-[#18223b]">
+                        <button
+                          onClick={() =>
+                            openJob(job)
+                          }
+                        >
+                          {no(job)}
+                        </button>
+                      </td>
+
+                      <td className="max-w-[140px] font-medium leading-5 text-slate-600">
+                        {job.customer ||
+                          "-"}
+                      </td>
+
+                      <td className="text-slate-600">
+                        {mawb(job)}
+                      </td>
+
+                      <td>
+                        <StatusBadge
+                          status={job.status}
+                          onClick={() =>
+                            openJob(job)
+                          }
+                        />
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     </>
   );
 }
