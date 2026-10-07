@@ -27,6 +27,23 @@ export async function POST(request: Request) {
     const client = getA3Client();
     const { data, error } = await client.from("job_handovers").insert({ job_number: jobNumber, delivering_party: deliveringParty, receiving_party: receivingParty, actual_pieces: pieces, actual_gross_weight: weight, location: typeof body.location === "string" ? body.location.slice(0, 500) : null, notes: typeof body.notes === "string" ? body.notes.slice(0, 1000) : null }).select().single();
     if (error) throw new Error("Unable to save handover.");
+
+    // Sinkronisasi pihak penyerah & penerima ke a2_worksheets
+    try {
+      const cleanJobNo = jobNumber.replace(/^#/, '');
+      await client
+        .from("a2_worksheets")
+        .update({
+          pihak_penyerah: deliveringParty,
+          pihak_penerima: receivingParty,
+          handover_location: typeof body.location === "string" ? body.location.slice(0, 500) : null,
+          updated_at: new Date().toISOString(),
+        })
+        .or(`job_no.eq.${jobNumber},job_no.eq.${cleanJobNo}`);
+    } catch (syncErr) {
+      console.warn("Sinkronisasi serah terima ke a2_worksheets dilewati:", syncErr);
+    }
+
     await writeHistory({ jobNumber, activity: "Handover Completed" });
     return NextResponse.json({ success: true, data }, { status: 201 });
   } catch (error) { return apiError(error, 400); }

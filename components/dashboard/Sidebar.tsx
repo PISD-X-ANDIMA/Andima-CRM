@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { supabase } from '@/lib/supabaseClient';
 import {
@@ -49,6 +49,21 @@ const salesExecutiveMenus: SubMenuItem[] = [
   },
 ];
 
+const fieldAgentMenus: SubMenuItem[] = [
+  {
+    name: "Overview",
+    href: "/dashboard/field-agent?tab=field-agent",
+  },
+  {
+    name: "My Task",
+    href: "/dashboard/field-agent?tab=tasks",
+  },
+  {
+    name: "Job History",
+    href: "/dashboard/field-agent?tab=history",
+  },
+];
+
 const topMenuItems: MenuItem[] = [
   {
     name: "Dashboard",
@@ -73,12 +88,18 @@ const bottomMenuItems: MenuItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [crmOpen, setCrmOpen] = useState(true);
   const [salesExecOpen, setSalesExecOpen] = useState(true);
+  const [fieldAgentOpen, setFieldAgentOpen] = useState(true);
+
+  const currentFieldTab = searchParams?.get("tab") || "field-agent";
 
   const isSalesExecutiveDashboard =
     pathname === "/dashboard/sales-executive";
+
+  const isFieldAgentActive = pathname.startsWith("/dashboard/field-agent");
 
   const isSalesExecutiveActive =
     pathname.startsWith("/dashboard/sales-executive") ||
@@ -87,7 +108,7 @@ export function Sidebar() {
     pathname.startsWith("/dashboard/record-conversation") ||
     pathname.startsWith("/dashboard/task-of-field-agent") ||
     pathname.startsWith("/dashboard/need-backup");
-  const isCrmActive = isSalesExecutiveActive;
+  const isCrmActive = isSalesExecutiveActive || isFieldAgentActive;
 
   return (
     <aside className="sticky top-0 flex h-screen w-[260px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
@@ -233,9 +254,63 @@ export function Sidebar() {
                 </div>
               )}
 
-              <div className="mt-0.5 flex w-full items-center rounded-lg px-3 py-2 text-[13px] font-medium text-slate-400">
-                <span>Field Agent</span>
+              <div className="mt-1 flex w-full items-center rounded-lg text-[13px] font-medium">
+                <Link
+                  href="/dashboard/field-agent"
+                  prefetch
+                  onClick={() => {
+                    setCrmOpen(true);
+                    setFieldAgentOpen(true);
+                  }}
+                  className={`flex flex-1 items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors ${
+                    isFieldAgentActive
+                      ? "text-white font-semibold"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <span>Field Agent</span>
+                </Link>
+                <button
+                  type="button"
+                  aria-label="Toggle Field Agent submenu"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setFieldAgentOpen((value) => !value);
+                  }}
+                  className="rounded p-0.5 hover:bg-white/10"
+                >
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                      fieldAgentOpen ? "rotate-0" : "-rotate-90"
+                    } text-slate-500`}
+                  />
+                </button>
               </div>
+
+              {fieldAgentOpen && (
+                <div className="mt-0.5 ml-3 space-y-0.5">
+                  {fieldAgentMenus.map((item) => {
+                    const itemTab = item.href.includes("tab=")
+                      ? item.href.split("tab=")[1]
+                      : "field-agent";
+                    const isActive = isFieldAgentActive && currentFieldTab === itemTab;
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`flex items-center rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150 ${
+                          isActive
+                            ? "bg-blue-600 text-white shadow-sm shadow-blue-600/25"
+                            : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
+                        }`}
+                      >
+                        <span>{item.name}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
 
             </div>
           )}

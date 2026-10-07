@@ -59,6 +59,23 @@ export async function POST(request: Request) {
     }
     const { data, error } = await client.from("job_issues").insert({ job_number: jobNumber, category, description, evidence_url: evidenceUrl }).select().single();
     if (error) throw new Error("Unable to save issue.");
+
+    // Sinkronisasi status kendala ke a2_worksheets agar otomatis tampil di Task of Field Agent (A2)
+    try {
+      const cleanJobNo = jobNumber.replace(/^#/, '');
+      await client
+        .from("a2_worksheets")
+        .update({
+          has_issue: true,
+          status_kendala: "kendala_terdeteksi",
+          issue_note: `${category}: ${description}`,
+          updated_at: new Date().toISOString(),
+        })
+        .or(`job_no.eq.${jobNumber},job_no.eq.${cleanJobNo}`);
+    } catch (syncErr) {
+      console.warn("Sinkronisasi kendala ke a2_worksheets dilewati:", syncErr);
+    }
+
     await writeHistory({ jobNumber, activity: "Issue Reported", notes: `${category} - ${classification}` });
     return NextResponse.json({ success: true, data }, { status: 201 });
   } catch (error) { return apiError(error, 400); }

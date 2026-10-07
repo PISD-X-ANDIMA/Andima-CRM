@@ -255,6 +255,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     title: string;
   } | null>(null);
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
+
   // Close dropdowns on outside click
   useEffect(() => {
     function handleDocumentClick(e: MouseEvent) {
@@ -431,6 +435,18 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
     return true;
   });
+
+  // Auto-reset page on filter / search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, channelFilter, statusFilter, dateFilter]);
+
+  const totalItems = filteredRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedRows = filteredRows.slice(startIndex, startIndex + pageSize);
+  const firstRow = totalItems === 0 ? 0 : startIndex + 1;
+  const lastRow = Math.min(startIndex + pageSize, totalItems);
 
   // Handle Export to CSV
   const handleExportCSV = () => {
@@ -1098,7 +1114,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((row, idx) => (
+                paginatedRows.map((row, idx) => (
                   <tr 
                     key={`${row.id || 'row'}-${idx}`} 
                     className="hover:bg-slate-50/60 transition-colors"
@@ -1160,32 +1176,62 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           </table>
         </div>
 
-        {/* 4. PAGINATION FOOTER */}
-        <div className="py-3 px-6 bg-white border-t border-slate-100 flex items-center justify-between">
-          <div className="text-xs text-slate-400">
-            Showing <strong className="text-slate-600">1</strong> to <strong className="text-slate-600">{filteredRows.length}</strong> of <strong className="text-slate-600">{conversations.length}</strong> entries
+        {/* 4. PAGINATION FOOTER (Interactive Matching Sales Executive Standards) */}
+        <div className="py-3 px-6 bg-white border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500">
+          <div>
+            Showing <strong className="font-semibold text-slate-700">{firstRow}</strong> to <strong className="font-semibold text-slate-700">{lastRow}</strong> of <strong className="font-semibold text-slate-700">{totalItems}</strong> entries
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <button 
+          <nav className="flex items-center gap-1" aria-label="Conversation pages">
+            <button
               type="button"
-              className="px-3 py-1.5 rounded-lg border border-slate-200/80 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+              aria-label="Previous page"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage((value) => Math.max(1, value - 1))}
+              className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
             >
-              Previous
+              ‹
             </button>
-            <button 
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+              const pageNumber = totalPages <= 5 ? index + 1 : Math.max(1, Math.min(currentPage - 2, totalPages - 4)) + index;
+              return (
+                <button
+                  type="button"
+                  key={pageNumber}
+                  aria-current={currentPage === pageNumber ? "page" : undefined}
+                  onClick={() => setCurrentPage(pageNumber)}
+                  className={`h-8 min-w-8 rounded-md px-2 cursor-pointer transition-colors ${
+                    currentPage === pageNumber
+                      ? "bg-blue-600 font-semibold text-white shadow-xs"
+                      : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+            {totalPages > 5 && (
+              <>
+                <span className="px-1 text-slate-400">...</span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(totalPages)}
+                  className="h-8 min-w-8 rounded-md px-2 text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors"
+                >
+                  {totalPages}
+                </button>
+              </>
+            )}
+            <button
               type="button"
-              className="px-3 py-1.5 rounded-lg bg-[#1d4ed8] text-white text-xs font-bold shadow-2xs"
+              aria-label="Next page"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((value) => Math.min(totalPages, value + 1))}
+              className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
             >
-              1
+              ›
             </button>
-            <button 
-              type="button"
-              className="px-3 py-1.5 rounded-lg border border-slate-200/80 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              Next
-            </button>
-          </div>
+          </nav>
         </div>
       </div>
 

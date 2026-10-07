@@ -26,6 +26,23 @@ export async function POST(request: Request) {
     const client = getA3Client();
     const { data, error } = await client.from("job_verifications").insert({ job_number: jobNumber, document_verification: documentVerification, package_condition: packageCondition, airline_standard: airlineStandard, dangerous_goods: body.dangerousGoods === true, special_handling: specialHandling }).select().single();
     if (error) throw new Error("Unable to save verification.");
+
+    // Sinkronisasi status verifikasi & kelayakan kargo ke a2_worksheets
+    try {
+      const cleanJobNo = jobNumber.replace(/^#/, '');
+      await client
+        .from("a2_worksheets")
+        .update({
+          is_dangerous_goods: body.dangerousGoods === true,
+          special_handling: specialHandling.join(', '),
+          progress_status: 'COMPLETED',
+          updated_at: new Date().toISOString(),
+        })
+        .or(`job_no.eq.${jobNumber},job_no.eq.${cleanJobNo}`);
+    } catch (syncErr) {
+      console.warn("Sinkronisasi verifikasi ke a2_worksheets dilewati:", syncErr);
+    }
+
     await writeHistory({ jobNumber, activity: "Verification Completed", notes: "All checklist valid" });
     return NextResponse.json({ success: true, data }, { status: 201 });
   } catch (error) { return apiError(error, 400); }
