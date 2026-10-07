@@ -36,6 +36,7 @@ type Status =
 type Screen =
   | "dashboard"
   | "field-agent"
+  | "notifications"
   | "tasks"
   | "detail"
   | "handover"
@@ -355,6 +356,8 @@ export default function Home() {
 
         if (mappedJobs.length > 0) {
           setSelected(mappedJobs[0]);
+        } else {
+          setSelected(null);
         }
 
         setNotice(
@@ -391,6 +394,7 @@ export default function Home() {
     const previous: Partial<
       Record<Screen, Screen>
     > = {
+      notifications: "field-agent",
       tasks: "field-agent",
       detail: "tasks",
       handover: "detail",
@@ -746,7 +750,12 @@ export default function Home() {
       />
 
       <main className="ml-[224px] min-h-screen bg-white">
-        <Topbar screen={screen} />
+        <Topbar
+          screen={screen}
+          openNotifications={() =>
+            setScreen("notifications")
+          }
+        />
 
         <div className="mx-auto max-w-[1280px] px-5 pb-10 pt-5 md:px-9">
 
@@ -761,6 +770,13 @@ export default function Home() {
               showTasks={() =>
                 setScreen("tasks")
               }
+            />
+          )}
+
+          {screen === "notifications" && (
+            <NotificationsPage
+              jobs={jobs}
+              openJob={openJob}
             />
           )}
 
@@ -933,6 +949,8 @@ function Sidebar({
     screen === "dashboard"
       ? "dashboard"
       : screen === "field-agent"
+        ? "field-agent"
+      : screen === "notifications"
         ? "field-agent"
       : screen === "history"
         ? "history"
@@ -1203,9 +1221,7 @@ function Topbar({
 ========================================================= */
 
 function EmptyDashboard() {
-  return (
-    <section className="min-h-[520px] rounded-xl border border-dashed border-slate-200 bg-white" />
-  );
+  return null;
 }
 
 function Dashboard({
@@ -1327,6 +1343,42 @@ function Dashboard({
           )
           .stops.join(", ")
       : "#e2e8f0 0% 100%";
+
+  if (jobs.length === 0) {
+    return (
+      <div className="flex min-h-[620px] items-start justify-center pt-10">
+        <section className="w-full max-w-[320px] rounded-xl border border-slate-200 bg-white px-8 py-9 text-center shadow-sm">
+          <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-400">
+            <ClipboardCheck
+              size={24}
+              strokeWidth={1.8}
+            />
+          </span>
+
+          <h1 className="mt-6 text-[14px] font-extrabold text-[#15213a]">
+            Belum Ada Tugas Ditugaskan
+          </h1>
+
+          <p className="mt-3 text-[11px] leading-5 text-slate-500">
+            Saat ini belum ada jadwal
+            serah terima kargo dari
+            Sales Executive untuk akun
+            Anda.
+          </p>
+
+          <button
+            type="button"
+            onClick={() =>
+              window.location.reload()
+            }
+            className="mt-5 rounded-md bg-[#111827] px-5 py-2.5 text-[11px] font-extrabold text-white"
+          >
+            Muat Ulang / Cek Pembaruan
+          </button>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <>
