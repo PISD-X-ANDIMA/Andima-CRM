@@ -87,6 +87,27 @@ export interface CustomerJobItem {
   createdAt: string;
 }
 
+export interface CustomerWorksheetDetail {
+  mawb?: string | null;
+  hawb?: string | null;
+  shipper?: string | null;
+  consignee?: string | null;
+  statusKendala?: string | null;
+  hasIssue?: boolean | null;
+  issueNote?: string | null;
+  handoverLocation?: string | null;
+  handoverDatetime?: string | null;
+  transactionType?: string | null;
+  cargoDescription?: string | null;
+  totalKoli?: number | string | null;
+  grossWeight?: string | null;
+  volume?: string | null;
+  origin?: string | null;
+  destination?: string | null;
+  etd?: string | null;
+  eta?: string | null;
+}
+
 export interface CustomerDetailItem {
   id: string;
   companyName: string;
@@ -102,6 +123,7 @@ export interface CustomerDetailItem {
   activeMeeting: CustomerMeetingItem | null;
   meetings: CustomerMeetingItem[];
   jobs: CustomerJobItem[];
+  worksheet?: CustomerWorksheetDetail | null;
 }
 
 export interface DashboardSummaryData {

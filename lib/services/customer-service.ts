@@ -3,6 +3,7 @@ import { isValidPicPhoneNumber } from "@/lib/validation/pic-phone";
 import {
   CustomerListItem,
   CustomerDetailItem,
+  CustomerWorksheetDetail,
   CreateCustomerInput,
   UpdateCustomerInput,
   MeetingDay,
@@ -313,15 +314,29 @@ export async function getCustomerById(
 
     let transactionNo: string | null = null;
     let worksheetJobNumber: string | null = null;
+    let worksheetDetail: CustomerWorksheetDetail | null = null;
     if (data.customer_code) {
       const { data: worksheet } = await (supabase as any)
         .from("a2_worksheets")
-        .select("transaction_no, job_no")
+        .select("*")
         .eq("transaction_no", data.customer_code)
         .limit(1)
         .maybeSingle();
-      transactionNo = worksheet?.transaction_no || null;
-      worksheetJobNumber = worksheet?.job_no || null;
+      if (worksheet) {
+        transactionNo = worksheet.transaction_no || null;
+        worksheetJobNumber = worksheet.job_no || null;
+        worksheetDetail = {
+          mawb: worksheet.mawb || null,
+          hawb: worksheet.hawb || null,
+          shipper: worksheet.shipper || null,
+          consignee: worksheet.consignee || null,
+          statusKendala: worksheet.status_kendala || null,
+          hasIssue: worksheet.has_issue ?? false,
+          issueNote: worksheet.issue_note || null,
+          handoverLocation: worksheet.handover_location || null,
+          handoverDatetime: worksheet.handover_datetime || null,
+        };
+      }
     }
 
     const meetings = (meetingRows || []).map((meeting: any) => ({
@@ -358,8 +373,8 @@ export async function getCustomerById(
       id: data.company_list_id,
       companyName: data.company_name,
       customerCode: data.customer_code,
-      transactionNo,
-      jobNumber: worksheetJobNumber,
+      transactionNo: transactionNo || data.customer_code || null,
+      jobNumber: worksheetJobNumber || data.job_number || null,
       createdBy: data.created_by,
       address: data.address || "Address not provided",
       salesId: null,
@@ -368,8 +383,8 @@ export async function getCustomerById(
       primaryPic,
       meetings,
       activeMeeting,
-      // No transaction/job table exists in the confirmed A1 schema.
       jobs,
+      worksheet: worksheetDetail,
     };
   } catch {
     return null;

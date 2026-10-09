@@ -370,11 +370,14 @@ export function DashboardHeader() {
   return (
     <header className="relative z-50 mb-6 flex min-h-12 items-center justify-between gap-4 border-b border-slate-100/80 dark:border-slate-800 pb-4">
       {/* Left: Breadcrumbs */}
-      <div className="flex items-center gap-2 text-xs">
-        <span className="font-extrabold tracking-wide text-slate-800 dark:text-slate-100">ANDIMA CRM</span>
-        <span className="text-slate-400 dark:text-slate-500">CRM</span>
-        <span className="text-slate-300 dark:text-slate-600">/</span>
-        <span className="font-semibold text-blue-600 dark:text-blue-400">{currentLabel}</span>
+      <div className='flex items-center gap-1.5 text-xs'>
+        <span className='font-semibold text-slate-400 dark:text-slate-500'>CRM</span>
+        <span className='text-slate-300 dark:text-slate-600'>/</span>
+        <span className='font-semibold text-slate-400 dark:text-slate-500'>
+          {pathname?.includes('field-agent') ? 'FIELD AGENT' : 'SALES EXECUTIVE'}
+        </span>
+        <span className='text-slate-300 dark:text-slate-600'>/</span>
+        <span className='font-bold text-blue-600 dark:text-blue-400'>{currentLabel}</span>
       </div>
 
       {/* Center: Global Search Bar with Live Popover Results */}

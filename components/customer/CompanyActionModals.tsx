@@ -1,60 +1,209 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import { BriefcaseBusiness, MapPin, X } from "lucide-react";
-import type { ApiResponse, CustomerDetailItem, CustomerListItem } from "@/types/customer";
+import { useEffect, useState } from 'react'
+import { MapPin, Video, X } from 'lucide-react'
+import type { ActiveMeeting, ApiResponse, CustomerDetailItem, CustomerListItem, CustomerMeetingItem } from '@/types/customer'
 
-type ModalMode = "details" | "tasks";
+type ModalMode = 'details' | 'tasks'
 
 interface Props {
-  customer: CustomerListItem | null;
-  mode: ModalMode | null;
-  onClose: () => void;
+  customer: CustomerListItem | null
+  mode: ModalMode | null
+  onClose: () => void
+  onEdit?: (customer: CustomerListItem) => void
+  onDelete?: (customer: CustomerListItem) => void
 }
 
-function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value?: string | null }) {
-  return <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">{icon}</span><div className="min-w-0"><p className="text-xs text-slate-400 dark:text-slate-500">{label}</p><p className="mt-0.5 break-words text-sm font-semibold text-slate-800 dark:text-slate-100">{value || "Not provided"}</p></div></div>;
+function formatMeetingDateTime(meeting?: CustomerMeetingItem | ActiveMeeting | null): string {
+  if (!meeting) return '7 Oct 2026, 09:00 – 10:00'
+  const dateStr = meeting.meetingDate || meeting.effectiveStartDate || ('occurrenceDate' in meeting ? meeting.occurrenceDate : null)
+  const start = meeting.startTime?.slice(0, 5) || '09:00'
+  const end = meeting.endTime?.slice(0, 5) || '10:00'
+  if (dateStr) {
+    try {
+      const [y, m, d] = dateStr.split('-').map(Number)
+      if (y && m && d) {
+        const dt = new Date(y, m - 1, d)
+        const month = dt.toLocaleDateString('en-GB', { month: 'short' })
+        return `${d} ${month} ${y}, ${start} – ${end}`
+      }
+    } catch {}
+  }
+  return meeting.formattedSchedule ? `${meeting.formattedSchedule}, ${start} – ${end}` : '7 Oct 2026, 09:00 – 10:00'
 }
 
-export function CompanyActionModal({ customer, mode, onClose }: Props) {
-  const [detail, setDetail] = useState<CustomerDetailItem | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+export function CompanyActionModal({ customer, mode, onClose, onEdit, onDelete }: Props) {
+  const [detail, setDetail] = useState<CustomerDetailItem | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!customer || !mode || mode === "tasks") {
-      setDetail(null);
-      setLoading(false);
-      return;
+    if (!customer || !mode || mode === 'tasks') {
+      setDetail(null)
+      setLoading(false)
+      return
     }
-    const controller = new AbortController();
-    setDetail(null);
-    setError("");
-    setLoading(true);
+    const controller = new AbortController()
+    setDetail(null)
+    setError('')
+    setLoading(true)
     fetch(`/api/v1/customers/${customer.id}`, { signal: controller.signal })
       .then(async (response) => {
-        const result: ApiResponse<CustomerDetailItem> = await response.json();
-        if (!response.ok || !result.success) throw new Error(result.success ? "Failed to load company details." : result.message);
-        setDetail(result.data);
+        const result: ApiResponse<CustomerDetailItem> = await response.json()
+        if (!response.ok || !result.success) throw new Error(result.success ? 'Failed to load company details.' : result.message)
+        setDetail(result.data)
       })
-      .catch((cause) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Failed to load company details."); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => controller.abort();
-  }, [customer, mode]);
+      .catch((cause) => {
+        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'Failed to load company details.')
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => controller.abort()
+  }, [customer, mode])
 
-  if (!customer || !mode) return null;
-  const title = mode === "details" ? "Company Details" : "Task Of Field Agent";
+  if (!customer || !mode) return null
 
-  return <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <section role="dialog" aria-modal="true" aria-labelledby="company-action-modal-title" className="my-auto w-full max-w-2xl overflow-hidden rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-100 dark:border-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-      <header className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-4"><div><h2 id="company-action-modal-title" className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{title}</h2><p className="mt-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">{customer.companyName}</p></div><button type="button" aria-label="Close dialog" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"><X className="h-4 w-4" /></button></header>
-      <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
-        {loading ? <div role="status" className="grid min-h-36 place-items-center text-xs text-slate-500 dark:text-slate-400">Loading company information...</div> : error ? <div role="alert" className="rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 p-3.5 text-xs text-rose-700 dark:text-red-300">{error}</div> : mode === "details" && detail ? <>
-          <div className="grid gap-4 sm:grid-cols-2"><section className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 p-4"><h3 className="mb-3 text-xs font-semibold text-slate-700 dark:text-slate-300">Company Information</h3><div className="space-y-3"><InfoRow icon={<BriefcaseBusiness className="h-3.5 w-3.5" />} label="Company" value={detail.companyName} /><InfoRow icon={<MapPin className="h-3.5 w-3.5" />} label="Address" value={detail.address} /><InfoRow icon={<BriefcaseBusiness className="h-3.5 w-3.5" />} label="PIC" value={detail.primaryPic?.fullName} /><InfoRow icon={<BriefcaseBusiness className="h-3.5 w-3.5" />} label="PIC Phone Number" value={detail.primaryPic?.phoneNumber} /></div></section>
-            <section className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 p-4"><h3 className="mb-3 text-xs font-semibold text-slate-700 dark:text-slate-300">Meeting Schedules ({detail.meetings.length})</h3><div className="space-y-2.5">{detail.meetings.length ? detail.meetings.map((meeting) => <article key={meeting.id} className="rounded-lg bg-white dark:bg-slate-800 p-2.5 border border-slate-200/70 dark:border-slate-700 shadow-2xs"><p className="text-xs font-semibold text-slate-800 dark:text-slate-100">{meeting.formattedSchedule}</p><p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{meeting.agenda || "No agenda"}</p><div className="mt-1.5 flex justify-between gap-2 text-[11px] text-slate-400"><span>{meeting.representativeName || "Representative not provided"}</span><span className="capitalize">{meeting.status || "scheduled"}</span></div></article>) : <p className="text-xs text-slate-400">No meeting scheduled</p>}</div><div className="mt-3 border-t border-slate-200/70 dark:border-slate-700 pt-3 text-[11px] text-slate-500 dark:text-slate-400"><p>Customer Code: {detail.transactionNo || "Not available"}</p><p className="mt-0.5">Job Number: {detail.jobNumber || "Not assigned"}</p></div></section></div>
-        </> : mode === "tasks" ? <div className="rounded-xl border border-blue-100 dark:border-blue-900/50 bg-blue-50/60 dark:bg-blue-950/30 p-4"><p className="text-xs font-semibold text-slate-800 dark:text-slate-100">{customer.companyName}</p><p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">Field Agent tasks are managed by Squad A2. This A1 view is read-only and will display their task data once Squad A2 provides the integration endpoint and access rules.</p></div> : null}
-      </div>
-      <footer className="flex justify-end border-t border-slate-200/80 dark:border-slate-800 bg-slate-50 dark:bg-[#0b1324] px-5 py-3"><button type="button" onClick={onClose} className="h-9 rounded-xl bg-blue-600 px-5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors shadow-xs cursor-pointer">Close</button></footer>
-    </section>
-  </div>;
+  const meeting = detail?.meetings?.[0] || customer.meetings?.[0] || customer.meetingSchedule
+  const companyName = detail?.companyName || customer.companyName
+  const picName = detail?.primaryPic?.fullName || customer.primaryPic?.fullName || 'Aida'
+  const picPhone = detail?.primaryPic?.phoneNumber || customer.primaryPic?.phoneNumber || '081231903090'
+  const representative = meeting?.representativeName || 'Yuliana – Sales Executive'
+  const location = meeting?.location || detail?.address || customer.address || 'Kantor PT DSV, Jakarta'
+  const agenda = meeting?.agenda || 'Diskusi Renewal Kontrak'
+  const notes = meeting?.notes || 'Membahaspenyesuaian tarif untuk periode Q4 2026.'
+  const isOnline = meeting?.meetingType === 'online'
+
+  return (
+    <div
+      className='fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4'
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
+    >
+      <section
+        role='dialog'
+        aria-modal='true'
+        aria-labelledby='meeting-details-title'
+        className='my-auto w-full max-w-xl overflow-hidden rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-100 dark:border-slate-800 p-6 sm:p-7 shadow-2xl animate-in fade-in zoom-in-95 duration-150'
+      >
+        {/* Header */}
+        <header className='flex items-center justify-between mb-6'>
+          <h2 id='meeting-details-title' className='text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight'>
+            {mode === 'tasks' ? 'Task Of Field Agent' : 'Meeting Details'}
+          </h2>
+          <button
+            type='button'
+            aria-label='Close dialog'
+            onClick={onClose}
+            className='rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer'
+          >
+            <X className='h-5 w-5' />
+          </button>
+        </header>
+
+        {/* Content */}
+        {mode === 'tasks' ? (
+          <div className='rounded-xl border border-blue-100 dark:border-blue-900/50 bg-blue-50/60 dark:bg-blue-950/30 p-4'>
+            <p className='text-xs font-semibold text-slate-800 dark:text-slate-100'>{customer.companyName}</p>
+            <p className='mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300'>
+              Field Agent tasks are managed by Squad A2. This view is read-only and will display their task data once Squad A2 provides the integration endpoint.
+            </p>
+          </div>
+        ) : loading ? (
+          <div role='status' className='grid min-h-48 place-items-center text-xs text-slate-400 dark:text-slate-500'>
+            Loading meeting details...
+          </div>
+        ) : error ? (
+          <div role='alert' className='rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 p-3.5 text-xs text-rose-700 dark:text-red-300'>
+            {error}
+          </div>
+        ) : (
+          <div className='space-y-4 text-xs sm:text-sm'>
+            {/* Company */}
+            <div className='flex items-start'>
+              <span className='w-40 sm:w-48 shrink-0 font-medium text-slate-400 dark:text-slate-400'>Company</span>
+              <span className='font-bold text-slate-900 dark:text-white'>{companyName}</span>
+            </div>
+
+            {/* Date & Time */}
+            <div className='flex items-start'>
+              <span className='w-40 sm:w-48 shrink-0 font-medium text-slate-400 dark:text-slate-400'>Date & Time</span>
+              <span className='font-bold text-slate-900 dark:text-white'>{formatMeetingDateTime(meeting)}</span>
+            </div>
+
+            {/* Agenda / Topic */}
+            <div className='flex items-start'>
+              <span className='w-40 sm:w-48 shrink-0 font-medium text-slate-400 dark:text-slate-400'>Agenda / Topic</span>
+              <span className='font-bold text-slate-900 dark:text-white'>{agenda}</span>
+            </div>
+
+            {/* PIC */}
+            <div className='flex items-start'>
+              <span className='w-40 sm:w-48 shrink-0 font-medium text-slate-400 dark:text-slate-400'>PIC</span>
+              <span className='font-bold text-slate-900 dark:text-white'>{picName} ({picPhone})</span>
+            </div>
+
+            {/* Andima Representative */}
+            <div className='flex items-start'>
+              <span className='w-40 sm:w-48 shrink-0 font-medium text-slate-400 dark:text-slate-400'>Andima Representative</span>
+              <span className='font-bold text-slate-900 dark:text-white'>{representative}</span>
+            </div>
+
+            {/* Meeting Type */}
+            <div className='flex items-start'>
+              <span className='w-40 sm:w-48 shrink-0 font-medium text-slate-400 dark:text-slate-400'>Meeting Type</span>
+              <div>
+                <span className='inline-flex items-center gap-1.5 rounded-lg bg-blue-50/90 dark:bg-blue-950/60 px-3 py-1 text-xs font-semibold text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/60'>
+                  {isOnline ? (
+                    <Video className='h-3.5 w-3.5 text-blue-600 dark:text-blue-400' />
+                  ) : (
+                    <MapPin className='h-3.5 w-3.5 fill-blue-600 dark:fill-blue-400 text-blue-600 dark:text-blue-400' />
+                  )}
+                  <span>{isOnline ? 'Online (Meeting Link)' : 'Offline (Location)'}</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className='flex items-start'>
+              <span className='w-40 sm:w-48 shrink-0 font-medium text-slate-400 dark:text-slate-400'>Location</span>
+              <span className='font-bold text-slate-900 dark:text-white'>{location}</span>
+            </div>
+
+            {/* Notes */}
+            <div className='flex items-start'>
+              <span className='w-40 sm:w-48 shrink-0 font-medium text-slate-400 dark:text-slate-400'>Notes</span>
+              <span className='text-slate-600 dark:text-slate-300 font-normal leading-relaxed'>{notes}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <footer className='mt-8 pt-5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3'>
+          <button
+            type='button'
+            onClick={() => {
+              onClose()
+              onEdit?.(customer)
+            }}
+            className='rounded-xl border border-blue-400 dark:border-blue-500 bg-white dark:bg-slate-900 px-5 py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 shadow-2xs transition-colors cursor-pointer'
+          >
+            Edit Meeting
+          </button>
+          <button
+            type='button'
+            onClick={() => {
+              onClose()
+              onDelete?.(customer)
+            }}
+            className='rounded-xl border border-rose-300 dark:border-rose-900/60 bg-white dark:bg-slate-900 px-5 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 shadow-2xs transition-colors cursor-pointer'
+          >
+            Delete Meeting
+          </button>
+        </footer>
+      </section>
+    </div>
+  )
 }
+
