@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
                 && key >= (meeting.effectiveStartDate || "0000-00-00")) dates.push(key);
             }
           }
-          for (const date of dates) meetings.push({ company_id: customer.id, company_name: customer.companyName, meeting_id: meeting.id, date, day: meeting.meetingDay, start_time: meeting.startTime, end_time: meeting.endTime, status: meeting.status || "scheduled" });
+          for (const date of dates) meetings.push({ company_id: customer.id, company_name: customer.companyName, meeting_id: meeting.id, date, day: meeting.meetingDay, start_time: meeting.startTime || "08:00", end_time: meeting.endTime || "09:00", status: meeting.status || "scheduled" });
         }
       }
       totalPages = result.totalPages;

@@ -160,6 +160,10 @@ export interface ApiResponseSuccess<T> {
     limit?: number;
     perPage?: number;
     totalPages?: number;
+    format?: string;
+    search?: string;
+    start_date?: string;
+    end_date?: string;
   };
 }
 

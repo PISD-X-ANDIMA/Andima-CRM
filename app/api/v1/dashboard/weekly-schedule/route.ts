@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
         topic: meeting.agenda,
         status: meeting.status,
       }));
-    })).sort((a, b) => a.date.localeCompare(b.date) || a.start_time.localeCompare(b.start_time));
+    })).sort((a, b) => a.date.localeCompare(b.date) || (a.start_time || "").localeCompare(b.start_time || ""));
     return createSuccessResponse(schedule, { start_date: startDate, end_date: endDate, total: schedule.length });
   } catch {
     return createErrorResponse("SCH_001", "Failed to load the weekly schedule", undefined, 500);

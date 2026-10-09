@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from '@/lib/supabaseClient';
 import {
   Users,
@@ -46,6 +46,25 @@ export function Sidebar() {
 
   const [crmOpen, setCrmOpen] = useState(true);
   const [salesExecOpen, setSalesExecOpen] = useState(true);
+  const [submenuItems, setSubmenuItems] = useState(salesExecutiveMenus);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/v1/navigation/sidebar", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((result) => {
+        if (!active || !result?.success || !Array.isArray(result.data?.menu)) return;
+        const crm = result.data.menu.find((item: { label?: string }) => item.label === "CRM");
+        const salesExecutive = crm?.children?.find((item: { label?: string }) => item.label === "Sales Executive");
+        if (!Array.isArray(salesExecutive?.children)) return;
+        const items = salesExecutive.children
+          .filter((item: { label?: string; href?: string | null }) => item.href && item.label)
+          .map((item: { label: string; href: string }) => ({ name: item.label, href: item.href }));
+        if (items.length) setSubmenuItems(items);
+      })
+      .catch(() => { /* Keep the local menu when the navigation API is unavailable. */ });
+    return () => { active = false; };
+  }, []);
 
   const isSalesExecutiveDashboard =
     pathname === "/dashboard/sales-executive";
@@ -140,7 +159,7 @@ export function Sidebar() {
 
               {salesExecOpen && (
                 <div className="mt-0.5 ml-3 space-y-0.5">
-                  {salesExecutiveMenus.map((item) => {
+                  {submenuItems.map((item) => {
                     const isActive =
                       pathname === item.href ||
                       pathname.startsWith(`${item.href}/`);

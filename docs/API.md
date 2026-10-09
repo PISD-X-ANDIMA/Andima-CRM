@@ -208,7 +208,7 @@ Field kontrak Planka (`company_id`, `topic`, `pic_name`, `rep_name`, `type`, `lo
 
 ### `GET /meetings/slots?date=YYYY-MM-DD` — melihat slot pada tanggal tertentu
 
-**Dipakai oleh:** belum dipanggil UI. Halaman jadwal sekarang menampilkan slot yang dihitung dari data `GET /customers?context=calendar`.
+**Dipakai oleh:** halaman Meeting Schedule saat tanggal kalender dipilih.
 
 Tanggal wajib memakai format `YYYY-MM-DD` dan tidak boleh sudah lewat. Hasil `data` berisi tanggal dan sembilan slot per jam: 08.00–09.00 sampai 16.00–17.00. Setiap slot menyertakan `start_time`, `end_time`, `available`, `status`, dan `meeting` (ringkasan meeting atau `null`). Status bisa berupa `available`, `past`, `scheduled`, atau `completed`. Meeting yang dibatalkan tidak memblokir slot; meeting selesai tetap tercatat pada slot.
 
@@ -222,7 +222,7 @@ Saat data customer atau jadwal dibaca, service memeriksa meeting `one_day`. Meet
 
 ### Kartu dashboard Sales Executive
 
-Kartu metrik pada halaman `/dashboard/sales-executive` dimuat oleh server, bukan melalui route `/api/v1` terpisah. Nilai **Total Customer** dihitung dari `a1_company_list`, **Upcoming Meeting** menghitung kemunculan jadwal aktif yang akan datang dari `a1_customer_meetings`, dan kartu **Task** menghitung jumlah baris pada tabel `a2_worksheets`.
+Kartu metrik pada halaman `/dashboard/sales-executive` dimuat oleh server melalui service metrik. Nilai **Total Customer** dihitung dari `a1_company_list`, **Upcoming Meeting** menghitung jadwal aktif mendatang dari `a1_customer_meetings`, dan kartu **Task** menghitung jumlah baris pada tabel `a2_worksheets`. Endpoint `GET /dashboard/stats` juga tersedia untuk integrasi dan mengembalikan angka tersebut.
 
 Jika akses ke salah satu sumber data gagal, nilai terkait tidak ditampilkan sebagai angka nol; UI menandainya sebagai data tidak tersedia. Hitungan Task adalah jumlah seluruh baris worksheet, bukan hitungan tugas Field Agent yang sudah disaring menurut status/agen. Data transaksi dan worksheet tetap dikelola Squad A2.
 
@@ -250,15 +250,21 @@ Parameter `from` dan `to` wajib memakai format tanggal tersebut dan `from` tidak
 
 Kesalahan umum: `VALIDATION_001` rentang/format tanggal salah (400), `DATABASE_001` koneksi database tidak tersedia (503), dan `EXPORT_001` gagal membaca data (500).
 
-### Ekspor Company List
+### `GET /customers/export?format=xlsx|pdf&search=...` — data ekspor Company List
 
-Company List tidak memakai route ekspor khusus. Halaman mengambil semua halaman yang cocok melalui `GET /customers` (maksimal 100 baris per permintaan), lalu browser membentuk file Excel atau PDF.
+**Dipakai oleh:** tombol ekspor pada Company List. Endpoint mengembalikan baris JSON seluruh perusahaan milik user yang cocok dengan pencarian, termasuk company, address, PIC, nomor telepon, jadwal meeting, dan tanggal dibuat. Browser membentuk file Excel atau membuka print dialog untuk PDF. Filter rentang tanggal diterapkan di browser setelah data diterima.
+
+### Endpoint Dashboard tambahan
+
+- `GET /dashboard/weekly-schedule?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD` mengembalikan kejadian meeting one-time dan weekly pada rentang (maksimal 31 hari). Dipakai oleh Schedule This Week.
+- `GET /meetings/calendar?month=YYYY-MM` mengembalikan kejadian meeting bulan tersebut untuk marker kalender mini. Status canceled tidak dikirim.
+- `GET /dashboard/stats` mengembalikan `total_customers`, `upcoming_meetings`, `task_count`, dan `changes`. `changes` saat ini `null` karena data pembanding historis belum tersedia.
 
 ## Navigasi sidebar
 
 ### `GET /navigation/sidebar` — mengambil menu sesuai role
 
-**Dipakai oleh:** belum dipanggil UI saat ini; sidebar ditampilkan dari konfigurasi komponen frontend.
+**Dipakai oleh:** `components/dashboard/Sidebar.tsx` untuk memuat submenu Sales Executive. Jika endpoint gagal, sidebar menggunakan submenu lokal sebagai fallback.
 
 Memerlukan sesi Supabase yang valid. Route mengembalikan nama role dan daftar menu. Role dibaca dari metadata Supabase; jika tidak ditemukan, route mencoba membaca `b2_register` dan `d3_positions`. Role Field Agent mendapat menu Field Agent; role CRM lainnya mendapat Sales Executive dan entry Field Agent kosong.
 
@@ -269,8 +275,8 @@ Kesalahan umum: `AUTH_001` jika belum login (401), `DATABASE_001` jika database 
 | Kebutuhan | Route / implementasi | Kondisi sekarang |
 |---|---|---|
 | Tambah meeting dengan `company_id`, topik, PIC, perwakilan, tipe, lokasi/tautan, dan frekuensi | `POST /meetings`; tanggal serta jam slot juga wajib. UI memakai `POST /customers/{customerId}/meetings`. | Route integrasi tersedia; UI memakai route per perusahaan. |
-| Slot meeting berdasarkan tanggal | `GET /meetings/slots?date=...` | Tersedia, belum dipanggil langsung UI. |
-| Sidebar berdasarkan role | `GET /navigation/sidebar` | Tersedia, tetapi UI masih memakai sidebar frontend. |
+| Slot meeting berdasarkan tanggal | `GET /meetings/slots?date=...` | Tersedia dan dipakai UI. |
+| Sidebar berdasarkan role | `GET /navigation/sidebar` | Tersedia dan dipakai UI dengan fallback lokal. |
 | Tambah perusahaan | `POST /customers` | Dipakai UI. |
 | Daftar, halaman, dan pencarian perusahaan | `GET /customers?page=&limit=&search=` | Dipakai UI; `perPage` juga masih didukung. |
 | Ringkasan transaksi terbaru | `GET /transactions/summary` | Dipakai UI; urutan berdasarkan nomor transaksi karena tanggal A2 belum dikonfirmasi. |
