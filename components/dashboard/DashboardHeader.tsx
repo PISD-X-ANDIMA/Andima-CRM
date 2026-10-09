@@ -9,7 +9,7 @@ const routeLabels: Record<string, string> = {
   "company-list": "Company List",
   "meeting-schedule": "Meeting Schedule",
   "record-conversation": "Record Conversation",
-  "task-of-field-agent": "Task of Field Agent",
+  "task-of-field-agent": "Monitoring Task of Field Agent",
   "need-backup": "Need Backup",
   jobs: "Jobs",
 };
@@ -46,7 +46,7 @@ export function DashboardHeader() {
   const breadcrumbs = useMemo(() => {
     const segments = pathname.split("/").filter(Boolean).slice(1);
     if (!segments.length) return ["Dashboard"];
-    if (segments[0] === "task-of-field-agent") return ["CRM", "Sales Executive", "Task of Field Agent"];
+    if (segments[0] === "task-of-field-agent") return ["CRM", "Sales Executive", "Monitoring Task of Field Agent"];
     const labels = segments.map((segment) => routeLabels[segment] || (segment.includes("-") ? "Details" : segment));
     if (labels[0] !== "Sales Executive" && labels[0] !== "Dashboard") labels.unshift("Sales Executive");
     return ["CRM", ...labels];

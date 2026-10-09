@@ -40,7 +40,7 @@ const salesExecutiveMenus: SubMenuItem[] = [
     href: "/dashboard/record-conversation",
   },
   {
-    name: "Task of Field Agent",
+    name: "Monitoring Task of Field Agent",
     href: "/dashboard/task-of-field-agent",
   },
   {
@@ -85,6 +85,7 @@ export function Sidebar() {
     pathname.startsWith("/dashboard/company-list") ||
     pathname.startsWith("/dashboard/meeting-schedule") ||
     pathname.startsWith("/dashboard/record-conversation") ||
+    pathname.startsWith("/dashboard/task-of-field-agent") ||
     pathname.startsWith("/dashboard/need-backup");
   const isCrmActive = isSalesExecutiveActive;
 
@@ -153,16 +154,16 @@ export function Sidebar() {
             <span className="flex items-center gap-3">
               <Users
                 className={`h-[18px] w-[18px] ${
-                  isCrmActive ? "text-blue-400" : "text-slate-500"
+                  isCrmActive ? "text-white" : "text-slate-500"
                 }`}
               />
-            <span>CRM</span>
+              <span>CRM</span>
             </span>
 
             <ChevronDown
-              className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${
-                crmOpen ? "rotate-0" : "-rotate-90"
-              }`}
+              className={`h-4 w-4 transition-transform duration-200 ${
+                isCrmActive ? "text-white" : "text-slate-500"
+              } ${crmOpen ? "rotate-0" : "-rotate-90"}`}
             />
           </button>
 

@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Camera, FileText, ChevronRight, ChevronDown, Eye, Plus, X, MapPin, 
-  CheckCircle, AlertOctagon, Check, Send, AlertTriangle, 
-  ShieldAlert, Clock, ArrowLeftRight, Download, Calendar,
+import {
+  Camera, FileText, ChevronRight, ChevronDown, Eye, Plus, X, MapPin,
+  CheckCircle, AlertOctagon, Check, Send, AlertTriangle, Search,
+  ShieldAlert, Clock, ArrowLeftRight, Download, Calendar, Info,
   Lock, Shield, User, RefreshCw, Building2, Truck, Box, Tag, AlertCircle,
   ExternalLink, Image as ImageIcon, MessageCircle
 } from 'lucide-react';
@@ -40,6 +40,7 @@ export interface FieldTaskItem {
   field_agent_name?: string;
   status: TaskStatus;
   has_issue: boolean;
+  issue_status?: 'Issue' | 'Resolved' | 'None';
   issue_type?: string;
   issue_category?: string;
   issue_note?: string;
@@ -92,28 +93,29 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
   {
     id: 'task-1',
     job_number: '#AENAT/2609/0305',
-    customer_name: 'PT. JPG TransIndonesia',
-    field_agent_name: undefined,
-    status: 'Unassigned',
+    customer_name: 'PT. JPG Trans Indonesia',
+    field_agent_name: 'Maselinus',
+    status: 'Completed',
     has_issue: false,
-    photo_count: 0,
-    doc_count: 0,
-    handover_datetime: '2026-03-05 10:00',
+    photo_count: 5,
+    doc_count: 2,
+    handover_datetime: '08/10/2026',
     handover_location: 'Soekarno-Hatta Cargo Terminal 530, Cengkareng',
-    shipper: 'PT. JPG TransIndonesia',
+    shipper: 'PT. JPG Trans Indonesia',
     consignee: 'Nippon Express Singapore',
     gross_weight: '850 Kg',
     cargo_pieces: '14 Heavy Boxes',
     packaging_type: 'Export Standard Cartons',
+    notes: '',
     checklists: [
-      { label: 'Quantity & Gross Weight verification', is_verified: false },
-      { label: 'Visual packaging condition sound', is_verified: false },
-      { label: 'Container seal number matches manifest', is_verified: false },
-      { label: 'Customs & port documentation match', is_verified: false },
-      { label: 'Safe for flight airfreight protocol', is_verified: false }
+      { label: 'Quantity & Gross Weight verification', is_verified: true },
+      { label: 'Visual packaging condition sound', is_verified: true },
+      { label: 'Container seal number matches manifest', is_verified: true },
+      { label: 'Customs & port documentation match', is_verified: true },
+      { label: 'Safe for flight airfreight protocol', is_verified: true }
     ],
     timeline: [
-      { id: 'tl-1', title: 'Job Order Created', description: 'Dispatched to inspection queue, awaiting agent assignment', timestamp: '05-03-2026 08:30 WIB', author: 'Adelia (Sales Exc)', status: 'completed' }
+      { id: 'tl-1', title: 'Job Order Created', description: 'Dispatched to inspection queue, awaiting agent assignment', timestamp: '08-10-2026 08:30 WIB', author: 'Adelia (Sales Exc)', status: 'completed' }
     ]
   },
   {
@@ -121,18 +123,20 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     task_id_code: 'TSK-2506-1207',
     job_number: '#AENAT/2609/0306',
     customer_name: 'PT. DSV Transport Indonesia',
-    field_agent_name: 'Andi Pratama',
+    field_agent_name: 'Eysa Franata',
     status: 'Assigned',
     has_issue: true,
+    issue_status: 'Issue',
     issue_type: 'Physical Load Difference',
     issue_category: 'Physical Load Difference',
-    issue_note: 'Jumlah koli fisik yang diterima (8 koli) tidak sesuai dengan data dokumen awal (10 koli). Terdapat 2 koli tertinggal di gudang.',
+    issue_note: 'Selisih 2 koli kargo saat serah terima di area cargo MM2100.',
     issue_document_status: 'Manifest Mismatch (B/L #0306)',
     variance_tolerance: '0%',
-    issue_reported_at: '24 Sep 2026, 10:30 WIB',
+    issue_reported_at: '08 Oct 2026, 10:30 WIB',
     handover_location: 'Area Cargo MM2100, Cikarang Barat',
     photo_count: 5,
     doc_count: 2,
+    notes: 'Hasil rapat internal: Kendala selisih koli telah akan dselesaikan secara langsung bersama Tim Supervisor Warehouse Cikarang. 2 koli tertinggal akan diangkut ke armada kedua.',
     issue_photos: [
       'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop'
@@ -164,7 +168,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
       { name: 'Shipping_Manifest_0306.pdf', size: '1.4 MB', url: '#' },
       { name: 'Damage_Report_Signed.pdf', size: '890 KB', url: '#' }
     ],
-    handover_datetime: '2026-09-24 10:30',
+    handover_datetime: '08/10/2026',
     shipper: 'PT. DSV Transport Indonesia',
     consignee: 'Global Industrial Materials Corp',
     gross_weight: '2,450 Kg',
@@ -178,21 +182,23 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
       { label: 'Safe for maritime transport protocol', is_verified: false }
     ],
     timeline: [
-      { id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '24-09-2026 09:00 WIB', author: 'Adelia', status: 'completed' },
-      { id: 'tl-2', title: 'Inspector Assigned', description: 'Assigned to Andi Pratama', timestamp: '24-09-2026 09:30 WIB', author: 'Dispatcher', status: 'completed' },
-      { id: 'tl-3', title: 'Arrival at Area Cargo MM2100', description: 'GPS check-in verified', timestamp: '24-09-2026 10:15 WIB', author: 'Andi Pratama', status: 'completed' },
-      { id: 'tl-4', title: 'Issue Reported', description: 'Physical load difference logged (8 koli vs 10 koli)', timestamp: '24-09-2026 10:30 WIB', author: 'Andi Pratama', status: 'alert' }
+      { id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '08-10-2026 09:00 WIB', author: 'Adelia', status: 'completed' },
+      { id: 'tl-2', title: 'Inspector Assigned', description: 'Assigned to Eysa Franata', timestamp: '08-10-2026 09:30 WIB', author: 'Dispatcher', status: 'completed' },
+      { id: 'tl-3', title: 'Arrival at Area Cargo MM2100', description: 'GPS check-in verified', timestamp: '08-10-2026 10:15 WIB', author: 'Eysa Franata', status: 'completed' },
+      { id: 'tl-4', title: 'Issue Reported', description: 'Physical load difference logged (8 koli vs 10 koli)', timestamp: '08-10-2026 10:30 WIB', author: 'Eysa Franata', status: 'alert' }
     ]
   },
   {
     id: 'task-3',
     job_number: '#AENAT/2609/0307',
-    customer_name: 'PT. Geodis Freight Forwarding',
-    field_agent_name: 'Andi Pratama',
-    status: 'Assigned',
+    customer_name: 'PT. DSV Transport Indonesia',
+    field_agent_name: 'Maselinus',
+    status: 'Completed',
     has_issue: false,
+    issue_status: 'None',
     photo_count: 5,
     doc_count: 2,
+    notes: '',
     result_photos: [
       'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop',
@@ -201,12 +207,12 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
       'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop'
     ],
     result_docs: [
-      { name: 'Geodis_Delivery_Order.pdf', size: '1.1 MB', url: '#' },
+      { name: 'DSV_Delivery_Order.pdf', size: '1.1 MB', url: '#' },
       { name: 'Packing_List_Verified.pdf', size: '640 KB', url: '#' }
     ],
-    handover_datetime: '2026-03-05 13:30',
+    handover_datetime: '08/10/2026',
     handover_location: 'Cikarang Dry Port Terminal 2, West Java',
-    shipper: 'PT. Astra Component Logistics',
+    shipper: 'PT. DSV Transport Indonesia',
     consignee: 'Toyota Tsusho Asia',
     gross_weight: '3,200 Kg',
     cargo_pieces: '16 Reinforced Crates',
@@ -219,19 +225,20 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
       { label: 'Safe for maritime transport protocol', is_verified: true }
     ],
     timeline: [
-      { id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '05-03-2026 10:00 WIB', author: 'Adelia', status: 'completed' },
-      { id: 'tl-2', title: 'Inspector Assigned', description: 'Assigned to Andi Pratama', timestamp: '05-03-2026 10:30 WIB', author: 'Dispatcher', status: 'completed' }
+      { id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '08-10-2026 10:00 WIB', author: 'Adelia', status: 'completed' },
+      { id: 'tl-2', title: 'Inspector Assigned', description: 'Assigned to Maselinus', timestamp: '08-10-2026 10:30 WIB', author: 'Dispatcher', status: 'completed' }
     ]
   },
   {
     id: 'task-4',
-    job_number: '#AENAT/2609/0307',
-    customer_name: 'PT. Geodis Freight Forwarding',
-    field_agent_name: 'Andi Pratama',
-    status: 'Assigned',
+    job_number: '#AENAT/2609/0308',
+    customer_name: 'PT. DSV Transport Indonesia',
+    field_agent_name: 'Khoirul Anwar',
+    status: 'Completed',
     has_issue: false,
     photo_count: 5,
     doc_count: 2,
+    notes: '',
     result_photos: [
       'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop',
@@ -240,12 +247,12 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
       'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop'
     ],
     result_docs: [
-      { name: 'Geodis_Delivery_Order_2.pdf', size: '1.2 MB', url: '#' },
+      { name: 'DSV_Delivery_Order_2.pdf', size: '1.2 MB', url: '#' },
       { name: 'Inspection_Log.pdf', size: '710 KB', url: '#' }
     ],
-    handover_datetime: '2026-03-05 14:00',
+    handover_datetime: '08/10/2026',
     handover_location: 'Cikarang Dry Port Terminal 2, West Java',
-    shipper: 'PT. Astra Component Logistics',
+    shipper: 'PT. DSV Transport Indonesia',
     consignee: 'Toyota Tsusho Asia',
     gross_weight: '3,200 Kg',
     cargo_pieces: '16 Reinforced Crates',
@@ -258,19 +265,20 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
       { label: 'Safe for maritime transport protocol', is_verified: true }
     ],
     timeline: [
-      { id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '05-03-2026 10:15 WIB', author: 'Adelia', status: 'completed' },
-      { id: 'tl-2', title: 'Inspector Assigned', description: 'Assigned to Andi Pratama', timestamp: '05-03-2026 10:45 WIB', author: 'Dispatcher', status: 'completed' }
+      { id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '08-10-2026 10:15 WIB', author: 'Adelia', status: 'completed' },
+      { id: 'tl-2', title: 'Inspector Assigned', description: 'Assigned to Khoirul Anwar', timestamp: '08-10-2026 10:45 WIB', author: 'Dispatcher', status: 'completed' }
     ]
   },
   {
     id: 'task-5',
-    job_number: '#AENAT/2609/0307',
-    customer_name: 'PT. Geodis Freight Forwarding',
-    field_agent_name: 'Andi Pratama',
-    status: 'Assigned',
+    job_number: '#AENAT/2609/0309',
+    customer_name: 'PT. DSV Transport Indonesia',
+    field_agent_name: 'Khoirul Anwar',
+    status: 'Completed',
     has_issue: false,
     photo_count: 5,
     doc_count: 2,
+    notes: '',
     result_photos: [
       'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop',
@@ -279,12 +287,12 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
       'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop'
     ],
     result_docs: [
-      { name: 'Geodis_Delivery_Order_3.pdf', size: '1.2 MB', url: '#' },
+      { name: 'DSV_Delivery_Order_3.pdf', size: '1.2 MB', url: '#' },
       { name: 'Inspection_Log_3.pdf', size: '690 KB', url: '#' }
     ],
-    handover_datetime: '2026-03-05 15:30',
+    handover_datetime: '08/10/2026',
     handover_location: 'Cikarang Dry Port Terminal 2, West Java',
-    shipper: 'PT. Astra Component Logistics',
+    shipper: 'PT. DSV Transport Indonesia',
     consignee: 'Toyota Tsusho Asia',
     gross_weight: '3,200 Kg',
     cargo_pieces: '16 Reinforced Crates',
@@ -297,8 +305,8 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
       { label: 'Safe for maritime transport protocol', is_verified: true }
     ],
     timeline: [
-      { id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '05-03-2026 11:00 WIB', author: 'Adelia', status: 'completed' },
-      { id: 'tl-2', title: 'Inspector Assigned', description: 'Assigned to Andi Pratama', timestamp: '05-03-2026 11:30 WIB', author: 'Dispatcher', status: 'completed' }
+      { id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '08-10-2026 11:00 WIB', author: 'Adelia', status: 'completed' },
+      { id: 'tl-2', title: 'Inspector Assigned', description: 'Assigned to Khoirul Anwar', timestamp: '08-10-2026 11:30 WIB', author: 'Dispatcher', status: 'completed' }
     ]
   }
 ];
@@ -306,6 +314,8 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
 export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps) {
   const [tasks, setTasks] = useState<FieldTaskItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [issueFilter, setIssueFilter] = useState('All');
+  const [periodFilter, setPeriodFilter] = useState('All');
 
   // Active User session (fallback to Adelia)
   const activeUserName = currentUser?.name || 'Adelia';
@@ -324,11 +334,71 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
   const [backupDescription, setBackupDescription] = useState('Mohon koordinasi dengan tim warehouse Cikarang untuk pengecekan ulang 2 koli yang belum terangkut.');
   const [detailModalTask, setDetailModalTask] = useState<FieldTaskItem | null>(null);
   const [resultModalTask, setResultModalTask] = useState<FieldTaskItem | null>(null);
+  const [notesModalTask, setNotesModalTask] = useState<FieldTaskItem | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState('');
+  const [assignedAgentName, setAssignedAgentName] = useState('');
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
+
+  const countWords = (text: string): number => {
+    const trimmed = text.trim();
+    if (!trimmed) return 0;
+    return trimmed.split(/\s+/).filter(Boolean).length;
+  };
+
+  const handleMax200WordsChange = (
+    value: string,
+    setter: (val: string) => void
+  ) => {
+    const words = value.trim() ? value.trim().split(/\s+/).filter(Boolean) : [];
+    if (words.length > 200) {
+      const truncated = value.split(/\s+/).slice(0, 200).join(' ');
+      setter(truncated);
+    } else {
+      setter(value);
+    }
+  };
+
+  const handleOpenNotesModal = (task: FieldTaskItem) => {
+    setEditingNoteText(task.notes || '');
+    setAssignedAgentName(task.field_agent_name || '');
+    setNotesModalTask(task);
+  };
+
+  const handleSaveTaskNote = () => {
+    if (!notesModalTask) return;
+    const updatedNote = editingNoteText.trim();
+    const updatedAgent = assignedAgentName.trim() || notesModalTask.field_agent_name;
+    const updated = tasks.map(t => {
+      if (t.id === notesModalTask.id) {
+        return {
+          ...t,
+          notes: updatedNote,
+          field_agent_name: updatedAgent,
+          status: updatedAgent ? ('Assigned' as const) : t.status
+        };
+      }
+      return t;
+    });
+    saveTasks(updated);
+    setNotesModalTask(null);
+    showToast(`Penugasan & catatan untuk ${notesModalTask.job_number} berhasil disimpan.`);
+  };
+
+  const [issueModalNoteText, setIssueModalNoteText] = useState('');
 
   const handleOpenIssueModal = (task: FieldTaskItem) => {
     setDispatcherDispositionNotes('');
+    setIssueModalNoteText(task.notes || '');
     setIssueModalTask(task);
+  };
+
+  const handleSaveIssueModalNotes = () => {
+    if (!issueModalTask) return;
+    const updatedNote = issueModalNoteText.trim();
+    const updated = tasks.map(t => t.id === issueModalTask.id ? { ...t, notes: updatedNote } : t);
+    saveTasks(updated);
+    setIssueModalTask(null);
+    showToast(`Notes untuk ${issueModalTask.job_number} berhasil disimpan.`);
   };
 
   const handleOpenBackupModal = (task: FieldTaskItem) => {
@@ -370,7 +440,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
         return t;
       });
       saveTasks(updated);
-      
+
       // Asynchronously log to Supabase if connected
       submitNeedBackup({
         taskId: backupModalTask.id,
@@ -433,9 +503,9 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       try {
         const raw = localStorage.getItem('andima_field_agent_figma_tasks');
         if (raw) stored = JSON.parse(raw);
-      } catch {}
+      } catch { }
     }
-    if (stored.length === 0) {
+    if (stored.length === 0 || stored[0]?.handover_datetime !== '08/10/2026' || stored[0]?.customer_name !== 'PT. JPG Trans Indonesia' || stored.length < 5) {
       stored = EXACT_FIGMA_TASKS;
       if (typeof window !== 'undefined') {
         localStorage.setItem('andima_field_agent_figma_tasks', JSON.stringify(EXACT_FIGMA_TASKS));
@@ -474,6 +544,17 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             ]
           };
         }
+        if (t.id === 'task-3' || (t.field_agent_name === 'Eysa Franata' && t.job_number === '#AENAT/2609/0307')) {
+          hasChange = true;
+          return {
+            ...t,
+            issue_status: 'Resolved',
+            has_issue: false,
+            issue_type: 'Physical Load Difference',
+            issue_category: 'Physical Load Difference',
+            issue_note: 'Kendala selisih koli telah diselesaikan secara langsung bersama Tim Supervisor Warehouse Cikarang. 2 koli tertinggal sudah berhasil diangkut ke armada kedua.'
+          };
+        }
         return t;
       });
       if (hasChange && typeof window !== 'undefined') {
@@ -490,7 +571,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
           localStorage.setItem('andima_field_agent_figma_tasks', JSON.stringify(dbTasks));
         }
       }
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   const saveTasks = (newTasks: FieldTaskItem[]) => {
@@ -498,7 +579,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('andima_field_agent_figma_tasks', JSON.stringify(newTasks));
-      } catch {}
+      } catch { }
     }
   };
 
@@ -771,13 +852,20 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
   // Filter tasks
   const filteredTasks = tasks.filter(t => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch = !q || 
       t.job_number.toLowerCase().includes(q) ||
       t.customer_name.toLowerCase().includes(q) ||
-      (t.field_agent_name && t.field_agent_name.toLowerCase().includes(q))
-    );
+      (t.field_agent_name && t.field_agent_name.toLowerCase().includes(q));
+
+    const matchesIssue = 
+      issueFilter === 'All' ||
+      (issueFilter === 'Issue' && (t.has_issue || t.issue_status === 'Issue')) ||
+      (issueFilter === 'Completed' && (!t.has_issue || t.issue_status === 'Resolved' || t.status === 'Completed')) ||
+      (issueFilter === 'Resolved' && (!t.has_issue || t.issue_status === 'Resolved' || t.status === 'Completed')) ||
+      (issueFilter === 'No Issue' && !t.has_issue && t.issue_status !== 'Issue');
+
+    return matchesSearch && matchesIssue;
   });
 
   return (
@@ -791,73 +879,100 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       )}
 
       {/* 1. TOP BREADCRUMB */}
-      <div className="flex items-center gap-2 text-xs font-semibold mb-4">
+      <div className="flex items-center gap-2 text-xs font-semibold mb-3">
         <span className="text-slate-900 font-extrabold tracking-wide text-xs">ANDIMA CRM</span>
         <span className="text-slate-400">CRM /</span>
-        <span className="text-[#0d6efd] font-bold">Field Tasks</span>
+        <span className="text-[#0d6efd] font-bold">Task Field</span>
       </div>
 
       {/* 2. TITLE & SUBTITLE */}
-      <div className="mb-6">
-        <h1 className="text-[28px] font-bold text-[#0f172a] tracking-tight leading-tight">
-          Field Agent Tasks
+      <div className="mb-5">
+        <h1 className="text-[26px] font-bold text-[#1e293b] tracking-tight leading-tight">
+          Monitoring Task Field Agent
         </h1>
-        <p className="text-xs text-slate-400 font-normal mt-1">
-          Monitor task progress and review inspection results dispatched from A3.
+        <p className="text-xs text-slate-500 font-normal mt-1">
+          Monitor progres task dan tinjau hasil inspeksi yang dikirim dari A3.
         </p>
       </div>
 
-      {/* 3. SEARCH BAR & CREATE JOB BUTTON */}
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <div className="flex-1">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by job number, customer, or field agent..."
-            className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 shadow-2xs transition-colors"
-          />
-        </div>
+      {/* 3. SEARCH & FILTER BAR (Exact Match to Screenshot) */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-3 mb-6 shadow-2xs">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Search Box */}
+          <div className="relative flex-1 min-w-[280px]">
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Job Number, Company Name, dan Field Agent"
+              className="w-full bg-[#f8fafc] border border-slate-200/90 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 transition-colors"
+            />
+          </div>
 
-        <button
-          type="button"
-          onClick={handleOpenCreateModal}
-          className="bg-[#0d6efd] hover:bg-blue-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-xs transition-colors shrink-0 cursor-pointer flex items-center gap-1.5"
-        >
-          <Plus size={14} />
-          <span>Create Job</span>
-        </button>
+          <div className="flex items-center gap-3">
+            {/* Dropdown 1: Issue */}
+            <div className="relative min-w-[130px]">
+              <select
+                value={issueFilter}
+                onChange={(e) => setIssueFilter(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
+              >
+                <option value="All">Issue</option>
+                <option value="Issue">● Issue</option>
+                <option value="Completed">✓ Completed</option>
+                <option value="No Issue">No Issue</option>
+              </select>
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+            </div>
+
+            {/* Dropdown 2: All Periods */}
+            <div className="relative min-w-[130px]">
+              <select
+                value={periodFilter}
+                onChange={(e) => setPeriodFilter(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
+              >
+                <option value="All">All Periods</option>
+                <option value="Today">Today</option>
+                <option value="This Week">This Week</option>
+                <option value="This Month">This Month</option>
+              </select>
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* 4. MAIN DATA TABLE (Exact Figma Layout) */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
-        <table className="w-full border-collapse">
-          {/* Header */}
-          <thead className="bg-[#edf4fb] border-b border-slate-200/80">
+      {/* 4. MAIN DATA TABLE (Exact UI & Compact Proportions from Screenshot) */}
+      <div className="w-full overflow-x-auto rounded-2xl border border-slate-200 shadow-2xs bg-white">
+        <table className="w-full min-w-[800px] border-collapse">
+          {/* Header: Soft pastel blue periwinkle background */}
+          <thead className="bg-[#cad8eb] border-b border-slate-200/80">
             <tr>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center w-[22%]">
+              <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[20%]">
                 Job Number
               </th>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center w-[18%]">
+              <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[25%]">
+                Company Name
+              </th>
+              <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[15%]">
+                Date
+              </th>
+              <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[13%]">
+                Status
+              </th>
+              <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[15%]">
                 Field Agent
               </th>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center w-[16%]">
-                Progress Status
-              </th>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center w-[15%]">
-                Issue / Obstacle
-              </th>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center w-[14%]">
+              <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[12%]">
                 Result
-              </th>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center w-[15%]">
-                Action
               </th>
             </tr>
           </thead>
 
-          {/* Rows */}
-          <tbody className="divide-y divide-slate-100">
+          {/* Table Rows */}
+          <tbody className="divide-y divide-slate-200/80 bg-white">
             {filteredTasks.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-14 text-center">
@@ -866,133 +981,83 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       <FileText size={24} />
                     </div>
                     <h3 className="text-sm font-bold text-slate-800">
-                      Tidak Ada Transaksi
+                      Tidak Ada Task Field Agent
                     </h3>
                     <p className="text-xs text-slate-500 mt-1 max-w-xs">
                       {searchQuery.trim()
-                        ? `Job/Transaksi dengan kata kunci "${searchQuery}" tidak ditemukan dalam sistem.`
-                        : 'Belum terdapat data Job/Transaksi dalam sistem. Silakan buat transaksi baru.'}
+                        ? `Tidak ada task yang cocok dengan pencarian "${searchQuery}".`
+                        : 'Belum ada data task Field Agent tersimpan.'}
                     </p>
-                    <button
-                      type="button"
-                      onClick={handleOpenCreateModal}
-                      className="mt-4 px-4 py-2 rounded-xl bg-[#0d6efd] hover:bg-blue-700 text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-1.5"
-                    >
-                      <Plus size={14} />
-                      <span>Buat Transaksi Baru</span>
-                    </button>
                   </div>
                 </td>
               </tr>
             ) : (
               filteredTasks.map((task) => (
-                <tr key={task.id} className="hover:bg-slate-50/50 transition-colors">
-                  {/* Job Number */}
-                  <td className="py-4.5 px-6 text-center">
-                    <div className="text-sm font-bold text-slate-900 leading-snug">
-                      {task.job_number}
-                    </div>
-                    <div className="text-xs text-slate-400 font-normal mt-0.5">
-                      {task.customer_name}
-                    </div>
+                <tr key={task.id} className="hover:bg-slate-50/60 transition-colors">
+                  {/* Column 1: Job Number */}
+                  <td className="py-3.5 px-4 text-center text-xs sm:text-sm font-bold text-slate-900 font-mono tracking-tight">
+                    {task.job_number}
                   </td>
 
-                  {/* Field Agent */}
-                  <td className="py-4.5 px-6 text-center text-sm font-medium text-slate-800 whitespace-nowrap">
-                    {task.field_agent_name || (
-                      <span className="text-slate-600 font-normal">Not assigned</span>
-                    )}
+                  {/* Column 2: Company Name */}
+                  <td className="py-3.5 px-4 text-center text-xs sm:text-sm font-semibold text-slate-800">
+                    {task.customer_name}
                   </td>
 
-                  {/* Status Progress */}
-                  <td className="py-4.5 px-6 text-center whitespace-nowrap">
-                    {task.status === 'Assigned' ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold text-[#0d6efd] bg-[#edf4fb] border border-[#bfdbfe]">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#0d6efd]" />
-                        <span>Assigned</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-medium text-slate-500 bg-slate-100 border border-slate-300">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                        <span>Unassigned</span>
-                      </span>
-                    )}
+                  {/* Column 3: Date */}
+                  <td className="py-3.5 px-4 text-center text-xs font-medium text-slate-600 font-mono whitespace-nowrap">
+                    {task.handover_datetime || 'MM/DD/YYYY'}
                   </td>
 
-                  {/* Issue / Obstacle */}
-                  <td className="py-4.5 px-6 text-center whitespace-nowrap">
-                    {task.has_issue ? (
+                  {/* Column 4: Status */}
+                  <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                    {task.has_issue || task.issue_status === 'Issue' ? (
                       <button
                         type="button"
                         onClick={() => handleOpenIssueModal(task)}
-                        className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold text-[#ef4444] bg-[#fef2f2] border border-[#fecaca] hover:bg-red-100 transition-colors cursor-pointer"
-                        title="Click to view issue details"
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-[#e11d48] bg-[#ffe4e6] border border-[#fecdd3] hover:bg-rose-200 transition-colors cursor-pointer"
+                        title="Klik untuk melihat detail issue"
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#e11d48]" />
                         <span>Issue</span>
                       </button>
                     ) : (
-                      <span className="text-slate-400 text-sm font-medium">-</span>
-                    )}
-                  </td>
-
-                  {/* Result (UC-CRM-A2-001) */}
-                  <td className="py-4.5 px-6 text-center whitespace-nowrap">
-                    {task.photo_count > 0 || task.doc_count > 0 ? (
                       <button
                         type="button"
-                        onClick={() => setResultModalTask(task)}
-                        className="inline-flex items-center gap-2 text-xs text-slate-500 hover:text-blue-600 cursor-pointer transition-colors"
-                        title="View photo and document results"
+                        onClick={() => handleOpenIssueModal(task)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+                        title="Klik untuk melihat Detail Status"
                       >
-                        <span className="flex items-center gap-1">
-                          <Camera size={13} className="text-slate-400" />
-                          <span>{task.photo_count}</span>
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <FileText size={13} className="text-slate-400" />
-                          <span>{task.doc_count}</span>
-                        </span>
-                        <ChevronRight size={13} className="text-slate-400" />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setResultModalTask(task)}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-[#0d6efd] transition-colors cursor-pointer"
-                        title="Lihat status pemeriksaan"
-                      >
-                        <span>Cek Hasil</span>
-                        <ChevronRight size={12} className="text-slate-400" />
+                        <Check size={11} className="text-emerald-600 stroke-[3]" />
+                        <span>Completed</span>
                       </button>
                     )}
                   </td>
 
-                  {/* Action */}
-                  <td className="py-4.5 px-6 text-center whitespace-nowrap">
-                    {task.status === 'Unassigned' ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedAgent('');
-                          setInstructionNote('');
-                          setSelectedTemplate('Standard Inspection Form');
-                          setAssignModalTask(task);
-                        }}
-                        className="inline-flex items-center justify-center gap-1 px-4 py-1.5 rounded-lg bg-[#0d6efd] hover:bg-blue-700 text-white text-xs font-bold shadow-2xs transition-colors cursor-pointer"
-                      >
-                        + Assign
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setDetailModalTask(task)}
-                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
-                      >
-                        <Eye size={12} className="text-slate-400" />
-                        <span>Detail</span>
-                      </button>
+                  {/* Column 5: Field Agent */}
+                  <td className="py-3.5 px-4 text-center text-xs sm:text-sm font-semibold text-slate-800 whitespace-nowrap">
+                    {task.field_agent_name || (
+                      <span className="text-slate-400 font-normal">-</span>
                     )}
+                  </td>
+
+                  {/* Column 6: Result */}
+                  <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                        <Camera size={11} className="text-slate-400" />
+                        <span>{task.photo_count || 5}</span>
+                        <FileText size={11} className="text-slate-400 ml-1" />
+                        <span>{task.doc_count || 2}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setResultModalTask(task)}
+                        className="text-xs font-semibold text-[#0d6efd] hover:underline cursor-pointer transition-colors mt-0.5"
+                      >
+                        Lihat
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -1000,6 +1065,205 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
           </tbody>
         </table>
       </div>
+
+      {/* 5. BOTTOM PAGINATION (Exact screenshot layout) */}
+      <div className="mt-4 flex items-center justify-end gap-1.5 text-xs">
+        <button
+          type="button"
+          className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 cursor-pointer"
+        >
+          Previous
+        </button>
+        <button
+          type="button"
+          className="px-3 py-1.5 rounded-lg bg-[#2563eb] text-white font-bold cursor-pointer"
+        >
+          1
+        </button>
+        <button
+          type="button"
+          className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer"
+        >
+          2
+        </button>
+        <button
+          type="button"
+          className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer"
+        >
+          3
+        </button>
+        <button
+          type="button"
+          className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 cursor-pointer"
+        >
+          Next
+        </button>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* MODAL: HANDLING NOTES & ISSUE HISTORY MODAL (Exact User Screenshot)        */}
+      {/* ========================================================================= */}
+      {notesModalTask && (
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) setNotesModalTask(null); }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in"
+        >
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-[540px] overflow-hidden flex flex-col p-6 sm:p-7 space-y-5 max-h-[92vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                  Handling Notes &amp; Issue History
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal flex items-center gap-1.5 flex-wrap">
+                  <span>Job {notesModalTask.job_number}</span>
+                  <span className="text-slate-400">•</span>
+                  <span>{notesModalTask.customer_name || 'PT Geodis Freight Forwarding'}</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setNotesModalTask(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
+                title="Tutup"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Current Issue Status Banner */}
+            <div className="bg-[#ecfdf5] border border-[#a7f3d0] rounded-2xl p-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-[#047857]">
+                <span className="w-2 h-2 rounded-full bg-[#10b981]" />
+                <span>CURRENT ISSUE STATUS</span>
+              </div>
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#d1fae5] border border-[#a7f3d0] text-[#047857] text-xs font-bold">
+                <Check size={12} className="text-[#047857] stroke-[3]" />
+                <span>Resolved / Selesai</span>
+              </span>
+            </div>
+
+            {/* Initial Issue Report Box */}
+            <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between pb-1 border-b border-slate-200/60">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  INITIAL ISSUE REPORT
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 bg-slate-200/70 px-2 py-0.5 rounded">
+                  Read-Only
+                </span>
+              </div>
+
+              <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl text-xs sm:text-sm font-medium text-slate-800 italic leading-relaxed shadow-2xs">
+                “{notesModalTask.issue_note || 'Selisih 2 koli kargo saat serah terima di area cargo MM2100.'}”
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                {/* Column 1: Job Number */}
+                <div className="bg-white border border-slate-200/80 rounded-xl p-3 flex items-center justify-between shadow-2xs">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
+                      JOB NUMBER
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold text-[#1d4ed8] font-mono">
+                      {notesModalTask.job_number}
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fffbeb] border border-[#fde68a] text-[#b45309] text-[10px] font-bold">
+                    <Lock size={10} className="text-[#b45309]" />
+                    <span>Locked</span>
+                  </span>
+                </div>
+
+                {/* Column 2: Field Agent & Waktu */}
+                <div className="bg-white border border-slate-200/80 rounded-xl p-3 flex items-center justify-between shadow-2xs">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
+                      FIELD AGENT &amp; WAKTU
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold text-slate-900 block truncate">
+                      {notesModalTask.field_agent_name || 'Khoirul Anwar'}
+                    </span>
+                    <span className="text-[10px] text-slate-400 mt-0.5 block truncate">
+                      {notesModalTask.handover_datetime || '08/10/2026, 10:15 WIB'}
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fffbeb] border border-[#fde68a] text-[#b45309] text-[10px] font-bold shrink-0 ml-1">
+                    <Lock size={10} className="text-[#b45309]" />
+                    <span>Locked</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Notes & Escalation History */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 tracking-wider">
+                  <Clock size={14} className="text-slate-500" />
+                  <span>NOTES &amp; ESCALATION HISTORY</span>
+                </div>
+                <span className="text-xs text-slate-400 font-normal">1 entry on file</span>
+              </div>
+
+              {/* History list */}
+              <div className="pl-3 border-l-2 border-blue-500 space-y-2 relative ml-1">
+                <div className="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-blue-500" />
+                <div className="flex items-center gap-2 text-xs flex-wrap">
+                  <span className="font-bold text-slate-900">Adelia</span>
+                  <span className="bg-slate-100 text-slate-600 text-[10px] font-semibold px-2 py-0.5 rounded">
+                    Sales Executive
+                  </span>
+                  <span className="text-slate-400">• 08/10/2026, 14:00 WIB</span>
+                </div>
+                <div className="p-3.5 bg-[#f8fafd] border border-[#e2eaf5] rounded-xl text-xs text-slate-700 leading-relaxed shadow-2xs">
+                  “Hasil rapat internal: Kendala selisih koli telah diselesaikan secara langsung bersama Tim Supervisor Warehouse Cikarang. 2 koli tertinggal sudah berhasil diangkut ke armada kedua.”
+                </div>
+              </div>
+            </div>
+
+            {/* Add Follow-Up Notes (opsional) */}
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700 tracking-wider">
+                  + ADD FOLLOW-UP NOTES <span className="text-slate-400 font-normal">(opsional)</span>
+                </label>
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs font-semibold ${countWords(editingNoteText) >= 200 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
+                    {countWords(editingNoteText)}/200 kata
+                  </span>
+                  <div className="flex items-center gap-1 text-xs font-bold text-[#059669]">
+                    <CheckCircle size={14} className="text-[#059669]" />
+                    <span>Encrypted Record</span>
+                  </div>
+                </div>
+              </div>
+
+              <textarea
+                rows={3}
+                value={editingNoteText}
+                onChange={(e) => handleMax200WordsChange(e.target.value, setEditingNoteText)}
+                placeholder="Ketik catatan tambahan di sini jika ada update baru..."
+                className="w-full bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-4 text-xs sm:text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 min-h-[90px] resize-none shadow-2xs leading-relaxed"
+              />
+              <p className="text-xs text-slate-400 font-normal">
+                Catatan ini akan langsung terbit pada modul job list mobile A3 Field Agent &amp; tersimpan dalam audit trail.
+              </p>
+            </div>
+
+            {/* Footer Buttons (No Tutup button per user instruction) */}
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={handleSaveTaskNote}
+                className="px-6 py-2.5 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer"
+              >
+                Save Notes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* MODAL 1: NEW TRANSACTION MODAL (Matching User Screenshot Exactly)         */}
@@ -1480,332 +1744,178 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 4: FIELD ISSUE DETAIL MODAL (Matching User Design Screenshot)       */}
+      {/* MODAL 4: DETAIL STATUS MODAL (Exact User Screenshots Image 1 & Image 2)    */}
       {/* ========================================================================= */}
-      {issueModalTask && (() => {
-        const taskIdCode = issueModalTask.task_id_code || (issueModalTask.id === 'task-2' ? 'TSK-2506-1207' : `TSK-2506-${issueModalTask.job_number.replace(/[^0-9]/g, '').slice(-4) || '1207'}`);
-        const agentName = issueModalTask.field_agent_name || 'Andi Pratama';
-        const agentInitials = agentName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'AP';
-        const reportTime = issueModalTask.issue_reported_at || '24 Sep 2026, 10:30 WIB';
-        const locationText = issueModalTask.handover_location || 'Area Cargo MM2100, Cikarang Barat';
-        const issueCategory = issueModalTask.issue_category || issueModalTask.issue_type || 'Physical Load Difference';
-        const documentStatus = issueModalTask.issue_document_status || 'Manifest Mismatch (B/L #0306)';
-        const varianceTolerance = issueModalTask.variance_tolerance || '0%';
+      {issueModalTask && (
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) setIssueModalTask(null); }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-xs animate-in fade-in"
+        >
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-[540px] overflow-hidden flex flex-col p-6 sm:p-7 space-y-5 max-h-[94vh]">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                  Detail Status
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">
+                  Job <span className="font-semibold text-slate-700">{issueModalTask.job_number}</span> • <span className="font-semibold text-slate-700">{issueModalTask.customer_name}</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIssueModalTask(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
+                title="Tutup"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-        const evidenceFiles = issueModalTask.issue_files && issueModalTask.issue_files.length > 0
-          ? issueModalTask.issue_files
-          : [
-              {
-                name: 'Foto_Barang_1.jpg',
-                size: '2.4 MB',
-                type: 'JPEG',
-                badge: 'OPS Stamped',
-                url: issueModalTask.issue_photos?.[0] || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop'
-              },
-              {
-                name: 'Foto_Surat_Jalan.jpg',
-                size: '1.8 MB',
-                type: 'JPEG',
-                badge: 'Digital Sign',
-                url: issueModalTask.issue_photos?.[1] || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop'
-              }
-            ];
-
-        return (
-          <div 
-            onClick={(e) => { if (e.target === e.currentTarget) setIssueModalTask(null); }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-xs animate-in fade-in"
-          >
-            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-full max-w-[530px] overflow-hidden flex flex-col max-h-[92vh]">
-              {/* Top Header */}
-              <div className="px-6 pt-5 pb-3.5 border-b border-slate-100 flex items-start justify-between shrink-0 bg-white">
-                <div className="flex items-start gap-2.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] mt-1.5 shrink-0" />
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-[17px] font-bold text-slate-900 tracking-tight leading-tight">
-                        Field Issue Detail
-                      </h3>
-                      <span className="bg-[#fee2e2] text-[#ef4444] border border-[#fecaca] text-[11px] font-semibold px-2 py-0.5 rounded-md">
-                        Escalation Pending
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-400 font-normal mt-0.5">
-                      Discrepancy report from the Field Agent on site
-                    </p>
+            {/* Scrollable Modal Content */}
+            <div className="overflow-y-auto space-y-5 pr-1 text-xs flex-1">
+              {/* 1. CURRENT ISSUE STATUS Banner */}
+              {issueModalTask.has_issue || issueModalTask.issue_status === 'Issue' ? (
+                <div className="bg-[#fff1f2] border border-[#fecdd3] rounded-2xl p-4 flex items-center justify-between shadow-2xs">
+                  <div className="flex items-center gap-2 text-[#e11d48] font-bold text-xs tracking-wider uppercase">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#e11d48] inline-block" />
+                    <span>CURRENT ISSUE STATUS</span>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIssueModalTask(null)}
-                  className="text-slate-400 hover:text-slate-600 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
-                  title="Close"
-                >
-                  <X size={18} />
-                </button>
+              ) : (
+                <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-2xl p-4 flex items-center justify-between shadow-2xs">
+                  <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs tracking-wider uppercase">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block" />
+                    <span>CURRENT ISSUE STATUS</span>
+                  </div>
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#dcfce7] border border-[#86efac] text-emerald-800 text-xs font-bold shadow-2xs">
+                    <Check size={12} className="text-emerald-700 stroke-[3]" />
+                    <span>Completed</span>
+                  </span>
+                </div>
+              )}
+
+              {/* 2. INITIAL ISSUE REPORT Card */}
+              <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl p-4 sm:p-4.5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    INITIAL ISSUE REPORT
+                  </span>
+                  {!issueModalTask.has_issue && issueModalTask.issue_status !== 'Issue' && (
+                    <span className="bg-slate-200/80 text-slate-600 text-[10px] font-bold px-2.5 py-0.5 rounded">
+                      Read-Only
+                    </span>
+                  )}
+                </div>
+
+                {/* Report Text Quote Box */}
+                <div className="bg-white border border-slate-200/90 rounded-xl p-3.5 text-xs sm:text-sm text-slate-800 italic leading-relaxed shadow-2xs">
+                  {issueModalTask.has_issue || issueModalTask.issue_status === 'Issue'
+                    ? `“${issueModalTask.issue_note || 'Selisih 2 koli kargo saat serah terima di area cargo MM2100.'}”`
+                    : `“Semua berjalan lancar di lapangan”`}
+                </div>
+
+                {/* Bottom 2 Grid Info */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {/* Job Number */}
+                  <div className="bg-white border border-slate-200/80 rounded-xl p-3 flex items-center justify-between shadow-2xs">
+                    <div>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">JOB NUMBER</span>
+                      <span className="text-xs font-bold text-[#0d6efd] font-mono block mt-0.5">
+                        {issueModalTask.job_number}
+                      </span>
+                    </div>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#fff7ed] border border-[#fed7aa] text-[#c2410c] text-[10px] font-medium">
+                      <Lock size={10} className="text-[#ea580c]" />
+                      <span>Locked</span>
+                    </span>
+                  </div>
+
+                  {/* Field Agent & Waktu */}
+                  <div className="bg-white border border-slate-200/80 rounded-xl p-3 flex items-center justify-between shadow-2xs">
+                    <div>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">FIELD AGENT &amp; WAKTU</span>
+                      <span className="text-xs font-bold text-slate-900 block mt-0.5">
+                        {issueModalTask.field_agent_name || 'Maselinus'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono block">
+                        08/10/2026, 10:15 WIB
+                      </span>
+                    </div>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#fff7ed] border border-[#fed7aa] text-[#c2410c] text-[10px] font-medium self-start">
+                      <Lock size={10} className="text-[#ea580c]" />
+                      <span>Locked</span>
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {/* Scrollable Body */}
-              <div className="px-6 py-5 overflow-y-auto space-y-4 text-xs flex-1 bg-white">
-                {/* Warning Banner: Data Issue Tidak Lengkap (UC-CRM-A2-002 TC2 / E-1) */}
-                {(!issueModalTask.issue_note || evidenceFiles.length < 2) && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5 text-amber-800 text-xs animate-in fade-in">
-                    <AlertTriangle size={15} className="text-amber-600 shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="block font-bold">Data Issue Tidak Lengkap</strong>
-                      <span>Informasi detail kendala lapangan belum sepenuhnya dilengkapi oleh Field Agent. Sistem menampilkan data issue yang tersedia.</span>
+              {/* 3. NOTES & ESCALATION HISTORY Section */}
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                  <Clock size={14} className="text-slate-500" />
+                  <span>NOTES &amp; ESCALATION HISTORY</span>
+                </div>
+
+                {/* Timeline History Item (Shown when task has notes) */}
+                {issueModalTask.notes && (
+                  <div className="relative pl-4 border-l-2 border-blue-500 space-y-1.5 py-0.5">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="font-bold text-slate-900">{activeUserName || 'Adelia'}</span>
+                      <span className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-semibold">
+                        Sales Executive
+                      </span>
+                      <span className="text-slate-400 text-[11px]">• 08/10/2026, 14:00 WIB</span>
+                    </div>
+                    <div className="bg-[#f8fafc] border border-slate-200 rounded-xl p-3 text-xs text-slate-700 leading-relaxed shadow-2xs">
+                      “{issueModalTask.notes}”
                     </div>
                   </div>
                 )}
 
-                {/* 1. TASK ID & NOMOR JOB Card */}
-                <div className="border border-blue-200/70 bg-[#f8fbff] rounded-2xl p-4 space-y-3">
-                  {/* Top info row */}
+                {/* Add More Notes Box */}
+                <div className="space-y-2 pt-1">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                        TASK ID &amp; NOMOR JOB
-                      </span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#e2e8f0]/80 text-slate-600 text-[10px] font-medium">
-                        <Lock size={10} className="text-slate-500" />
-                        <span>Locked</span>
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                          navigator.clipboard.writeText(taskIdCode);
-                        }
-                        showToast(`Report ID ${taskIdCode} copied to clipboard!`);
-                      }}
-                      className="text-[#0d6efd] hover:text-blue-700 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
-                    >
-                      <FileText size={12} className="text-[#0d6efd]" />
-                      <span>Report ID</span>
-                    </button>
-                  </div>
-
-                  {/* Task ID & Nomor Job boxes */}
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div className="bg-white border border-slate-200/90 rounded-xl px-3.5 py-2 flex items-center justify-between shadow-2xs">
-                      <span className="text-xs text-slate-400 font-medium">Task ID:</span>
-                      <span className="text-xs sm:text-sm font-bold text-[#0d6efd] font-mono">
-                        {taskIdCode}
-                      </span>
-                    </div>
-                    <div className="bg-white border border-slate-200/90 rounded-xl px-3.5 py-2 flex items-center justify-between shadow-2xs">
-                      <span className="text-xs text-slate-400 font-medium">Nomor Job:</span>
-                      <span className="text-xs sm:text-sm font-bold text-slate-800 font-mono">
-                        {issueModalTask.job_number}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* 3 Pills: Field Agent, Report Time, Location */}
-                  <div className="grid grid-cols-3 gap-2">
-                    {/* Field Agent */}
-                    <div className="bg-white border border-slate-200/90 rounded-xl p-2.5 flex items-center gap-2 shadow-2xs min-w-0">
-                      <div className="w-7 h-7 rounded-full bg-[#dbeafe] text-[#1d4ed8] font-bold text-[11px] flex items-center justify-center shrink-0">
-                        {agentInitials}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="text-[10px] text-slate-400 font-medium block truncate">Field Agent</span>
-                        <span className="text-xs font-bold text-slate-800 block truncate" title={agentName}>
-                          {agentName}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Report Time */}
-                    <div className="bg-white border border-slate-200/90 rounded-xl p-2.5 flex items-center gap-2 shadow-2xs min-w-0">
-                      <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                        <Calendar size={13} className="text-slate-500" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="text-[10px] text-slate-400 font-medium block truncate">Report Time</span>
-                        <span className="text-xs font-bold text-slate-800 block truncate" title={reportTime}>
-                          {reportTime}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Location */}
-                    <div className="bg-white border border-slate-200/90 rounded-xl p-2.5 flex items-center gap-2 shadow-2xs min-w-0">
-                      <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                        <MapPin size={13} className="text-slate-500" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="text-[10px] text-slate-400 font-medium block truncate">Location</span>
-                        <span className="text-xs font-bold text-slate-800 block truncate" title={locationText}>
-                          {locationText}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 2. PROBLEM DESCRIPTION (A3) */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">
-                      PROBLEM DESCRIPTION (A3)
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fee2e2] text-[#ef4444] border border-[#fecaca] text-[10px] font-semibold">
-                      <AlertTriangle size={11} className="text-[#ef4444]" />
-                      <span>{issueCategory}</span>
-                    </span>
-                  </div>
-
-                  <div className="bg-[#fff5f5] border border-[#fed7d7] rounded-xl p-3.5 space-y-2.5">
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-5 h-5 rounded-full bg-red-100 text-[#ef4444] flex items-center justify-center shrink-0 mt-0.5">
-                        <AlertCircle size={13} className="text-[#ef4444]" />
-                      </div>
-                      {issueModalTask.issue_note && !issueModalTask.issue_note.includes('8 koli') ? (
-                        <p className="text-xs text-slate-800 font-medium leading-relaxed">
-                          &ldquo;{issueModalTask.issue_note}&rdquo;
-                        </p>
-                      ) : (
-                        <p className="text-xs text-slate-800 font-medium leading-relaxed">
-                          &ldquo;Jumlah koli fisik yang diterima (<span className="text-[#ef4444] font-bold underline decoration-[#ef4444]">8 koli</span>) tidak sesuai dengan data dokumen awal (<span className="font-bold underline text-slate-900">10 koli</span>). Terdapat 2 koli tertinggal di gudang.&rdquo;
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="pt-2 border-t border-[#fecaca]/60 flex items-center justify-between text-[11px]">
-                      <span className="text-slate-500 font-medium">
-                        Document Status: {documentStatus}
-                      </span>
-                      <span className="text-[#ef4444] font-bold">
-                        Variance Tolerance: {varianceTolerance}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3. FIELD EVIDENCE PHOTOS */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-800">
-                      Field Evidence Photos
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      {evidenceFiles.length} Attached Files (EXIF Validated)
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {evidenceFiles.map((file, idx) => (
-                      <div key={idx} className="bg-white border border-slate-200/90 rounded-xl p-3 shadow-2xs space-y-2">
-                        <div className="flex items-center gap-3">
-                          <div 
-                            onClick={() => setPreviewPhotoUrl(file.url)}
-                            className="w-13 h-13 rounded-lg overflow-hidden bg-slate-900 shrink-0 cursor-pointer group relative border border-slate-200 shadow-2xs"
-                          >
-                            <img 
-                              src={file.url} 
-                              alt={file.name} 
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" 
-                            />
-                            <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                              <Eye size={14} />
-                            </div>
-                            <div className="absolute bottom-0 inset-x-0 bg-black/60 px-1 py-0.5">
-                              <span className="text-[7px] text-emerald-400 font-mono block leading-none text-center">EXIF OK</span>
-                            </div>
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <span className="text-xs font-bold text-slate-800 block truncate" title={file.name}>
-                              {file.name}
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-medium block mt-0.5">
-                              {file.size} · {file.type}
-                            </span>
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 mt-1">
-                              <CheckCircle size={11} className="text-emerald-500" />
-                              <span>{file.badge}</span>
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-slate-100 flex items-center justify-center gap-6 text-xs">
-                          <button
-                            type="button"
-                            onClick={() => setPreviewPhotoUrl(file.url)}
-                            className="inline-flex items-center gap-1.5 text-[#0d6efd] hover:text-blue-700 font-semibold cursor-pointer transition-colors"
-                          >
-                            <Eye size={13} />
-                            <span>Preview</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => showToast(`Mengunduh ${file.name}...`)}
-                            className="inline-flex items-center text-slate-400 hover:text-slate-700 cursor-pointer transition-colors p-1"
-                            title={`Download ${file.name}`}
-                          >
-                            <Download size={13} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 4. DISPATCHER DISPOSITION NOTES (OPSIONAL) */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-800">
-                      Dispatcher Disposition Notes (Opsional)
+                    <label className="text-[11px] font-bold text-slate-700 tracking-wider">
+                      + ADD MORE NOTES <span className="text-slate-400 font-normal">(max 200 words)</span>
                     </label>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      Audit Trail Logged
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-[#059669]">
+                      <Shield size={13} className="text-[#059669]" />
+                      <span>Encrypted Record</span>
+                    </div>
+                  </div>
+
+                  <textarea
+                    rows={3}
+                    value={issueModalNoteText}
+                    onChange={(e) => handleMax200WordsChange(e.target.value, setIssueModalNoteText)}
+                    placeholder="Ketik catatan tambahan di sini jika ada update baru..."
+                    className="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 resize-none leading-relaxed shadow-2xs"
+                  />
+
+                  <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400">
+                    <span>Catatan ini akan langsung terbit pada modul job list mobile A3 Field Agent &amp; tersimpan dalam audit trail.</span>
+                    <span className={countWords(issueModalNoteText) >= 200 ? 'text-red-500 font-bold shrink-0 ml-2' : 'text-slate-400 shrink-0 ml-2'}>
+                      {countWords(issueModalNoteText)}/200 kata
                     </span>
                   </div>
-                  <textarea
-                    value={dispatcherDispositionNotes}
-                    onChange={(e) => setDispatcherDispositionNotes(e.target.value)}
-                    rows={2}
-                    placeholder="Instruksi tindak lanjut armada pengganti atau gudang asal..."
-                    className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 resize-none transition-colors"
-                  />
-                </div>
-              </div>
-
-              {/* Bottom Footer */}
-              <div className="px-6 py-3.5 bg-white border-t border-slate-100 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                  <Lock size={14} className="text-emerald-600" />
-                  <span className="hidden sm:inline">Logged under PT ANDIMA Transportindo</span>
-                </div>
-
-                <div className="flex items-center gap-2.5">
-                  {/* UC-CRM-A2-002 A-1 / TC4: Issue Tidak Membutuhkan Bantuan */}
-                  <button
-                    type="button"
-                    onClick={() => handleResolveIssueInternally(issueModalTask)}
-                    className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer shadow-2xs"
-                    title="Selesaikan kendala secara internal tanpa meneruskan ke Need Backup"
-                  >
-                    Tidak Butuh Bantuan (Selesai Internal)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const t = issueModalTask;
-                      setIssueModalTask(null);
-                      handleOpenBackupModal(t);
-                    }}
-                    className="bg-[#0d6efd] hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
-                  >
-                    <span>Create Need Backup</span>
-                  </button>
                 </div>
               </div>
             </div>
+
+            {/* Footer Button: Save Notes */}
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end shrink-0">
+              <button
+                type="button"
+                onClick={handleSaveIssueModalNotes}
+                className="px-6 py-2.5 rounded-xl bg-[#0d6efd] hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
+              >
+                Save Notes
+              </button>
+            </div>
           </div>
-        );
-      })()}
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* MODAL 5: RESULT MODAL - Field Agent Worksheet (Exact Figma Screenshot)     */}
@@ -1863,16 +1973,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 </div>
               )}
 
-              {/* E-1: Task Belum Selesai (UC-CRM-A2-001 TC-002) */}
-              {resultModalTask.status !== 'Completed' && (
-                <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-xs text-amber-800 animate-in fade-in">
-                  <Clock size={16} className="text-amber-600 shrink-0 mt-0.5" />
-                  <div className="leading-snug">
-                    <strong className="block font-bold">Task Belum Selesai</strong>
-                    <span>Pekerjaan pemeriksaan lapangan masih dalam proses pengerjaan oleh Field Agent ({resultModalTask.field_agent_name || 'Field Inspector'}). Menampilkan status task saat ini.</span>
-                  </div>
-                </div>
-              )}
+
 
               {/* E-2: Hasil Pemeriksaan Belum Tersedia (UC-CRM-A2-001 TC-003) */}
               {resultModalTask.status === 'Completed' && resultModalTask.photo_count === 0 && resultModalTask.doc_count === 0 && (
@@ -1911,7 +2012,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     <div>
                       <span className="text-[10px] text-slate-400 font-medium block">Transaction ID</span>
                       <span className="text-xs font-bold text-slate-900 block mt-0.5 font-mono">
-                        TRX-0526-03362
+                        TRX-0526-03382
                       </span>
                       <span className="text-[10px] text-slate-400 font-medium block mt-2.5">Created By</span>
                       <span className="text-xs font-bold text-slate-900 block mt-0.5">
@@ -1928,7 +2029,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <Truck size={13} className="text-[#2563eb]" />
                   <span>SHIPMENT INFORMATION</span>
                 </div>
-                <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3.5 space-y-2">
+                <div className="bg-[#f8fafd] border border-[#e2e8f0] rounded-xl p-3.5 space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-500">Customer:</span>
                     <span className="font-bold text-slate-900 text-right">{resultModalTask.customer_name || 'PT DSV Transport Indonesia'}</span>
@@ -1947,7 +2048,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-500">HAWB:</span>
-                    <span className="font-bold text-[#2563eb] font-mono text-right">{resultModalTask.hawb || 'AWB-00123'}</span>
+                    <span className="font-bold text-[#2563eb] font-mono text-right">{resultModalTask.hawb || 'HAWB-00123'}</span>
                   </div>
                 </div>
               </div>
@@ -2021,7 +2122,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 <div className="grid grid-cols-2 gap-2.5">
                   {/* Card 1: 1. Foto Keseluruhan */}
                   <div className="border border-[#e2eaf5] rounded-xl overflow-hidden bg-white shadow-2xs">
-                    <div 
+                    <div
                       className="bg-[#edf2f9] h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
                       onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[0] || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800')}
                     >
@@ -2038,7 +2139,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
                   {/* Card 2: 2. Marking / Label */}
                   <div className="border border-[#e2eaf5] rounded-xl overflow-hidden bg-white shadow-2xs">
-                    <div 
+                    <div
                       className="bg-[#edf2f9] h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
                       onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[1] || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800')}
                     >
@@ -2055,7 +2156,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
                   {/* Card 3: 3. Foto Seal */}
                   <div className="border border-[#e2eaf5] rounded-xl overflow-hidden bg-white shadow-2xs">
-                    <div 
+                    <div
                       className="bg-[#edf2f9] h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
                       onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[2] || 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?w=800')}
                     >
@@ -2072,7 +2173,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
                   {/* Card 4: 4. Area Kerusakan */}
                   <div className="border border-[#e2eaf5] rounded-xl overflow-hidden bg-white shadow-2xs">
-                    <div 
+                    <div
                       className="bg-[#edf2f9] h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
                       onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[3] || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800')}
                     >
@@ -2106,7 +2207,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                         <span className="text-[10px] text-slate-400">PDF • 1.4 MB • Verified</span>
                       </div>
                     </div>
-                    <button 
+                    <button
                       type="button"
                       onClick={() => showToast('Downloading Packing List.pdf...')}
                       className="p-1.5 text-slate-400 hover:text-[#2563eb] rounded-lg transition-colors cursor-pointer"
@@ -2125,7 +2226,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                         <span className="text-[10px] text-slate-400">PDF • 860 KB • Material Safety Sheet</span>
                       </div>
                     </div>
-                    <button 
+                    <button
                       type="button"
                       onClick={() => showToast('Downloading MSDS.pdf...')}
                       className="p-1.5 text-slate-400 hover:text-[#2563eb] rounded-lg transition-colors cursor-pointer"
@@ -2607,7 +2708,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       {/* MODAL 7: HANDLING TIMELINE & AUDIT LOG (Exact Figma Screenshot)           */}
       {/* ========================================================================= */}
       {timelineModalTask && (
-        <div 
+        <div
           onClick={(e) => { if (e.target === e.currentTarget) setTimelineModalTask(null); }}
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-xs animate-in fade-in"
         >
@@ -2781,11 +2882,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
         const displayJobCustomer = backupModalTask.job_number.startsWith('##')
           ? `${backupModalTask.job_number}– ${backupModalTask.customer_name}`
           : backupModalTask.job_number.startsWith('#')
-          ? `#${backupModalTask.job_number}– ${backupModalTask.customer_name}`
-          : `##${backupModalTask.job_number}– ${backupModalTask.customer_name}`;
+            ? `#${backupModalTask.job_number}– ${backupModalTask.customer_name}`
+            : `##${backupModalTask.job_number}– ${backupModalTask.customer_name}`;
 
         return (
-          <div 
+          <div
             onClick={(e) => { if (e.target === e.currentTarget) setBackupModalTask(null); }}
             className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-xs animate-in fade-in"
           >
@@ -2865,17 +2966,15 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     {/* Normal */}
                     <div
                       onClick={() => setBackupPriority('normal')}
-                      className={`border rounded-xl p-3 flex items-start gap-2.5 cursor-pointer transition-all ${
-                        backupPriority === 'normal'
+                      className={`border rounded-xl p-3 flex items-start gap-2.5 cursor-pointer transition-all ${backupPriority === 'normal'
                           ? 'border-2 border-[#0d6efd] bg-[#f0f6ff]/40 shadow-2xs'
                           : 'border-slate-200 bg-white hover:border-slate-300'
-                      }`}
+                        }`}
                     >
-                      <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                        backupPriority === 'normal'
+                      <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${backupPriority === 'normal'
                           ? 'border-2 border-[#0d6efd]'
                           : 'border border-slate-300'
-                      }`}>
+                        }`}>
                         {backupPriority === 'normal' && (
                           <span className="w-2 h-2 rounded-full bg-[#0d6efd]" />
                         )}
@@ -2893,17 +2992,15 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     {/* High / Urgent */}
                     <div
                       onClick={() => setBackupPriority('urgent')}
-                      className={`border rounded-xl p-3 flex items-start gap-2.5 cursor-pointer transition-all ${
-                        backupPriority === 'urgent'
+                      className={`border rounded-xl p-3 flex items-start gap-2.5 cursor-pointer transition-all ${backupPriority === 'urgent'
                           ? 'border-2 border-[#0d6efd] bg-[#f0f6ff]/40 shadow-2xs'
                           : 'border-slate-200 bg-white hover:border-slate-300'
-                      }`}
+                        }`}
                     >
-                      <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                        backupPriority === 'urgent'
+                      <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${backupPriority === 'urgent'
                           ? 'border-2 border-[#0d6efd]'
                           : 'border border-slate-300'
-                      }`}>
+                        }`}>
                         {backupPriority === 'urgent' && (
                           <span className="w-2 h-2 rounded-full bg-[#0d6efd]" />
                         )}
