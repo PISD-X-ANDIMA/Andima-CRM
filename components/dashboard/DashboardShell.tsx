@@ -8,14 +8,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const [sidebarVisible, setSidebarVisible] = useState(true);
 
   return (
-    <div className="min-h-screen bg-white lg:flex">
+    <div className="min-h-screen bg-white lg:flex lg:items-start">
       <div
         id="crm-sidebar"
         aria-hidden={!sidebarVisible}
         inert={!sidebarVisible}
-        className={`shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out ${sidebarVisible ? "w-[260px]" : "w-0"}`}
+        className={`shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out lg:sticky lg:top-0 lg:h-dvh ${sidebarVisible ? "w-[260px]" : "w-0"}`}
       >
-        <div className={`w-[260px] transition-transform duration-300 ease-in-out ${sidebarVisible ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className={`h-full w-[260px] transition-transform duration-300 ease-in-out ${sidebarVisible ? "translate-x-0" : "-translate-x-full"}`}>
           <Sidebar onHide={() => setSidebarVisible(false)} />
         </div>
       </div>

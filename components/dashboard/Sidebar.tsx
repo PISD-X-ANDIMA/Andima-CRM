@@ -77,7 +77,7 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
   const isCrmActive = isSalesExecutiveActive;
 
   return (
-    <aside className="group relative sticky top-0 flex h-screen w-[260px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
+    <aside className="group relative flex h-screen h-dvh w-[260px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
       <button
         type="button"
         onClick={onHide}
@@ -95,7 +95,7 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pt-14 pb-4">
+      <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overscroll-contain px-3 pt-14 pb-4">
         <div className="pt-0.5">
           <button
             type="button"
