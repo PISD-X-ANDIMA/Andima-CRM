@@ -205,7 +205,11 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
   });
   const firstRow = total === 0 ? 0 : (page - 1) * 5 + 1;
   const lastRow = Math.min(page * 5, total);
-  const statisticsUnavailable = metrics.totalCustomers === null || metrics.upcomingMeetings === null || metrics.tasks === null;
+  const unavailableMetrics = [
+    metrics.totalCustomers === null ? "Total Customer" : null,
+    metrics.upcomingMeetings === null ? "Upcoming Meeting" : null,
+    metrics.tasks === null ? "Task" : null,
+  ].filter((label): label is string => label !== null);
 
   return <div className="mx-auto w-full max-w-[1280px]">
     <h1 className="mb-0 text-4xl font-bold tracking-tight text-black sm:text-5xl">Welcome Back, {displayName}</h1>
@@ -220,7 +224,7 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
         <h2 className="text-lg font-semibold text-[#505050] sm:text-xl">{label}</h2><div className="mt-2 flex items-center gap-3"><span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${color}`}><Icon className="h-5 w-5" /></span><p className="text-3xl font-bold text-[#202020]">{value ?? "—"}</p><span className="ml-auto text-right text-[10px] leading-tight text-slate-400">{hint}</span></div>
       </article>)}
     </section>
-    {statisticsUnavailable && <div role="alert" className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><span>Statistical data unavailable.</span><button type="button" onClick={() => router.refresh()} className="font-semibold underline">Try again later</button></div>}
+    {unavailableMetrics.length > 0 && <div role="alert" className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><span>Could not load {unavailableMetrics.join(", ")} data. Check the database connection and required table access.</span><button type="button" onClick={() => router.refresh()} className="font-semibold underline">Retry</button></div>}
 
     <section aria-labelledby="weekly-schedule-title" className="mb-4">
       <div className="mb-4 flex items-center justify-between"><h2 id="weekly-schedule-title" className="text-xl font-bold text-[#505050] sm:text-2xl">Schedule this week</h2><Link href="/dashboard/meeting-schedule" aria-label="Open Meeting Schedule" className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50"><CalendarDays className="h-5 w-5" /></Link></div>

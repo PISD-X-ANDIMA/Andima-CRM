@@ -6,10 +6,28 @@ import { isValidPicPhoneNumber } from "@/lib/validation/pic-phone";
 
 export const dynamic = "force-dynamic";
 
+function describeDatabaseError(error: unknown): string {
+  if (!error || typeof error !== "object") {
+    return typeof error === "string" && error.trim() ? error : "No database error details were returned";
+  }
+
+  const value = error as Record<string, unknown>;
+  const parts = [
+    typeof value.message === "string" ? value.message.trim() : "",
+    typeof value.code === "string" ? `code ${value.code}` : "",
+    typeof value.details === "string" ? value.details.trim() : "",
+    typeof value.hint === "string" ? `hint: ${value.hint.trim()}` : "",
+  ].filter(Boolean);
+
+  return parts.join("; ") || "No database error details were returned";
+}
+
 export async function GET(request: NextRequest) {
   const context = request.nextUrl.searchParams.get("context");
+  let failedStage = "meeting expiration update";
   try {
     await cancelExpiredOneTimeMeetings();
+    failedStage = "customer list query";
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search") || "";
     const requestedPage = Number.parseInt(searchParams.get("page") || "1", 10);
@@ -39,11 +57,8 @@ export async function GET(request: NextRequest) {
     response.headers.set("Cache-Control", "no-store, max-age=0");
     return response;
   } catch (error) {
-    const detail = error instanceof Error
-      ? error.message
-      : typeof error === "object" && error !== null && "message" in error && typeof error.message === "string"
-        ? error.message
-        : "Unknown database error";
+    const detail = describeDatabaseError(error);
+    console.error(`[GET /api/v1/customers] ${failedStage} failed`, error);
     const contextError = context === "weeklySchedule"
       ? "SCH_001"
       : context === "calendar"
@@ -52,10 +67,10 @@ export async function GET(request: NextRequest) {
     return createErrorResponse(
       contextError,
       context === "weeklySchedule"
-        ? `Failed to fetch weekly schedule: ${detail}`
+        ? `Failed to fetch weekly schedule during ${failedStage}: ${detail}`
         : context === "calendar"
-          ? `Schedule data is unavailable for this period: ${detail}`
-          : `Failed to load the customer list: ${detail}`,
+          ? `Schedule data is unavailable for this period during ${failedStage}: ${detail}`
+          : `Failed to load the customer list during ${failedStage}: ${detail}`,
       undefined,
       500
     );
