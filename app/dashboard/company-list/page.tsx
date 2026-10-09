@@ -202,16 +202,43 @@ export default function CompanyListPage() {
   const firstRow = total === 0 ? 0 : (page - 1) * perPage + 1;
   const lastRow = Math.min(page * perPage, total);
 
-  return <div className="space-y-7">
-    <div className="flex items-start justify-between gap-4"><div><h1 className="text-4xl font-bold tracking-tight text-black">Company List</h1></div>
-      <button type="button" onClick={() => { setSuccessMessage(""); setModalCustomer(null); setIsModalOpen(true); }} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-base font-semibold text-white hover:bg-blue-700"><Plus className="h-4 w-4" />Add Company</button>
+  return <div className="space-y-5">
+    <div className="flex items-center justify-between gap-4">
+      <div>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">Company List</h1>
+      </div>
+      <button
+        type="button"
+        onClick={() => { setSuccessMessage(""); setModalCustomer(null); setIsModalOpen(true); }}
+        className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-blue-700 shadow-sm transition-colors cursor-pointer"
+      >
+        <Plus className="h-3.5 w-3.5" />
+        <span>Add Company</span>
+      </button>
     </div>
-    {successMessage && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{successMessage}</p>}
-    <div className="flex items-center justify-between gap-4 pt-1">
-      <label className="relative block w-full max-w-[425px]"><Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" /><input type="search" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} placeholder="Search Company, PIC or Phone Number" className="h-[52px] w-full rounded-full border border-slate-300 bg-white pl-14 pr-5 text-base font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>
-      <button type="button" onClick={() => { setExportError(""); setExportOpen(true); }} disabled={!total || isExporting} className="inline-flex h-[52px] items-center gap-3 rounded-2xl border border-slate-300 bg-white px-5 text-base font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"><Download className="h-5 w-5" />Export</button>
+    {successMessage && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-medium text-emerald-800">{successMessage}</p>}
+    <div className="flex items-center justify-between gap-3 pt-0.5">
+      <label className="relative block w-full max-w-[420px]">
+        <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+        <input
+          type="search"
+          value={searchKeyword}
+          onChange={(e) => setSearchKeyword(e.target.value)}
+          placeholder="Search Company, PIC or Phone Number"
+          className="h-10 w-full rounded-xl border border-slate-200/90 bg-white pl-9 pr-4 text-xs font-medium text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all"
+        />
+      </label>
+      <button
+        type="button"
+        onClick={() => { setExportError(""); setExportOpen(true); }}
+        disabled={!total || isExporting}
+        className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 disabled:opacity-50 transition-colors"
+      >
+        <Download className="h-3.5 w-3.5 text-slate-500" />
+        <span>Export</span>
+      </button>
     </div>
-    {exportError && <p role="alert" className="-mt-4 text-sm text-red-600">{exportError}</p>}
+    {exportError && <p role="alert" className="-mt-3 text-xs text-red-600">{exportError}</p>}
     <CustomerTable customers={customers} isLoading={isLoading} error={error} onRetry={() => void fetchCustomers()} searchKeyword={debouncedSearch} onResetSearch={() => setSearchKeyword("")} onEdit={(customer) => { setSuccessMessage(""); setModalCustomer(customer); setIsModalOpen(true); }} onDetails={(customer) => { setActionCustomer(customer); setActionMode("details"); }} onViewTasks={(customer) => { setActionCustomer(customer); setActionMode("tasks"); }} onDelete={setDeleteTarget} />
     <div className="flex flex-wrap items-center justify-between gap-4 px-4 pt-2 text-xs text-slate-500"><span>Showing {firstRow}-{lastRow} of {total} customers</span><nav className="flex items-center gap-1" aria-label="Company list pages">
       <button type="button" aria-label="Previous page" disabled={page <= 1 || isLoading} onClick={() => setPage((value) => value - 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>
@@ -225,13 +252,37 @@ export default function CompanyListPage() {
     <CustomerFormModal isOpen={isModalOpen} customer={modalCustomer} onClose={() => { setIsModalOpen(false); setModalCustomer(null); }} onSuccess={handleSaved} />
     <CompanyActionModal customer={actionCustomer} mode={actionMode} onClose={() => { setActionCustomer(null); setActionMode(null); }} />
     <DeleteConfirmDialog isOpen={Boolean(deleteTarget)} isDeleting={isDeleting} companyName={deleteTarget?.companyName || ""} onConfirm={() => void handleDelete()} onCancel={() => setDeleteTarget(null)} />
-    {exportOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !isExporting) setExportOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="company-export-title" className="w-full max-w-5xl rounded-xl bg-white px-6 py-8 shadow-2xl sm:px-11 sm:py-10">
-      <h2 id="company-export-title" className="text-3xl font-bold tracking-tight text-black sm:text-4xl">Export Company List</h2><p className="mt-1 text-base text-[#747474] sm:text-xl">Select a file format and optional company creation date range</p>
-      <div className="mt-5 grid gap-7 md:grid-cols-2"><fieldset><legend className="mb-1 text-lg font-medium text-[#444] sm:text-xl">File Format</legend><div className="flex min-h-[165px] flex-col justify-center gap-4 rounded-lg border border-[#ccc] px-5 py-4 text-lg text-[#777]"><label className="flex cursor-pointer items-center gap-4"><input type="radio" name="company-export-format" checked={exportFormat === "xlsx"} onChange={() => setExportFormat("xlsx")} className="h-5 w-5 accent-blue-600" /><span className="text-emerald-600">▦</span><span>Excel (.xlsx)</span></label><label className="flex cursor-pointer items-center gap-4"><input type="radio" name="company-export-format" checked={exportFormat === "pdf"} onChange={() => setExportFormat("pdf")} className="h-5 w-5 accent-blue-600" /><span className="text-rose-500">▣</span><span>PDF (.pdf)</span></label></div></fieldset>
-        <fieldset><legend className="mb-1 text-lg font-medium text-[#444] sm:text-xl">Date Range</legend><div className="min-h-[165px] rounded-lg border border-[#ccc] p-4"><div className="grid gap-3 sm:grid-cols-2"><label className="text-xs font-medium text-slate-500">From<input type="date" value={exportStart} onChange={(event) => setExportStart(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-700" /></label><label className="text-xs font-medium text-slate-500">To<input type="date" value={exportEnd} onChange={(event) => setExportEnd(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-700" /></label></div><p className="mt-3 text-xs text-slate-400">Leave both dates blank to export all matching companies.</p></div></fieldset>
+    {exportOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !isExporting) setExportOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="company-export-title" className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl sm:p-6 animate-in fade-in zoom-in-95 duration-150">
+      <h2 id="company-export-title" className="text-base sm:text-lg font-bold text-slate-900">Export Company List</h2>
+      <p className="mt-1 text-xs text-slate-500">Select a file format and optional company creation date range</p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <fieldset>
+          <legend className="mb-1 text-xs font-semibold text-slate-700">File Format</legend>
+          <div className="flex flex-col justify-center gap-2.5 rounded-xl border border-slate-200/80 p-3 text-xs text-slate-600 bg-slate-50/50">
+            <label className="flex cursor-pointer items-center gap-2.5">
+              <input type="radio" name="company-export-format" checked={exportFormat === "xlsx"} onChange={() => setExportFormat("xlsx")} className="h-4 w-4 accent-blue-600" />
+              <span className="font-semibold text-emerald-600">Excel (.xlsx)</span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-2.5">
+              <input type="radio" name="company-export-format" checked={exportFormat === "pdf"} onChange={() => setExportFormat("pdf")} className="h-4 w-4 accent-blue-600" />
+              <span className="font-semibold text-rose-500">PDF (.pdf)</span>
+            </label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend className="mb-1 text-xs font-semibold text-slate-700">Date Range</legend>
+          <div className="rounded-xl border border-slate-200/80 p-3 space-y-2 bg-slate-50/50">
+            <label className="block text-[11px] font-medium text-slate-500">From<input type="date" value={exportStart} onChange={(event) => setExportStart(event.target.value)} className="mt-1 h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 outline-none" /></label>
+            <label className="block text-[11px] font-medium text-slate-500">To<input type="date" value={exportEnd} onChange={(event) => setExportEnd(event.target.value)} className="mt-1 h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 outline-none" /></label>
+          </div>
+          <p className="mt-2 text-[11px] text-slate-400">Leave both dates blank to export all matching companies.</p>
+        </fieldset>
       </div>
-      {exportError && <p role="alert" className="mt-3 text-sm text-rose-600">{exportError}</p>}
-      <div className="mt-6 flex flex-col-reverse justify-end gap-3 sm:flex-row sm:gap-5"><button type="button" disabled={isExporting} onClick={() => setExportOpen(false)} className="h-14 rounded-lg border border-[#888] px-10 text-lg font-semibold text-[#505050] hover:bg-slate-50 disabled:opacity-60 sm:w-[220px]">Cancel</button><button type="button" disabled={isExporting} onClick={() => void runExport()} className="h-14 rounded-lg bg-[#3e6df5] px-10 text-lg font-semibold text-white hover:bg-blue-700 disabled:opacity-60 sm:w-[320px]">{isExporting ? "Preparing..." : "Export"}</button></div>
+      {exportError && <p role="alert" className="mt-3 text-xs text-rose-600">{exportError}</p>}
+      <div className="mt-5 flex justify-end gap-2.5 border-t border-slate-100 pt-3.5">
+        <button type="button" disabled={isExporting} onClick={() => setExportOpen(false)} className="h-9 px-4 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
+        <button type="button" disabled={isExporting} onClick={() => void runExport()} className="h-9 px-5 rounded-xl bg-blue-600 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-xs">{isExporting ? "Preparing..." : "Export"}</button>
+      </div>
     </section></div>}
   </div>;
 }

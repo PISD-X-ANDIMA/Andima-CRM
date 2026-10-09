@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -275,6 +275,7 @@ function StatusBadge({
 export default function FieldAgentApp() {
   const [jobs, setJobs] = useState<Job[]>(sampleJobs);
 
+  const router = useRouter();
   const searchParams = useSearchParams();
   const urlTab = searchParams?.get("tab") as Screen | null;
 
@@ -756,14 +757,26 @@ export default function FieldAgentApp() {
   return (
     <div className="w-full bg-white text-[#15213a]">
       <main className="min-h-screen bg-white">
-        <Topbar
-          screen={screen}
-          openNotifications={() =>
-            setScreen("notifications")
-          }
-        />
-
-        <div className="mx-auto max-w-[1280px] px-5 pb-10 pt-5 md:px-9">
+        <div className="mx-auto max-w-[1280px] px-5 pb-10 pt-2 md:px-9">
+          {screen !== "dashboard" &&
+            screen !== "field-agent" &&
+            screen !== "tasks" &&
+            screen !== "history" && (
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={() =>
+                  window.dispatchEvent(
+                    new Event("field-agent:back")
+                  )
+                }
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 hover:text-blue-600 transition cursor-pointer"
+              >
+                <ArrowLeft size={14} />
+                <span>Kembali</span>
+              </button>
+            </div>
+          )}
 
           {screen === "dashboard" && (
             <EmptyDashboard />
@@ -774,7 +787,7 @@ export default function FieldAgentApp() {
               jobs={jobs}
               openJob={openJob}
               showTasks={() =>
-                setScreen("tasks")
+                router.push("/dashboard/field-agent?tab=tasks")
               }
             />
           )}
@@ -926,7 +939,7 @@ export default function FieldAgentApp() {
           }
           openHistory={() => {
             setCompletionOpen(false);
-            setScreen("history");
+            router.push("/dashboard/field-agent?tab=history");
           }}
         />
       )}
@@ -940,154 +953,7 @@ export default function FieldAgentApp() {
   );
 }
 
-/* =========================================================
-   TOPBAR
-========================================================= */
 
-function Topbar({
-  screen,
-  openNotifications,
-}: {
-  screen: Screen;
-  openNotifications?: () => void;
-}) {
-  const labels: Record<
-    Screen,
-    string[]
-  > = {
-    dashboard: [
-      "Dashboard",
-    ],
-    "field-agent": [
-      "CRM",
-      "SALES EXECUTIVE",
-      "TASK FIELD AGENT",
-    ],
-    notifications: [
-      "CRM",
-      "Field Agent",
-      "Notifikasi",
-    ],
-    tasks: [
-      "CRM",
-      "Field Agent",
-      "My Task",
-    ],
-    detail: [
-      "CRM",
-      "Field Agent",
-      "My Task",
-      "Detail Job",
-    ],
-    handover: [
-      "CRM",
-      "Field Agent",
-      "My Task",
-      "Detail Job",
-      "Handover",
-    ],
-    documentation: [
-      "CRM",
-      "Field Agent",
-      "My Task",
-      "Detail Job",
-      "Dokumentasi",
-    ],
-    verification: [
-      "CRM",
-      "Field Agent",
-      "My Task",
-      "Detail Job",
-      "Verifikasi",
-    ],
-    history: [
-      "CRM",
-      "Field Agent",
-      "Job History",
-    ],
-  };
-
-  return (
-    <header className="flex h-[67px] items-center justify-between border-b border-slate-100 px-4 md:px-6">
-      <div className="flex items-center gap-3">
-        {screen !== "dashboard" &&
-          screen !== "field-agent" && (
-          <button
-            type="button"
-            onClick={() =>
-              window.dispatchEvent(
-                new Event(
-                  "field-agent:back"
-                )
-              )
-            }
-            className="grid h-9 w-9 place-items-center rounded-md text-[#173057] hover:bg-slate-100"
-          >
-            <ArrowLeft
-              size={24}
-            />
-          </button>
-        )}
-
-        <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-          {labels[screen].map(
-            (label, index) => (
-              <span
-                key={`${label}-${index}`}
-                className={
-                  index ===
-                  labels[screen].length - 1
-                    ? "font-semibold text-blue-600"
-                    : ""
-                }
-              >
-                {index > 0 && (
-                  <span className="mr-2 text-slate-400">
-                    /
-                  </span>
-                )}
-                {label}
-              </span>
-            )
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <button
-          type="button"
-          onClick={openNotifications}
-          className="relative rounded-full bg-slate-100 p-2 text-slate-500 hover:bg-slate-200 transition cursor-pointer"
-        >
-          <Bell
-            size={18}
-          />
-          <i className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
-        </button>
-
-        <div className="flex items-center gap-2">
-          <span className="grid h-7 w-7 place-items-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
-            R
-          </span>
-
-          <div className="text-xs">
-            <b className="block text-slate-800">
-              Rian
-            </b>
-            <span className="text-[11px] text-slate-400">
-              Field Agent
-            </span>
-          </div>
-
-          <ChevronDown
-            size={14}
-            className="text-slate-400"
-          />
-        </div>
-      </div>
-    </header>
-  );
-}
 
 function NotificationsPage({
   jobs,
@@ -1433,7 +1299,7 @@ function Dashboard({
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-600">
-              <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <thead className="border-b border-slate-200/80 bg-[#edf4fb] text-xs font-bold text-slate-800">
                 <tr>
                   <th className="px-3 py-2.5">
                     Job Number
@@ -1657,7 +1523,7 @@ function JobsTable({
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[800px] text-left text-xs text-slate-600">
-          <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+          <thead className="border-b border-slate-200/80 bg-[#edf4fb] text-xs font-bold text-slate-800">
             <tr>
               <th className="px-4 py-3.5">
                 Job Number

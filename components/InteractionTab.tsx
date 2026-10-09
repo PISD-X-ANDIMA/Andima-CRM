@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   Search, ChevronDown, Plus, Download, Video, MessageCircle, 
   X, UploadCloud, FileText, Check, Loader2, Calendar, 
@@ -187,11 +188,20 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     }
   }, [currentUser]);
 
+  const searchParams = useSearchParams();
+  const urlSearch = searchParams?.get('search') || '';
+
   // Filter States
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(urlSearch);
   const [channelFilter, setChannelFilter] = useState('All Channel');
   const [dateFilter, setDateFilter] = useState('Today (14 Sep 2026)');
   const [statusFilter, setStatusFilter] = useState('All Status');
+
+  useEffect(() => {
+    if (urlSearch) {
+      setSearchQuery(urlSearch);
+    }
+  }, [urlSearch]);
 
   // Dropdown Open States
   const [isChannelDropdownOpen, setIsChannelDropdownOpen] = useState(false);

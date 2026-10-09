@@ -414,8 +414,11 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
     <div className="w-full max-w-[1280px] mx-auto pb-16 font-sans">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 right-8 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 text-sm animate-in fade-in slide-in-from-top-4 duration-200">
-          <CheckCircle2 size={18} className="text-emerald-400" />
+        <div
+          onClick={() => setToastMessage(null)}
+          className="fixed top-6 right-6 sm:top-8 sm:right-8 z-[9999] bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-semibold border border-slate-700/80 animate-in fade-in slide-in-from-top-3 duration-200 cursor-pointer select-none"
+        >
+          <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}

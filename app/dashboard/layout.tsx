@@ -10,7 +10,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <Sidebar />
       </Suspense>
       <main className="min-w-0 flex-1 px-6 py-8 lg:px-12">
-        <DashboardHeader />
+        <Suspense fallback={<div className="h-12 border-b border-slate-100 mb-6" />}>
+          <DashboardHeader />
+        </Suspense>
         {children}
       </main>
     </div>

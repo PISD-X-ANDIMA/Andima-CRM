@@ -795,7 +795,10 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     <div className="w-full pb-20 animate-in fade-in duration-200">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 animate-in slide-in-from-bottom-2">
+        <div
+          onClick={() => setToastMessage(null)}
+          className="fixed top-6 right-6 sm:top-8 sm:right-8 z-[9999] bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 border border-slate-700/80 animate-in fade-in slide-in-from-top-3 duration-200 cursor-pointer select-none"
+        >
           <CheckCircle size={16} className="text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>

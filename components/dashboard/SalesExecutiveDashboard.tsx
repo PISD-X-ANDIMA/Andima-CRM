@@ -93,7 +93,19 @@ function localDateValue(date: Date) {
 }
 
 function DetailInfoCard({ title, rows }: { title: string; rows: [string, string | null | undefined][] }) {
-  return <section className="min-h-64 rounded-lg border border-slate-200 p-5 sm:p-6"><h3 className="mb-4 text-sm font-semibold text-slate-700">{title}</h3><dl className="space-y-3">{rows.map(([label, value]) => <div key={label} className="flex items-start justify-between gap-4 text-sm"><dt className="text-slate-400">{label}</dt><dd className="text-right font-semibold text-[#1e3158]">{value || "—"}</dd></div>)}</dl></section>;
+  return (
+    <section className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">
+      <h3 className="mb-3 text-xs font-bold text-slate-800">{title}</h3>
+      <dl className="space-y-2">
+        {rows.map(([label, value]) => (
+          <div key={label} className="flex items-start justify-between gap-3 text-xs">
+            <dt className="text-slate-400">{label}</dt>
+            <dd className="text-right font-semibold text-slate-800">{value || "—"}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
 }
 
 export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
@@ -240,55 +252,214 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
   const statisticsUnavailable = metrics.totalCustomers === null || metrics.meetingsThisWeek === null;
 
   return <div className="mx-auto w-full max-w-[1280px]">
-    <h1 className="mb-0 text-4xl font-bold tracking-tight text-black sm:text-5xl">Welcome Back, {displayName}</h1>
-    <p className="mb-5 ml-2 text-lg text-[#858585] sm:text-2xl">Here’s your CRM Overview today!</p>
+    <h1 className="mb-0 text-xl sm:text-2xl font-bold tracking-tight text-slate-900">Welcome Back, {displayName}</h1>
+    <p className="mb-5 text-xs sm:text-sm text-slate-500">Here’s your CRM Overview today!</p>
 
-    <section aria-label="Key performance indicators" className="mb-3 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <section aria-label="Key performance indicators" className="mb-4 grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
       {[
-        { label: "Total Customer", value: metrics.totalCustomers, hint: "Company records", icon: UsersRound, color: "bg-blue-50 text-blue-500" },
-        { label: "Meeting this week", value: metrics.meetingsThisWeek, hint: "Scheduled meetings", icon: CalendarDays, color: "bg-rose-100 text-rose-500" },
-        { label: "Total Job", value: 0, hint: "Tasks", icon: BriefcaseBusiness, color: "bg-sky-50 text-sky-500" },
-      ].map(({ label, value, hint, icon: Icon, color }) => <article key={label} className="min-h-[112px] rounded-xl border border-[#aaa] bg-white px-4 py-2">
-        <h2 className="text-lg font-semibold text-[#505050] sm:text-xl">{label}</h2><div className="mt-2 flex items-center gap-3"><span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${color}`}><Icon className="h-5 w-5" /></span><p className="text-3xl font-bold text-[#202020]">{value ?? "—"}</p><span className="ml-auto text-right text-[10px] leading-tight text-slate-400">{hint}</span></div>
+        { label: "Total Customer", value: metrics.totalCustomers, hint: "Company records", icon: UsersRound, color: "bg-blue-50 text-blue-600" },
+        { label: "Meeting this week", value: metrics.meetingsThisWeek, hint: "Scheduled meetings", icon: CalendarDays, color: "bg-rose-50 text-rose-500" },
+        { label: "Total Job", value: 0, hint: "Tasks", icon: BriefcaseBusiness, color: "bg-sky-50 text-sky-600" },
+      ].map(({ label, value, hint, icon: Icon, color }) => <article key={label} className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs">
+        <h2 className="text-xs font-semibold text-slate-600">{label}</h2>
+        <div className="mt-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${color}`}><Icon className="h-4 w-4" /></span>
+            <p className="text-2xl font-bold text-slate-900">{value ?? "—"}</p>
+          </div>
+          <span className="text-[10px] text-slate-400 font-medium">{hint}</span>
+        </div>
       </article>)}
     </section>
-    {statisticsUnavailable && <div role="alert" className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><span>Statistical data unavailable.</span><button type="button" onClick={() => router.refresh()} className="font-semibold underline">Try again later</button></div>}
+    {statisticsUnavailable && <div role="alert" className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-800"><span>Statistical data unavailable.</span><button type="button" onClick={() => router.refresh()} className="font-semibold underline">Try again later</button></div>}
 
-    <section aria-labelledby="weekly-schedule-title" className="mb-4">
-      <div className="mb-4 flex items-center justify-between"><h2 id="weekly-schedule-title" className="text-xl font-bold text-[#505050] sm:text-2xl">Schedule this week</h2><Link href="/dashboard/meeting-schedule" aria-label="Open Meeting Schedule" className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50"><CalendarDays className="h-5 w-5" /></Link></div>
-      <div className="space-y-2.5">{scheduleLoadError ? <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">{scheduleLoadError}<button type="button" onClick={() => void refreshSchedule()} className="ml-2 underline">Retry</button></div> : scheduleLoading ? <div role="status" className="rounded-2xl border border-slate-200 px-5 py-6 text-sm text-slate-500">Refreshing this week’s schedule...</div> : weeklyMeetings.length ? weeklyMeetings.map(({ customer, date, time }) => <Link key={`${customer.id}-${date.toISOString()}`} href={`/dashboard/company-list/${customer.id}`} className="flex min-h-[70px] items-center justify-between gap-5 rounded-2xl border border-[#d0d0d0] px-4 py-4 text-[#555] transition-colors hover:border-blue-300 sm:px-5"><span className="truncate text-lg font-semibold sm:text-2xl">{customer.companyName}</span><span className="shrink-0 text-sm sm:text-xl">{date.toLocaleDateString("en-GB", { weekday: "long" })}, {time}</span></Link>) : <div className="rounded-2xl border border-dashed border-slate-300 px-5 py-6 text-sm text-slate-500">No meeting scheduled this week.</div>}</div>
+    <section aria-labelledby="weekly-schedule-title" className="mb-5">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 id="weekly-schedule-title" className="text-sm font-bold text-slate-800">Schedule this week</h2>
+        <Link href="/dashboard/meeting-schedule" aria-label="Open Meeting Schedule" className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
+          <CalendarDays className="h-4 w-4" />
+        </Link>
+      </div>
+      <div className="space-y-2">
+        {scheduleLoadError ? (
+          <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
+            {scheduleLoadError}<button type="button" onClick={() => void refreshSchedule()} className="ml-2 font-medium underline">Retry</button>
+          </div>
+        ) : scheduleLoading ? (
+          <div role="status" className="rounded-xl border border-slate-200 px-4 py-4 text-xs text-slate-500">
+            Refreshing this week’s schedule...
+          </div>
+        ) : weeklyMeetings.length ? (
+          weeklyMeetings.map(({ customer, date, time }) => (
+            <Link key={`${customer.id}-${date.toISOString()}`} href={`/dashboard/company-list/${customer.id}`} className="flex min-h-[46px] items-center justify-between gap-4 rounded-xl border border-slate-200/90 bg-white px-4 py-2.5 text-xs text-slate-700 shadow-2xs transition-colors hover:border-blue-400">
+              <span className="truncate font-semibold text-slate-800">{customer.companyName}</span>
+              <span className="shrink-0 text-slate-500">{date.toLocaleDateString("en-GB", { weekday: "long" })}, {time}</span>
+            </Link>
+          ))
+        ) : (
+          <div className="rounded-xl border border-dashed border-slate-200 px-4 py-4 text-xs text-slate-500 text-center">
+            No meeting scheduled this week.
+          </div>
+        )}
+      </div>
     </section>
 
-    <div className="mb-2 flex items-center justify-between gap-4 px-1 sm:px-2">
-      <label className="relative block w-full max-w-[720px]"><Search aria-hidden="true" className="absolute left-7 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" /><input type="search" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search Company or PIC" aria-label="Search company or PIC" className="h-[70px] w-full rounded-2xl border border-[#bdbdbd] bg-white pl-16 pr-5 text-base font-medium text-slate-700 outline-none placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:text-lg" /></label>
-      <button type="button" onClick={() => { setExportError(""); setExportOpen(true); }} disabled={!customers.length} className="inline-flex h-[52px] shrink-0 items-center gap-3 rounded-2xl border border-slate-300 bg-white px-5 text-base font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"><Download className="h-5 w-5" />Export</button>
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <label className="relative block w-full max-w-[480px]">
+        <Search aria-hidden="true" className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => { setSearch(event.target.value); setPage(1); }}
+          placeholder="Search Company or PIC"
+          aria-label="Search company or PIC"
+          className="h-10 w-full rounded-xl border border-slate-200/90 bg-white pl-9 pr-4 text-xs font-medium text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all"
+        />
+      </label>
+      <button
+        type="button"
+        onClick={() => { setExportError(""); setExportOpen(true); }}
+        disabled={!customers.length}
+        className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 disabled:opacity-50 transition-colors"
+      >
+        <Download className="h-3.5 w-3.5 text-slate-500" />
+        <span>Export</span>
+      </button>
     </div>
 
-    <section aria-label="Company records" className="overflow-x-auto rounded-lg border border-[#d0d0d0]">
-      <table className="w-full min-w-[1100px] table-fixed text-left"><thead className="bg-[#edf4f8] text-[#333]"><tr>
-        <th className="w-[18%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Transaction ID</th><th className="w-[18%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Job Number</th><th className="w-[22%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Company</th><th className="w-[12%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">PIC</th><th className="w-[17%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">PIC Number</th><th className="w-[13%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Detail</th>
-      </tr></thead><tbody className="text-[#383838]">{customers.map((customer) => <tr key={customer.id} className="border-t border-[#d0d0d0]"><td className="break-words px-4 py-5 text-center text-base sm:text-lg">{customer.transactionNo || "—"}</td><td className="break-words px-4 py-5 text-center text-base sm:text-lg">{customer.jobNumber || "—"}</td><td className="px-4 py-3 text-base leading-tight sm:text-lg">{customer.companyName}</td><td className="px-4 py-5 text-center text-base sm:text-lg">{customer.primaryPic?.fullName || "—"}</td><td className="break-words px-4 py-5 text-center text-base sm:text-lg">{customer.primaryPic?.phoneNumber || "—"}</td><td className="px-4 py-5 text-center"><button type="button" onClick={() => void openCustomerDetail(customer.id)} className="text-base text-blue-600 underline underline-offset-2 hover:text-blue-800 sm:text-lg">See more...</button></td></tr>)}</tbody></table>
-      {searchError ? <div role="alert" className="border-t border-slate-200 p-6 text-center text-sm text-red-700">{searchError}</div> : customers.length === 0 ? <div className="border-t border-slate-200 p-8 text-center text-slate-500"><FileText className="mx-auto mb-2 h-5 w-5" />{search ? "No customer or transaction found." : "No transaction data available."}</div> : null}
+    <section aria-label="Company records" className="overflow-x-auto rounded-xl border border-slate-200/80 bg-white shadow-2xs">
+      <table className="w-full min-w-[850px] table-fixed text-left text-xs">
+        <thead className="bg-[#edf4fb] border-b border-slate-200/70 text-slate-700 font-bold">
+          <tr>
+            <th className="w-[18%] px-4 py-3 text-center">Transaction ID</th>
+            <th className="w-[18%] px-4 py-3 text-center">Job Number</th>
+            <th className="w-[24%] px-4 py-3 text-left">Company</th>
+            <th className="w-[14%] px-4 py-3 text-center">PIC</th>
+            <th className="w-[14%] px-4 py-3 text-center">PIC Number</th>
+            <th className="w-[12%] px-4 py-3 text-center">Detail</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100 text-slate-700">
+          {customers.map((customer) => (
+            <tr key={customer.id} className="hover:bg-slate-50/60 transition-colors">
+              <td className="break-words px-4 py-3 text-center font-medium text-slate-800">{customer.transactionNo || "—"}</td>
+              <td className="break-words px-4 py-3 text-center font-medium text-blue-600">{customer.jobNumber || "—"}</td>
+              <td className="px-4 py-3 font-semibold text-slate-800">{customer.companyName}</td>
+              <td className="px-4 py-3 text-center">{customer.primaryPic?.fullName || "—"}</td>
+              <td className="break-words px-4 py-3 text-center">{customer.primaryPic?.phoneNumber || "—"}</td>
+              <td className="px-4 py-3 text-center">
+                <button type="button" onClick={() => void openCustomerDetail(customer.id)} className="font-semibold text-blue-600 hover:underline">
+                  See more...
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {searchError ? (
+        <div role="alert" className="border-t border-slate-200 p-4 text-center text-xs text-red-600">{searchError}</div>
+      ) : customers.length === 0 ? (
+        <div className="border-t border-slate-200 p-8 text-center text-xs text-slate-400">
+          <FileText className="mx-auto mb-2 h-4 w-4" />
+          {search ? "No customer or transaction found." : "No transaction data available."}
+        </div>
+      ) : null}
       {isSearching && <p className="sr-only" role="status">Searching customers</p>}
     </section>
     <div className="flex flex-wrap items-center justify-between gap-4 px-3 pt-1 text-xs text-slate-500"><span>Showing {firstRow}-{lastRow} of {total} customers</span><nav className="flex items-center gap-1" aria-label="Dashboard pages"><button type="button" aria-label="Previous page" disabled={page <= 1 || isSearching} onClick={() => setPage((value) => value - 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40">‹</button>{Array.from({ length: Math.min(totalPages, 5) }, (_, index) => { const pageNumber = totalPages <= 5 ? index + 1 : Math.max(1, Math.min(page - 2, totalPages - 4)) + index; return <button type="button" key={pageNumber} aria-current={page === pageNumber ? "page" : undefined} onClick={() => setPage(pageNumber)} className={`h-8 min-w-8 rounded-md px-2 ${page === pageNumber ? "bg-blue-600 font-semibold text-white" : "text-slate-600 hover:bg-slate-100"}`}>{pageNumber}</button>; })}{totalPages > 5 && <><span className="px-1">...</span><button type="button" onClick={() => setPage(totalPages)} className="h-8 min-w-8 rounded-md px-2 text-slate-600">{totalPages}</button></>}<button type="button" aria-label="Next page" disabled={page >= totalPages || isSearching} onClick={() => setPage((value) => value + 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40">›</button></nav></div>
 
-    {exportOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setExportOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="export-title" className="w-full max-w-5xl rounded-xl bg-white px-6 py-8 shadow-2xl sm:px-11 sm:py-10">
-      <h2 id="export-title" className="text-3xl font-bold tracking-tight text-black sm:text-4xl">Export Company Records</h2><p className="mt-1 text-base text-[#747474] sm:text-xl">Select a creation date range to export company records</p>
-      <div className="mt-5 grid gap-7 md:grid-cols-2"><fieldset><legend className="mb-1 text-lg font-medium text-[#444] sm:text-xl">File Format</legend><div className="flex min-h-[165px] flex-col justify-center gap-4 rounded-lg border border-[#ccc] px-5 py-4 text-lg text-[#777]"><label className="flex cursor-pointer items-center gap-4"><input type="radio" name="export-format" checked={exportFormat === "xlsx"} onChange={() => setExportFormat("xlsx")} className="h-5 w-5 accent-blue-600" /><span className="text-emerald-600">▦</span><span>Excel (.xlsx)</span></label><label className="flex cursor-pointer items-center gap-4"><input type="radio" name="export-format" checked={exportFormat === "pdf"} onChange={() => setExportFormat("pdf")} className="h-5 w-5 accent-blue-600" /><span className="text-rose-500">▣</span><span>PDF (.pdf)</span></label></div></fieldset>
-        <fieldset><legend className="mb-1 text-lg font-medium text-[#444] sm:text-xl">Date Range</legend><div className="min-h-[165px] rounded-lg border border-[#ccc] p-4"><div className="grid gap-3 sm:grid-cols-2"><label className="text-xs font-medium text-slate-500">From<input type="date" value={exportStart} onChange={(event) => setExportStart(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-700" /></label><label className="text-xs font-medium text-slate-500">To<input type="date" value={exportEnd} onChange={(event) => setExportEnd(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-700" /></label></div></div></fieldset>
+    {exportOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setExportOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="export-title" className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl sm:p-6 animate-in fade-in zoom-in-95 duration-150">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h2 id="export-title" className="text-base sm:text-lg font-bold text-slate-900">Export Company Records</h2>
+        <button type="button" aria-label="Close" onClick={() => setExportOpen(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors">
+          <X className="h-4 w-4" />
+        </button>
       </div>
-      {exportError && <p role="alert" className="mt-3 text-sm text-rose-600">{exportError}</p>}
-      <div className="mt-6 flex flex-col-reverse justify-end gap-3 sm:flex-row sm:gap-5"><button type="button" onClick={() => setExportOpen(false)} className="h-14 rounded-lg border border-[#888] px-10 text-lg font-semibold text-[#505050] hover:bg-slate-50 sm:w-[220px]">Cancel</button><button type="button" disabled={exporting} onClick={() => void runExport()} className="h-14 rounded-lg bg-[#3e6df5] px-10 text-lg font-semibold text-white hover:bg-blue-700 disabled:opacity-60 sm:w-[320px]">{exporting ? "Preparing..." : "Export"}</button></div>
+      <p className="mt-2 text-xs text-slate-500">Select a creation date range to export company records</p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <fieldset>
+          <legend className="mb-1 text-xs font-semibold text-slate-700">File Format</legend>
+          <div className="flex flex-col justify-center gap-2.5 rounded-xl border border-slate-200/80 p-3 text-xs text-slate-600 bg-slate-50/50">
+            <label className="flex cursor-pointer items-center gap-2.5">
+              <input type="radio" name="export-format" checked={exportFormat === "xlsx"} onChange={() => setExportFormat("xlsx")} className="h-4 w-4 accent-blue-600" />
+              <span className="font-semibold text-emerald-600">Excel (.xlsx)</span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-2.5">
+              <input type="radio" name="export-format" checked={exportFormat === "pdf"} onChange={() => setExportFormat("pdf")} className="h-4 w-4 accent-blue-600" />
+              <span className="font-semibold text-rose-500">PDF (.pdf)</span>
+            </label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend className="mb-1 text-xs font-semibold text-slate-700">Date Range</legend>
+          <div className="rounded-xl border border-slate-200/80 p-3 space-y-2 bg-slate-50/50">
+            <label className="block text-[11px] font-medium text-slate-500">From<input type="date" value={exportStart} onChange={(event) => setExportStart(event.target.value)} className="mt-1 h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 outline-none" /></label>
+            <label className="block text-[11px] font-medium text-slate-500">To<input type="date" value={exportEnd} onChange={(event) => setExportEnd(event.target.value)} className="mt-1 h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 outline-none" /></label>
+          </div>
+        </fieldset>
+      </div>
+      {exportError && <p role="alert" className="mt-3 text-xs text-rose-600">{exportError}</p>}
+      <div className="mt-5 flex justify-end gap-2.5 border-t border-slate-100 pt-3.5">
+        <button type="button" onClick={() => setExportOpen(false)} className="h-9 px-4 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
+        <button type="button" disabled={exporting} onClick={() => void runExport()} className="h-9 px-5 rounded-xl bg-blue-600 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-xs">{exporting ? "Preparing..." : "Export"}</button>
+      </div>
     </section></div>}
 
-    {detailOpen && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="transaction-detail-title" className="my-auto w-full max-w-7xl rounded-xl bg-white p-6 shadow-2xl sm:px-12 sm:py-10">
-      <div className="flex items-start justify-between gap-4"><h2 id="transaction-detail-title" className="text-3xl font-bold tracking-tight text-black sm:text-4xl">Company Details</h2><button type="button" aria-label="Close" onClick={() => setDetailOpen(false)} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X className="h-6 w-6" /></button></div>
-      {detailLoading ? <div role="status" className="grid min-h-72 place-items-center text-slate-500">Loading company details...</div> : detailError ? <p role="alert" className="mt-8 rounded-lg bg-rose-50 p-4 text-sm text-rose-700">{detailError}</p> : detailCustomer && <>
-        <div className="mt-7 grid gap-5 border-b border-slate-100 pb-6 sm:grid-cols-2 lg:grid-cols-4">{[["Transaction ID", detailCustomer.transactionNo], ["Job Number", detailCustomer.jobNumber], ["Company", detailCustomer.companyName], ["PIC", detailCustomer.primaryPic?.fullName]].map(([label, value]) => <div key={label}><h3 className="text-base text-[#707070] sm:text-lg">{label}</h3><p className="mt-1 break-words text-sm font-medium text-[#303030] sm:text-base">{value || "—"}</p></div>)}</div>
-        <div className="mt-6 grid gap-5 lg:grid-cols-2"><DetailInfoCard title="Company Information" rows={[["Address", detailCustomer.address], ["Transaction ID", detailCustomer.transactionNo], ["Job Number", detailCustomer.jobNumber], ["PIC", detailCustomer.primaryPic?.fullName], ["PIC Phone Number", detailCustomer.primaryPic?.phoneNumber], ["Created By", detailCustomer.createdBy], ["Created Date", detailCustomer.createdAt]]} /><DetailInfoCard title="Meeting Schedule" rows={detailCustomer.meetings.length ? detailCustomer.meetings.map((meeting) => [meeting.formattedSchedule, [meeting.agenda, meeting.status].filter(Boolean).join(" · ")]) : [["No meeting scheduled", ""]]} /></div>
-      </>}
-      <div className="mt-7 flex justify-end"><button type="button" onClick={() => setDetailOpen(false)} className="h-14 w-full rounded-lg bg-[#3e6df5] text-lg font-semibold text-white hover:bg-blue-700 sm:w-[300px]">Close</button></div>
+    {detailOpen && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="transaction-detail-title" className="my-auto w-full max-w-3xl rounded-2xl bg-white p-5 shadow-2xl sm:p-6 animate-in fade-in zoom-in-95 duration-150">
+      <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-3">
+        <h2 id="transaction-detail-title" className="text-base sm:text-lg font-bold text-slate-900">Company Details</h2>
+        <button type="button" aria-label="Close" onClick={() => setDetailOpen(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      {detailLoading ? (
+        <div role="status" className="grid min-h-48 place-items-center text-xs text-slate-400">Loading company details...</div>
+      ) : detailError ? (
+        <p role="alert" className="mt-4 rounded-xl bg-rose-50 p-3 text-xs text-rose-700">{detailError}</p>
+      ) : detailCustomer && (
+        <>
+          <div className="my-4 grid grid-cols-2 gap-3.5 rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 sm:grid-cols-4">
+            {[
+              ["Transaction ID", detailCustomer.transactionNo],
+              ["Job Number", detailCustomer.jobNumber],
+              ["Company", detailCustomer.companyName],
+              ["PIC", detailCustomer.primaryPic?.fullName]
+            ].map(([label, value]) => (
+              <div key={label}>
+                <h3 className="text-[11px] font-medium text-slate-400">{label}</h3>
+                <p className="mt-0.5 break-words text-xs font-bold text-slate-800">{value || "—"}</p>
+              </div>
+            ))}
+          </div>
+          <div className="grid gap-3.5 sm:grid-cols-2">
+            <DetailInfoCard
+              title="Company Information"
+              rows={[
+                ["Address", detailCustomer.address],
+                ["Transaction ID", detailCustomer.transactionNo],
+                ["Job Number", detailCustomer.jobNumber],
+                ["PIC", detailCustomer.primaryPic?.fullName],
+                ["PIC Phone Number", detailCustomer.primaryPic?.phoneNumber],
+                ["Created By", detailCustomer.createdBy],
+                ["Created Date", detailCustomer.createdAt]
+              ]}
+            />
+            <DetailInfoCard
+              title="Meeting Schedule"
+              rows={detailCustomer.meetings.length ? detailCustomer.meetings.map((meeting) => [meeting.formattedSchedule, [meeting.agenda, meeting.status].filter(Boolean).join(" · ")]) : [["No meeting scheduled", ""]]}
+            />
+          </div>
+        </>
+      )}
+      <div className="mt-5 flex justify-end border-t border-slate-100 pt-3.5">
+        <button
+          type="button"
+          onClick={() => setDetailOpen(false)}
+          className="h-9 px-5 rounded-xl bg-blue-600 text-xs font-semibold text-white hover:bg-blue-700 transition-colors shadow-xs cursor-pointer"
+        >
+          Close
+        </button>
+      </div>
     </section></div>}
 
   </div>;
