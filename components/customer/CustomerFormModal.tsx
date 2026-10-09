@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { X, Building2, User, MapPin, Phone, Loader2, AlertCircle } from "lucide-react";
+import { X, Building2, User, MapPin, Loader2, AlertCircle } from "lucide-react";
 import { CreateCustomerInput, CustomerListItem, ApiResponse } from "@/types/customer";
-import { isValidPicPhoneNumber } from "@/lib/validation/pic-phone";
+import { getNationalPhoneNumber, getPhoneCountry, isValidPicPhoneNumber, PHONE_COUNTRIES, toInternationalPhoneNumber, type PhoneCountryCode } from "@/lib/validation/pic-phone";
 
 interface CustomerFormModalProps {
   isOpen: boolean;
@@ -39,16 +39,19 @@ function validate(data: CreateCustomerInput): FormErrors {
 
 export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: CustomerFormModalProps) {
   const [form, setForm] = useState<CreateCustomerInput>(INITIAL_FORM);
+  const phoneCountry = getPhoneCountry(form.pic_phone_number).code;
+  const nationalPhone = getNationalPhoneNumber(form.pic_phone_number, phoneCountry);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   React.useEffect(() => {
     if (!isOpen) return;
+    const savedPhone = customer?.primaryPic?.phoneNumber || "";
     setForm(customer ? {
       company_name: customer.companyName,
       address: customer.address || "",
       pic_full_name: customer.primaryPic?.fullName || "",
-      pic_phone_number: customer.primaryPic?.phoneNumber || "",
+      pic_phone_number: savedPhone,
     } : INITIAL_FORM);
     setErrors({});
   }, [customer, isOpen]);
@@ -248,19 +251,32 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
                   <label htmlFor="field-pic_phone_number" className="mb-1.5 block text-xs font-medium text-slate-700">
                     PIC Phone Number <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><Phone className="h-4 w-4" /></div>
+                  <div className="flex gap-2">
+                    <select aria-label="Country calling code" value={phoneCountry} onChange={(event) => {
+                      const nextCountry = event.target.value as PhoneCountryCode;
+                      const country = PHONE_COUNTRIES.find((item) => item.code === nextCountry)!;
+                      const nextNational = nationalPhone.slice(0, country.max);
+                      handleChange("pic_phone_number", toInternationalPhoneNumber(nextNational, nextCountry));
+                    }} className="w-[145px] shrink-0 rounded-lg border border-slate-200 bg-white px-2 py-2.5 text-sm text-slate-700 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                      {PHONE_COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.name} ({country.dialCode})</option>)}
+                    </select>
                     <input
                       id="field-pic_phone_number"
                       type="tel"
-                      maxLength={20}
+                      inputMode="numeric"
+                      maxLength={PHONE_COUNTRIES.find((item) => item.code === phoneCountry)?.max || 13}
                       autoComplete="tel"
-                      value={form.pic_phone_number}
-                      onChange={(event) => handleChange("pic_phone_number", event.target.value)}
-                      placeholder="e.g. +62 812 3456 7890"
-                      className={`w-full rounded-lg border py-2.5 pl-9 pr-4 text-sm transition-all focus:outline-none focus:ring-2 ${errors.pic_phone_number ? "border-red-300 focus:border-red-400 focus:ring-red-500/20" : "border-slate-200 focus:border-blue-400 focus:ring-blue-500/20"}`}
+                      value={nationalPhone}
+                      onChange={(event) => {
+                        const max = PHONE_COUNTRIES.find((item) => item.code === phoneCountry)?.max || 13;
+                        const value = event.target.value.replace(/\D/g, "").slice(0, max);
+                        handleChange("pic_phone_number", toInternationalPhoneNumber(value, phoneCountry));
+                      }}
+                      placeholder={phoneCountry === "ID" ? "81234567890" : "Phone number"}
+                      className={`min-w-0 flex-1 rounded-lg border px-3 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 ${errors.pic_phone_number ? "border-red-300 focus:border-red-400 focus:ring-red-500/20" : "border-slate-200 focus:border-blue-400 focus:ring-blue-500/20"}`}
                     />
                   </div>
+                  <p className="mt-1 text-[11px] text-slate-400">Enter {PHONE_COUNTRIES.find((item) => item.code === phoneCountry)?.min}–{PHONE_COUNTRIES.find((item) => item.code === phoneCountry)?.max} digits, excluding the country code.</p>
                   {errors.pic_phone_number && <p className="mt-1.5 text-[11px] text-red-600">{errors.pic_phone_number}</p>}
                 </div>
 

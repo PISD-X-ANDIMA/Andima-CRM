@@ -176,11 +176,11 @@ export default function LoginPage() {
         console.error(err);
       }
 
-      setSuccessMessage(`Login berhasil! Selamat datang, ${displayName}. Mengalihkan ke Dashboard...`);
+      setSuccessMessage(`Login successful. Welcome, ${displayName}. Redirecting to the dashboard...`);
       window.setTimeout(() => { router.push('/dashboard'); }, 1200);
 
     } catch {
-      setErrorMessage('Tidak dapat menghubungi server login. Silakan coba lagi.');
+      setErrorMessage('Unable to reach the login server. Please try again.');
     } finally {
       setIsSigningIn(false);
     }

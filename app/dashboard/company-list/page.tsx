@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { Download, Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
-import * as XLSX from "xlsx";
+import { downloadXlsx, openPdfPrintWindow, printTableAsPdf } from "@/lib/export-utils";
 import type { ApiResponse, CustomerListItem } from "@/types/customer";
 import { CustomerTable } from "@/components/customer/CustomerTable";
 import { CustomerFormModal } from "@/components/customer/CustomerFormModal";
@@ -10,56 +10,6 @@ import { DeleteConfirmDialog } from "@/components/customer/DeleteConfirmDialog";
 import { CompanyActionModal } from "@/components/customer/CompanyActionModals";
 
 type ExportFormat = "xlsx" | "pdf";
-
-function downloadCompanyPdf(customers: CustomerListItem[]) {
-  const clean = (value: string) => value
-    .replace(/[–—]/g, "-")
-    .normalize("NFKD")
-    .replace(/[^\x20-\x7E]/g, " ")
-    .replaceAll("\\", "\\\\")
-    .replaceAll("(", "\\(")
-    .replaceAll(")", "\\)");
-  const lines = customers.flatMap((customer) => [
-    `Company: ${customer.companyName}`,
-    `Address: ${customer.address || "-"}`,
-    `PIC: ${customer.primaryPic?.fullName || "-"} | Phone: ${customer.primaryPic?.phoneNumber || "-"}`,
-    `Meeting schedule: ${(customer.meetings || []).map((meeting) => meeting.formattedSchedule).join("; ") || "Unscheduled"}`,
-    `Customer code: ${customer.customerCode || "-"} | Job number: ${customer.jobNumber || "-"}`,
-    "",
-  ]);
-  const pageLines = 54;
-  const chunks = Array.from({ length: Math.ceil(lines.length / pageLines) }, (_, index) => lines.slice(index * pageLines, (index + 1) * pageLines));
-  const objects: string[] = ["<< /Type /Catalog /Pages 2 0 R >>", "", "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"];
-  const pageRefs: number[] = [];
-  chunks.forEach((chunk, index) => {
-    const pageObjectId = objects.length + 1;
-    const streamObjectId = pageObjectId + 1;
-    pageRefs.push(pageObjectId);
-    const textCommands = ["BT", "/F1 9 Tf", "40 760 Td", "12 TL", `(Company List Export - Page ${index + 1}) Tj`, "T*"];
-    for (const line of chunk) textCommands.push(`(${clean(line).slice(0, 150)}) Tj`, "T*");
-    textCommands.push("ET");
-    const stream = textCommands.join("\n");
-    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${streamObjectId} 0 R >>`);
-    objects.push(`<< /Length ${new TextEncoder().encode(stream).length} >>\nstream\n${stream}\nendstream`);
-  });
-  objects[1] = `<< /Type /Pages /Kids [${pageRefs.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageRefs.length} >>`;
-  let pdf = "%PDF-1.4\n";
-  const offsets = [0];
-  objects.forEach((object, index) => {
-    offsets.push(new TextEncoder().encode(pdf).length);
-    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
-  });
-  const xrefOffset = new TextEncoder().encode(pdf).length;
-  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  for (const offset of offsets.slice(1)) pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
-  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-  const url = URL.createObjectURL(new Blob([pdf], { type: "application/pdf" }));
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = "company-list.pdf";
-  anchor.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 
 export default function CompanyListPage() {
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
@@ -152,6 +102,12 @@ export default function CompanyListPage() {
     }
     setIsExporting(true);
     setExportError("");
+    const pdfWindow = exportFormat === "pdf" ? openPdfPrintWindow() : null;
+    if (exportFormat === "pdf" && !pdfWindow) {
+      setExportError("Allow pop-ups to create the PDF export.");
+      setIsExporting(false);
+      return;
+    }
     try {
       const perExportPage = 100;
       const params = new URLSearchParams({ perPage: String(perExportPage), page: "1" });
@@ -183,16 +139,18 @@ export default function CompanyListPage() {
         "Job Number": customer.jobNumber || "",
       }));
       if (exportFormat === "pdf") {
-        downloadCompanyPdf(filteredCustomers);
+        const headers = ["Company", "Address", "PIC", "PIC Phone Number", "Meeting Schedule", "Customer Code", "Job Number"];
+        const values = rows.map((row) => [row.Company, row.Address, row.PIC, row["PIC Phone Number"], row["Meeting Schedule"], row["Customer Code"], row["Job Number"]]);
+        printTableAsPdf("Company List", "Company records and meeting schedules", headers, values, pdfWindow);
         setExportOpen(false);
         return;
       }
-      const sheet = XLSX.utils.json_to_sheet(rows);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, sheet, "Company List");
-      XLSX.writeFile(workbook, "company-list.xlsx");
+      const headers = ["Company", "Address", "PIC", "PIC Phone Number", "Meeting Schedule", "Customer Code", "Job Number"];
+      const values = rows.map((row) => [row.Company, row.Address, row.PIC, row["PIC Phone Number"], row["Meeting Schedule"], row["Customer Code"], row["Job Number"]]);
+      downloadXlsx("company-list.xlsx", "Company List", headers, values, [34, 42, 24, 22, 40, 22, 22]);
       setExportOpen(false);
     } catch (cause) {
+      pdfWindow?.close();
       setExportError(cause instanceof Error ? cause.message : "Failed to export company data.");
     } finally {
       setIsExporting(false);
@@ -227,7 +185,7 @@ export default function CompanyListPage() {
     <DeleteConfirmDialog isOpen={Boolean(deleteTarget)} isDeleting={isDeleting} companyName={deleteTarget?.companyName || ""} onConfirm={() => void handleDelete()} onCancel={() => setDeleteTarget(null)} />
     {exportOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !isExporting) setExportOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="company-export-title" className="w-full max-w-5xl rounded-xl bg-white px-6 py-8 shadow-2xl sm:px-11 sm:py-10">
       <h2 id="company-export-title" className="text-3xl font-bold tracking-tight text-black sm:text-4xl">Export Company List</h2><p className="mt-1 text-base text-[#747474] sm:text-xl">Select a file format and optional company creation date range</p>
-      <div className="mt-5 grid gap-7 md:grid-cols-2"><fieldset><legend className="mb-1 text-lg font-medium text-[#444] sm:text-xl">File Format</legend><div className="flex min-h-[165px] flex-col justify-center gap-4 rounded-lg border border-[#ccc] px-5 py-4 text-lg text-[#777]"><label className="flex cursor-pointer items-center gap-4"><input type="radio" name="company-export-format" checked={exportFormat === "xlsx"} onChange={() => setExportFormat("xlsx")} className="h-5 w-5 accent-blue-600" /><span className="text-emerald-600">▦</span><span>Excel (.xlsx)</span></label><label className="flex cursor-pointer items-center gap-4"><input type="radio" name="company-export-format" checked={exportFormat === "pdf"} onChange={() => setExportFormat("pdf")} className="h-5 w-5 accent-blue-600" /><span className="text-rose-500">▣</span><span>PDF (.pdf)</span></label></div></fieldset>
+      <div className="mt-5 grid gap-7 md:grid-cols-2"><fieldset><legend className="mb-1 text-lg font-medium text-[#444] sm:text-xl">File Format</legend><div className="flex min-h-[165px] flex-col justify-center gap-4 rounded-lg border border-[#ccc] px-5 py-4 text-lg text-[#777]"><label className="flex cursor-pointer items-center gap-4"><input type="radio" name="company-export-format" checked={exportFormat === "xlsx"} onChange={() => setExportFormat("xlsx")} className="h-5 w-5 accent-blue-600" /><span className="text-emerald-600">▦</span><span>Excel (.xlsx)</span></label><label className="flex cursor-pointer items-center gap-4"><input type="radio" name="company-export-format" checked={exportFormat === "pdf"} onChange={() => setExportFormat("pdf")} className="h-5 w-5 accent-blue-600" /><span className="text-rose-500">▣</span><span>PDF (.pdf)</span></label>{exportFormat === "pdf" && <p className="pl-9 text-xs text-slate-500">The browser print dialog will open. Choose “Save as PDF”.</p>}</div></fieldset>
         <fieldset><legend className="mb-1 text-lg font-medium text-[#444] sm:text-xl">Date Range</legend><div className="min-h-[165px] rounded-lg border border-[#ccc] p-4"><div className="grid gap-3 sm:grid-cols-2"><label className="text-xs font-medium text-slate-500">From<input type="date" value={exportStart} onChange={(event) => setExportStart(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-700" /></label><label className="text-xs font-medium text-slate-500">To<input type="date" value={exportEnd} onChange={(event) => setExportEnd(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-700" /></label></div><p className="mt-3 text-xs text-slate-400">Leave both dates blank to export all matching companies.</p></div></fieldset>
       </div>
       {exportError && <p role="alert" className="mt-3 text-sm text-rose-600">{exportError}</p>}

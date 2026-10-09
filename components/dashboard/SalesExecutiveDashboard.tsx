@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import * as XLSX from "xlsx";
+import { downloadXlsx, openPdfPrintWindow, printTableAsPdf } from "@/lib/export-utils";
 import {
   BriefcaseBusiness, CalendarDays, Download, FileText, Search, UsersRound, X,
 } from "lucide-react";
@@ -15,7 +15,7 @@ interface Props {
   metrics: SalesExecutiveMetrics;
 }
 
-interface WeeklyMeeting { customer: CustomerListItem; date: Date; time: string }
+interface WeeklyMeeting { customer: CustomerListItem; date: Date; time: string; endsAt: string }
 const meetingDayNumbers: Record<MeetingDay, number> = {
   monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6, sunday: 0,
 };
@@ -41,51 +41,21 @@ function getWeeklyMeetings(customers: CustomerListItem[]): WeeklyMeeting[] {
     const dayFromMonday = Math.round((date.getTime() - monday.getTime()) / 86_400_000);
     const effectiveStart = schedule.effectiveStartDate ? dateFromDatabase(schedule.effectiveStartDate) : null;
     if (schedule.status === "cancelled" || schedule.status === "completed" || dayFromMonday < 0 || dayFromMonday > 6 || (effectiveStart && date < effectiveStart)) return [];
-    return [{ customer, date, time: schedule.startTime?.slice(0, 5) || "09:00" }];
+    return [{ customer, date, time: schedule.startTime?.slice(0, 5) || "09:00", endsAt: schedule.endTime?.slice(0, 5) || "10:00" }];
   })).sort((a, b) => a.date.getTime() - b.date.getTime() || a.time.localeCompare(b.time));
 }
 
-function downloadExport(customers: CustomerListItem[], format: "xlsx" | "pdf") {
+function downloadExport(customers: CustomerListItem[], format: "xlsx" | "pdf", pdfWindow: Window | null = null) {
   const headers = ["Transaction ID", "Job Number", "Company", "PIC", "PIC Phone Number"];
   const values = customers.map((customer) => [
     customer.transactionNo || "", customer.jobNumber || "", customer.companyName,
     customer.primaryPic?.fullName || "", customer.primaryPic?.phoneNumber || "",
   ]);
   if (format === "xlsx") {
-    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...values]);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Company Records");
-    XLSX.writeFile(workbook, "sales-executive-company-records.xlsx");
+    downloadXlsx("sales-executive-company-records.xlsx", "Company Records", headers, values, [22, 24, 38, 24, 22]);
     return;
   }
-  const escapePdf = (value: string) => value.replaceAll("\\", "\\\\").replaceAll("(", "\\(").replaceAll(")", "\\)");
-  const commands = ["BT", "/F1 9 Tf", "40 800 Td", "12 TL", `(${escapePdf(headers.join(" | "))}) Tj`, "T*"];
-  for (const row of values) commands.push(`(${escapePdf(row.join(" | ").slice(0, 150))}) Tj`, "T*");
-  commands.push("ET");
-  const stream = commands.join("\n");
-  const objects = [
-    "<< /Type /Catalog /Pages 2 0 R >>",
-    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-    `<< /Length ${new TextEncoder().encode(stream).length} >>\nstream\n${stream}\nendstream`,
-  ];
-  let pdf = "%PDF-1.4\n";
-  const offsets = [0];
-  for (let index = 0; index < objects.length; index++) {
-    offsets.push(new TextEncoder().encode(pdf).length);
-    pdf += `${index + 1} 0 obj\n${objects[index]}\nendobj\n`;
-  }
-  const xrefOffset = new TextEncoder().encode(pdf).length;
-  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  for (const offset of offsets.slice(1)) pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
-  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-  const url = URL.createObjectURL(new Blob([pdf], { type: "application/pdf" }));
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = "sales-executive-company-records.pdf";
-  anchor.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  printTableAsPdf("Sales Executive Company Records", "Transaction and company records", headers, values, pdfWindow || undefined);
 }
 
 function localDateValue(date: Date) {
@@ -103,6 +73,7 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
   const [scheduleCustomers, setScheduleCustomers] = useState<CustomerListItem[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(true);
   const [scheduleLoadError, setScheduleLoadError] = useState("");
+  const [clockNow, setClockNow] = useState(() => Date.now());
   const [search, setSearch] = useState("");
   const [searchError, setSearchError] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -155,6 +126,11 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
     window.addEventListener("focus", refreshSchedule);
     return () => window.removeEventListener("focus", refreshSchedule);
   }, [refreshSchedule]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setClockNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     try {
@@ -216,25 +192,39 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
     }
     setExporting(true);
     setExportError("");
+    const pdfWindow = exportFormat === "pdf" ? openPdfPrintWindow() : null;
+    if (exportFormat === "pdf" && !pdfWindow) {
+      setExportError("Allow pop-ups to create the PDF export.");
+      setExporting(false);
+      return;
+    }
     try {
       const params = new URLSearchParams({ from: exportStart, to: exportEnd, search: search.trim() });
       const response = await fetch(`/api/v1/transactions/export?${params}`);
       const result: ApiResponse<CustomerListItem[]> = await response.json();
       if (!response.ok || !result.success) throw new Error(result.success ? "Could not load company records for export." : result.message);
       if (!result.data.length) {
+        pdfWindow?.close();
         setExportError("No company records were created in the selected date range.");
         return;
       }
-      downloadExport(result.data, exportFormat);
+      downloadExport(result.data, exportFormat, pdfWindow);
       setExportOpen(false);
     } catch (error) {
+      pdfWindow?.close();
       setExportError(error instanceof Error ? error.message : "Export failed.");
     } finally {
       setExporting(false);
     }
   };
 
-  const weeklyMeetings = useMemo(() => getWeeklyMeetings(scheduleCustomers).slice(0, 2), [scheduleCustomers]);
+  const weeklyMeetings = useMemo(() => getWeeklyMeetings(scheduleCustomers), [scheduleCustomers]);
+  const nearbyMeetings = useMemo(() => weeklyMeetings.filter(({ date, time }) => {
+    const [hours, minutes] = time.split(":").map(Number);
+    const startsAt = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes);
+    const minutesUntil = (startsAt.getTime() - clockNow) / 60_000;
+    return minutesUntil >= 0 && minutesUntil <= 60;
+  }), [weeklyMeetings, clockNow]);
   const firstRow = total === 0 ? 0 : (page - 1) * 5 + 1;
   const lastRow = Math.min(page * 5, total);
   const statisticsUnavailable = metrics.totalCustomers === null || metrics.meetingsThisWeek === null || metrics.tasks === null;
@@ -256,7 +246,8 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
 
     <section aria-labelledby="weekly-schedule-title" className="mb-4">
       <div className="mb-4 flex items-center justify-between"><h2 id="weekly-schedule-title" className="text-xl font-bold text-[#505050] sm:text-2xl">Schedule this week</h2><Link href="/dashboard/meeting-schedule" aria-label="Open Meeting Schedule" className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50"><CalendarDays className="h-5 w-5" /></Link></div>
-      <div className="space-y-2.5">{scheduleLoadError ? <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">{scheduleLoadError}<button type="button" onClick={() => void refreshSchedule()} className="ml-2 underline">Retry</button></div> : scheduleLoading ? <div role="status" className="rounded-2xl border border-slate-200 px-5 py-6 text-sm text-slate-500">Refreshing this week’s schedule...</div> : weeklyMeetings.length ? weeklyMeetings.map(({ customer, date, time }) => <Link key={`${customer.id}-${date.toISOString()}`} href={`/dashboard/company-list/${customer.id}`} className="flex min-h-[70px] items-center justify-between gap-5 rounded-2xl border border-[#d0d0d0] px-4 py-4 text-[#555] transition-colors hover:border-blue-300 sm:px-5"><span className="truncate text-lg font-semibold sm:text-2xl">{customer.companyName}</span><span className="shrink-0 text-sm sm:text-xl">{date.toLocaleDateString("en-GB", { weekday: "long" })}, {time}</span></Link>) : <div className="rounded-2xl border border-dashed border-slate-300 px-5 py-6 text-sm text-slate-500">No meeting scheduled this week.</div>}</div>
+      {!scheduleLoading && !scheduleLoadError && nearbyMeetings.length > 0 && <div role="status" className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><strong>Meeting starting soon:</strong> {nearbyMeetings.map(({ customer, time }) => `${customer.companyName} at ${time}`).join(" · ")}</div>}
+      <div className="space-y-2.5">{scheduleLoadError ? <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">{scheduleLoadError}<button type="button" onClick={() => void refreshSchedule()} className="ml-2 underline">Retry</button></div> : scheduleLoading ? <div role="status" className="space-y-2.5">{Array.from({ length: 5 }, (_, index) => <div key={index} className="h-[70px] animate-pulse rounded-2xl border border-slate-200 bg-slate-50" />)}</div> : weeklyMeetings.length ? weeklyMeetings.map(({ customer, date, time, endsAt }) => <Link key={`${customer.id}-${date.toISOString()}-${time}`} href={`/dashboard/company-list/${customer.id}`} className="flex min-h-[70px] items-center justify-between gap-5 rounded-2xl border border-[#d0d0d0] px-4 py-4 text-[#555] transition-colors hover:border-blue-300 sm:px-5"><span className="min-w-0"><span className="block truncate text-lg font-semibold sm:text-xl">{customer.companyName}</span><span className="text-xs text-slate-500">{date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span></span><span className="shrink-0 text-sm sm:text-base">{date.toLocaleDateString("en-GB", { weekday: "long" })}, {time} - {endsAt}</span></Link>) : <div className="rounded-2xl border border-dashed border-slate-300 px-5 py-6 text-sm text-slate-500">No meeting scheduled this week.</div>}</div>
     </section>
 
     <div className="mb-2 flex items-center justify-between gap-4 px-1 sm:px-2">
@@ -275,7 +266,7 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
 
     {exportOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setExportOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="export-title" className="w-full max-w-5xl rounded-xl bg-white px-6 py-8 shadow-2xl sm:px-11 sm:py-10">
       <h2 id="export-title" className="text-3xl font-bold tracking-tight text-black sm:text-4xl">Export Company Records</h2><p className="mt-1 text-base text-[#747474] sm:text-xl">Select a creation date range to export company records</p>
-      <div className="mt-5 grid gap-7 md:grid-cols-2"><fieldset><legend className="mb-1 text-lg font-medium text-[#444] sm:text-xl">File Format</legend><div className="flex min-h-[165px] flex-col justify-center gap-4 rounded-lg border border-[#ccc] px-5 py-4 text-lg text-[#777]"><label className="flex cursor-pointer items-center gap-4"><input type="radio" name="export-format" checked={exportFormat === "xlsx"} onChange={() => setExportFormat("xlsx")} className="h-5 w-5 accent-blue-600" /><span className="text-emerald-600">▦</span><span>Excel (.xlsx)</span></label><label className="flex cursor-pointer items-center gap-4"><input type="radio" name="export-format" checked={exportFormat === "pdf"} onChange={() => setExportFormat("pdf")} className="h-5 w-5 accent-blue-600" /><span className="text-rose-500">▣</span><span>PDF (.pdf)</span></label></div></fieldset>
+      <div className="mt-5 grid gap-7 md:grid-cols-2"><fieldset><legend className="mb-1 text-lg font-medium text-[#444] sm:text-xl">File Format</legend><div className="flex min-h-[165px] flex-col justify-center gap-4 rounded-lg border border-[#ccc] px-5 py-4 text-lg text-[#777]"><label className="flex cursor-pointer items-center gap-4"><input type="radio" name="export-format" checked={exportFormat === "xlsx"} onChange={() => setExportFormat("xlsx")} className="h-5 w-5 accent-blue-600" /><span className="text-emerald-600">▦</span><span>Excel (.xlsx)</span></label><label className="flex cursor-pointer items-center gap-4"><input type="radio" name="export-format" checked={exportFormat === "pdf"} onChange={() => setExportFormat("pdf")} className="h-5 w-5 accent-blue-600" /><span className="text-rose-500">▣</span><span>PDF (.pdf)</span></label>{exportFormat === "pdf" && <p className="pl-9 text-xs text-slate-500">The browser print dialog will open. Choose “Save as PDF”.</p>}</div></fieldset>
         <fieldset><legend className="mb-1 text-lg font-medium text-[#444] sm:text-xl">Date Range</legend><div className="min-h-[165px] rounded-lg border border-[#ccc] p-4"><div className="grid gap-3 sm:grid-cols-2"><label className="text-xs font-medium text-slate-500">From<input type="date" value={exportStart} onChange={(event) => setExportStart(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-700" /></label><label className="text-xs font-medium text-slate-500">To<input type="date" value={exportEnd} onChange={(event) => setExportEnd(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-700" /></label></div></div></fieldset>
       </div>
       {exportError && <p role="alert" className="mt-3 text-sm text-rose-600">{exportError}</p>}

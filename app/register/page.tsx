@@ -216,7 +216,7 @@ export default function RegisterPage() {
       // Ambil ID user dari auth
       const userId = authData?.user?.id;
       if (!userId) {
-        throw new Error('User ID tidak ditemukan setelah pendaftaran auth.');
+        throw new Error('The user ID was not returned after authentication registration.');
       }
 
       // 3. Simpan data ke b2_register (diubah: tambahkan id: userId bertipe UUID)
@@ -236,7 +236,7 @@ export default function RegisterPage() {
         ]);
 
       if (dbError) {
-        throw new Error('Gagal menyimpan ke b2_register: ' + dbError.message);
+        throw new Error('Failed to save the registration profile: ' + dbError.message);
       }
 
       // 4. Berhasil
@@ -252,7 +252,7 @@ export default function RegisterPage() {
       setGeneralError(
         err instanceof Error
           ? err.message
-          : 'Terjadi kesalahan saat menyimpan. Silakan coba lagi.'
+          : 'An error occurred while saving. Please try again.'
       );
     } finally {
       submitting.current = false;
