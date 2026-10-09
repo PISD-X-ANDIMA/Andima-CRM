@@ -26,7 +26,8 @@ import {
   Moon,
   ChevronRight,
   ChevronDown,
-  UserCheck
+  UserCheck,
+  Menu,
 } from 'lucide-react'
 
 const AVATAR_COLOR_MAP: Record<string, string> = {
@@ -368,16 +369,28 @@ export function DashboardHeader() {
   )
 
   return (
-    <header className="relative z-50 mb-6 flex min-h-12 items-center justify-between gap-4 border-b border-slate-100/80 dark:border-slate-800 pb-4">
-      {/* Left: Breadcrumbs */}
-      <div className='flex items-center gap-1.5 text-xs'>
-        <span className='font-semibold text-slate-400 dark:text-slate-500'>CRM</span>
-        <span className='text-slate-300 dark:text-slate-600'>/</span>
-        <span className='font-semibold text-slate-400 dark:text-slate-500'>
-          {pathname?.includes('field-agent') ? 'FIELD AGENT' : 'SALES EXECUTIVE'}
-        </span>
-        <span className='text-slate-300 dark:text-slate-600'>/</span>
-        <span className='font-bold text-blue-600 dark:text-blue-400'>{currentLabel}</span>
+    <header className="relative z-50 mb-6 flex min-h-12 items-center justify-between gap-3 border-b border-slate-100/80 dark:border-slate-800 pb-4">
+      {/* Left: Mobile Hamburger & Breadcrumbs */}
+      <div className='flex items-center gap-2 text-xs'>
+        <button
+          type='button'
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent('toggle-mobile-sidebar'))
+          }}
+          className='flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 lg:hidden shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0'
+          aria-label='Toggle navigation menu'
+        >
+          <Menu className='h-4 w-4' />
+        </button>
+        <div className='flex items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap'>
+          <span className='font-semibold text-slate-400 dark:text-slate-500'>CRM</span>
+          <span className='text-slate-300 dark:text-slate-600'>/</span>
+          <span className='font-semibold text-slate-400 dark:text-slate-500 hidden sm:inline'>
+            {pathname?.includes('field-agent') ? 'FIELD AGENT' : 'SALES EXECUTIVE'}
+          </span>
+          <span className='text-slate-300 dark:text-slate-600 hidden sm:inline'>/</span>
+          <span className='font-bold text-blue-600 dark:text-blue-400 truncate'>{currentLabel}</span>
+        </div>
       </div>
 
       {/* Center: Global Search Bar with Live Popover Results */}

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import {
   LayoutDashboard,
@@ -14,6 +14,7 @@ import {
   Contact,
   LogOut,
   Settings,
+  X,
 } from 'lucide-react'
 
 interface SubMenuItem {
@@ -65,9 +66,25 @@ export function Sidebar(): React.ReactElement {
   const searchParams = useSearchParams()
   const [crmOpen, setCrmOpen] = useState(true)
   const [fieldAgentOpen, setFieldAgentOpen] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   const isFieldAgentActive = pathname.startsWith('/dashboard/field-agent')
   const currentFieldTab = searchParams?.get('tab') || 'field-agent'
+
+  useEffect(() => {
+    const handleToggle = (): void => setMobileOpen((prev) => !prev)
+    const handleClose = (): void => setMobileOpen(false)
+    window.addEventListener('toggle-mobile-sidebar', handleToggle)
+    window.addEventListener('close-mobile-sidebar', handleClose)
+    return () => {
+      window.removeEventListener('toggle-mobile-sidebar', handleToggle)
+      window.removeEventListener('close-mobile-sidebar', handleClose)
+    }
+  }, [])
+
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [pathname, searchParams])
 
   const handleLogout = async (): Promise<void> => {
     await supabase.auth.signOut()
@@ -77,23 +94,35 @@ export function Sidebar(): React.ReactElement {
     router.push('/login')
   }
 
-  return (
-    <aside className='sticky top-0 flex h-screen w-[240px] shrink-0 flex-col bg-[#0b1a34] text-slate-300 select-none'>
+  const renderNavContent = (isMobile = false): React.ReactElement => (
+    <>
       {/* Brand Header */}
-      <div className='flex h-20 items-center gap-3 px-5 border-b border-white/[0.06]'>
-        <Image
-          src='/andima-logo.png'
-          alt='PT Andima Transportindo'
-          width={40}
-          height={40}
-          className='h-9 w-9 shrink-0 object-contain'
-          priority
-        />
-        <div className='leading-tight'>
-          <h1 className='text-[14px] font-extrabold tracking-wider text-white'>ANDIMA</h1>
-          <p className='text-[10px] font-bold tracking-wide text-slate-200'>TRANSPORTINDO</p>
-          <p className='mt-0.5 text-[5px] tracking-[0.2em] text-blue-400'>ENTERPRISE DIGITAL ECOSYSTEM</p>
+      <div className='flex h-20 items-center justify-between px-5 border-b border-white/[0.06]'>
+        <div className='flex items-center gap-3'>
+          <Image
+            src='/andima-logo.png'
+            alt='PT Andima Transportindo'
+            width={40}
+            height={40}
+            className='h-9 w-9 shrink-0 object-contain'
+            priority
+          />
+          <div className='leading-tight'>
+            <h1 className='text-[14px] font-extrabold tracking-wider text-white'>ANDIMA</h1>
+            <p className='text-[10px] font-bold tracking-wide text-slate-200'>TRANSPORTINDO</p>
+            <p className='mt-0.5 text-[5px] tracking-[0.2em] text-blue-400'>ENTERPRISE DIGITAL ECOSYSTEM</p>
+          </div>
         </div>
+        {isMobile && (
+          <button
+            type='button'
+            onClick={() => setMobileOpen(false)}
+            className='grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer'
+            aria-label='Tutup Menu'
+          >
+            <X className='h-5 w-5' />
+          </button>
+        )}
       </div>
 
       {/* Main Nav */}
@@ -274,7 +303,31 @@ export function Sidebar(): React.ReactElement {
           <span>Logout</span>
         </button>
       </div>
-    </aside>
+    </>
+  )
+
+  return (
+    <>
+      {/* Desktop Persistent Sidebar */}
+      <aside className='hidden lg:flex sticky top-0 h-screen w-[240px] shrink-0 flex-col bg-[#0b1a34] text-slate-300 select-none'>
+        {renderNavContent(false)}
+      </aside>
+
+      {/* Mobile Drawer (Slide-in) */}
+      {mobileOpen && (
+        <div className='fixed inset-0 z-50 lg:hidden'>
+          {/* Backdrop */}
+          <div
+            className='fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200'
+            onClick={() => setMobileOpen(false)}
+          />
+          {/* Sliding Panel */}
+          <aside className='fixed inset-y-0 left-0 flex h-full w-[260px] flex-col bg-[#0b1a34] text-slate-300 shadow-2xl animate-in slide-in-from-left duration-200 select-none'>
+            {renderNavContent(true)}
+          </aside>
+        </div>
+      )}
+    </>
   )
 }
 
