@@ -95,7 +95,6 @@ export interface CustomerDetailItem {
   jobNumber?: string | null;
   createdBy?: string | null;
   address: string;
-  salesId?: string | null;
   createdAt: string;
   updatedAt: string;
   primaryPic: PrimaryContact | null;

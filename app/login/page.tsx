@@ -22,11 +22,25 @@ export default function LoginPage() {
   // Reuse an existing authenticated session; anonymous users stay on login.
   useEffect(() => {
     if (!hasSupabaseConfig) return;
-    supabase.auth.getUser().then(({ data: { user }, error }) => {
-      if (!error && user) {
-        router.replace('/dashboard/sales-executive');
+    let active = true;
+    void (async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (!active) return;
+
+      if (error) {
+        const invalidRefreshToken = error.code === 'refresh_token_not_found' ||
+          /invalid refresh token|refresh token not found/i.test(error.message);
+        if (invalidRefreshToken) {
+          // Remove only this browser's unusable session. No role is checked here.
+          await supabase.auth.signOut({ scope: 'local' });
+          if (active) setErrorMessage('Your previous login session expired. Please sign in again.');
+        }
+        return;
       }
-    });
+
+      if (user) router.replace('/dashboard/sales-executive');
+    })();
+    return () => { active = false; };
   }, [router]);
 
   useEffect(() => {

@@ -252,7 +252,7 @@ Kesalahan umum: `VALIDATION_001` rentang/format tanggal salah (400), `DATABASE_0
 
 ### `GET /customers/export?format=xlsx|pdf&search=...` — data ekspor Company List
 
-**Dipakai oleh:** tombol ekspor pada Company List. Endpoint mengembalikan baris JSON seluruh perusahaan milik user yang cocok dengan pencarian, termasuk company, address, PIC, nomor telepon, jadwal meeting, dan tanggal dibuat. Browser membentuk file Excel atau membuka print dialog untuk PDF. Filter rentang tanggal diterapkan di browser setelah data diterima.
+**Dipakai oleh:** tombol ekspor pada Company List. Endpoint mengembalikan baris JSON perusahaan pada daftar bersama A1 yang cocok dengan pencarian, termasuk company, address, PIC, nomor telepon, jadwal meeting, dan tanggal dibuat. Akses tetap memerlukan sesi login, tetapi data tidak difilter memakai `sales_id`. Browser membentuk file Excel atau membuka print dialog untuk PDF. Filter rentang tanggal diterapkan di browser setelah data diterima.
 
 ### Endpoint Dashboard tambahan
 

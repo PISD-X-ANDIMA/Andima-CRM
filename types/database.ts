@@ -23,7 +23,6 @@ export interface Database {
       a1_company_list: {
         Row: {
           company_list_id: string;
-          sales_id: string | null;
           customer_code: string | null;
           company_name: string;
           name: string;
@@ -37,7 +36,6 @@ export interface Database {
         };
         Insert: {
           company_list_id?: string;
-          sales_id?: string | null;
           customer_code?: string | null;
           company_name: string;
           name: string;
@@ -51,7 +49,6 @@ export interface Database {
         };
         Update: {
           company_list_id?: string;
-          sales_id?: string | null;
           customer_code?: string | null;
           company_name?: string;
           name?: string | null;

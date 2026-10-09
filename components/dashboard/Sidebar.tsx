@@ -8,8 +8,7 @@ import { supabase } from '@/lib/supabaseClient';
 import {
   Users,
   ChevronDown,
-  Settings,
-  LogOut,
+  ChevronLeft,
 } from "lucide-react";
 
 interface SubMenuItem {
@@ -40,7 +39,7 @@ const salesExecutiveMenus: SubMenuItem[] = [
   },
 ];
 
-export function Sidebar() {
+export function Sidebar({ onHide }: { onHide: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -78,7 +77,15 @@ export function Sidebar() {
   const isCrmActive = isSalesExecutiveActive;
 
   return (
-    <aside className="sticky top-0 flex h-screen w-[260px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
+    <aside className="group relative sticky top-0 flex h-screen w-[260px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
+      <button
+        type="button"
+        onClick={onHide}
+        aria-label="Hide sidebar"
+        className="absolute right-2 top-1/2 z-50 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 opacity-0 shadow-md transition-all hover:scale-105 hover:text-blue-700 focus:opacity-100 group-hover:opacity-100"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
       <div className="mx-4 flex h-[102px] items-center gap-4 border-b border-white/10">
         <Image src="/andima-logo.png" alt="PT Andima Transportindo" width={470} height={300} className="h-12 w-[54px] shrink-0 object-contain" priority />
         <div className="leading-tight text-white">
@@ -191,24 +198,16 @@ export function Sidebar() {
 
       </nav>
 
-      <div className="px-3 pb-4 space-y-0.5">
-        <button
-          type="button"
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-slate-400 transition-colors hover:bg-white/[0.04] hover:text-slate-200"
-        >
-          <Settings className="h-[18px] w-[18px] text-slate-500" />
-          <span>Settings</span>
-        </button>
+      <div className="px-[17px] pb-5 pt-3">
         <button
           type="button"
           onClick={async () => {
-            await supabase.auth.signOut();
+            await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
             try { localStorage.removeItem('andima_user'); } catch {}
             router.push('/login');
           }}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300"
+          className="flex h-10 w-full items-center justify-center rounded-full border-2 border-[#f32650] bg-transparent px-4 text-base font-bold text-[#f32650] transition-colors hover:bg-[#f32650] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f32650] focus-visible:ring-offset-2 focus-visible:ring-offset-[#102445]"
         >
-          <LogOut className="h-[18px] w-[18px] text-red-400" />
           <span>Logout</span>
         </button>
       </div>

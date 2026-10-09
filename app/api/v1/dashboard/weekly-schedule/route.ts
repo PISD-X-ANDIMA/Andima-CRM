@@ -1,9 +1,14 @@
 import { NextRequest } from "next/server";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import { getCustomers } from "@/lib/services/customer-service";
+import { describeSupabaseError } from "@/lib/supabase/errors";
 import type { MeetingDay } from "@/types/customer";
 
 export const dynamic = "force-dynamic";
+
+function describeError(error: unknown): string {
+  return describeSupabaseError(error);
+}
 
 const dayIndex: Record<MeetingDay, number> = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
 
@@ -53,7 +58,17 @@ export async function GET(request: NextRequest) {
       }));
     })).sort((a, b) => a.date.localeCompare(b.date) || (a.start_time || "").localeCompare(b.start_time || ""));
     return createSuccessResponse(schedule, { start_date: startDate, end_date: endDate, total: schedule.length });
-  } catch {
-    return createErrorResponse("SCH_001", "Failed to load the weekly schedule", undefined, 500);
+  } catch (error) {
+    const detail = describeError(error);
+    console.error("[GET /api/v1/dashboard/weekly-schedule]", error);
+    const invalidSession = /invalid refresh token|refresh token not found|authentication is required/i.test(detail);
+    return createErrorResponse(
+      invalidSession ? "AUTH_001" : "SCH_001",
+      invalidSession
+        ? `Your login session is invalid or expired. Please sign in again. (${detail})`
+        : `Failed to load weekly schedule: ${detail}`,
+      undefined,
+      invalidSession ? 401 : 500,
+    );
   }
 }

@@ -14,7 +14,7 @@ function dateAtTime(date: string, time: string) {
 }
 
 /** Returns only metrics backed by A1 tables; meeting notes remain owned by Squad A2. */
-export async function getDashboardSummary(_salesId: string | null): Promise<DashboardSummaryData> {
+export async function getDashboardSummary(): Promise<DashboardSummaryData> {
   const fallback: DashboardSummaryData = {
     totalCustomer: 0,
     meetingThisWeek: { total: 0, completed: 0, upcoming: 0 },
@@ -70,10 +70,10 @@ export async function getDashboardSummary(_salesId: string | null): Promise<Dash
   }
 }
 
-export async function getUpcomingMeetings(_salesId: string | null) {
+export async function getUpcomingMeetings() {
   return [];
 }
 
-export async function getUnminutedMeetings(_salesId: string | null) {
+export async function getUnminutedMeetings() {
   return [];
 }

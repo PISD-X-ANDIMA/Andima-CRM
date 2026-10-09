@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createSupabaseOperationError } from "@/lib/supabase/errors";
 import { isValidPicPhoneNumber } from "@/lib/validation/pic-phone";
 import {
   CustomerListItem,
@@ -75,7 +76,6 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
 
   type CompanyRow = {
     company_list_id: string;
-    sales_id: string | null;
     company_name: string;
     address: string | null;
     name: string | null;
@@ -93,17 +93,15 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
 
   {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError) throw new Error(`Unable to verify the login session: ${authError.message}`);
+    if (authError) throw createSupabaseOperationError("Login session verification failed", authError);
     if (!user) throw new Error("Authentication is required to load customers.");
     let countQuery = (supabase as any)
       .from("a1_company_list")
       .select("company_list_id", { count: "exact", head: true })
-      .eq("sales_id", user.id)
       .is("deleted_at", null);
     let dataQuery = (supabase as any)
       .from("a1_company_list")
-      .select("company_list_id, sales_id, company_name, address, name, pic_phone_number, customer_code, job_number, created_by, created_at")
-      .eq("sales_id", user.id)
+      .select("company_list_id, company_name, address, name, pic_phone_number, customer_code, job_number, created_by, created_at")
       .is("deleted_at", null);
 
     if (search.trim()) {
@@ -114,12 +112,12 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
     }
 
     const { count, error: countError } = await countQuery;
-    if (countError) throw countError;
+    if (countError) throw createSupabaseOperationError("a1_company_list count query failed", countError);
     const total = count || 0;
     const { data, error } = await dataQuery
       .order(sortBy, { ascending: sortOrder === "asc", nullsFirst: false })
       .range(offset, offset + validPerPage - 1);
-    if (error) throw error;
+    if (error) throw createSupabaseOperationError("a1_company_list row query failed", error);
 
     const rows = (data || []) as CompanyRow[];
     const companyIds = rows.map((item) => item.company_list_id);
@@ -133,7 +131,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
         .from("a2_worksheets")
         .select("transaction_no, job_no")
         .in("transaction_no", customerCodes);
-      if (worksheetError && requireTransactions) throw worksheetError;
+      if (worksheetError && requireTransactions) throw createSupabaseOperationError("a2_worksheets query failed", worksheetError);
       if (!worksheetError) {
         for (const worksheet of worksheetRows || []) {
           if (worksheet.transaction_no) worksheetByTransaction.set(worksheet.transaction_no, {
@@ -155,7 +153,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
           .is("deleted_at", null);
         let result = await meetingQuery("id, company_id, meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date, is_active, agenda, pic_name, representative_name, meeting_type, location, meeting_link, notes, status");
         if (result.error) result = await meetingQuery("id, company_id, meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date, is_active");
-        if (result.error && requireMeetings) throw result.error;
+        if (result.error && requireMeetings) throw createSupabaseOperationError("a1_customer_meetings query failed", result.error);
         for (const meeting of result.data || []) {
           const companyMeetings = meetingsByCompany.get(meeting.company_id) || [];
           companyMeetings.push(meeting);
@@ -295,12 +293,12 @@ export async function getCustomerById(
     if (!user) return null;
     const { data, error } = await (supabase as any)
       .from("a1_company_list")
-      .select("company_list_id, sales_id, company_name, name, pic_phone_number, address, customer_code, job_number, created_by, created_at, updated_at")
+      .select("company_list_id, company_name, name, pic_phone_number, address, customer_code, job_number, created_by, created_at, updated_at")
       .eq("company_list_id", customerId)
-      .eq("sales_id", user.id)
       .is("deleted_at", null)
       .maybeSingle();
-    if (error || !data) return null;
+    if (error) throw createSupabaseOperationError("a1_company_list detail query failed", error);
+    if (!data) return null;
 
     const { data: meetingRows, error: meetingError } = await (supabase as any)
       .from("a1_customer_meetings")
@@ -308,7 +306,7 @@ export async function getCustomerById(
       .eq("company_id", customerId)
       .eq("is_active", true)
       .is("deleted_at", null);
-    if (meetingError) throw meetingError;
+    if (meetingError) throw createSupabaseOperationError("a1_customer_meetings detail query failed", meetingError);
 
     const primaryPic = data.name ? {
       id: data.company_list_id,
@@ -367,7 +365,6 @@ export async function getCustomerById(
       jobNumber: worksheetJobNumber,
       createdBy: data.created_by,
       address: data.address || "Address not provided",
-      salesId: data.sales_id || null,
       createdAt: data.created_at || "",
       updatedAt: data.updated_at || data.created_at || "",
       primaryPic,
@@ -376,8 +373,8 @@ export async function getCustomerById(
       // No transaction/job table exists in the confirmed A1 schema.
       jobs,
     };
-  } catch {
-    return null;
+  } catch (error) {
+    throw createSupabaseOperationError("Customer detail lookup failed", error);
   }
 }
 
@@ -412,7 +409,6 @@ export async function createCustomer(
       .from("a1_company_list")
       .select("company_list_id")
       .ilike("company_name", input.company_name.trim().replace(/[\\%_]/g, "\\$&"))
-      .eq("sales_id", user.id)
       .is("deleted_at", null);
     if (duplicateCheckError) return { success: false, error: duplicateCheckError.message };
     if (existing?.length) {
@@ -428,7 +424,6 @@ export async function createCustomer(
       .from("a1_company_list")
       .insert({
         company_list_id: newCompanyId,
-        sales_id: user.id,
         company_name: input.company_name.trim(),
         address: input.address.trim(),
         name: input.pic_full_name.trim(),
@@ -473,8 +468,7 @@ export async function updateCustomer(
     const { error } = await (supabase as any)
       .from("a1_company_list")
       .update(updatePayload)
-      .eq("company_list_id", customerId)
-      .eq("sales_id", user.id);
+      .eq("company_list_id", customerId);
 
     if (error) return { success: false, error: error.message.includes("a1_company_list_unique_active_company_name") ? "DUPLICATE_COMPANY: This company is already on the company list" : error.message };
 
@@ -511,8 +505,7 @@ export async function deleteCustomer(
     const { error: companyErr } = await (supabase as any)
       .from("a1_company_list")
       .update({ deleted_at: now, updated_at: now })
-      .eq("company_list_id", customerId)
-      .eq("sales_id", user.id);
+      .eq("company_list_id", customerId);
 
     if (companyErr) return { success: false, error: companyErr.message };
 

@@ -15,7 +15,7 @@ Implementasi A1 mencakup alur utama Company List dan Meeting Schedule, termasuk 
 | FR-A1-002-01 KPI dan Schedule This Week | Sebagian | Kartu Total Customer, Upcoming Meeting, dan Task di `components/dashboard/SalesExecutiveDashboard.tsx`. Sumber hitungan Task adalah jumlah baris `a2_worksheets`. Lima jadwal terdekat diambil dari `app/api/v1/dashboard/weekly-schedule/route.ts`. Tren/persentase perubahan belum tersedia karena belum ada sumber nilai periode pembanding. |
 | FR-A1-003-01 Pencarian dan ringkasan transaksi | Sebagian | Tabel, pencarian, pagination, detail dan ekspor dashboard menggunakan `/api/v1/transactions/summary` dan `/api/v1/transactions/export`. Nomor transaksi/job membaca `a2_worksheets.transaction_no` dan `job_no`. Urutan terbaru memakai nomor transaksi sebagai perkiraan, karena kolom tanggal transaksi resmi belum dikonfirmasi. UI detail memakai modal sesuai revisi UI terakhir; bila FR mewajibkan halaman detail terpisah, ini berbeda. |
 | FR-A1-004-01 Tabel Company List | Sebagian besar sesuai | Kolom Company, Address, PIC, PIC Number, Meeting Schedule, View Task, Action, real-time search, pagination, dan empty/loading state di `components/customer/CustomerTable.tsx` dan `app/dashboard/company-list/page.tsx`. View Task membuka `/dashboard/task-of-field-agent?company_id=...`; data task tetap menunggu endpoint A2. |
-| FR-A1-005-01 CRUD Company | Sebagian besar sesuai | Form, validasi, update, delete/soft-delete dan pesan sukses di `app/dashboard/company-list/page.tsx`, `components/customer/CustomerFormModal.tsx`, dan `lib/services/customer-service.ts`. Akses dibatasi ke pemilik customer memakai `sales_id`; migration dan backfill Supabase wajib dijalankan sebelum fitur ini berfungsi pada skema baru. |
+| FR-A1-005-01 CRUD Company | Sebagian besar sesuai | Form, validasi, update, delete/soft-delete dan pesan sukses di `app/dashboard/company-list/page.tsx`, `components/customer/CustomerFormModal.tsx`, dan `lib/services/customer-service.ts`. Data perusahaan diperlakukan sebagai daftar bersama untuk pengguna yang sudah login; aplikasi tidak memerlukan kolom `sales_id`. |
 | FR-A1-006-01 Ekspor Company List | Sebagian besar sesuai | Dialog Excel/PDF, filter tanggal dan pencarian di `app/dashboard/company-list/page.tsx`; endpoint data ekspor `app/api/v1/customers/export/route.ts`. PDF memakai print dialog browser (“Save as PDF”), bukan generator PDF server. |
 | FR-A1-007-01 Kalender, slot, dan status | Sebagian besar sesuai | Mini calendar dan status warna di `app/dashboard/meeting-schedule/page.tsx`; data marker dari `/api/v1/meetings/calendar`; slot terpilih dari `/api/v1/meetings/slots`. Slot 08:00–17:00 satu jam. Status selesai/canceled/scheduled dipetakan ke warna UI. |
 | FR-A1-008-01 Penjadwalan dan pengulangan | Sebagian besar sesuai | Form Add/Edit, tipe online/offline, slot, frekuensi one-time/weekly, catatan, validasi bentrok, detail, status, dan delete di `app/dashboard/meeting-schedule/page.tsx`, customer meeting API, serta `lib/services/meeting-service.ts`. Edit meeting selesai dikunci. Auto-cancel hanya berlaku untuk one-time; series weekly tidak otomatis dibatalkan per-occurrence karena satu baris database mewakili seluruh series. |
@@ -36,7 +36,7 @@ Implementasi A1 mencakup alur utama Company List dan Meeting Schedule, termasuk 
 | `GET /api/v1/meetings/slots?date` | Tersedia dan dipakai | Memuat 9 slot harian, status dan keterangan meeting. |
 | `GET /api/v1/meetings/calendar?month` | Tersedia dan dipakai | Dipakai untuk marker mini calendar. |
 | `PUT /api/v1/meetings/{id}/status` | Alias tersedia | UI saat ini mengubah status melalui PATCH route per-customer. |
-| Isolasi data per Sales Executive | Perlu migration dan backfill | `supabase/migrations/202610090001_a1_sales_executive_ownership.sql` menambah `sales_id`, RLS, dan duplikat per pemilik. Baris lama yang tidak cocok tepat ke profil `b2_register.full_name` tetap tidak ber-owner dan tidak tampak bagi user sampai dipetakan manual. Jalankan migration hanya setelah meninjau pemetaan data lama. |
+| Scope data bersama A1 | Sesuai keputusan tim saat ini | Company List dan Meeting Schedule membaca tabel bersama dengan sesi login biasa. Tidak ada pemeriksaan autentikasi berdasarkan role atau filter aplikasi berdasarkan `sales_id`. Jangan jalankan migration ownership lama untuk database bersama ini. |
 
 ## Catatan perbedaan / dependensi yang belum dapat disamakan
 
@@ -54,6 +54,6 @@ Implementasi A1 mencakup alur utama Company List dan Meeting Schedule, termasuk 
 
 - Minta Squad A2 memastikan endpoint/schema Task Field Agent dan Record Conversation, serta kolom tanggal yang dipakai untuk urutan transaksi terbaru.
 - Tentukan definisi angka pembanding setiap tren KPI.
-- Cocokkan `created_by` customer lama dengan UUID Sales Executive dan terapkan migration ownership di Supabase.
+- Pastikan kebijakan RLS Supabase mengizinkan operasi yang diperlukan oleh pengguna terautentikasi pada tabel bersama A1.
 - Sambungkan sidebar ke endpoint menu role jika dinyatakan wajib pada penilaian final.
 - Jalankan build di CI/Vercel setelah migration dan environment Supabase yang sesuai tersedia.

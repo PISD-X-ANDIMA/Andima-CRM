@@ -1,3 +1,7 @@
+-- LEGACY migration from an abandoned per-Sales-Executive ownership design.
+-- It adds sales_id and creates unrelated legacy relations. Do not apply this
+-- file to the current shared A1 database; current application code does not
+-- require sales_id. Use the focused A1 migrations instead.
 -- ============================================================================
 -- MIGRATION: 202609300002_a1_company_list_additive_revision.sql
 -- Module: Sales Executive Dashboard & Customer Data Management (Squad A1)

@@ -6,6 +6,7 @@ import {
 } from "@/lib/services/customer-service";
 import { createSuccessResponse, createErrorResponse } from "@/lib/api-response";
 import { isValidPicPhoneNumber } from "@/lib/validation/pic-phone";
+import { describeSupabaseError } from "@/lib/supabase/errors";
 
 interface RouteContext {
   params: Promise<{ customerId: string }>;
@@ -19,8 +20,9 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       return createErrorResponse("NOT_FOUND_001", "Customer not found", undefined, 404);
     }
     return createSuccessResponse(customer);
-  } catch {
-    return createErrorResponse("GET_001", "Failed to load customer data", undefined, 500);
+  } catch (error) {
+    console.error("[GET /api/v1/customers/:customerId]", error);
+    return createErrorResponse("GET_001", `Failed to load company data: ${describeSupabaseError(error)}`, undefined, 500);
   }
 }
 

@@ -4,23 +4,12 @@ import { cancelExpiredOneTimeMeetings } from "@/lib/services/meeting-service";
 import { createSuccessResponse, createErrorResponse } from "@/lib/api-response";
 import { isValidPicPhoneNumber } from "@/lib/validation/pic-phone";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { describeSupabaseError } from "@/lib/supabase/errors";
 
 export const dynamic = "force-dynamic";
 
 function describeDatabaseError(error: unknown): string {
-  if (!error || typeof error !== "object") {
-    return typeof error === "string" && error.trim() ? error : "No database error details were returned";
-  }
-
-  const value = error as Record<string, unknown>;
-  const parts = [
-    typeof value.message === "string" ? value.message.trim() : "",
-    typeof value.code === "string" ? `code ${value.code}` : "",
-    typeof value.details === "string" ? value.details.trim() : "",
-    typeof value.hint === "string" ? `hint: ${value.hint.trim()}` : "",
-  ].filter(Boolean);
-
-  return parts.join("; ") || "No database error details were returned";
+  return describeSupabaseError(error);
 }
 
 export async function GET(request: NextRequest) {
