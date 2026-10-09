@@ -75,6 +75,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
 
   type CompanyRow = {
     company_list_id: string;
+    sales_id: string | null;
     company_name: string;
     address: string | null;
     name: string | null;
@@ -88,14 +89,18 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
   const supabase = await createServerSupabaseClient();
 
   if (supabase) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { customers: [], total: 0, page, perPage: validPerPage, totalPages: 1 };
     let countQuery = (supabase as any)
       .from("a1_company_list")
       .select("company_list_id", { count: "exact", head: true })
+      .eq("sales_id", user.id)
       .is("deleted_at", null);
     let dataQuery = (supabase as any)
       .from("a1_company_list")
-      .select("company_list_id, company_name, address, name, pic_phone_number, customer_code, job_number, created_by, created_at");
-    dataQuery = dataQuery.is("deleted_at", null);
+      .select("company_list_id, sales_id, company_name, address, name, pic_phone_number, customer_code, job_number, created_by, created_at")
+      .eq("sales_id", user.id)
+      .is("deleted_at", null);
 
     if (search.trim()) {
       const term = `%${search.trim()}%`;
@@ -289,10 +294,13 @@ export async function getCustomerById(
   try {
     // Load the legacy Company List columns first. Related tables and migration-added
     // columns are optional so a saved customer remains viewable on the shared schema.
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
     const { data, error } = await (supabase as any)
       .from("a1_company_list")
-      .select("company_list_id, company_name, name, pic_phone_number, address, customer_code, job_number, created_by, created_at, updated_at")
+      .select("company_list_id, sales_id, company_name, name, pic_phone_number, address, customer_code, job_number, created_by, created_at, updated_at")
       .eq("company_list_id", customerId)
+      .eq("sales_id", user.id)
       .is("deleted_at", null)
       .maybeSingle();
     if (error || !data) return null;
@@ -362,7 +370,7 @@ export async function getCustomerById(
       jobNumber: worksheetJobNumber,
       createdBy: data.created_by,
       address: data.address || "Address not provided",
-      salesId: null,
+      salesId: data.sales_id || null,
       createdAt: data.created_at || "",
       updatedAt: data.updated_at || data.created_at || "",
       primaryPic,
@@ -390,8 +398,7 @@ export async function createCustomer(
 
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    const isDevelopment = process.env.NODE_ENV === "development";
-    if (!user && !isDevelopment) {
+    if (!user) {
       return { success: false, error: "No login session found. Please sign in again." };
     }
 
@@ -399,8 +406,7 @@ export async function createCustomer(
     const createdBy =
       (typeof metadata?.full_name === "string" && metadata.full_name.trim()) ||
       (typeof metadata?.name === "string" && metadata.name.trim()) ||
-      user?.email ||
-      (isDevelopment ? "Uji Coba" : null);
+      user.email;
     if (!createdBy) {
       return { success: false, error: "User identity is unavailable for the customer record." };
     }
@@ -409,6 +415,7 @@ export async function createCustomer(
       .from("a1_company_list")
       .select("company_list_id")
       .ilike("company_name", input.company_name.trim().replace(/[\\%_]/g, "\\$&"))
+      .eq("sales_id", user.id)
       .is("deleted_at", null);
     if (duplicateCheckError) return { success: false, error: duplicateCheckError.message };
     if (existing?.length) {
@@ -424,6 +431,7 @@ export async function createCustomer(
       .from("a1_company_list")
       .insert({
         company_list_id: newCompanyId,
+        sales_id: user.id,
         company_name: input.company_name.trim(),
         address: input.address.trim(),
         name: input.pic_full_name.trim(),
@@ -453,7 +461,7 @@ export async function updateCustomer(
 
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user && process.env.NODE_ENV !== "development") {
+    if (!user) {
       return { success: false, error: "No login session found. Please sign in again." };
     }
     const updatePayload: Record<string, any> = {
@@ -468,7 +476,8 @@ export async function updateCustomer(
     const { error } = await (supabase as any)
       .from("a1_company_list")
       .update(updatePayload)
-      .eq("company_list_id", customerId);
+      .eq("company_list_id", customerId)
+      .eq("sales_id", user.id);
 
     if (error) return { success: false, error: error.message.includes("a1_company_list_unique_active_company_name") ? "DUPLICATE_COMPANY: This company is already on the company list" : error.message };
 
@@ -488,21 +497,27 @@ export async function deleteCustomer(
   if (!supabase) return { success: false, error: "Database client unavailable" };
 
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No login session found. Please sign in again." };
     const now = new Date().toISOString();
 
-    // 1. Soft-delete the customer.
+    // Deactivate scheduled meetings first. Their rows remain as history.
+    const { error: meetingErr } = await (supabase as any)
+      .from("a1_customer_meetings")
+      .update({ is_active: false, updated_at: now })
+      .eq("company_id", customerId)
+      .eq("status", "scheduled")
+      .eq("is_active", true);
+    if (meetingErr) return { success: false, error: meetingErr.message };
+
+    // Soft-delete the company after its scheduled meetings are deactivated.
     const { error: companyErr } = await (supabase as any)
       .from("a1_company_list")
       .update({ deleted_at: now, updated_at: now })
-      .eq("company_list_id", customerId);
+      .eq("company_list_id", customerId)
+      .eq("sales_id", user.id);
 
     if (companyErr) return { success: false, error: companyErr.message };
-
-    // 2. Deactivate the meeting schedule without deleting its history.
-    await (supabase as any)
-      .from("a1_customer_meetings")
-      .update({ is_active: false, updated_at: now })
-      .eq("company_id", customerId);
 
     return { success: true };
   } catch (err: any) {

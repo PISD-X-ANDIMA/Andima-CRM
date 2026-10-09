@@ -6,11 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { supabase } from '@/lib/supabaseClient';
 import {
-  LayoutDashboard,
-  ShoppingBag,
   Users,
   ChevronDown,
-  Briefcase,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -18,12 +15,6 @@ import {
 interface SubMenuItem {
   name: string;
   href: string;
-}
-
-interface MenuItem {
-  name: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
 }
 
 const salesExecutiveMenus: SubMenuItem[] = [
@@ -46,27 +37,6 @@ const salesExecutiveMenus: SubMenuItem[] = [
   {
     name: "Need Backup",
     href: "/dashboard/need-backup",
-  },
-];
-
-const topMenuItems: MenuItem[] = [
-  {
-    name: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    name: "CCR",
-    href: "#",
-    icon: ShoppingBag,
-  },
-];
-
-const bottomMenuItems: MenuItem[] = [
-  {
-    name: "HRMS",
-    href: "#",
-    icon: Briefcase,
   },
 ];
 
@@ -100,46 +70,6 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pt-14 pb-4">
-        {topMenuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = item.href !== "#" && (
-            pathname === item.href ||
-            (item.href !== "/dashboard" && pathname.startsWith(`${item.href}/`))
-          );
-
-          if (item.href === "#") {
-            return (
-              <button
-                key={item.name}
-                type="button"
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-slate-400 transition-colors hover:bg-white/[0.04] hover:text-slate-200"
-              >
-                <Icon className="h-[18px] w-[18px] text-slate-500" />
-                <span>{item.name}</span>
-              </button>
-            );
-          }
-
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors ${
-                isActive
-                  ? "bg-blue-600 text-white shadow-sm shadow-blue-600/25"
-                  : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
-              }`}
-            >
-              <Icon
-                className={`h-[18px] w-[18px] ${
-                  isActive ? "text-white" : "text-slate-500"
-                }`}
-              />
-              <span>{item.name}</span>
-            </Link>
-          );
-        })}
-
         <div className="pt-0.5">
           <button
             type="button"
@@ -240,23 +170,6 @@ export function Sidebar() {
           )}
         </div>
 
-        <div className="space-y-0.5 pt-0.5">
-          {bottomMenuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.name}
-                type="button"
-                className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-[13px] font-medium text-slate-400 transition-colors hover:bg-white/[0.04] hover:text-slate-200"
-              >
-                <span className="flex items-center gap-3">
-                  <Icon className="h-[18px] w-[18px] text-slate-500" />
-                  <span>{item.name}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
       </nav>
 
       <div className="px-3 pb-4 space-y-0.5">

@@ -65,8 +65,8 @@ export function validateMeetingScheduleDateAndSlot(input: Pick<MeetingInput, "me
 export async function cancelExpiredOneTimeMeetings() {
   const supabase = await createServerSupabaseClient();
   if (!supabase) return;
-  const { date } = jakartaDateAndMinutes();
-  const { error } = await (supabase as any)
+  const { date, minutes } = jakartaDateAndMinutes();
+  const { error: pastDateError } = await (supabase as any)
     .from("a1_customer_meetings")
     .update({ status: "cancelled", updated_at: new Date().toISOString() })
     .eq("schedule_type", "one_day")
@@ -74,7 +74,19 @@ export async function cancelExpiredOneTimeMeetings() {
     .eq("is_active", true)
     .is("deleted_at", null)
     .lt("meeting_date", date);
-  if (error) throw error;
+  if (pastDateError) throw pastDateError;
+
+  const currentTime = `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}:00`;
+  const { error: elapsedTodayError } = await (supabase as any)
+    .from("a1_customer_meetings")
+    .update({ status: "cancelled", updated_at: new Date().toISOString() })
+    .eq("schedule_type", "one_day")
+    .eq("meeting_date", date)
+    .eq("status", "scheduled")
+    .eq("is_active", true)
+    .is("deleted_at", null)
+    .lte("end_time", currentTime);
+  if (elapsedTodayError) throw elapsedTodayError;
 }
 
 /**

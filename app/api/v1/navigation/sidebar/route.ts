@@ -47,10 +47,7 @@ export async function GET(_request: NextRequest) {
     return createSuccessResponse({
       role,
       menu: [
-        { label: "Dashboard", href: "/dashboard", children: [] },
-        { label: "CCR", href: null, children: [] },
         { label: "CRM", href: null, children: crmChildren },
-        { label: "HRMS", href: null, children: [] },
       ],
     });
   } catch {

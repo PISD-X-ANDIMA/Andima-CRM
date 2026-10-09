@@ -7,7 +7,7 @@ import { downloadXlsx, openPdfPrintWindow, printTableAsPdf } from "@/lib/export-
 import {
   BriefcaseBusiness, CalendarDays, Download, FileText, Search, UsersRound, X,
 } from "lucide-react";
-import type { ApiResponse, CustomerDetailItem, CustomerListItem, MeetingDay } from "@/types/customer";
+import type { ApiResponse, CustomerDetailItem, CustomerListItem } from "@/types/customer";
 import type { SalesExecutiveMetrics } from "@/lib/services/sales-executive-metrics";
 
 interface Props {
@@ -15,34 +15,10 @@ interface Props {
   metrics: SalesExecutiveMetrics;
 }
 
-interface WeeklyMeeting { customer: CustomerListItem; date: Date; time: string; endsAt: string }
-const meetingDayNumbers: Record<MeetingDay, number> = {
-  monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6, sunday: 0,
-};
+interface WeeklyMeeting { customer: Pick<CustomerListItem, "id" | "companyName">; date: Date; time: string; endsAt: string; startsAt: Date }
 function dateFromDatabase(value: string) {
   const [year, month, day] = value.split("-").map(Number);
   return new Date(year, month - 1, day, 12);
-}
-
-function getWeeklyMeetings(customers: CustomerListItem[]): WeeklyMeeting[] {
-  const today = new Date();
-  const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12);
-  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
-  return customers.flatMap((customer) => (customer.meetings || []).flatMap((schedule) => {
-    let date: Date;
-    if (schedule.scheduleType === "one_day") {
-      if (!schedule.meetingDate) return [];
-      date = dateFromDatabase(schedule.meetingDate);
-    } else {
-      const offset = (meetingDayNumbers[schedule.meetingDay] + 6) % 7;
-      date = new Date(monday);
-      date.setDate(monday.getDate() + offset);
-    }
-    const dayFromMonday = Math.round((date.getTime() - monday.getTime()) / 86_400_000);
-    const effectiveStart = schedule.effectiveStartDate ? dateFromDatabase(schedule.effectiveStartDate) : null;
-    if (schedule.status === "cancelled" || schedule.status === "completed" || dayFromMonday < 0 || dayFromMonday > 6 || (effectiveStart && date < effectiveStart)) return [];
-    return [{ customer, date, time: schedule.startTime?.slice(0, 5) || "09:00", endsAt: schedule.endTime?.slice(0, 5) || "10:00" }];
-  })).sort((a, b) => a.date.getTime() - b.date.getTime() || a.time.localeCompare(b.time));
 }
 
 function downloadExport(customers: CustomerListItem[], format: "xlsx" | "pdf", pdfWindow: Window | null = null) {
@@ -70,7 +46,7 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
   const router = useRouter();
   const initialTransactions = initialCustomers.filter((customer) => Boolean(customer.transactionNo));
   const [customers, setCustomers] = useState(initialTransactions);
-  const [scheduleCustomers, setScheduleCustomers] = useState<CustomerListItem[]>([]);
+  const [weeklyMeetings, setWeeklyMeetings] = useState<WeeklyMeeting[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(true);
   const [scheduleLoadError, setScheduleLoadError] = useState("");
   const [clockNow, setClockNow] = useState(() => Date.now());
@@ -98,23 +74,27 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
   const refreshSchedule = useCallback(async () => {
     setScheduleLoading(true);
     try {
-      const params = new URLSearchParams({ perPage: "100", page: "1", context: "weeklySchedule" });
-      const response = await fetch(`/api/v1/customers?${params}`, { cache: "no-store" });
-      const result: ApiResponse<CustomerListItem[]> = await response.json();
+      const today = new Date();
+      const weekStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      const params = new URLSearchParams({ start_date: localDateValue(weekStart), end_date: localDateValue(weekEnd) });
+      const response = await fetch(`/api/v1/dashboard/weekly-schedule?${params}`, { cache: "no-store" });
+      const result: ApiResponse<{ company_id: string; company_name: string; date: string; start_time: string; end_time: string }[]> = await response.json();
       if (!response.ok || !result.success) throw new Error(result.success ? "Could not refresh the meeting schedule." : result.message);
-      const latestCustomers = [...result.data];
-      const totalPages = result.meta?.totalPages || 1;
-      for (let pageNumber = 2; pageNumber <= totalPages; pageNumber += 1) {
-        params.set("page", String(pageNumber));
-        const nextResponse = await fetch(`/api/v1/customers?${params}`, { cache: "no-store" });
-        const nextResult: ApiResponse<CustomerListItem[]> = await nextResponse.json();
-        if (!nextResponse.ok || !nextResult.success) throw new Error(nextResult.success ? "Could not refresh the complete meeting schedule." : nextResult.message);
-        latestCustomers.push(...nextResult.data);
-      }
-      setScheduleCustomers(latestCustomers);
+      const now = new Date();
+      const items = result.data.map((item) => {
+        const date = dateFromDatabase(item.date);
+        const time = item.start_time.slice(0, 5);
+        const [hours, minutes] = time.split(":").map(Number);
+        const startsAt = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes);
+        return { customer: { id: item.company_id, companyName: item.company_name }, date, time, endsAt: item.end_time.slice(0, 5), startsAt };
+      }).filter((item) => item.startsAt >= now).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+      setWeeklyMeetings(items);
       setScheduleLoadError("");
     } catch (error) {
-      setScheduleCustomers([]);
+      setWeeklyMeetings([]);
       setScheduleLoadError(error instanceof Error ? error.message : "Could not refresh the meeting schedule.");
     } finally {
       setScheduleLoading(false);
@@ -218,16 +198,14 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
     }
   };
 
-  const weeklyMeetings = useMemo(() => getWeeklyMeetings(scheduleCustomers), [scheduleCustomers]);
-  const nearbyMeetings = useMemo(() => weeklyMeetings.filter(({ date, time }) => {
-    const [hours, minutes] = time.split(":").map(Number);
-    const startsAt = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes);
+  const nearestWeeklyMeetings = weeklyMeetings.slice(0, 5);
+  const nearbyMeetings = nearestWeeklyMeetings.filter(({ startsAt }) => {
     const minutesUntil = (startsAt.getTime() - clockNow) / 60_000;
     return minutesUntil >= 0 && minutesUntil <= 60;
-  }), [weeklyMeetings, clockNow]);
+  });
   const firstRow = total === 0 ? 0 : (page - 1) * 5 + 1;
   const lastRow = Math.min(page * 5, total);
-  const statisticsUnavailable = metrics.totalCustomers === null || metrics.meetingsThisWeek === null || metrics.tasks === null;
+  const statisticsUnavailable = metrics.totalCustomers === null || metrics.upcomingMeetings === null || metrics.tasks === null;
 
   return <div className="mx-auto w-full max-w-[1280px]">
     <h1 className="mb-0 text-4xl font-bold tracking-tight text-black sm:text-5xl">Welcome Back, {displayName}</h1>
@@ -236,7 +214,7 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
     <section aria-label="Key performance indicators" className="mb-3 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {[
         { label: "Total Customer", value: metrics.totalCustomers, hint: "Company records", icon: UsersRound, color: "bg-blue-50 text-blue-500" },
-        { label: "Meeting this week", value: metrics.meetingsThisWeek, hint: "Scheduled meetings", icon: CalendarDays, color: "bg-rose-100 text-rose-500" },
+        { label: "Upcoming Meeting", value: metrics.upcomingMeetings, hint: "Scheduled meetings", icon: CalendarDays, color: "bg-rose-100 text-rose-500" },
         { label: "Task", value: metrics.tasks, hint: "Worksheet rows", icon: BriefcaseBusiness, color: "bg-sky-50 text-sky-500" },
       ].map(({ label, value, hint, icon: Icon, color }) => <article key={label} className="min-h-[112px] rounded-xl border border-[#aaa] bg-white px-4 py-2">
         <h2 className="text-lg font-semibold text-[#505050] sm:text-xl">{label}</h2><div className="mt-2 flex items-center gap-3"><span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${color}`}><Icon className="h-5 w-5" /></span><p className="text-3xl font-bold text-[#202020]">{value ?? "—"}</p><span className="ml-auto text-right text-[10px] leading-tight text-slate-400">{hint}</span></div>
@@ -246,8 +224,8 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
 
     <section aria-labelledby="weekly-schedule-title" className="mb-4">
       <div className="mb-4 flex items-center justify-between"><h2 id="weekly-schedule-title" className="text-xl font-bold text-[#505050] sm:text-2xl">Schedule this week</h2><Link href="/dashboard/meeting-schedule" aria-label="Open Meeting Schedule" className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50"><CalendarDays className="h-5 w-5" /></Link></div>
-      {!scheduleLoading && !scheduleLoadError && nearbyMeetings.length > 0 && <div role="status" className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><strong>Meeting starting soon:</strong> {nearbyMeetings.map(({ customer, time }) => `${customer.companyName} at ${time}`).join(" · ")}</div>}
-      <div className="space-y-2.5">{scheduleLoadError ? <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">{scheduleLoadError}<button type="button" onClick={() => void refreshSchedule()} className="ml-2 underline">Retry</button></div> : scheduleLoading ? <div role="status" className="space-y-2.5">{Array.from({ length: 5 }, (_, index) => <div key={index} className="h-[70px] animate-pulse rounded-2xl border border-slate-200 bg-slate-50" />)}</div> : weeklyMeetings.length ? weeklyMeetings.map(({ customer, date, time, endsAt }) => <Link key={`${customer.id}-${date.toISOString()}-${time}`} href={`/dashboard/company-list/${customer.id}`} className="flex min-h-[70px] items-center justify-between gap-5 rounded-2xl border border-[#d0d0d0] px-4 py-4 text-[#555] transition-colors hover:border-blue-300 sm:px-5"><span className="min-w-0"><span className="block truncate text-lg font-semibold sm:text-xl">{customer.companyName}</span><span className="text-xs text-slate-500">{date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span></span><span className="shrink-0 text-sm sm:text-base">{date.toLocaleDateString("en-GB", { weekday: "long" })}, {time} - {endsAt}</span></Link>) : <div className="rounded-2xl border border-dashed border-slate-300 px-5 py-6 text-sm text-slate-500">No meeting scheduled this week.</div>}</div>
+      {!scheduleLoading && !scheduleLoadError && nearbyMeetings.length > 0 && <div role="status" className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><strong>{nearbyMeetings.some(({ startsAt }) => (startsAt.getTime() - clockNow) / 60_000 < 15) ? "A meeting is starting soon:" : "Upcoming meeting within an hour:"}</strong> {nearbyMeetings.map(({ customer, startsAt }) => { const minutes = Math.max(0, Math.ceil((startsAt.getTime() - clockNow) / 60_000)); return `${customer.companyName} (${minutes === 0 ? "starting now" : `in ${minutes} min`})`; }).join(" · ")}</div>}
+      <div className="space-y-2.5">{scheduleLoadError ? <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">{scheduleLoadError}<button type="button" onClick={() => void refreshSchedule()} className="ml-2 underline">Retry</button></div> : scheduleLoading ? <div role="status" className="space-y-2.5">{Array.from({ length: 5 }, (_, index) => <div key={index} className="h-[70px] animate-pulse rounded-2xl border border-slate-200 bg-slate-50" />)}</div> : nearestWeeklyMeetings.length ? nearestWeeklyMeetings.map(({ customer, date, time, endsAt, startsAt }) => { const minutesUntil = Math.max(0, Math.ceil((startsAt.getTime() - clockNow) / 60_000)); const isStartingSoon = minutesUntil <= 60; return <Link key={`${customer.id}-${date.toISOString()}-${time}`} href={`/dashboard/company-list/${customer.id}`} className={`flex min-h-[70px] items-center justify-between gap-5 rounded-2xl border px-4 py-4 text-[#555] transition-colors hover:border-blue-300 sm:px-5 ${isStartingSoon ? "border-amber-300 bg-amber-50/70" : "border-[#d0d0d0]"}`}><span className="min-w-0"><span className="block truncate text-lg font-semibold sm:text-xl">{customer.companyName}</span><span className="text-xs text-slate-500">{date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span></span><span className="shrink-0 text-right text-sm sm:text-base">{date.toLocaleDateString("en-GB", { weekday: "long" })}, {time} - {endsAt}{isStartingSoon && <span className="mt-1 block text-xs font-semibold text-amber-800">{minutesUntil === 0 ? "Starting now" : `Starting in ${minutesUntil} min`}</span>}</span></Link>; }) : <div className="rounded-2xl border border-dashed border-slate-300 px-5 py-6 text-sm text-slate-500">No upcoming meetings scheduled this week.</div>}</div>
     </section>
 
     <div className="mb-2 flex items-center justify-between gap-4 px-1 sm:px-2">

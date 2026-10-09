@@ -23,7 +23,7 @@ export default function LoginPage() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        router.replace('/dashboard');
+        router.replace('/dashboard/sales-executive');
       }
     });
   }, [router]);
@@ -177,7 +177,7 @@ export default function LoginPage() {
       }
 
       setSuccessMessage(`Login successful. Welcome, ${displayName}. Redirecting to the dashboard...`);
-      window.setTimeout(() => { router.push('/dashboard'); }, 1200);
+      window.setTimeout(() => { router.replace('/dashboard/sales-executive'); }, 1200);
 
     } catch {
       setErrorMessage('Unable to reach the login server. Please try again.');

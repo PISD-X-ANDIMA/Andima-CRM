@@ -60,6 +60,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   }
 }
 
+/** PUT alias retained for the published A1 customer CRUD contract. */
+export async function PUT(request: NextRequest, context: RouteContext) {
+  return PATCH(request, context);
+}
+
 export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   try {
     const { customerId } = await params;

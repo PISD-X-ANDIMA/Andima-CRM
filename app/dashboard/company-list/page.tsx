@@ -109,45 +109,32 @@ export default function CompanyListPage() {
       return;
     }
     try {
-      const perExportPage = 100;
-      const params = new URLSearchParams({ perPage: String(perExportPage), page: "1" });
-      if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
-      const firstResponse = await fetch(`/api/v1/customers?${params}`);
-      const firstResult: ApiResponse<CustomerListItem[]> = await firstResponse.json();
+      const params = new URLSearchParams({ format: exportFormat, search: debouncedSearch.trim() });
+      const firstResponse = await fetch(`/api/v1/customers/export?${params}`);
+      const firstResult: ApiResponse<{ company_name: string; address: string; pic_name: string; pic_number: string; meeting_schedule: string; created_at: string }[]> = await firstResponse.json();
       if (!firstResponse.ok || !firstResult.success) throw new Error(firstResult.success ? "Failed to load companies for export." : firstResult.message);
-      const allCustomers = [...firstResult.data];
-      const pageCount = firstResult.meta?.totalPages || 1;
-      for (let exportPage = 2; exportPage <= pageCount; exportPage += 1) {
-        params.set("page", String(exportPage));
-        const response = await fetch(`/api/v1/customers?${params}`);
-        const result: ApiResponse<CustomerListItem[]> = await response.json();
-        if (!response.ok || !result.success) throw new Error(result.success ? "Failed to load all companies for export." : result.message);
-        allCustomers.push(...result.data);
-      }
-      const filteredCustomers = allCustomers.filter((customer) => {
-        const createdDate = customer.createdAt?.slice(0, 10) || "";
+      const filteredCustomers = firstResult.data.filter((customer) => {
+        const createdDate = customer.created_at?.slice(0, 10) || "";
         return (!exportStart || (createdDate && createdDate >= exportStart)) && (!exportEnd || (createdDate && createdDate <= exportEnd));
       });
       if (!filteredCustomers.length) throw new Error("No companies were found for the selected date range and search.");
       const rows = filteredCustomers.map((customer) => ({
-        Company: customer.companyName,
-        Address: customer.address || "",
-        PIC: customer.primaryPic?.fullName || "",
-        "PIC Phone Number": customer.primaryPic?.phoneNumber || "",
-        "Meeting Schedule": (customer.meetings || []).map((meeting) => meeting.formattedSchedule).join("; ") || "Unscheduled",
-        "Customer Code": customer.customerCode || "",
-        "Job Number": customer.jobNumber || "",
+        Company: customer.company_name,
+        Address: customer.address,
+        PIC: customer.pic_name,
+        "PIC Number": customer.pic_number,
+        "Meeting Schedule": customer.meeting_schedule,
       }));
       if (exportFormat === "pdf") {
-        const headers = ["Company", "Address", "PIC", "PIC Phone Number", "Meeting Schedule", "Customer Code", "Job Number"];
-        const values = rows.map((row) => [row.Company, row.Address, row.PIC, row["PIC Phone Number"], row["Meeting Schedule"], row["Customer Code"], row["Job Number"]]);
+        const headers = ["Company Name", "Address", "PIC", "PIC Number", "Meeting Schedule"];
+        const values = rows.map((row) => [row.Company, row.Address, row.PIC, row["PIC Number"], row["Meeting Schedule"]]);
         printTableAsPdf("Company List", "Company records and meeting schedules", headers, values, pdfWindow);
         setExportOpen(false);
         return;
       }
-      const headers = ["Company", "Address", "PIC", "PIC Phone Number", "Meeting Schedule", "Customer Code", "Job Number"];
-      const values = rows.map((row) => [row.Company, row.Address, row.PIC, row["PIC Phone Number"], row["Meeting Schedule"], row["Customer Code"], row["Job Number"]]);
-      downloadXlsx("company-list.xlsx", "Company List", headers, values, [34, 42, 24, 22, 40, 22, 22]);
+      const headers = ["Company Name", "Address", "PIC", "PIC Number", "Meeting Schedule"];
+      const values = rows.map((row) => [row.Company, row.Address, row.PIC, row["PIC Number"], row["Meeting Schedule"]]);
+      downloadXlsx("company-list.xlsx", "Company List", headers, values, [34, 42, 24, 22, 40]);
       setExportOpen(false);
     } catch (cause) {
       pdfWindow?.close();
@@ -170,7 +157,7 @@ export default function CompanyListPage() {
       <button type="button" onClick={() => { setExportError(""); setExportOpen(true); }} disabled={!total || isExporting} className="inline-flex h-[52px] items-center gap-3 rounded-2xl border border-slate-300 bg-white px-5 text-base font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"><Download className="h-5 w-5" />Export</button>
     </div>
     {exportError && <p role="alert" className="-mt-4 text-sm text-red-600">{exportError}</p>}
-    <CustomerTable customers={customers} isLoading={isLoading} error={error} onRetry={() => void fetchCustomers()} searchKeyword={debouncedSearch} onResetSearch={() => setSearchKeyword("")} onEdit={(customer) => { setSuccessMessage(""); setModalCustomer(customer); setIsModalOpen(true); }} onDetails={(customer) => { setActionCustomer(customer); setActionMode("details"); }} onViewTasks={(customer) => { setActionCustomer(customer); setActionMode("tasks"); }} onDelete={setDeleteTarget} />
+    <CustomerTable customers={customers} isLoading={isLoading} error={error} onRetry={() => void fetchCustomers()} searchKeyword={debouncedSearch} onResetSearch={() => setSearchKeyword("")} onEdit={(customer) => { setSuccessMessage(""); setModalCustomer(customer); setIsModalOpen(true); }} onDetails={(customer) => { setActionCustomer(customer); setActionMode("details"); }} onViewTasks={(customer) => { window.location.assign(`/dashboard/task-of-field-agent?company_id=${encodeURIComponent(customer.id)}`); }} onDelete={setDeleteTarget} />
     <div className="flex flex-wrap items-center justify-between gap-4 px-4 pt-2 text-xs text-slate-500"><span>Showing {firstRow}-{lastRow} of {total} customers</span><nav className="flex items-center gap-1" aria-label="Company list pages">
       <button type="button" aria-label="Previous page" disabled={page <= 1 || isLoading} onClick={() => setPage((value) => value - 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>
       {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {

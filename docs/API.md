@@ -222,7 +222,7 @@ Saat data customer atau jadwal dibaca, service memeriksa meeting `one_day`. Meet
 
 ### Kartu dashboard Sales Executive
 
-Kartu metrik pada halaman `/dashboard/sales-executive` dimuat oleh server, bukan melalui route `/api/v1` terpisah. Nilai total customer dihitung dari `a1_company_list`, meeting minggu ini dari `a1_customer_meetings`, dan kartu **Task** menghitung jumlah baris pada tabel `a2_worksheets`.
+Kartu metrik pada halaman `/dashboard/sales-executive` dimuat oleh server, bukan melalui route `/api/v1` terpisah. Nilai **Total Customer** dihitung dari `a1_company_list`, **Upcoming Meeting** menghitung kemunculan jadwal aktif yang akan datang dari `a1_customer_meetings`, dan kartu **Task** menghitung jumlah baris pada tabel `a2_worksheets`.
 
 Jika akses ke salah satu sumber data gagal, nilai terkait tidak ditampilkan sebagai angka nol; UI menandainya sebagai data tidak tersedia. Hitungan Task adalah jumlah seluruh baris worksheet, bukan hitungan tugas Field Agent yang sudah disaring menurut status/agen. Data transaksi dan worksheet tetap dikelola Squad A2.
 
