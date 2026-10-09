@@ -369,7 +369,7 @@ export function DashboardHeader() {
   )
 
   return (
-    <header className="relative z-50 mb-6 flex min-h-12 items-center justify-between gap-3 border-b border-slate-100/80 dark:border-slate-800 pb-4">
+    <header className="relative z-30 mb-6 flex min-h-12 items-center justify-between gap-2 sm:gap-3 border-b border-slate-100/80 dark:border-slate-800 pb-4">
       {/* Left: Mobile Hamburger & Breadcrumbs */}
       <div className='flex items-center gap-2 text-xs'>
         <button
@@ -527,7 +527,7 @@ export function DashboardHeader() {
       </div>
 
       {/* Right: Actions and User Profile */}
-      <div className="flex shrink-0 items-center gap-3 text-slate-600 dark:text-slate-300">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-2.5 text-slate-600 dark:text-slate-300">
         {/* Notification Bell */}
         <div ref={notificationsRef} className="relative">
           <button
@@ -717,7 +717,7 @@ export function DashboardHeader() {
         </div>
 
         {/* Help Circle Modal / Popover */}
-        <div ref={helpRef} className="relative">
+        <div ref={helpRef} className="relative hidden sm:block">
           <button
             type="button"
             aria-label="Help & Guide"

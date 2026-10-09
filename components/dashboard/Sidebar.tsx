@@ -315,14 +315,14 @@ export function Sidebar(): React.ReactElement {
 
       {/* Mobile Drawer (Slide-in) */}
       {mobileOpen && (
-        <div className='fixed inset-0 z-50 lg:hidden'>
+        <div className='fixed inset-0 z-[999] lg:hidden'>
           {/* Backdrop */}
           <div
-            className='fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200'
+            className='fixed inset-0 z-[998] bg-black/70 backdrop-blur-xs transition-opacity animate-in fade-in duration-200'
             onClick={() => setMobileOpen(false)}
           />
           {/* Sliding Panel */}
-          <aside className='fixed inset-y-0 left-0 flex h-full w-[260px] flex-col bg-[#0b1a34] text-slate-300 shadow-2xl animate-in slide-in-from-left duration-200 select-none'>
+          <aside className='fixed inset-y-0 left-0 z-[999] flex h-full w-[280px] max-w-[85vw] flex-col bg-[#0b1a34] text-slate-300 shadow-2xl animate-in slide-in-from-left duration-200 select-none'>
             {renderNavContent(true)}
           </aside>
         </div>
