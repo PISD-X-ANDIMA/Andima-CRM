@@ -205,7 +205,7 @@ export default function CompanyListPage() {
   return <div className="space-y-5">
     <div className="flex items-center justify-between gap-4">
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">Company List</h1>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Company List</h1>
       </div>
       <button
         type="button"
@@ -216,7 +216,7 @@ export default function CompanyListPage() {
         <span>Add Company</span>
       </button>
     </div>
-    {successMessage && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-medium text-emerald-800">{successMessage}</p>}
+    {successMessage && <p role="status" className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 px-4 py-2.5 text-xs font-medium text-emerald-800 dark:text-emerald-300">{successMessage}</p>}
     <div className="flex items-center justify-between gap-3 pt-0.5">
       <label className="relative block w-full max-w-[420px]">
         <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
@@ -225,63 +225,63 @@ export default function CompanyListPage() {
           value={searchKeyword}
           onChange={(e) => setSearchKeyword(e.target.value)}
           placeholder="Search Company, PIC or Phone Number"
-          className="h-10 w-full rounded-xl border border-slate-200/90 bg-white pl-9 pr-4 text-xs font-medium text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all"
+          className="h-10 w-full rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 pl-9 pr-4 text-xs font-medium text-slate-700 dark:text-slate-200 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all"
         />
       </label>
       <button
         type="button"
         onClick={() => { setExportError(""); setExportOpen(true); }}
         disabled={!total || isExporting}
-        className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 disabled:opacity-50 transition-colors"
+        className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors cursor-pointer"
       >
         <Download className="h-3.5 w-3.5 text-slate-500" />
         <span>Export</span>
       </button>
     </div>
-    {exportError && <p role="alert" className="-mt-3 text-xs text-red-600">{exportError}</p>}
+    {exportError && <p role="alert" className="-mt-3 text-xs text-red-600 dark:text-red-400">{exportError}</p>}
     <CustomerTable customers={customers} isLoading={isLoading} error={error} onRetry={() => void fetchCustomers()} searchKeyword={debouncedSearch} onResetSearch={() => setSearchKeyword("")} onEdit={(customer) => { setSuccessMessage(""); setModalCustomer(customer); setIsModalOpen(true); }} onDetails={(customer) => { setActionCustomer(customer); setActionMode("details"); }} onViewTasks={(customer) => { setActionCustomer(customer); setActionMode("tasks"); }} onDelete={setDeleteTarget} />
-    <div className="flex flex-wrap items-center justify-between gap-4 px-4 pt-2 text-xs text-slate-500"><span>Showing {firstRow}-{lastRow} of {total} customers</span><nav className="flex items-center gap-1" aria-label="Company list pages">
-      <button type="button" aria-label="Previous page" disabled={page <= 1 || isLoading} onClick={() => setPage((value) => value - 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>
+    <div className="flex flex-wrap items-center justify-between gap-4 px-4 pt-2 text-xs text-slate-500 dark:text-slate-400"><span>Showing {firstRow}-{lastRow} of {total} customers</span><nav className="flex items-center gap-1" aria-label="Company list pages">
+      <button type="button" aria-label="Previous page" disabled={page <= 1 || isLoading} onClick={() => setPage((value) => value - 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"><ChevronLeft className="h-4 w-4" /></button>
       {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
         const pageNumber = totalPages <= 5 ? index + 1 : Math.max(1, Math.min(page - 2, totalPages - 4)) + index;
-        return <button type="button" key={pageNumber} aria-current={page === pageNumber ? "page" : undefined} onClick={() => setPage(pageNumber)} className={`h-8 min-w-8 rounded-md px-2 ${page === pageNumber ? "bg-blue-600 font-semibold text-white" : "text-slate-600 hover:bg-slate-100"}`}>{pageNumber}</button>;
+        return <button type="button" key={pageNumber} aria-current={page === pageNumber ? "page" : undefined} onClick={() => setPage(pageNumber)} className={`h-8 min-w-8 rounded-md px-2 ${page === pageNumber ? "bg-blue-600 font-semibold text-white" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"} transition-colors`}>{pageNumber}</button>;
       })}
-      {totalPages > 5 && <><span className="px-1">...</span><button type="button" onClick={() => setPage(totalPages)} className="h-8 min-w-8 rounded-md px-2 text-slate-600">{totalPages}</button></>}
-      <button type="button" aria-label="Next page" disabled={page >= totalPages || isLoading} onClick={() => setPage((value) => value + 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40"><ChevronRight className="h-4 w-4" /></button>
+      {totalPages > 5 && <><span className="px-1 text-slate-400">...</span><button type="button" onClick={() => setPage(totalPages)} className="h-8 min-w-8 rounded-md px-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">{totalPages}</button></>}
+      <button type="button" aria-label="Next page" disabled={page >= totalPages || isLoading} onClick={() => setPage((value) => value + 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"><ChevronRight className="h-4 w-4" /></button>
     </nav></div>
     <CustomerFormModal isOpen={isModalOpen} customer={modalCustomer} onClose={() => { setIsModalOpen(false); setModalCustomer(null); }} onSuccess={handleSaved} />
     <CompanyActionModal customer={actionCustomer} mode={actionMode} onClose={() => { setActionCustomer(null); setActionMode(null); }} />
     <DeleteConfirmDialog isOpen={Boolean(deleteTarget)} isDeleting={isDeleting} companyName={deleteTarget?.companyName || ""} onConfirm={() => void handleDelete()} onCancel={() => setDeleteTarget(null)} />
-    {exportOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !isExporting) setExportOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="company-export-title" className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl sm:p-6 animate-in fade-in zoom-in-95 duration-150">
-      <h2 id="company-export-title" className="text-base sm:text-lg font-bold text-slate-900">Export Company List</h2>
-      <p className="mt-1 text-xs text-slate-500">Select a file format and optional company creation date range</p>
+    {exportOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !isExporting) setExportOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="company-export-title" className="w-full max-w-xl rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-100 dark:border-slate-800 p-5 shadow-2xl sm:p-6 animate-in fade-in zoom-in-95 duration-150">
+      <h2 id="company-export-title" className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">Export Company List</h2>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Select a file format and optional company creation date range</p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <fieldset>
-          <legend className="mb-1 text-xs font-semibold text-slate-700">File Format</legend>
-          <div className="flex flex-col justify-center gap-2.5 rounded-xl border border-slate-200/80 p-3 text-xs text-slate-600 bg-slate-50/50">
+          <legend className="mb-1 text-xs font-semibold text-slate-700 dark:text-slate-300">File Format</legend>
+          <div className="flex flex-col justify-center gap-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 p-3 text-xs text-slate-600 dark:text-slate-300 bg-slate-50/50 dark:bg-slate-900/60">
             <label className="flex cursor-pointer items-center gap-2.5">
               <input type="radio" name="company-export-format" checked={exportFormat === "xlsx"} onChange={() => setExportFormat("xlsx")} className="h-4 w-4 accent-blue-600" />
-              <span className="font-semibold text-emerald-600">Excel (.xlsx)</span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">Excel (.xlsx)</span>
             </label>
             <label className="flex cursor-pointer items-center gap-2.5">
               <input type="radio" name="company-export-format" checked={exportFormat === "pdf"} onChange={() => setExportFormat("pdf")} className="h-4 w-4 accent-blue-600" />
-              <span className="font-semibold text-rose-500">PDF (.pdf)</span>
+              <span className="font-semibold text-rose-500 dark:text-rose-400">PDF (.pdf)</span>
             </label>
           </div>
         </fieldset>
         <fieldset>
-          <legend className="mb-1 text-xs font-semibold text-slate-700">Date Range</legend>
-          <div className="rounded-xl border border-slate-200/80 p-3 space-y-2 bg-slate-50/50">
-            <label className="block text-[11px] font-medium text-slate-500">From<input type="date" value={exportStart} onChange={(event) => setExportStart(event.target.value)} className="mt-1 h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 outline-none" /></label>
-            <label className="block text-[11px] font-medium text-slate-500">To<input type="date" value={exportEnd} onChange={(event) => setExportEnd(event.target.value)} className="mt-1 h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 outline-none" /></label>
+          <legend className="mb-1 text-xs font-semibold text-slate-700 dark:text-slate-300">Date Range</legend>
+          <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 p-3 space-y-2 bg-slate-50/50 dark:bg-slate-900/60">
+            <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400">From<input type="date" value={exportStart} onChange={(event) => setExportStart(event.target.value)} className="mt-1 h-8 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 text-xs text-slate-700 dark:text-slate-200 outline-none" /></label>
+            <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400">To<input type="date" value={exportEnd} onChange={(event) => setExportEnd(event.target.value)} className="mt-1 h-8 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 text-xs text-slate-700 dark:text-slate-200 outline-none" /></label>
           </div>
           <p className="mt-2 text-[11px] text-slate-400">Leave both dates blank to export all matching companies.</p>
         </fieldset>
       </div>
-      {exportError && <p role="alert" className="mt-3 text-xs text-rose-600">{exportError}</p>}
-      <div className="mt-5 flex justify-end gap-2.5 border-t border-slate-100 pt-3.5">
-        <button type="button" disabled={isExporting} onClick={() => setExportOpen(false)} className="h-9 px-4 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
-        <button type="button" disabled={isExporting} onClick={() => void runExport()} className="h-9 px-5 rounded-xl bg-blue-600 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-xs">{isExporting ? "Preparing..." : "Export"}</button>
+      {exportError && <p role="alert" className="mt-3 text-xs text-rose-600 dark:text-rose-400">{exportError}</p>}
+      <div className="mt-5 flex justify-end gap-2.5 border-t border-slate-100 dark:border-slate-800 pt-3.5">
+        <button type="button" disabled={isExporting} onClick={() => setExportOpen(false)} className="h-9 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">Cancel</button>
+        <button type="button" disabled={isExporting} onClick={() => void runExport()} className="h-9 px-5 rounded-xl bg-blue-600 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-xs cursor-pointer">{isExporting ? "Preparing..." : "Export"}</button>
       </div>
     </section></div>}
   </div>;

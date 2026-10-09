@@ -136,19 +136,19 @@ const sampleJobs: Job[] = [
 
 const statusClass: Record<string, string> = {
   Assigned:
-    "bg-amber-50 text-amber-700 border-amber-200",
+    "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/60",
 
   "In Progress":
-    "bg-blue-50 text-blue-700 border-blue-200",
+    "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/60",
 
   Completed:
-    "bg-emerald-50 text-emerald-700 border-emerald-200",
+    "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60",
 
   "Has Issue":
-    "bg-red-50 text-red-700 border-red-200",
+    "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/60",
 
   Draft:
-    "bg-slate-100 text-slate-600 border-slate-200",
+    "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700",
 };
 
 const no = (job: Job | null) =>
@@ -755,8 +755,8 @@ export default function FieldAgentApp() {
   ======================================================= */
 
   return (
-    <div className="w-full bg-white text-[#15213a]">
-      <main className="min-h-screen bg-white">
+    <div className="w-full bg-white dark:bg-[#090f1d] text-[#15213a] dark:text-slate-100 transition-colors">
+      <main className="min-h-screen bg-white dark:bg-[#090f1d] transition-colors">
         <div className="mx-auto max-w-[1280px] px-5 pb-10 pt-2 md:px-9">
           {screen !== "dashboard" &&
             screen !== "field-agent" &&
@@ -770,7 +770,7 @@ export default function FieldAgentApp() {
                     new Event("field-agent:back")
                   )
                 }
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 hover:text-blue-600 transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition cursor-pointer"
               >
                 <ArrowLeft size={14} />
                 <span>Kembali</span>
@@ -945,7 +945,7 @@ export default function FieldAgentApp() {
       )}
 
       {notice && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-lg border border-blue-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-lg">
+        <div className="fixed bottom-6 right-6 z-50 rounded-lg border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-lg">
           {notice}
         </div>
       )}
@@ -969,25 +969,25 @@ function NotificationsPage({
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
           Notifikasi
         </h1>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           Daftar pembaruan tugas dan issue terkini.
         </p>
       </div>
 
-      <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs">
+      <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-xs">
         <div className="space-y-3">
           {activeAlerts.map((job) => (
             <div
               key={job.id}
               onClick={() => openJob(job)}
-              className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition"
+              className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition"
             >
               <div>
-                <p className="text-xs font-bold text-slate-900">{no(job)}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{job.customer || "-"}</p>
+                <p className="text-xs font-bold text-slate-900 dark:text-white">{no(job)}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{job.customer || "-"}</p>
               </div>
               <StatusBadge status={job.status} />
             </div>
@@ -1143,11 +1143,11 @@ function Dashboard({
             />
           </span>
 
-          <h1 className="mt-6 text-[14px] font-extrabold text-[#15213a]">
+          <h1 className="mt-6 text-[14px] font-extrabold text-[#15213a] dark:text-white">
             Belum Ada Tugas Ditugaskan
           </h1>
 
-          <p className="mt-3 text-[11px] leading-5 text-slate-500">
+          <p className="mt-3 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
             Saat ini belum ada jadwal
             serah terima kargo dari
             Sales Executive untuk akun
@@ -1159,7 +1159,7 @@ function Dashboard({
             onClick={() =>
               window.location.reload()
             }
-            className="mt-5 rounded-md bg-[#111827] px-5 py-2.5 text-[11px] font-extrabold text-white"
+            className="mt-5 rounded-md bg-[#111827] dark:bg-blue-600 px-5 py-2.5 text-[11px] font-extrabold text-white cursor-pointer hover:bg-slate-800 dark:hover:bg-blue-700 transition"
           >
             Muat Ulang / Cek Pembaruan
           </button>
@@ -1171,11 +1171,11 @@ function Dashboard({
   return (
     <>
       <section className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
           Dashboard Field Agent
         </h1>
 
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           Ringkasan pekerjaan dan status Anda hari ini.
         </p>
       </section>
@@ -1190,13 +1190,13 @@ function Dashboard({
           }) => (
             <section
               key={String(title)}
-              className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs"
+              className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-xs"
             >
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 {title}
               </p>
 
-              <b className="mt-3 block text-2xl font-bold tracking-tight text-slate-900">
+              <b className="mt-3 block text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                 {value}
               </b>
 
@@ -1211,8 +1211,8 @@ function Dashboard({
       </div>
 
       <div className="mt-6 grid items-start gap-6 xl:grid-cols-[460px_minmax(0,1fr)]">
-        <section className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs">
-          <h2 className="text-base font-bold tracking-tight text-slate-900">
+        <section className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-xs">
+          <h2 className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
             Status Task
           </h2>
 
@@ -1224,13 +1224,13 @@ function Dashboard({
               }}
               aria-label="Grafik proporsi status task"
             >
-              <div className="grid h-[148px] w-[148px] place-items-center rounded-full bg-white text-center">
+              <div className="grid h-[148px] w-[148px] place-items-center rounded-full bg-white dark:bg-[#0f172a] text-center">
                 <div>
-                  <b className="block text-[28px] leading-none text-[#101a33]">
+                  <b className="block text-[28px] leading-none text-[#101a33] dark:text-white">
                     {jobs.length}
                   </b>
 
-                  <span className="mt-2 block text-[13px] font-medium text-slate-500">
+                  <span className="mt-2 block text-[13px] font-medium text-slate-500 dark:text-slate-400">
                     Total Task
                   </span>
                 </div>
@@ -1263,16 +1263,16 @@ function Dashboard({
                           }}
                         />
 
-                        <span className="truncate font-bold text-slate-700">
+                        <span className="truncate font-bold text-slate-700 dark:text-slate-300">
                           {item.label}
                         </span>
                       </div>
 
-                      <span className="text-center font-extrabold text-slate-950">
+                      <span className="text-center font-extrabold text-slate-950 dark:text-white">
                         {item.value}
                       </span>
 
-                      <span className="text-right text-[12px] font-medium text-slate-500">
+                      <span className="text-right text-[12px] font-medium text-slate-500 dark:text-slate-400">
                         ({percent}%)
                       </span>
                     </div>
@@ -1283,23 +1283,23 @@ function Dashboard({
           </div>
         </section>
 
-        <section className="mt-4 rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs xl:mt-0">
+        <section className="mt-4 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-xs xl:mt-0">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-bold tracking-tight text-slate-900">
+            <h2 className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
               Recent Jobs
             </h2>
 
             <button
               onClick={showTasks}
-              className="text-xs font-semibold text-blue-600 hover:underline cursor-pointer"
+              className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
             >
               Lihat Semua
             </button>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-600">
-              <thead className="border-b border-slate-200/80 bg-[#edf4fb] text-xs font-bold text-slate-800">
+            <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+              <thead className="border-b border-slate-200/80 dark:border-slate-700 bg-[#edf4fb] dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200">
                 <tr>
                   <th className="px-3 py-2.5">
                     Job Number
@@ -1319,15 +1319,15 @@ function Dashboard({
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {jobs
                   .slice(0, 4)
                   .map((job) => (
                     <tr
                       key={job.id}
-                      className="hover:bg-slate-50/80 transition-colors"
+                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
                     >
-                      <td className="px-3 py-3 font-semibold text-blue-600">
+                      <td className="px-3 py-3 font-semibold text-blue-600 dark:text-blue-400">
                         <button
                           type="button"
                           className="cursor-pointer hover:underline text-left"
@@ -1339,12 +1339,12 @@ function Dashboard({
                         </button>
                       </td>
 
-                      <td className="max-w-[140px] px-3 py-3 font-medium text-slate-700">
+                      <td className="max-w-[140px] px-3 py-3 font-medium text-slate-700 dark:text-slate-300">
                         {job.customer ||
                           "-"}
                       </td>
 
-                      <td className="px-3 py-3 text-slate-500">
+                      <td className="px-3 py-3 text-slate-500 dark:text-slate-400">
                         {mawb(job)}
                       </td>
 
@@ -1397,7 +1397,7 @@ function Tabs({
           className={`cursor-pointer rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
             filter === tab
               ? "border-blue-600 bg-blue-600 text-white shadow-xs"
-              : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+              : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
           }`}
         >
           {tab}
@@ -1407,8 +1407,8 @@ function Tabs({
               filter === tab
                 ? "bg-white/20 text-white"
                 : tab === "Has Issue"
-                  ? "bg-rose-100 text-rose-700"
-                  : "bg-slate-100 text-slate-600"
+                  ? "bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400"
+                  : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
             }`}
           >
             {counts[tab] || 0}
@@ -1427,7 +1427,7 @@ function Searchbar({
   setQuery: (v: string) => void;
 }) {
   return (
-    <div className="mb-4 flex rounded-xl border border-slate-200 bg-white p-2 shadow-xs">
+    <div className="mb-4 flex rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 shadow-xs">
       <label className="relative flex-1">
         <Search
           size={16}
@@ -1440,7 +1440,7 @@ function Searchbar({
             setQuery(e.target.value)
           }
           placeholder="Cari Job Number, Customer, atau MAWB/HAWB..."
-          className="w-full rounded-lg border border-slate-200 py-1.5 pl-9 pr-3 text-xs text-slate-700 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-1.5 pl-9 pr-3 text-xs text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         />
       </label>
     </div>
@@ -1467,11 +1467,11 @@ function TaskList({
   return (
     <>
       <section className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
           My Task
         </h1>
 
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           Daftar task yang ditugaskan kepada Anda.
         </p>
       </section>
@@ -1520,10 +1520,10 @@ function JobsTable({
   const lastRow = Math.min(startIndex + pageSize, totalTasks);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+    <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] shadow-xs">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[800px] text-left text-xs text-slate-600">
-          <thead className="border-b border-slate-200/80 bg-[#edf4fb] text-xs font-bold text-slate-800">
+        <table className="w-full min-w-[800px] text-left text-xs text-slate-600 dark:text-slate-300">
+          <thead className="border-b border-slate-200/80 dark:border-slate-700 bg-[#edf4fb] dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200">
             <tr>
               <th className="px-4 py-3.5">
                 Job Number
@@ -1553,20 +1553,20 @@ function JobsTable({
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {paginatedJobs.map((job) => (
               <tr
                 key={job.id}
-                className="hover:bg-slate-50/80 transition-colors"
+                className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
               >
-                <td className="px-4 py-3.5 font-semibold text-blue-600">
+                <td className="px-4 py-3.5 font-semibold text-blue-600 dark:text-blue-400">
                   {action ? (
                     <button
                       type="button"
                       onClick={() =>
                         action(job)
                       }
-                      className="cursor-pointer hover:underline text-left font-semibold text-blue-600"
+                      className="cursor-pointer hover:underline text-left font-semibold text-blue-600 dark:text-blue-400"
                     >
                       {no(job)}
                     </button>
@@ -1575,19 +1575,19 @@ function JobsTable({
                   )}
                 </td>
 
-                <td className="px-4 py-3.5 text-xs text-slate-700 font-medium">
+                <td className="px-4 py-3.5 text-xs text-slate-700 dark:text-slate-300 font-medium">
                   {job.customer || "-"}
                 </td>
 
-                <td className="px-4 py-3.5 text-xs text-slate-500">
+                <td className="px-4 py-3.5 text-xs text-slate-500 dark:text-slate-400">
                   {mawb(job)}
                 </td>
 
-                <td className="px-4 py-3.5 text-xs text-slate-600">
+                <td className="px-4 py-3.5 text-xs text-slate-600 dark:text-slate-400">
                   {job.date || "-"}
                 </td>
 
-                <td className="px-4 py-3.5 text-xs text-slate-600">
+                <td className="px-4 py-3.5 text-xs text-slate-600 dark:text-slate-400">
                   {job.assigned_to || "-"}
                 </td>
 
@@ -1608,13 +1608,13 @@ function JobsTable({
       </div>
 
       {jobs.length === 0 && (
-        <div className="p-10 text-center text-xs text-slate-500">
+        <div className="p-10 text-center text-xs text-slate-500 dark:text-slate-400">
           Tidak ada task yang sesuai.
         </div>
       )}
 
       {/* PAGINATION (Exact Match with Sales Executive) */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 bg-white px-4 py-3 text-xs text-slate-500">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
         <span>Showing {firstRow}-{lastRow} of {totalTasks} tasks</span>
         <nav className="flex items-center gap-1" aria-label="Tasks pages">
           <button
@@ -1622,7 +1622,7 @@ function JobsTable({
             aria-label="Previous page"
             disabled={currentPage <= 1}
             onClick={() => setCurrentPage((value) => Math.max(1, value - 1))}
-            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50"
+            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800"
           >
             ‹
           </button>
@@ -1637,7 +1637,7 @@ function JobsTable({
                 className={`h-8 min-w-8 rounded-md px-2 cursor-pointer ${
                   currentPage === pageNumber
                     ? "bg-blue-600 font-semibold text-white shadow-xs"
-                    : "text-slate-600 hover:bg-slate-100"
+                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}
               >
                 {pageNumber}
@@ -1646,11 +1646,11 @@ function JobsTable({
           })}
           {totalPages > 5 && (
             <>
-              <span className="px-1">...</span>
+              <span className="px-1 text-slate-400">...</span>
               <button
                 type="button"
                 onClick={() => setCurrentPage(totalPages)}
-                className="h-8 min-w-8 rounded-md px-2 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                className="h-8 min-w-8 rounded-md px-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
               >
                 {totalPages}
               </button>
@@ -1661,7 +1661,7 @@ function JobsTable({
             aria-label="Next page"
             disabled={currentPage >= totalPages}
             onClick={() => setCurrentPage((value) => Math.min(totalPages, value + 1))}
-            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50"
+            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800"
           >
             ›
           </button>
@@ -1792,14 +1792,14 @@ function JobDetail({
   ];
 
   return (
-    <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-6">
+    <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 p-6">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
             Detail Job
           </h1>
 
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             Informasi lengkap pekerjaan dan progress pengerjaan.
           </p>
         </div>
@@ -1809,8 +1809,8 @@ function JobDetail({
         />
       </div>
 
-      <section className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs">
-        <h2 className="mb-4 text-base font-bold text-slate-900 tracking-tight">
+      <section className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-xs">
+        <h2 className="mb-4 text-base font-bold text-slate-900 dark:text-white tracking-tight">
           Informasi Job
         </h2>
 
@@ -1818,14 +1818,14 @@ function JobDetail({
           {info.map(
             ([label, value]) => (
               <div
-                className="grid grid-cols-[160px_1fr] border-b border-slate-100 py-3 text-xs"
+                className="grid grid-cols-[160px_1fr] border-b border-slate-100 dark:border-slate-800 py-3 text-xs"
                 key={label}
               >
-                <span className="text-slate-500">
+                <span className="text-slate-500 dark:text-slate-400">
                   {label}
                 </span>
 
-                <b className="text-right font-semibold text-slate-900 leading-5">
+                <b className="text-right font-semibold text-slate-900 dark:text-slate-100 leading-5">
                   {value}
                 </b>
               </div>
@@ -1834,13 +1834,13 @@ function JobDetail({
         </div>
       </section>
 
-      <section className="mt-6 rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs">
+      <section className="mt-6 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-xs">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-900 tracking-tight">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
             Progress Tracker
           </h2>
 
-          <span className="text-xs font-semibold text-slate-500">
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
             Workflow Field Agent
           </span>
         </div>
@@ -1855,12 +1855,12 @@ function JobDetail({
                     ? onHandover
                     : undefined
                 }
-                className={`flex min-h-[100px] items-center gap-4 rounded-xl border p-4 text-left ${
+                className={`flex min-h-[100px] items-center gap-4 rounded-xl border p-4 text-left transition-colors ${
                   index === 0
-                    ? "border-emerald-400 bg-emerald-50"
+                    ? "border-emerald-400 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40"
                     : index === 1
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-slate-200 bg-white"
+                      ? "border-blue-500 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/40"
+                      : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80"
                 }`}
               >
                 <span
@@ -1869,7 +1869,7 @@ function JobDetail({
                       ? "bg-emerald-500 text-white"
                       : index === 1
                         ? "bg-blue-600 text-white"
-                        : "bg-slate-100 text-slate-400"
+                        : "bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-300"
                   }`}
                 >
                   {index === 0 ? (
@@ -1880,11 +1880,11 @@ function JobDetail({
                 </span>
 
                 <span className="min-w-0 flex-1">
-                  <b className="block text-xs font-bold text-slate-800">
+                  <b className="block text-xs font-bold text-slate-800 dark:text-slate-100">
                     {title}
                   </b>
 
-                  <small className="mt-0.5 block text-xs text-slate-500">
+                  <small className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
                     {caption}
                   </small>
                 </span>
@@ -2010,11 +2010,11 @@ function Handover({
 
   return (
     <div className="max-w-[1050px] pb-6">
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
         Handover
       </h1>
 
-      <p className="mt-1 mb-5 text-xs text-slate-500">
+      <p className="mt-1 mb-5 text-xs text-slate-500 dark:text-slate-400">
         Isi data penyerah dan penerima serta data aktual kargo.
       </p>
 
@@ -2032,8 +2032,8 @@ function Handover({
         />
       </div>
 
-      <section className="mt-5 rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs">
-        <h2 className="mb-4 border-b border-slate-100 pb-2 text-base font-bold text-slate-900 tracking-tight">
+      <section className="mt-5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-xs">
+        <h2 className="mb-4 border-b border-slate-100 dark:border-slate-800 pb-2 text-base font-bold text-slate-900 dark:text-white tracking-tight">
           Detail Handover
         </h2>
 
@@ -2044,7 +2044,7 @@ function Handover({
           />
 
           <div>
-            <label className="mb-1.5 block text-xs font-bold text-slate-700">
+            <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-slate-300">
               Lokasi Serah Terima *
             </label>
 
@@ -2054,12 +2054,12 @@ function Handover({
                   job?.location ||
                   "Jakarta"
                 }
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
 
               <button
                 onClick={recordGps}
-                className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-blue-50 px-3 text-blue-600 hover:bg-blue-100 transition cursor-pointer"
+                className="inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-blue-50 dark:bg-blue-950/40 px-3 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition cursor-pointer"
               >
                 <MapPin
                   size={16}
@@ -2070,8 +2070,8 @@ function Handover({
         </div>
       </section>
 
-      <section className="mt-5 rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs">
-        <h2 className="mb-4 border-b border-slate-100 pb-2 text-base font-bold text-slate-900 tracking-tight">
+      <section className="mt-5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-xs">
+        <h2 className="mb-4 border-b border-slate-100 dark:border-slate-800 pb-2 text-base font-bold text-slate-900 dark:text-white tracking-tight">
           Data Kargo Aktual
         </h2>
 
@@ -2088,18 +2088,18 @@ function Handover({
         </div>
       </section>
 
-      <section className="mt-5 rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs">
+      <section className="mt-5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-xs">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-600">
+          <span className="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
             <MapPin size={22} />
           </span>
 
           <div className="flex-1">
-            <h2 className="text-base font-bold text-slate-900 tracking-tight">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
               Perekaman Lokasi GPS
             </h2>
 
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
               Lokasi direkam untuk validasi handover.
             </p>
           </div>
@@ -2107,7 +2107,7 @@ function Handover({
           <button
             onClick={recordGps}
             disabled={recording}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2 text-xs font-bold text-blue-600 hover:bg-blue-100 transition cursor-pointer disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 dark:border-blue-800/60 bg-blue-50 dark:bg-blue-950/40 px-3.5 py-2 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition cursor-pointer disabled:opacity-60"
           >
             <RefreshCw
               size={14}
@@ -2158,12 +2158,12 @@ function Handover({
           />
         </div>
 
-        <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+        <div className="mt-5 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4">
           <p
             className={`text-xs font-semibold ${
               gps
-                ? "text-emerald-600"
-                : "text-red-500"
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-red-500 dark:text-red-400"
             }`}
           >
             <AlertTriangle
@@ -2179,7 +2179,7 @@ function Handover({
           <button
             onClick={next}
             disabled={!gps}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:shadow-none"
           >
             Simpan & Lanjut
             <ChevronRight size={16} />
@@ -2190,7 +2190,7 @@ function Handover({
       <div className="mt-5 flex justify-end">
         <button
           onClick={back}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition cursor-pointer"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer"
         >
           Kembali
         </button>
@@ -2300,34 +2300,34 @@ function Documentation({
   return (
     <div className="w-full pb-7">
       <div className="mb-5">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
           Dokumentasi
         </h1>
 
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           Upload foto dan dokumen pendukung pekerjaan.
         </p>
       </div>
 
-      <section className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs">
+      <section className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-xs">
         <div className="mb-5 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold text-slate-900 tracking-tight">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
               Foto Wajib
             </h2>
 
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
               {filledPhotos}/4 foto terisi
             </p>
           </div>
 
-          <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">
+          <span className="rounded-full border border-blue-200 dark:border-blue-800/60 bg-blue-50 dark:bg-blue-950/40 px-3 py-1 text-xs font-bold text-blue-600 dark:text-blue-400">
             {filledPhotos}/4
           </span>
         </div>
 
         {uploadError && (
-          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-600">
+          <div className="mb-4 rounded-xl border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/40 p-3 text-xs font-bold text-red-600 dark:text-red-400">
             <AlertTriangle
               size={14}
               className="mr-2 inline"
@@ -2341,10 +2341,10 @@ function Documentation({
             (label, index) => (
               <div
                 key={label}
-                className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs"
+                className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3.5 shadow-xs"
               >
                 <div className="mb-3 flex items-center justify-between">
-                  <b className="text-xs font-bold text-slate-800">
+                  <b className="text-xs font-bold text-slate-800 dark:text-slate-200">
                     {index + 1}. {label}
                   </b>
 
@@ -2377,18 +2377,18 @@ function Documentation({
                 <div
                   className={`grid h-[130px] place-items-center rounded-lg border text-center ${
                     photos[index]
-                      ? "border-emerald-200 bg-emerald-50"
-                      : "border-slate-200 bg-slate-50"
+                      ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40"
+                      : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
                   }`}
                 >
                   {photos[index] ? (
                     <div>
                       <Check
                         size={28}
-                        className="mx-auto text-emerald-600"
+                        className="mx-auto text-emerald-600 dark:text-emerald-400"
                       />
 
-                      <p className="mt-2 text-xs font-medium text-slate-700">
+                      <p className="mt-2 text-xs font-medium text-slate-700 dark:text-slate-300">
                         {photos[index]}
                       </p>
                     </div>
@@ -2400,7 +2400,7 @@ function Documentation({
                   )}
                 </div>
 
-                <label className="mt-3 grid h-9 cursor-pointer place-items-center rounded-xl bg-slate-900 text-xs font-bold text-white hover:bg-slate-800 transition">
+                <label className="mt-3 grid h-9 cursor-pointer place-items-center rounded-xl bg-slate-900 dark:bg-slate-700 text-xs font-bold text-white hover:bg-slate-800 dark:hover:bg-slate-600 transition">
                   <span>
                     <Upload
                       size={14}
@@ -2428,12 +2428,12 @@ function Documentation({
         </div>
       </section>
 
-      <section className="mt-5 rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs">
-        <h2 className="text-base font-bold text-slate-900 tracking-tight">
+      <section className="mt-5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-xs">
+        <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
           Dokumen Wajib
         </h2>
 
-        <p className="mt-0.5 text-xs text-slate-500">
+        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
           Packing List dan Commercial Invoice.
         </p>
 
@@ -2477,7 +2477,7 @@ function Documentation({
       <div className="mt-6 flex items-center justify-between">
         <button
           onClick={back}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition cursor-pointer"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer"
         >
           <ArrowLeft size={14} />
           Kembali
@@ -2486,7 +2486,7 @@ function Documentation({
         <button
           onClick={next}
           disabled={!ready}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600"
         >
           Simpan & Lanjut ke Verifikasi
           <ChevronRight size={14} />
@@ -2576,27 +2576,27 @@ function Verification({
   return (
     <div className="w-full pb-7">
       <div className="mb-5">
-        <p className="text-xs font-bold uppercase tracking-wider text-blue-600">
+        <p className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
           Tahap 3
         </p>
 
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
           Verifikasi
         </h1>
 
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           Pastikan seluruh checklist sesuai standar pengiriman.
         </p>
       </div>
 
-      <section className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs">
+      <section className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-xs">
         <div className="mb-5 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold text-slate-900 tracking-tight">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
               Final Checklist
             </h2>
 
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
               {checkedCount}/{items.length} item dicek
             </p>
           </div>
@@ -2604,10 +2604,10 @@ function Verification({
           <span
             className={`rounded-full border px-3 py-1 text-xs font-bold ${
               issueCount
-                ? "border-red-200 bg-red-50 text-red-600"
+                ? "border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400"
                 : ready
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                  : "border-amber-200 bg-amber-50 text-amber-700"
+                  ? "border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400"
+                  : "border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400"
             }`}
           >
             {issueCount
@@ -2621,29 +2621,25 @@ function Verification({
             ([title, description], index) => (
               <div
                 key={title}
-                className={`rounded-xl border p-4 ${
+                className={`rounded-xl border p-4 transition-colors ${
                   checked[index] === "ok"
-                    ? "border-emerald-400 bg-emerald-50/30"
-                    : checked[index] ===
-                        "issue"
-                      ? "border-red-300 bg-red-50/50"
-                      : "border-slate-200 bg-white"
+                    ? "border-emerald-400 dark:border-emerald-700 bg-emerald-50/30 dark:bg-emerald-950/30"
+                    : checked[index] === "issue"
+                      ? "border-red-300 dark:border-red-800 bg-red-50/50 dark:bg-red-950/30"
+                      : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80"
                 }`}
               >
                 <div className="flex items-center gap-4">
                   <span
                     className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
-                      checked[index] ===
-                      "ok"
+                      checked[index] === "ok"
                         ? "bg-emerald-500 text-white"
-                        : checked[index] ===
-                            "issue"
+                        : checked[index] === "issue"
                           ? "bg-red-500 text-white"
-                          : "bg-slate-100 text-slate-400"
+                          : "bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-300"
                     }`}
                   >
-                    {checked[index] ===
-                    "issue" ? (
+                    {checked[index] === "issue" ? (
                       <AlertTriangle
                         size={18}
                       />
@@ -2653,11 +2649,11 @@ function Verification({
                   </span>
 
                   <div className="flex-1">
-                    <b className="block text-xs font-bold text-slate-800">
+                    <b className="block text-xs font-bold text-slate-800 dark:text-slate-100">
                       {title}
                     </b>
 
-                    <p className="mt-0.5 text-xs text-slate-500">
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                       {description}
                     </p>
                   </div>
@@ -2670,7 +2666,7 @@ function Verification({
                           "ok"
                         )
                       }
-                      className="rounded-xl border border-emerald-200 bg-white px-3 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition cursor-pointer"
+                      className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition cursor-pointer"
                     >
                       Sesuai
                     </button>
@@ -2682,7 +2678,7 @@ function Verification({
                           "issue"
                         )
                       }
-                      className="rounded-xl border border-rose-200 bg-white px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                      className="rounded-xl border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition cursor-pointer"
                     >
                       Ada Issue
                     </button>
@@ -2697,7 +2693,7 @@ function Verification({
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <button
           onClick={onIssue}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-rose-300 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-100 transition cursor-pointer"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 px-4 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition cursor-pointer"
         >
           <AlertTriangle
             size={14}
@@ -2708,7 +2704,7 @@ function Verification({
         <div className="flex gap-3">
           <button
             onClick={back}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer"
           >
             <ArrowLeft size={14} />
             Kembali
@@ -2719,7 +2715,7 @@ function Verification({
               next(issueCount)
             }
             disabled={!ready}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600"
           >
             <Send size={14} />
             {issueCount
@@ -2773,11 +2769,11 @@ function HistoryList({
   return (
     <>
       <section className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
           Job History
         </h1>
 
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           Riwayat pekerjaan Field Agent.
         </p>
       </section>
@@ -2825,21 +2821,21 @@ function IssueModal({
 }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-5">
-      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+      <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-6 py-5">
           <div>
-            <h2 className="text-base font-bold text-slate-900">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">
               Laporkan Issue
             </h2>
 
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
               Catat finding atau hambatan dari lapangan.
             </p>
           </div>
 
           <button
             onClick={close}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition cursor-pointer"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300 transition cursor-pointer"
           >
             <X size={18} />
           </button>
@@ -2847,7 +2843,7 @@ function IssueModal({
 
         <div className="space-y-4 p-6">
           <div>
-            <label className="mb-1.5 block text-xs font-bold text-slate-700">
+            <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-slate-300">
               Kategori
             </label>
 
@@ -2858,32 +2854,32 @@ function IssueModal({
                   e.target.value
                 )
               }
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
-              <option>
+              <option className="dark:bg-slate-900">
                 Damaged Package
               </option>
 
-              <option>
+              <option className="dark:bg-slate-900">
                 Quantity Mismatch
               </option>
 
-              <option>
+              <option className="dark:bg-slate-900">
                 Document Missing
               </option>
 
-              <option>
+              <option className="dark:bg-slate-900">
                 Vehicle Breakdown
               </option>
 
-              <option>
+              <option className="dark:bg-slate-900">
                 Location Issue
               </option>
             </select>
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-bold text-slate-700">
+            <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-slate-300">
               Deskripsi
             </label>
 
@@ -2896,15 +2892,15 @@ function IssueModal({
               }
               rows={4}
               placeholder="Jelaskan issue yang ditemukan..."
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4">
+        <div className="flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 px-6 py-4">
           <button
             onClick={close}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer"
           >
             Batal
           </button>
@@ -2912,7 +2908,7 @@ function IssueModal({
           <button
             onClick={save}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:bg-slate-300 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed"
           >
             {saving
               ? "Menyimpan..."
@@ -2946,12 +2942,12 @@ function ReportConfirmModal({
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-5">
-      <div className="w-full max-w-[620px] overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div className="w-full max-w-[620px] overflow-hidden rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-2xl">
         <div
           className={`border-b px-6 py-6 ${
             hasIssue
-              ? "border-red-100 bg-red-50"
-              : "border-blue-100 bg-blue-50"
+              ? "border-red-100 dark:border-red-900/60 bg-red-50 dark:bg-red-950/40"
+              : "border-blue-100 dark:border-blue-900/60 bg-blue-50 dark:bg-blue-950/40"
           }`}
         >
           <div className="flex items-center gap-4">
@@ -2972,11 +2968,11 @@ function ReportConfirmModal({
             </span>
 
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Penyelesaian Task
               </p>
 
-              <h2 className="mt-0.5 text-lg font-bold text-slate-900">
+              <h2 className="mt-0.5 text-lg font-bold text-slate-900 dark:text-white">
                 Konfirmasi Pengiriman Laporan
               </h2>
             </div>
@@ -2987,19 +2983,19 @@ function ReportConfirmModal({
           <div
             className={`rounded-xl border p-4 ${
               hasIssue
-                ? "border-red-200 bg-red-50"
-                : "border-blue-200 bg-blue-50"
+                ? "border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/30"
+                : "border-blue-200 dark:border-blue-800/60 bg-blue-50 dark:bg-blue-950/30"
             }`}
           >
             {hasIssue ? (
               <>
-                <h3 className="text-sm font-bold text-red-800">
+                <h3 className="text-sm font-bold text-red-800 dark:text-red-300">
                   Task memiliki Issue
                 </h3>
 
-                <p className="mt-1 text-xs text-slate-600">
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
                   Terdapat{" "}
-                  <b className="font-semibold text-red-700">
+                  <b className="font-semibold text-red-700 dark:text-red-400">
                     {issueCount} finding
                   </b>{" "}
                   yang perlu ditindaklanjuti oleh Sales Executive.
@@ -3007,13 +3003,13 @@ function ReportConfirmModal({
               </>
             ) : (
               <>
-                <h3 className="text-sm font-bold text-blue-800">
+                <h3 className="text-sm font-bold text-blue-800 dark:text-blue-300">
                   Laporan Final
                 </h3>
 
-                <p className="mt-1 text-xs text-slate-600">
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
                   Job{" "}
-                  <b>
+                  <b className="font-semibold text-slate-800 dark:text-slate-100">
                     {no(job)}
                   </b>{" "}
                   akan dikirim ke Sales Executive sebagai Completed.
@@ -3022,23 +3018,23 @@ function ReportConfirmModal({
             )}
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-4">
             <div className="flex justify-between text-xs">
-              <span className="text-slate-500">Job</span>
-              <b className="font-semibold text-slate-800">{no(job)}</b>
+              <span className="text-slate-500 dark:text-slate-400">Job</span>
+              <b className="font-semibold text-slate-800 dark:text-slate-100">{no(job)}</b>
             </div>
 
             <div className="mt-2 flex justify-between text-xs">
-              <span className="text-slate-500">Customer</span>
-              <b className="font-semibold text-slate-800">
+              <span className="text-slate-500 dark:text-slate-400">Customer</span>
+              <b className="font-semibold text-slate-800 dark:text-slate-100">
                 {job?.customer ||
                   "-"}
               </b>
             </div>
 
             <div className="mt-2 flex justify-between text-xs">
-              <span className="text-slate-500">Status setelah submit</span>
-              <b className={`font-semibold ${hasIssue ? "text-red-600" : "text-emerald-600"}`}>
+              <span className="text-slate-500 dark:text-slate-400">Status setelah submit</span>
+              <b className={`font-semibold ${hasIssue ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}>
                 {hasIssue
                   ? "Has Issue"
                   : "Completed"}
@@ -3047,10 +3043,10 @@ function ReportConfirmModal({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4">
+        <div className="flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 px-6 py-4">
           <button
             onClick={close}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer"
           >
             Kembali
           </button>
@@ -3058,7 +3054,7 @@ function ReportConfirmModal({
           <button
             onClick={confirm}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:bg-slate-300"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:bg-slate-300 dark:disabled:bg-slate-700"
           >
             <Send size={14} />
 
@@ -3083,19 +3079,19 @@ function ReportProcessingModal({
 }) {
   return (
     <div className="fixed inset-0 z-[60] grid place-items-center bg-slate-950/70 p-5">
-      <div className="w-full max-w-[400px] rounded-2xl bg-white p-7 text-center shadow-2xl">
-        <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-blue-50 text-blue-600">
+      <div className="w-full max-w-[400px] rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 p-7 text-center shadow-2xl">
+        <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400">
           <RefreshCw
             className="animate-spin"
             size={28}
           />
         </span>
 
-        <h2 className="mt-4 text-lg font-bold text-slate-900">
+        <h2 className="mt-4 text-lg font-bold text-slate-900 dark:text-white">
           Memproses Laporan
         </h2>
 
-        <p className="mt-2 text-xs leading-5 text-slate-500">
+        <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
           {issueCount > 0
             ? "Menyimpan finding dan mengirim laporan Has Issue..."
             : "Menyimpan laporan final dan memperbarui status job..."}
@@ -3123,12 +3119,12 @@ function CompleteTaskModal({
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-5">
-      <div className="w-full max-w-[460px] rounded-2xl bg-white p-7 text-center shadow-2xl">
+      <div className="w-full max-w-[460px] rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 p-7 text-center shadow-2xl">
         <span
           className={`mx-auto grid h-14 w-14 place-items-center rounded-full ${
             hasIssue
-              ? "bg-red-100 text-red-600"
-              : "bg-emerald-100 text-emerald-600"
+              ? "bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400"
+              : "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400"
           }`}
         >
           {hasIssue ? (
@@ -3140,22 +3136,22 @@ function CompleteTaskModal({
           )}
         </span>
 
-        <h2 className="mt-4 text-lg font-bold text-slate-900">
+        <h2 className="mt-4 text-lg font-bold text-slate-900 dark:text-white">
           {hasIssue
             ? "Task Has Issue"
             : "Task Completed"}
         </h2>
 
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
           Job{" "}
-          <b className="font-semibold text-slate-800">
+          <b className="font-semibold text-slate-800 dark:text-slate-100">
             {no(job)}
           </b>{" "}
           berhasil diproses.
         </p>
 
         {hasIssue && (
-          <p className="mt-1.5 text-xs font-bold text-red-600">
+          <p className="mt-1.5 text-xs font-bold text-red-600 dark:text-red-400">
             {issueCount} finding membutuhkan tindak lanjut Sales Executive.
           </p>
         )}
@@ -3165,7 +3161,7 @@ function CompleteTaskModal({
             onClick={() => {
               openHistory();
             }}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer"
           >
             Lihat Job History
           </button>
@@ -3198,8 +3194,8 @@ function PersonCard({
   name: string;
 }) {
   return (
-    <section className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs">
-      <h2 className="mb-3 flex items-center border-b border-slate-100 pb-2 text-sm font-bold text-slate-800">
+    <section className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-4 shadow-xs">
+      <h2 className="mb-3 flex items-center border-b border-slate-100 dark:border-slate-800 pb-2 text-sm font-bold text-slate-800 dark:text-slate-200">
         <i
           className={`mr-1.5 inline-block h-2 w-2 rounded-full ${dot}`}
         />
@@ -3228,11 +3224,11 @@ function Field({
 }) {
   return (
     <div className="mb-3">
-      <label className="mb-1.5 block text-xs font-bold text-slate-700">{label}</label>
+      <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-slate-300">{label}</label>
 
       <input
         defaultValue={value}
-        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
       />
     </div>
   );
@@ -3248,16 +3244,16 @@ function InfoCard({
   sub: string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-4">
-      <p className="text-xs font-semibold text-slate-500">
+    <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/60 p-4">
+      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
         {label}
       </p>
 
-      <b className="mt-1.5 block text-sm font-bold text-slate-900 leading-snug">
+      <b className="mt-1.5 block text-sm font-bold text-slate-900 dark:text-white leading-snug">
         {value}
       </b>
 
-      <small className="mt-1 block text-xs text-slate-500">
+      <small className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
         {sub}
       </small>
     </div>
@@ -3276,12 +3272,12 @@ function DocumentUpload({
   onClear: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-xs">
       <div className="mb-3 flex items-center justify-between">
-        <b className="text-xs font-bold text-slate-800">
+        <b className="text-xs font-bold text-slate-800 dark:text-slate-200">
           <FileText
             size={14}
-            className="mr-2 inline text-blue-600"
+            className="mr-2 inline text-blue-600 dark:text-blue-400"
           />
 
           {title}
@@ -3298,7 +3294,7 @@ function DocumentUpload({
       </div>
 
       {value && (
-        <div className="mb-3 rounded-lg bg-emerald-50 p-2.5 text-xs font-semibold text-emerald-700 border border-emerald-100">
+        <div className="mb-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 p-2.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-800/60">
           <Check
             size={14}
             className="mr-1.5 inline"
@@ -3307,7 +3303,7 @@ function DocumentUpload({
         </div>
       )}
 
-      <label className="flex h-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+      <label className="flex h-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
         <Upload
           size={14}
           className="mr-2"

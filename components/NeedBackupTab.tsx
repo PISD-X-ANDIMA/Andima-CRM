@@ -426,10 +426,10 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
       {/* PAGE HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl sm:text-[26px] font-bold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-[26px] font-bold text-slate-900 dark:text-white tracking-tight">
             Need Backup Monitoring
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1 font-normal">
+          <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-400 mt-1 font-normal">
             Pantau dan kelola tiket eskalasi bantuan operasional untuk transaksi terkendala.
           </p>
         </div>
@@ -446,7 +446,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
           <button
             onClick={loadTickets}
             title="Refresh Data"
-            className="p-2 bg-white hover:bg-slate-50 text-slate-500 border border-slate-200/80 rounded-xl shadow-2xs transition-colors cursor-pointer"
+            className="p-2 bg-white hover:bg-slate-50 text-slate-500 border border-slate-200/80 rounded-xl shadow-2xs transition-colors cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800"
           >
             <RefreshCw size={15} />
           </button>
@@ -456,82 +456,82 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
       {/* 4 SUMMARY METRIC CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-6">
         {/* Card 1: Total Tiket */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-5 flex items-start justify-between">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-5 flex items-start justify-between dark:bg-[#0f172a] dark:border-slate-800">
           <div>
-            <span className="text-[11px] font-semibold text-slate-400 tracking-tight block">
+            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-400 tracking-tight block">
               Total Tiket
             </span>
-            <div className="text-2xl font-bold text-slate-900 mt-1.5 tracking-tight">
+            <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1.5 tracking-tight">
               {totalCount} Tiket
             </div>
-            <div className="text-[11px] font-medium text-blue-600 mt-3 flex items-center gap-1">
+            <div className="text-[11px] font-medium text-blue-600 dark:text-blue-400 mt-3 flex items-center gap-1">
               <span>→ Semua kanal aktif</span>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-50/90 text-blue-600 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-blue-50/90 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
             <FileText size={18} />
           </div>
         </div>
 
         {/* Card 2: Menunggu Respons */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-5 flex items-start justify-between">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-5 flex items-start justify-between dark:bg-[#0f172a] dark:border-slate-800">
           <div>
-            <span className="text-[11px] font-semibold text-slate-400 tracking-tight block">
+            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-400 tracking-tight block">
               Menunggu Respons
             </span>
-            <div className="text-2xl font-bold text-slate-900 mt-1.5 tracking-tight">
+            <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1.5 tracking-tight">
               {openCount} Tiket
             </div>
-            <div className="text-[11px] font-medium text-amber-600 mt-3 flex items-center gap-1">
+            <div className="text-[11px] font-medium text-amber-600 dark:text-amber-400 mt-3 flex items-center gap-1">
               <span>! Perlu eskalasi segera</span>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-50/90 text-amber-500 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-amber-50/90 text-amber-500 dark:bg-amber-950/40 dark:text-amber-400 flex items-center justify-center shrink-0">
             <Hourglass size={18} />
           </div>
         </div>
 
         {/* Card 3: Dalam Penanganan */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-5 flex items-start justify-between">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-5 flex items-start justify-between dark:bg-[#0f172a] dark:border-slate-800">
           <div>
-            <span className="text-[11px] font-semibold text-slate-400 tracking-tight block">
+            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-400 tracking-tight block">
               Dalam Penanganan
             </span>
-            <div className="text-2xl font-bold text-slate-900 mt-1.5 tracking-tight">
+            <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1.5 tracking-tight">
               {inprogressCount} Tiket
             </div>
-            <div className="text-[11px] font-medium text-blue-600 mt-3 flex items-center gap-1">
+            <div className="text-[11px] font-medium text-blue-600 dark:text-blue-400 mt-3 flex items-center gap-1">
               <RefreshCw size={11} className="inline mr-0.5" />
               <span>Tim lapangan bertugas</span>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-50/90 text-blue-500 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-blue-50/90 text-blue-500 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
             <RefreshCw size={18} />
           </div>
         </div>
 
         {/* Card 4: Selesai */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-5 flex items-start justify-between">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-5 flex items-start justify-between dark:bg-[#0f172a] dark:border-slate-800">
           <div>
-            <span className="text-[11px] font-semibold text-slate-400 tracking-tight block">
+            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-400 tracking-tight block">
               Selesai
             </span>
-            <div className="text-2xl font-bold text-slate-900 mt-1.5 tracking-tight">
+            <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1.5 tracking-tight">
               {resolvedCount} Tiket
             </div>
-            <div className="text-[11px] font-medium text-emerald-600 mt-3 flex items-center gap-1">
+            <div className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 mt-3 flex items-center gap-1">
               <span>✓ Solved &amp; Verifikasi OK</span>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-50/90 text-emerald-500 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50/90 text-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-400 flex items-center justify-center shrink-0">
             <CheckCircle2 size={18} />
           </div>
         </div>
       </div>
 
-      {/* SEARCH BAR (Full-width rounded input matching screenshot) */}
+      {/* SEARCH BAR */}
       <div className="mb-5">
-        <div className="relative w-full bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_4px_rgba(0,0,0,0.02)] px-5 py-3.5 flex items-center">
+        <div className="relative w-full bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_4px_rgba(0,0,0,0.02)] px-5 py-3.5 flex items-center dark:bg-slate-900 dark:border-slate-800">
           <input
             type="text"
             value={searchQuery}
@@ -540,7 +540,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
               setCurrentPage(1);
             }}
             placeholder="Customer/Job Number..."
-            className="w-full bg-transparent text-sm text-slate-700 placeholder:text-slate-300 font-normal outline-none"
+            className="w-full bg-transparent text-sm text-slate-700 placeholder:text-slate-400 dark:text-slate-200 dark:placeholder:text-slate-500 font-normal outline-none"
           />
           {searchQuery && (
             <button
@@ -548,7 +548,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 setSearchQuery('');
                 setCurrentPage(1);
               }}
-              className="p-1 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
+              className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer"
             >
               <X size={15} />
             </button>
@@ -557,11 +557,11 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
       </div>
 
       {/* MAIN DATA TABLE */}
-      <div className="bg-white rounded-2xl border border-slate-200/70 shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200/70 shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden dark:bg-[#0f172a] dark:border-slate-800">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-[#f0f4f9] text-slate-800 text-sm font-bold border-b border-slate-100">
+              <tr className="bg-[#f0f4f9] text-slate-800 text-sm font-bold border-b border-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-800">
                 <th className="py-4.5 px-6 text-left pl-8 w-[160px]">Tiket ID</th>
                 <th className="py-4.5 px-6 text-left w-[240px]">Job Number</th>
                 <th className="py-4.5 px-6 text-center w-[180px]">Kategori Kendala</th>
@@ -572,16 +572,16 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {filteredTickets.length > 0 ? (
                 paginatedTickets.map(item => (
                   <tr
                     key={item.id}
-                    className="hover:bg-slate-50/70 transition-colors group"
+                    className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors group"
                   >
                     {/* Tiket ID */}
                     <td className="py-5 px-6 pl-8 align-middle">
-                      <span className="font-bold text-slate-800 text-sm tracking-tight">
+                      <span className="font-bold text-slate-800 dark:text-slate-300 text-sm tracking-tight">
                         {item.ticket_id}
                       </span>
                     </td>
@@ -589,11 +589,11 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                     {/* Job Number */}
                     <td className="py-5 px-6 align-middle">
                       <div>
-                        <div className="font-bold text-slate-800 text-sm tracking-tight">
+                        <div className="font-bold text-slate-800 dark:text-white text-sm tracking-tight">
                           {item.job_number}
                         </div>
                         {item.customer_name ? (
-                          <div className="text-xs text-slate-400 mt-0.5 font-normal">
+                          <div className="text-xs text-slate-400 dark:text-slate-400 mt-0.5 font-normal">
                             {item.customer_name}
                           </div>
                         ) : null}
@@ -602,7 +602,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
 
                     {/* Kategori Kendala */}
                     <td className="py-5 px-6 text-center align-middle">
-                      <span className="inline-flex items-center justify-center px-4 py-1 rounded-full text-xs font-semibold bg-[#eef2ff] text-[#4f46e5]">
+                      <span className="inline-flex items-center justify-center px-4 py-1 rounded-full text-xs font-semibold bg-[#eef2ff] text-[#4f46e5] dark:bg-indigo-950/40 dark:text-indigo-300">
                         {item.category}
                       </span>
                     </td>
@@ -610,19 +610,19 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                     {/* Prioritas */}
                     <td className="py-5 px-6 text-center align-middle">
                       {item.priority === 'High' && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fef2f2] text-[#dc2626] border border-[#fee2e2]">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fef2f2] text-[#dc2626] border border-[#fee2e2] dark:bg-red-950/40 dark:text-red-300 dark:border-red-900/60">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#dc2626]" />
                           High
                         </span>
                       )}
                       {item.priority === 'Medium' && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fffbeb] text-[#d97706] border border-[#fef3c7]">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fffbeb] text-[#d97706] border border-[#fef3c7] dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/60">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#d97706]" />
                           Medium
                         </span>
                       )}
                       {item.priority === 'Low' && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7]">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7] dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a]" />
                           Low
                         </span>
@@ -631,7 +631,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
 
                     {/* Tanggal */}
                     <td className="py-5 px-6 text-center align-middle">
-                      <span className="text-sm font-semibold text-slate-700">
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                         {item.date}
                       </span>
                     </td>
@@ -639,19 +639,19 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                     {/* Status */}
                     <td className="py-5 px-6 text-center align-middle">
                       {item.status === 'Open' && (
-                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold bg-[#fffbeb] text-[#d97706] border border-[#fde68a]">
+                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold bg-[#fffbeb] text-[#d97706] border border-[#fde68a] dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/60">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#d97706]" />
                           Open
                         </span>
                       )}
                       {item.status === 'Inprogress' && (
-                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold bg-[#eff6ff] text-[#2563eb] border border-[#bfdbfe]">
+                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold bg-[#eff6ff] text-[#2563eb] border border-[#bfdbfe] dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#2563eb]" />
                           Inprogress
                         </span>
                       )}
                       {item.status === 'Resolved' && (
-                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0]">
+                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60">
                           <Check size={12} className="text-[#059669]" />
                           Resolved
                         </span>
@@ -662,7 +662,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                     <td className="py-5 px-6 text-center pr-8 align-middle">
                       <button
                         onClick={() => setSelectedTicket(item)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-slate-300 text-xs font-medium text-slate-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer shadow-2xs"
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-slate-300 text-xs font-medium text-slate-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50/50 dark:border-slate-700 dark:text-slate-300 dark:hover:text-blue-400 dark:hover:border-blue-500 dark:hover:bg-blue-950/30 transition-all cursor-pointer shadow-2xs"
                       >
                         <Eye size={12} className="text-slate-400 group-hover:text-blue-500" />
                         Detail
@@ -672,7 +672,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400 text-sm">
+                  <td colSpan={7} className="py-12 text-center text-slate-400 dark:text-slate-500 text-sm">
                     Tidak ada tiket yang sesuai dengan pencarian &quot;{searchQuery}&quot;
                   </td>
                 </tr>
@@ -682,8 +682,8 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
         </div>
       </div>
 
-      {/* PAGINATION (Exact Match with Sales Executive) */}
-      <div className="flex flex-wrap items-center justify-between gap-4 px-3 pt-3 text-xs text-slate-500">
+      {/* PAGINATION */}
+      <div className="flex flex-wrap items-center justify-between gap-4 px-3 pt-3 text-xs text-slate-500 dark:text-slate-400">
         <span>Showing {firstRow}-{lastRow} of {totalTickets} tickets</span>
         <nav className="flex items-center gap-1" aria-label="Tickets pages">
           <button
@@ -691,7 +691,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
             aria-label="Previous page"
             disabled={currentPage <= 1}
             onClick={() => setCurrentPage((value) => value - 1)}
-            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800"
           >
             ‹
           </button>
@@ -703,7 +703,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 key={pageNumber}
                 aria-current={currentPage === pageNumber ? "page" : undefined}
                 onClick={() => setCurrentPage(pageNumber)}
-                className={`h-8 min-w-8 rounded-md px-2 cursor-pointer ${currentPage === pageNumber ? "bg-blue-600 font-semibold text-white" : "text-slate-600 hover:bg-slate-100"}`}
+                className={`h-8 min-w-8 rounded-md px-2 cursor-pointer transition-colors ${currentPage === pageNumber ? "bg-blue-600 font-semibold text-white" : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"}`}
               >
                 {pageNumber}
               </button>
@@ -711,11 +711,11 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
           })}
           {totalPages > 5 && (
             <>
-              <span className="px-1">...</span>
+              <span className="px-1 text-slate-400 dark:text-slate-500">...</span>
               <button
                 type="button"
                 onClick={() => setCurrentPage(totalPages)}
-                className="h-8 min-w-8 rounded-md px-2 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                className="h-8 min-w-8 rounded-md px-2 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer transition-colors"
               >
                 {totalPages}
               </button>
@@ -726,30 +726,30 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
             aria-label="Next page"
             disabled={currentPage >= totalPages}
             onClick={() => setCurrentPage((value) => value + 1)}
-            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800"
           >
             ›
           </button>
         </nav>
       </div>
 
-      {/* DETAIL MODAL (Matching User's Uploaded Screenshot Exactly) */}
+      {/* DETAIL MODAL */}
       {selectedTicket && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[560px] max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[560px] max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 dark:bg-[#0f172a] dark:border dark:border-slate-800">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-100 flex items-start justify-between">
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between">
               <div>
-                <h2 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight">
+                <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
                   Detail Tiket Need Backup
                 </h2>
-                <div className="text-xs font-medium font-mono text-slate-400 mt-0.5 tracking-wider">
+                <div className="text-xs font-medium font-mono text-slate-400 dark:text-slate-400 mt-0.5 tracking-wider">
                   {selectedTicket.ticket_id}
                 </div>
               </div>
               <button
                 onClick={() => setSelectedTicket(null)}
-                className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -760,29 +760,29 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
               {/* TOP TWO CARDS (Status Tiket & Prioritas) */}
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 {/* Status Tiket Card */}
-                <div className="bg-white rounded-2xl border border-slate-200/70 p-3.5 sm:p-4 shadow-2xs">
+                <div className="bg-white rounded-2xl border border-slate-200/70 p-3.5 sm:p-4 shadow-2xs dark:bg-slate-900/90 dark:border-slate-800">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-400">Status Tiket</span>
+                    <span className="text-xs font-medium text-slate-400 dark:text-slate-400">Status Tiket</span>
                     {selectedTicket.status === 'Open' && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#fffbeb] text-[#d97706] border border-[#fef3c7]">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#fffbeb] text-[#d97706] border border-[#fef3c7] dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/60">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#d97706]" />
                         Active
                       </span>
                     )}
                     {selectedTicket.status === 'Inprogress' && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#eff6ff] text-[#2563eb] border border-[#bfdbfe]">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#eff6ff] text-[#2563eb] border border-[#bfdbfe] dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#2563eb]" />
                         Active
                       </span>
                     )}
                     {selectedTicket.status === 'Resolved' && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0]">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60">
                         <Check size={11} className="text-[#059669]" />
                         Resolved
                       </span>
                     )}
                   </div>
-                  <div className="text-xs sm:text-sm font-bold text-slate-900 mt-2">
+                  <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-2">
                     {selectedTicket.status === 'Open'
                       ? 'Open / Menunggu Respons'
                       : selectedTicket.status === 'Inprogress'
@@ -792,27 +792,27 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 </div>
 
                 {/* Prioritas Card */}
-                <div className="bg-white rounded-2xl border border-slate-200/70 p-3.5 sm:p-4 shadow-2xs">
+                <div className="bg-white rounded-2xl border border-slate-200/70 p-3.5 sm:p-4 shadow-2xs dark:bg-slate-900/90 dark:border-slate-800">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-400">Prioritas</span>
+                    <span className="text-xs font-medium text-slate-400 dark:text-slate-400">Prioritas</span>
                     {selectedTicket.priority === 'High' ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#fef2f2] text-[#dc2626] border border-[#fee2e2]">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#fef2f2] text-[#dc2626] border border-[#fee2e2] dark:bg-red-950/40 dark:text-red-300 dark:border-red-900/60">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#dc2626]" />
                         Urgent SLA
                       </span>
                     ) : selectedTicket.priority === 'Medium' ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#fffbeb] text-[#d97706] border border-[#fef3c7]">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#fffbeb] text-[#d97706] border border-[#fef3c7] dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/60">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#d97706]" />
                         Normal SLA
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7]">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7] dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a]" />
                         Low SLA
                       </span>
                     )}
                   </div>
-                  <div className="text-xs sm:text-sm font-bold text-slate-900 mt-2">
+                  <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-2">
                     {selectedTicket.priority === 'High'
                       ? 'High / Urgent'
                       : selectedTicket.priority === 'Medium'
@@ -823,29 +823,29 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
               </div>
 
               {/* INFORMATION CARD */}
-              <div className="bg-[#f8fafc] rounded-2xl border border-slate-200/60 p-4 space-y-3">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              <div className="bg-[#f8fafc] rounded-2xl border border-slate-200/60 p-4 space-y-3 dark:bg-slate-900/60 dark:border-slate-800">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
                   INFORMATION
                 </span>
                 <div>
-                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
+                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
                     {selectedTicket.customer_name || 'PT. Sinar Baja Nusantara'}
                   </h3>
-                  <p className="text-xs font-bold text-[#2563eb] mt-0.5">
+                  <p className="text-xs font-bold text-[#2563eb] dark:text-blue-400 mt-0.5">
                     {selectedTicket.job_number}
                   </p>
                 </div>
 
-                <div className="pt-2 border-t border-slate-200/50 grid grid-cols-2 gap-4">
+                <div className="pt-2 border-t border-slate-200/50 dark:border-slate-800 grid grid-cols-2 gap-4">
                   <div>
-                    <span className="text-[10px] text-slate-400 block">Pelapor:</span>
-                    <div className="text-xs font-semibold text-slate-800 mt-0.5">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 block">Pelapor:</span>
+                    <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
                       {selectedTicket.requested_by || 'Adelia (Sales Executive)'}
                     </div>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block">Tanggal &amp; Waktu:</span>
-                    <div className="text-xs font-semibold text-slate-800 mt-0.5">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 block">Tanggal &amp; Waktu:</span>
+                    <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
                       {selectedTicket.date}, {selectedTicket.time || '10:35 WIB'}
                     </div>
                   </div>
@@ -854,16 +854,16 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
 
               {/* CONNECTED JOB / KATEGORI */}
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">
                   CONNECTED JOB / KATEGORI
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#eff6ff] text-[#2563eb] border border-[#dbeafe]">
-                    <Tag size={12} className="rotate-90 text-blue-500" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#eff6ff] text-[#2563eb] border border-[#dbeafe] dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60">
+                    <Tag size={12} className="rotate-90 text-blue-500 dark:text-blue-400" />
                     <span>{selectedTicket.connected_job || 'DSVEXP/2605/2552'}</span>
                   </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fffbeb] text-[#b45309] border border-[#fde68a]">
-                    <Tag size={12} className="rotate-90 text-amber-500" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fffbeb] text-[#b45309] border border-[#fde68a] dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/60">
+                    <Tag size={12} className="rotate-90 text-amber-500 dark:text-amber-400" />
                     <span>{selectedTicket.category || 'Gross Weight'}</span>
                   </span>
                 </div>
@@ -871,10 +871,10 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
 
               {/* DESKRIPSI KENDALA & BANTUAN */}
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">
                   DESKRIPSI KENDALA &amp; BANTUAN
                 </span>
-                <div className="bg-[#f8fafc] border border-slate-200/70 rounded-2xl p-3.5 text-xs font-normal text-slate-700 leading-relaxed">
+                <div className="bg-[#f8fafc] border border-slate-200/70 rounded-2xl p-3.5 text-xs font-normal text-slate-700 leading-relaxed dark:bg-slate-900/60 dark:border-slate-800 dark:text-slate-300">
                   {selectedTicket.description ||
                     'Jumlah koli fisik yang diterima di lokasi (8 koli) tidak sesuai dengan data dokumen awal (10 koli). Mohon koordinasi tim warehouse Cikarang untuk pengecekan 2 koli tertinggal.'}
                 </div>
@@ -883,29 +883,29 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
               {/* RIWAYAT TINDAK LANJUT / AUDIT LOG */}
               <div>
                 <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                     RIWAYAT TINDAK LANJUT / AUDIT LOG
                   </span>
-                  <span className="bg-slate-100 text-slate-500 rounded-full px-2 py-0.5 text-[10px] font-semibold">
+                  <span className="bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 rounded-full px-2 py-0.5 text-[10px] font-semibold">
                     {selectedTicket.logs?.length || 2} Log
                   </span>
                 </div>
 
-                <div className="relative pl-5 space-y-3.5 before:content-[''] before:absolute before:left-1.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                <div className="relative pl-5 space-y-3.5 before:content-[''] before:absolute before:left-1.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-700">
                   {selectedTicket.logs && selectedTicket.logs.length > 0 ? (
                     selectedTicket.logs.map((log, idx) => (
                       <div key={log.id || idx} className="relative">
                         {/* Timeline Dot */}
                         <span
-                          className={`absolute -left-5 top-1 w-2.5 h-2.5 rounded-full ring-4 ring-white ${
+                          className={`absolute -left-5 top-1 w-2.5 h-2.5 rounded-full ring-4 ring-white dark:ring-slate-900 ${
                             log.is_active ? 'bg-blue-600' : 'bg-slate-400'
                           }`}
                         />
                         <div className="flex items-baseline gap-2">
-                          <span className="text-xs font-bold text-slate-800">{log.author}</span>
-                          <span className="text-[11px] text-slate-400">at {log.timestamp}</span>
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{log.author}</span>
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500">at {log.timestamp}</span>
                         </div>
-                        <div className="mt-1 bg-[#f8fafc] border border-slate-200/70 rounded-xl p-2.5 text-xs text-slate-600 leading-normal">
+                        <div className="mt-1 bg-[#f8fafc] border border-slate-200/70 rounded-xl p-2.5 text-xs text-slate-600 leading-normal dark:bg-slate-900/60 dark:border-slate-800 dark:text-slate-300">
                           {log.message}
                         </div>
                       </div>
@@ -913,22 +913,22 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                   ) : (
                     <>
                       <div className="relative">
-                        <span className="absolute -left-5 top-1 w-2.5 h-2.5 rounded-full ring-4 ring-white bg-blue-600" />
+                        <span className="absolute -left-5 top-1 w-2.5 h-2.5 rounded-full ring-4 ring-white dark:ring-slate-900 bg-blue-600" />
                         <div className="flex items-baseline gap-2">
-                          <span className="text-xs font-bold text-slate-800">Ditanggapi oleh Budi (Ops Senior)</span>
-                          <span className="text-[11px] text-slate-400">at 24-09-2026 10:45</span>
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Ditanggapi oleh Budi (Ops Senior)</span>
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500">at 24-09-2026 10:45</span>
                         </div>
-                        <div className="mt-1 bg-[#f8fafc] border border-slate-200/70 rounded-xl p-2.5 text-xs text-slate-600 leading-normal">
+                        <div className="mt-1 bg-[#f8fafc] border border-slate-200/70 rounded-xl p-2.5 text-xs text-slate-600 leading-normal dark:bg-slate-900/60 dark:border-slate-800 dark:text-slate-300">
                           Tim warehouse Cikarang sedang melakukan audit fisik 2 koli...
                         </div>
                       </div>
                       <div className="relative">
-                        <span className="absolute -left-5 top-1 w-2.5 h-2.5 rounded-full ring-4 ring-white bg-slate-400" />
+                        <span className="absolute -left-5 top-1 w-2.5 h-2.5 rounded-full ring-4 ring-white dark:ring-slate-900 bg-slate-400" />
                         <div className="flex items-baseline gap-2">
-                          <span className="text-xs font-bold text-slate-800">Diajukan oleh Adelia</span>
-                          <span className="text-[11px] text-slate-400">at 24-09-2026 10:35</span>
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Diajukan oleh Adelia</span>
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500">at 24-09-2026 10:35</span>
                         </div>
-                        <div className="mt-1 bg-[#f8fafc] border border-slate-200/70 rounded-xl p-2.5 text-xs text-slate-600 leading-normal">
+                        <div className="mt-1 bg-[#f8fafc] border border-slate-200/70 rounded-xl p-2.5 text-xs text-slate-600 leading-normal dark:bg-slate-900/60 dark:border-slate-800 dark:text-slate-300">
                           Tiket diajukan ke tim Operasional &amp; Senior Manager.
                         </div>
                       </div>
@@ -940,33 +940,33 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
               {/* TULIS TANGGAPAN / CATATAN TAMBAHAN */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <PenLine size={13} className="text-slate-600" />
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <PenLine size={13} className="text-slate-600 dark:text-slate-400" />
                     <span>Tulis Tanggapan / Catatan Tambahan</span>
                   </span>
-                  <span className="text-[11px] text-slate-400">Markdown didukung</span>
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500">Markdown didukung</span>
                 </div>
 
-                <div className="border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-2xs focus-within:border-blue-400 transition-colors">
+                <div className="border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-2xs focus-within:border-blue-400 dark:border-slate-700 dark:bg-slate-900 transition-colors">
                   <textarea
                     rows={3}
                     value={newComment}
                     onChange={e => setNewComment(e.target.value)}
                     placeholder="Tulis tanggapan / catatan tambahan..."
-                    className="w-full p-3 text-xs text-slate-700 outline-none resize-none placeholder:text-slate-400"
+                    className="w-full p-3 text-xs text-slate-700 outline-none resize-none placeholder:text-slate-400 dark:text-slate-200 dark:placeholder:text-slate-500 bg-transparent"
                   />
-                  <div className="px-3.5 py-2 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
-                    <div className="flex items-center gap-3 text-slate-400">
+                  <div className="px-3.5 py-2 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between dark:bg-slate-900/90 dark:border-slate-800">
+                    <div className="flex items-center gap-3 text-slate-400 dark:text-slate-500">
                       <button
                         type="button"
-                        className="hover:text-slate-600 transition-colors cursor-pointer"
+                        className="hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
                         title="Lampirkan Dokumen"
                       >
                         <Paperclip size={15} />
                       </button>
                       <button
                         type="button"
-                        className="hover:text-slate-600 transition-colors cursor-pointer"
+                        className="hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
                         title="Mention Rekan Kerja"
                       >
                         <AtSign size={15} />
@@ -985,9 +985,9 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 </div>
               </div>
 
-              {/* STATUS TRANSITION BUTTONS (Preserved Exactly As Requested: Open, Inprogress, Resolved) */}
-              <div className="border-t border-slate-100 pt-3.5">
-                <label className="text-[11px] font-bold text-slate-700 block mb-2">
+              {/* STATUS TRANSITION BUTTONS */}
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-3.5">
+                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-2">
                   Ubah Status Tiket:
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -997,7 +997,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                     className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                       selectedTicket.status === 'Open'
                         ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
-                        : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50'
+                        : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50 dark:bg-slate-800 dark:text-amber-300 dark:border-amber-900/60 dark:hover:bg-slate-700'
                     }`}
                   >
                     <span className="w-2 h-2 rounded-full bg-current" />
@@ -1010,7 +1010,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                     className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                       selectedTicket.status === 'Inprogress'
                         ? 'bg-blue-600 text-white border-blue-700 shadow-sm'
-                        : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'
+                        : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50 dark:bg-slate-800 dark:text-blue-300 dark:border-blue-900/60 dark:hover:bg-slate-700'
                     }`}
                   >
                     <RefreshCw size={12} className={selectedTicket.status === 'Inprogress' ? 'animate-spin' : ''} />
@@ -1023,7 +1023,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                     className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                       selectedTicket.status === 'Resolved'
                         ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
-                        : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+                        : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-slate-800 dark:text-emerald-300 dark:border-emerald-900/60 dark:hover:bg-slate-700'
                     }`}
                   >
                     <Check size={14} />
@@ -1034,10 +1034,10 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end">
+            <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end dark:bg-slate-900/80 dark:border-slate-800">
               <button
                 onClick={() => setSelectedTicket(null)}
-                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer dark:bg-slate-800 dark:hover:bg-slate-700"
               >
                 Tutup
               </button>
@@ -1049,24 +1049,24 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
       {/* CREATE NEW TICKET MODAL */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 dark:bg-[#0f172a] dark:border dark:border-slate-800">
+            <div className="px-6 py-4.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/60 dark:bg-slate-900">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center">
                   <Plus size={16} />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white">
                     Buat Tiket Need Backup
                   </h2>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-400 dark:text-slate-400">
                     Eskalasikan kendala operasional lapangan baru
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="p-1.5 hover:bg-slate-200/60 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                className="p-1.5 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -1075,7 +1075,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
             <form onSubmit={handleCreateTicket} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                  <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                     Job Number *
                   </label>
                   <input
@@ -1084,12 +1084,12 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                     value={newJobNumber}
                     onChange={e => setNewJobNumber(e.target.value)}
                     placeholder="#AENAT/2609/0308"
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 dark:bg-slate-900 outline-none focus:border-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                  <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                     Customer / Perusahaan
                   </label>
                   <input
@@ -1097,47 +1097,47 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                     value={newCustomer}
                     onChange={e => setNewCustomer(e.target.value)}
                     placeholder="PT. Sinar Baja Nusantara"
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 dark:bg-slate-900 outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                  <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                     Kategori Kendala *
                   </label>
                   <select
                     value={newCategory}
                     onChange={e => setNewCategory(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 bg-white"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 dark:bg-slate-900 outline-none focus:border-blue-500 bg-white"
                   >
-                    <option value="Gross Weight">Gross Weight</option>
-                    <option value="Selisih Koli">Selisih Koli</option>
-                    <option value="Kerusakan barang">Kerusakan barang</option>
-                    <option value="Kendala Surat Jalan">Kendala Surat Jalan</option>
-                    <option value="Dokumen Tertahan">Dokumen Tertahan</option>
+                    <option value="Gross Weight" className="dark:bg-slate-900 dark:text-white">Gross Weight</option>
+                    <option value="Selisih Koli" className="dark:bg-slate-900 dark:text-white">Selisih Koli</option>
+                    <option value="Kerusakan barang" className="dark:bg-slate-900 dark:text-white">Kerusakan barang</option>
+                    <option value="Kendala Surat Jalan" className="dark:bg-slate-900 dark:text-white">Kendala Surat Jalan</option>
+                    <option value="Dokumen Tertahan" className="dark:bg-slate-900 dark:text-white">Dokumen Tertahan</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                  <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                     Prioritas *
                   </label>
                   <select
                     value={newPriority}
                     onChange={e => setNewPriority(e.target.value as any)}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 bg-white"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 dark:bg-slate-900 outline-none focus:border-blue-500 bg-white"
                   >
-                    <option value="High">High / Urgent</option>
-                    <option value="Medium">Medium / Normal</option>
-                    <option value="Low">Low / Standard</option>
+                    <option value="High" className="dark:bg-slate-900 dark:text-white">High / Urgent</option>
+                    <option value="Medium" className="dark:bg-slate-900 dark:text-white">Medium / Normal</option>
+                    <option value="Low" className="dark:bg-slate-900 dark:text-white">Low / Standard</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                   Deskripsi Kendala &amp; Bantuan yang Dibutuhkan *
                 </label>
                 <textarea
@@ -1146,15 +1146,15 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                   value={newDescription}
                   onChange={e => setNewDescription(e.target.value)}
                   placeholder="Jelaskan kendala di lapangan dan bantuan yang dibutuhkan..."
-                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 resize-none"
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-200 dark:bg-slate-900 outline-none focus:border-blue-500 resize-none"
                 />
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 cursor-pointer"
+                  className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   Batal
                 </button>

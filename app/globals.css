@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
@@ -10,10 +12,23 @@
   --table-header-bg: #edf4fb;
 }
 
+.dark {
+  --background: #090f1d;
+  --foreground: #f1f5f9;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --primary-light: #1e293b;
+  --sidebar-bg: #050b14;
+  --table-header-bg: #111d33;
+  color-scheme: dark;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
+  --color-slate-750: #253349;
+  --color-slate-850: #131c2e;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -24,7 +39,6 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
-/* Global CRM Utility Classes */
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -65,6 +79,16 @@ body {
   border-color: #cbd5e1;
 }
 
+.dark .btn-secondary {
+  background-color: #111d33;
+  color: #f1f5f9;
+  border-color: #1e293b;
+}
+.dark .btn-secondary:hover {
+  background-color: #172544;
+  border-color: #334155;
+}
+
 .table-header-crm {
   background-color: #edf4fb;
   color: #1e293b;
@@ -72,11 +96,22 @@ body {
   font-size: 0.8125rem;
 }
 
+.dark .table-header-crm {
+  background-color: #111d33;
+  color: #cbd5e1;
+}
+
 /* Custom Utilities for micro-interactions */
 .glass-panel {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.dark .glass-panel {
+  background: rgba(11, 20, 38, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(30, 41, 59, 0.8);
 }
 
 .copy-badge {
@@ -96,6 +131,9 @@ body {
 .primary { background: #1d4ed8; color: white; box-shadow: 0 3px 6px rgb(29 78 216 / .22); }
 .primary:hover { background: #1e40af; }
 .secondary { border: 1px solid #d3deea; background: #fff; color: #48566a; }
+.dark .secondary { border: 1px solid #1e293b; background: #111d33; color: #cbd5e1; }
 .pager { display: grid; height: 21px; width: 21px; place-items: center; border: 1px solid #dce5ee; border-radius: 5px; color: #526074; }
+.dark .pager { border-color: #1e293b; color: #94a3b8; }
 .pager.active { border-color: #1d4ed8; background: #1d4ed8; color: white; }
+
 

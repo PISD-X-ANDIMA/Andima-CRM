@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Briefcase,
   LogOut,
+  Settings,
 } from "lucide-react";
 
 interface SubMenuItem {
@@ -234,7 +235,19 @@ export function Sidebar() {
       </nav>
 
       {/* Bottom User / Logout Bar */}
-      <div className="p-3.5 border-t border-white/[0.06]">
+      <div className="p-3.5 border-t border-white/[0.06] space-y-1.5">
+        <Link
+          href="/dashboard/settings"
+          className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs font-semibold transition-colors ${
+            pathname.startsWith("/dashboard/settings")
+              ? "bg-white/[0.12] text-white shadow-2xs"
+              : "text-slate-400 hover:bg-white/[0.05] hover:text-slate-200"
+          }`}
+        >
+          <Settings className="h-4 w-4" />
+          <span>Pengaturan</span>
+        </Link>
+
         <button
           type="button"
           onClick={async () => {
@@ -242,7 +255,7 @@ export function Sidebar() {
             try { localStorage.removeItem("andima_user"); } catch {}
             router.push("/login");
           }}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/25 bg-red-500/10 py-2.5 px-4 text-xs font-semibold text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/40 transition-all cursor-pointer shadow-2xs"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/25 bg-red-500/10 py-2 px-4 text-xs font-semibold text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/40 transition-all cursor-pointer shadow-2xs"
         >
           <LogOut className="h-4 w-4" />
           <span>Logout</span>

@@ -910,8 +910,8 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           className="fixed top-16 right-8 z-[100] animate-in fade-in slide-in-from-top-2 duration-200 cursor-pointer select-none shadow-md rounded-lg"
           title="Tutup notifikasi"
         >
-          <div className="h-[31px] w-[210px] bg-[#ecfdf5] border-[1.5px] border-[#059669] rounded-lg px-3.5 flex items-center">
-            <span className="text-xs font-bold text-[#006838] leading-none">Succes</span>
+          <div className="h-[31px] w-[210px] bg-[#ecfdf5] border-[1.5px] border-[#059669] rounded-lg px-3.5 flex items-center dark:bg-emerald-950/80 dark:border-emerald-500">
+            <span className="text-xs font-bold text-[#006838] dark:text-emerald-300 leading-none">Succes</span>
           </div>
         </div>
       )}
@@ -925,7 +925,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Customer/Job Number..."
-            className="w-full bg-white border border-slate-200/90 rounded-xl px-4 py-2 text-xs text-slate-700 placeholder:text-slate-400 outline-none shadow-2xs focus:border-blue-400 transition-colors"
+            className="w-full bg-white border border-slate-200/90 rounded-xl px-4 py-2 text-xs text-slate-700 placeholder:text-slate-400 outline-none shadow-2xs focus:border-blue-400 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 transition-colors"
           />
         </div>
 
@@ -940,14 +940,14 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 setIsDateDropdownOpen(false);
                 setIsStatusDropdownOpen(false);
               }}
-              className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
+              className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:hover:border-slate-700 dark:text-slate-300 transition-colors"
             >
-              <span>Channel Type: <strong className="font-semibold text-slate-800">{channelFilter}</strong></span>
-              <ChevronDown size={14} className={`text-slate-400 transition-transform ${isChannelDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
+              <span>Channel Type: <strong className="font-semibold text-slate-800 dark:text-slate-200">{channelFilter}</strong></span>
+              <ChevronDown size={14} className={`text-slate-400 transition-transform ${isChannelDropdownOpen ? 'rotate-180 text-blue-600 dark:text-blue-400' : ''}`} />
             </button>
 
             {isChannelDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1">
+              <div className="absolute top-full left-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1 dark:bg-slate-900 dark:border-slate-800">
                 {['All Channel', 'Meeting', 'WhatsApp'].map(opt => (
                   <button
                     key={opt}
@@ -957,11 +957,11 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                       setIsChannelDropdownOpen(false);
                     }}
                     className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-                      channelFilter === opt ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
+                      channelFilter === opt ? 'bg-blue-50 text-blue-600 font-bold dark:bg-blue-950/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/60'
                     }`}
                   >
                     <span>{opt}</span>
-                    {channelFilter === opt && <Check size={13} className="text-blue-600" />}
+                    {channelFilter === opt && <Check size={13} className="text-blue-600 dark:text-blue-400" />}
                   </button>
                 ))}
               </div>
@@ -977,14 +977,14 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 setIsChannelDropdownOpen(false);
                 setIsStatusDropdownOpen(false);
               }}
-              className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
+              className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:hover:border-slate-700 dark:text-slate-300 transition-colors"
             >
-              <span className="font-semibold text-slate-800">{dateFilter}</span>
-              <ChevronDown size={14} className={`text-slate-400 transition-transform ${isDateDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
+              <span className="font-semibold text-slate-800 dark:text-slate-200">{dateFilter}</span>
+              <ChevronDown size={14} className={`text-slate-400 transition-transform ${isDateDropdownOpen ? 'rotate-180 text-blue-600 dark:text-blue-400' : ''}`} />
             </button>
 
             {isDateDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1.5 w-52 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1">
+              <div className="absolute top-full left-0 mt-1.5 w-52 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1 dark:bg-slate-900 dark:border-slate-800">
                 {['Today (14 Sep 2026)', '03-03-2026', '04-03-2026', 'All Dates'].map(d => (
                   <button
                     key={d}
@@ -994,11 +994,11 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                       setIsDateDropdownOpen(false);
                     }}
                     className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-                      dateFilter === d ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
+                      dateFilter === d ? 'bg-blue-50 text-blue-600 font-bold dark:bg-blue-950/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/60'
                     }`}
                   >
                     <span>{d}</span>
-                    {dateFilter === d && <Check size={13} className="text-blue-600" />}
+                    {dateFilter === d && <Check size={13} className="text-blue-600 dark:text-blue-400" />}
                   </button>
                 ))}
               </div>
@@ -1014,14 +1014,14 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 setIsChannelDropdownOpen(false);
                 setIsDateDropdownOpen(false);
               }}
-              className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
+              className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:hover:border-slate-700 dark:text-slate-300 transition-colors"
             >
-              <span>Status: <strong className="font-semibold text-slate-800">{statusFilter}</strong></span>
-              <ChevronDown size={14} className={`text-slate-400 transition-transform ${isStatusDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
+              <span>Status: <strong className="font-semibold text-slate-800 dark:text-slate-200">{statusFilter}</strong></span>
+              <ChevronDown size={14} className={`text-slate-400 transition-transform ${isStatusDropdownOpen ? 'rotate-180 text-blue-600 dark:text-blue-400' : ''}`} />
             </button>
 
             {isStatusDropdownOpen && (
-              <div className="absolute top-full right-0 mt-1.5 w-40 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1">
+              <div className="absolute top-full right-0 mt-1.5 w-40 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1 dark:bg-slate-900 dark:border-slate-800">
                 {['All Status', 'Active', 'Archived'].map(st => (
                   <button
                     key={st}
@@ -1031,11 +1031,11 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                       setIsStatusDropdownOpen(false);
                     }}
                     className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-                      statusFilter === st ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
+                      statusFilter === st ? 'bg-blue-50 text-blue-600 font-bold dark:bg-blue-950/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/60'
                     }`}
                   >
                     <span>{st}</span>
-                    {statusFilter === st && <Check size={13} className="text-blue-600" />}
+                    {statusFilter === st && <Check size={13} className="text-blue-600 dark:text-blue-400" />}
                   </button>
                 ))}
               </div>
@@ -1055,46 +1055,46 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       </div>
 
       {/* 2. PAGE HEADING */}
-      <h1 className="text-2xl font-bold text-[#0f172a] mt-7 mb-5 tracking-tight">
+      <h1 className="text-2xl font-bold text-[#0f172a] dark:text-white mt-7 mb-5 tracking-tight">
         Record Customer Conversation
       </h1>
 
       {/* 3. TABLE CARD */}
-      <div className="bg-white rounded-2xl border border-slate-200/70 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200/70 shadow-xs overflow-hidden dark:bg-[#0f172a] dark:border-slate-800">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[780px]">
-            {/* TABLE HEADER (Exact ice-blue background #edf4fb) */}
-            <thead className="bg-[#edf4fb] border-b border-slate-200/70">
+            {/* TABLE HEADER */}
+            <thead className="bg-[#edf4fb] border-b border-slate-200/70 dark:bg-slate-900 dark:border-slate-800">
               <tr>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center tracking-normal">
                   Conversation ID
                 </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center tracking-normal">
                   Job Number
                 </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-left tracking-normal">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-left tracking-normal">
                   Company
                 </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center tracking-normal">
                   Source
                 </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center tracking-normal">
                   Date
                 </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center tracking-normal">
                   PIC
                 </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center tracking-normal">
                   Detail
                 </th>
               </tr>
             </thead>
 
             {/* TABLE BODY */}
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {loading && conversations.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-xs text-slate-400">
+                  <td colSpan={7} className="py-12 text-center text-xs text-slate-400 dark:text-slate-500">
                     <Loader2 size={18} className="animate-spin inline mr-2 text-blue-500" />
                     Memuat data percakapan...
                   </td>
@@ -1103,13 +1103,13 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 <tr>
                   <td colSpan={7} className="py-14 text-center">
                     <div className="flex flex-col items-center justify-center max-w-sm mx-auto text-center">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-3 dark:bg-slate-800 dark:text-slate-500">
                         <Search size={20} />
                       </div>
-                      <h4 className="text-sm font-bold text-slate-800">
+                      <h4 className="text-sm font-bold text-slate-800 dark:text-white">
                         Record Conversation Tidak Ditemukan
                       </h4>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                         Tidak terdapat percakapan yang sesuai dengan kriteria pencarian atau filter saat ini.
                       </p>
                       <button
@@ -1127,45 +1127,45 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 paginatedRows.map((row, idx) => (
                   <tr 
                     key={`${row.id || 'row'}-${idx}`} 
-                    className="hover:bg-slate-50/60 transition-colors"
+                    className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
                   >
                     {/* Conversation ID */}
-                    <td className="py-4.5 px-6 text-center text-sm font-semibold text-slate-800 whitespace-nowrap">
+                    <td className="py-4.5 px-6 text-center text-sm font-semibold text-slate-800 dark:text-slate-300 whitespace-nowrap">
                       {row.conversation_id}
                     </td>
 
-                    {/* Job Number (Bold Dark #AENAT/...) */}
-                    <td className="py-4.5 px-6 text-center text-sm font-bold text-slate-900 whitespace-nowrap">
+                    {/* Job Number */}
+                    <td className="py-4.5 px-6 text-center text-sm font-bold text-slate-900 dark:text-white whitespace-nowrap">
                       {row.job_number}
                     </td>
 
                     {/* Company */}
-                    <td className="py-4.5 px-6 text-left text-sm font-semibold text-slate-800 max-w-[260px] leading-snug">
+                    <td className="py-4.5 px-6 text-left text-sm font-semibold text-slate-800 dark:text-slate-200 max-w-[260px] leading-snug">
                       {row.company}
                     </td>
 
-                    {/* Source Badge (Meeting lavender, WhatsApp mint-green) */}
+                    {/* Source Badge */}
                     <td className="py-4.5 px-6 text-center whitespace-nowrap">
                       {row.source.toLowerCase() === 'meeting' ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-[#f5eeff] text-[#9333ea] border border-[#e9d5ff]">
-                          <Video size={13} className="text-[#9333ea]" />
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-[#f5eeff] text-[#9333ea] border border-[#e9d5ff] dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/60">
+                          <Video size={13} className="text-[#9333ea] dark:text-purple-300" />
                           <span>Meeting</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-[#eafaf1] text-[#16a34a] border border-[#bbf7d0]">
-                          <MessageCircle size={13} className="text-[#16a34a]" />
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-[#eafaf1] text-[#16a34a] border border-[#bbf7d0] dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60">
+                          <MessageCircle size={13} className="text-[#16a34a] dark:text-emerald-300" />
                           <span>WhatsApp</span>
                         </span>
                       )}
                     </td>
 
                     {/* Date */}
-                    <td className="py-4.5 px-6 text-center text-sm text-slate-700 whitespace-nowrap font-normal">
+                    <td className="py-4.5 px-6 text-center text-sm text-slate-700 dark:text-slate-400 whitespace-nowrap font-normal">
                       {row.date}
                     </td>
 
                     {/* PIC */}
-                    <td className="py-4.5 px-6 text-center text-sm text-slate-700 whitespace-nowrap font-medium">
+                    <td className="py-4.5 px-6 text-center text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap font-medium">
                       {row.pic}
                     </td>
 
@@ -1174,7 +1174,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                       <button
                         type="button"
                         onClick={() => handleOpenDetail(row)}
-                        className="text-[#2563eb] hover:text-blue-700 hover:underline font-medium text-sm cursor-pointer transition-colors"
+                        className="text-[#2563eb] hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-medium text-sm cursor-pointer transition-colors"
                       >
                         See more..
                       </button>
@@ -1186,10 +1186,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           </table>
         </div>
 
-        {/* 4. PAGINATION FOOTER (Interactive Matching Sales Executive Standards) */}
-        <div className="py-3 px-6 bg-white border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500">
+        {/* 4. PAGINATION FOOTER */}
+        <div className="py-3 px-6 bg-white border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500 dark:bg-[#0f172a] dark:border-slate-800 dark:text-slate-400">
           <div>
-            Showing <strong className="font-semibold text-slate-700">{firstRow}</strong> to <strong className="font-semibold text-slate-700">{lastRow}</strong> of <strong className="font-semibold text-slate-700">{totalItems}</strong> entries
+            Showing <strong className="font-semibold text-slate-700 dark:text-slate-200">{firstRow}</strong> to <strong className="font-semibold text-slate-700 dark:text-slate-200">{lastRow}</strong> of <strong className="font-semibold text-slate-700 dark:text-slate-200">{totalItems}</strong> entries
           </div>
 
           <nav className="flex items-center gap-1" aria-label="Conversation pages">
@@ -1198,7 +1198,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
               aria-label="Previous page"
               disabled={currentPage <= 1}
               onClick={() => setCurrentPage((value) => Math.max(1, value - 1))}
-              className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+              className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"
             >
               ‹
             </button>
@@ -1213,7 +1213,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   className={`h-8 min-w-8 rounded-md px-2 cursor-pointer transition-colors ${
                     currentPage === pageNumber
                       ? "bg-blue-600 font-semibold text-white shadow-xs"
-                      : "text-slate-600 hover:bg-slate-100"
+                      : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
                   }`}
                 >
                   {pageNumber}
@@ -1222,11 +1222,11 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
             })}
             {totalPages > 5 && (
               <>
-                <span className="px-1 text-slate-400">...</span>
+                <span className="px-1 text-slate-400 dark:text-slate-500">...</span>
                 <button
                   type="button"
                   onClick={() => setCurrentPage(totalPages)}
-                  className="h-8 min-w-8 rounded-md px-2 text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors"
+                  className="h-8 min-w-8 rounded-md px-2 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer transition-colors"
                 >
                   {totalPages}
                 </button>
@@ -1237,7 +1237,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
               aria-label="Next page"
               disabled={currentPage >= totalPages}
               onClick={() => setCurrentPage((value) => Math.min(totalPages, value + 1))}
-              className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+              className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"
             >
               ›
             </button>
@@ -1245,12 +1245,12 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         </div>
       </div>
 
-      {/* 5. "SEE MORE.." DETAIL MODAL (Matching User Screenshot Exactly) */}
+      {/* 5. "SEE MORE.." DETAIL MODAL */}
       {isDetailModalOpen && selectedConversation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-[440px] overflow-hidden flex flex-col max-h-[92vh]">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-[440px] overflow-hidden flex flex-col max-h-[92vh] dark:bg-[#0f172a] dark:border-slate-800">
             {/* Header */}
-            <div className="px-6 pt-5 pb-3 flex items-start justify-between border-b border-slate-100 bg-white shrink-0">
+            <div className="px-6 pt-5 pb-3 flex items-start justify-between border-b border-slate-100 bg-white shrink-0 dark:border-slate-800 dark:bg-[#0f172a]">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-[#07111e] rounded-xl flex items-center justify-center p-1.5 shrink-0 shadow-xs border border-slate-700/20 select-none">
                   <img
@@ -1263,10 +1263,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 tracking-tight">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
                     Detail Conversation
                   </h3>
-                  <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
                     {selectedConversation.conversation_id}
                   </p>
                 </div>
@@ -1274,7 +1274,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
               <button
                 type="button"
                 onClick={() => setIsDetailModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors p-1 cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 cursor-pointer"
                 title="Close"
               >
                 <X size={18} />
@@ -1284,43 +1284,43 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
             {/* Scrollable Body */}
             <div className="px-6 py-4 overflow-y-auto space-y-4 flex-1 text-xs">
               {/* 1. Customer / Company Card */}
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs">
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs dark:bg-slate-900/90 dark:border-slate-800">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
                       CUSTOMER / COMPANY
                     </span>
-                    <h4 className="text-sm font-bold text-slate-900 mt-0.5">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
                       {selectedConversation.company}
                     </h4>
                   </div>
 
                   {/* Channel / Source Badge */}
                   {selectedConversation.source === 'Meeting' ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#faf5ff] text-[#9333ea] border border-[#f3e8ff] shrink-0">
-                      <Video size={13} className="text-[#9333ea]" />
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#faf5ff] text-[#9333ea] border border-[#f3e8ff] dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/60 shrink-0">
+                      <Video size={13} className="text-[#9333ea] dark:text-purple-300" />
                       <span>Meeting</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7] shrink-0">
-                      <MessageCircle size={13} className="text-[#16a34a]" />
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7] dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60 shrink-0">
+                      <MessageCircle size={13} className="text-[#16a34a] dark:text-emerald-300" />
                       <span>WhatsApp</span>
                     </span>
                   )}
                 </div>
 
-                <div className="border-t border-slate-100 my-2.5" />
+                <div className="border-t border-slate-100 dark:border-slate-800 my-2.5" />
 
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-medium block">Dibuat Oleh:</span>
-                    <span className="font-bold text-slate-800 text-xs block mt-0.5">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block">Dibuat Oleh:</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 text-xs block mt-0.5">
                       {selectedConversation.pic} (Sales Executive)
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 font-medium block">Tanggal & Waktu:</span>
-                    <span className="font-bold text-slate-800 text-xs block mt-0.5">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block">Tanggal & Waktu:</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 text-xs block mt-0.5">
                       {selectedConversation.date}, 14:00 WIB
                     </span>
                   </div>
@@ -1329,16 +1329,16 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
               {/* 2. Connected Job Numbers */}
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">
                   CONNECTED JOB NUMBERS
                 </label>
                 <div className="flex flex-wrap items-center gap-2">
                   {editJobNumbers.map((job, idx) => (
                     <div
                       key={idx}
-                      className="inline-flex items-center gap-1.5 bg-[#eff6ff] text-[#2563eb] border border-[#dbeafe] rounded-full px-3 py-1 text-xs font-semibold shadow-2xs"
+                      className="inline-flex items-center gap-1.5 bg-[#eff6ff] text-[#2563eb] border border-[#dbeafe] dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60 rounded-full px-3 py-1 text-xs font-semibold shadow-2xs"
                     >
-                      <Tag size={12} className="text-[#2563eb]" />
+                      <Tag size={12} className="text-[#2563eb] dark:text-blue-300" />
                       <span>{job}</span>
                       {isEditDetailMode && (
                         <button
@@ -1369,7 +1369,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                             }
                           }
                         }}
-                        className="flex-1 bg-[#f8fafc] border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700 outline-none focus:border-blue-500"
+                        className="flex-1 bg-[#f8fafc] border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700 outline-none focus:border-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"
                       />
                       <button
                         type="button"
@@ -1390,7 +1390,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
               {/* 3. Full Resume / Conclusion */}
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">
                   FULL RESUME / CONCLUSION
                 </label>
                 {isEditDetailMode ? (
@@ -1398,11 +1398,11 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     rows={4}
                     value={editSummary}
                     onChange={(e) => setEditSummary(e.target.value)}
-                    className="w-full bg-[#f8fafc] focus:bg-white border border-blue-400 focus:border-blue-600 rounded-2xl p-3 text-xs text-slate-800 leading-relaxed outline-none shadow-2xs transition-colors resize-none font-normal"
+                    className="w-full bg-[#f8fafc] focus:bg-white border border-blue-400 focus:border-blue-600 rounded-2xl p-3 text-xs text-slate-800 leading-relaxed outline-none shadow-2xs transition-colors resize-none font-normal dark:bg-slate-900 dark:border-blue-500 dark:text-slate-100"
                     placeholder="Tulis ringkasan percakapan..."
                   />
                 ) : (
-                  <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 text-xs text-slate-700 leading-relaxed font-normal shadow-2xs">
+                  <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 text-xs text-slate-700 leading-relaxed font-normal shadow-2xs dark:bg-slate-900/90 dark:border-slate-800 dark:text-slate-300">
                     {editSummary || selectedConversation.summary || 'Tidak ada ringkasan.'}
                   </div>
                 )}
@@ -1411,17 +1411,17 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
               {/* 4. Evidence Attachments */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                     EVIDENCE ATTACHMENTS ({editAttachments.length})
                   </span>
-                  <span className="text-[9px] text-slate-400 font-normal">
+                  <span className="text-[9px] text-slate-400 dark:text-slate-500 font-normal">
                     Max size 10MB
                   </span>
                 </div>
 
                 {editAttachments.length === 0 ? (
-                  <div className="py-4 px-3 bg-slate-50/70 border border-dashed border-slate-200/90 rounded-xl text-center">
-                    <p className="text-[11px] text-slate-400 font-medium italic">
+                  <div className="py-4 px-3 bg-slate-50/70 border border-dashed border-slate-200/90 rounded-xl text-center dark:bg-slate-900/40 dark:border-slate-800">
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium italic">
                       Tidak ada lampiran berkas bukti.
                     </p>
                   </div>
@@ -1430,23 +1430,23 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     {editAttachments.map((file) => (
                       <div
                         key={file.id}
-                        className="bg-white border border-slate-200/80 rounded-xl p-3 flex items-center justify-between shadow-2xs hover:border-slate-300 transition-colors"
+                        className="bg-white border border-slate-200/80 rounded-xl p-3 flex items-center justify-between shadow-2xs hover:border-slate-300 dark:bg-slate-900/80 dark:border-slate-800 dark:hover:border-slate-700 transition-colors"
                       >
                         <div className="flex items-center gap-3 truncate pr-2">
                           {file.type === 'pdf' ? (
-                            <div className="w-8 h-8 rounded-lg bg-[#fef2f2] text-[#ef4444] flex items-center justify-center shrink-0">
+                            <div className="w-8 h-8 rounded-lg bg-[#fef2f2] text-[#ef4444] dark:bg-red-950/40 dark:text-red-400 flex items-center justify-center shrink-0">
                               <FileText size={17} />
                             </div>
                           ) : (
-                            <div className="w-8 h-8 rounded-lg bg-[#eff6ff] text-[#3b82f6] flex items-center justify-center shrink-0">
+                            <div className="w-8 h-8 rounded-lg bg-[#eff6ff] text-[#3b82f6] dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
                               <ImageIcon size={17} />
                             </div>
                           )}
                           <div className="truncate">
-                            <p className="text-xs font-bold text-slate-800 truncate">
+                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
                               {file.name}
                             </p>
-                            <p className="text-[10px] text-slate-400 mt-0.5">
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
                               {file.size} • {file.type === 'pdf' ? 'PDF Document' : file.type === 'image' ? 'PNG Image' : 'Document'}
                             </p>
                           </div>
@@ -1457,7 +1457,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                             <button
                               type="button"
                               onClick={() => setEditAttachments(prev => prev.filter(f => f.id !== file.id))}
-                              className="p-1.5 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 cursor-pointer"
+                              className="p-1.5 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
                               title="Hapus berkas"
                             >
                               <Trash2 size={14} />
@@ -1469,7 +1469,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                                 download={file.name}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-50 transition-colors cursor-pointer"
+                                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                                 title="Download"
                               >
                                 <Download size={14} />
@@ -1477,7 +1477,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                               <button
                                 type="button"
                                 onClick={() => setPreviewModal({ isOpen: true, url: file.url, title: file.name })}
-                                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-50 transition-colors cursor-pointer"
+                                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                                 title="View"
                               >
                                 <ExternalLink size={14} />
@@ -1495,7 +1495,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     <button
                       type="button"
                       onClick={() => detailFileInputRef.current?.click()}
-                      className="w-full py-2 px-3 border border-dashed border-blue-300 hover:border-blue-500 rounded-xl text-xs font-semibold text-blue-600 bg-blue-50/40 hover:bg-blue-50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="w-full py-2 px-3 border border-dashed border-blue-300 hover:border-blue-500 rounded-xl text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50/40 hover:bg-blue-50 dark:bg-blue-950/30 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Paperclip size={13} />
                       <span>+ Tambah Berkas Lampiran</span>
@@ -1514,12 +1514,12 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
               {/* 5. Audit History & Verification Logs */}
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2.5">
                   AUDIT HISTORY & VERIFICATION LOGS
                 </label>
                 {editAuditLogs.length === 0 ? (
-                  <div className="py-3 px-3.5 bg-slate-50/70 border border-dashed border-slate-200/90 rounded-xl text-center">
-                    <p className="text-[11px] text-slate-400 font-medium italic">
+                  <div className="py-3 px-3.5 bg-slate-50/70 border border-dashed border-slate-200/90 rounded-xl text-center dark:bg-slate-900/40 dark:border-slate-800">
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium italic">
                       Belum ada riwayat update. Riwayat audit akan tercatat otomatis saat percakapan diperbarui.
                     </p>
                   </div>
@@ -1527,7 +1527,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   <div className="relative pl-5 space-y-4">
                     {/* Vertical connector line */}
                     {editAuditLogs.length > 1 && (
-                      <div className="absolute left-[4px] top-2 bottom-2 w-[1.5px] bg-slate-200" />
+                      <div className="absolute left-[4px] top-2 bottom-2 w-[1.5px] bg-slate-200 dark:bg-slate-700" />
                     )}
 
                     {editAuditLogs.map((log, index) => (
@@ -1536,20 +1536,20 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                         <div
                           className={`absolute -left-5 top-1 w-2.5 h-2.5 rounded-full ${
                             index === 0
-                              ? 'bg-blue-600 ring-4 ring-blue-50'
-                              : 'bg-slate-400 ring-4 ring-slate-100'
+                              ? 'bg-blue-600 ring-4 ring-blue-50 dark:ring-blue-950'
+                              : 'bg-slate-400 ring-4 ring-slate-100 dark:bg-slate-600 dark:ring-slate-800'
                           }`}
                         />
-                        <p className="text-xs text-slate-600 leading-snug">
-                          Edited by <strong className="font-bold text-slate-800">{log.user}</strong> at {log.timestamp}
+                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-snug">
+                          Edited by <strong className="font-bold text-slate-800 dark:text-white">{log.user}</strong> at {log.timestamp}
                         </p>
                         {log.badge && (
-                          <div className="inline-block bg-[#f8fafc] border border-slate-200/80 text-slate-500 text-[10px] font-medium px-2 py-0.5 rounded-md mt-1">
+                          <div className="inline-block bg-[#f8fafc] border border-slate-200/80 text-slate-500 text-[10px] font-medium px-2 py-0.5 rounded-md mt-1 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400">
                             {log.badge}
                           </div>
                         )}
                         {log.note && (
-                          <p className="text-[10px] text-slate-400 mt-0.5">{log.note}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{log.note}</p>
                         )}
                       </div>
                     ))}
@@ -1559,13 +1559,13 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-slate-100 bg-white shrink-0">
+            <div className="p-4 border-t border-slate-100 bg-white shrink-0 dark:border-slate-800 dark:bg-[#0f172a]">
               {isEditDetailMode ? (
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setIsEditDetailMode(false)}
-                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -1594,12 +1594,12 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         </div>
       )}
 
-      {/* 6. "+ RECORD CONVERSATION" CREATION MODAL (Matching Screenshot Exactly) */}
+      {/* 6. "+ RECORD CONVERSATION" CREATION MODAL */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-full max-w-[560px] overflow-hidden flex flex-col max-h-[96vh]">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-full max-w-[560px] overflow-hidden flex flex-col max-h-[96vh] dark:bg-[#0f172a] dark:border-slate-800">
             {/* Header */}
-            <div className="px-6 py-4 flex items-start justify-between border-b border-slate-200 bg-white shrink-0">
+            <div className="px-6 py-4 flex items-start justify-between border-b border-slate-200 bg-white shrink-0 dark:border-slate-800 dark:bg-[#0f172a]">
               <div className="flex items-center gap-3">
                 {/* Official ANDIMA Logo */}
                 <div className="w-11 h-11 bg-[#07111e] rounded-xl flex items-center justify-center p-1.5 shrink-0 shadow-xs border border-slate-700/20 select-none">
@@ -1613,10 +1613,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 leading-snug">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
                     Record Customer Conversation
                   </h3>
-                  <p className="text-[11px] text-slate-400 font-normal leading-tight mt-0.5">
+                  <p className="text-[11px] text-slate-400 dark:text-slate-400 font-normal leading-tight mt-0.5">
                     Log WhatsApp threads or meeting documents and declare assistance requirement.
                   </p>
                 </div>
@@ -1624,7 +1624,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors p-1 cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 cursor-pointer"
                 title="Close"
               >
                 <X size={18} />
@@ -1633,27 +1633,27 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
             {/* Form Body */}
             <form onSubmit={handleSubmitNewConversation} className="px-6 py-3.5 overflow-y-auto space-y-3 flex-1 text-xs">
-              {/* Validation Error Alert (Conforms to E-2 & TC-007 to TC-012) */}
+              {/* Validation Error Alert */}
               {createFormError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 flex items-start gap-2.5 animate-in fade-in slide-in-from-top-1">
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 dark:bg-red-950/40 dark:border-red-900/60 dark:text-red-300 flex items-start gap-2.5 animate-in fade-in slide-in-from-top-1">
                   <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
                   <div className="font-medium leading-relaxed">{createFormError}</div>
                 </div>
               )}
 
-              {/* PIC (Sales Executive) - Otomatis akun pengisi */}
+              {/* PIC (Sales Executive) */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   PIC (Sales Executive)
                 </label>
-                <div className="w-full bg-[#f1f5f9] border border-slate-200/90 rounded-xl px-4 py-2 flex items-center justify-between text-xs font-semibold text-slate-800 shadow-2xs">
+                <div className="w-full bg-[#f1f5f9] border border-slate-200/90 rounded-xl px-4 py-2 flex items-center justify-between text-xs font-semibold text-slate-800 shadow-2xs dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200">
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 rounded-full bg-[#a7f3d0] text-[#065f46] flex items-center justify-center font-bold text-[10px]">
                       {activeUserName.trim().charAt(0).toUpperCase() || 'U'}
                     </div>
-                    <span className="font-bold text-slate-900">{activeUserName}</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{activeUserName}</span>
                   </div>
-                  <span className="text-[10px] text-slate-500 font-medium bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                  <span className="text-[10px] text-slate-500 font-medium bg-white px-2 py-0.5 rounded-md border border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400">
                     Otomatis dari Akun
                   </span>
                 </div>
@@ -1661,20 +1661,20 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
               {/* Select Customer Account * */}
               <div className="relative" ref={accountDropdownRef}>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Select Customer Account <span className="text-red-500">*</span>
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsAccountDropdownOpen(!isAccountDropdownOpen)}
-                  className="w-full bg-[#f8fafc] hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl px-4 py-2 flex items-center justify-between text-xs font-semibold text-slate-800 shadow-2xs transition-colors cursor-pointer"
+                  className="w-full bg-[#f8fafc] hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl px-4 py-2 flex items-center justify-between text-xs font-semibold text-slate-800 shadow-2xs transition-colors cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800/80"
                 >
                   <span className="truncate">{selectedAccount}</span>
-                  <ChevronDown size={15} className={`text-slate-400 shrink-0 transition-transform ${isAccountDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
+                  <ChevronDown size={15} className={`text-slate-400 shrink-0 transition-transform ${isAccountDropdownOpen ? 'rotate-180 text-blue-600 dark:text-blue-400' : ''}`} />
                 </button>
 
                 {isAccountDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1.5 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1">
+                  <div className="absolute top-full left-0 right-0 mt-1.5 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1 dark:bg-slate-900 dark:border-slate-800">
                     {accountOptions.map((acc) => (
                       <button
                         key={acc}
@@ -1684,11 +1684,11 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                           setIsAccountDropdownOpen(false);
                         }}
                         className={`w-full text-left px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-                          selectedAccount === acc ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-700 hover:bg-slate-50'
+                          selectedAccount === acc ? 'bg-blue-50 text-blue-600 font-bold dark:bg-blue-950/40 dark:text-blue-400' : 'text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800'
                         }`}
                       >
                         <span className="truncate">{acc}</span>
-                        {selectedAccount === acc && <Check size={13} className="text-blue-600 shrink-0" />}
+                        {selectedAccount === acc && <Check size={13} className="text-blue-600 dark:text-blue-400 shrink-0" />}
                       </button>
                     ))}
                   </div>
@@ -1697,21 +1697,21 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
               {/* Job Number (Optional) */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Job Number <span className="text-slate-400 font-normal text-[11px]">(Optional)</span>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Job Number <span className="text-slate-400 dark:text-slate-500 font-normal text-[11px]">(Optional)</span>
                 </label>
                 <input
                   type="text"
                   value={jobNumberInput}
                   onChange={(e) => setJobNumberInput(e.target.value)}
                   placeholder="e.g. #AENAT/2609/0308"
-                  className="w-full bg-[#f8fafc] focus:bg-white border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-2 text-xs font-medium text-slate-800 outline-none shadow-2xs transition-colors placeholder:text-slate-400"
+                  className="w-full bg-[#f8fafc] focus:bg-white border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-2 text-xs font-medium text-slate-800 outline-none shadow-2xs transition-colors placeholder:text-slate-400 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
                 />
               </div>
 
               {/* Date * */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Date <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -1719,13 +1719,13 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   required
                   value={recordDate}
                   onChange={(e) => setRecordDate(e.target.value)}
-                  className="w-full bg-[#f8fafc] focus:bg-white border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-2 text-xs font-semibold text-slate-800 outline-none shadow-2xs transition-colors cursor-pointer"
+                  className="w-full bg-[#f8fafc] focus:bg-white border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-2 text-xs font-semibold text-slate-800 outline-none shadow-2xs transition-colors cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 dark:focus:bg-slate-900"
                 />
               </div>
 
               {/* Channel Type * */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Channel Type <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 gap-2.5">
@@ -1734,17 +1734,17 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     onClick={() => setChannelSelection('WhatsApp')}
                     className={`rounded-xl py-2 px-3.5 flex items-center justify-between cursor-pointer transition-all ${
                       channelSelection === 'WhatsApp'
-                        ? 'border-2 border-[#2563eb] bg-white shadow-2xs'
-                        : 'border border-slate-200 bg-white hover:bg-slate-50/60'
+                        ? 'border-2 border-[#2563eb] bg-white dark:bg-slate-900 shadow-2xs'
+                        : 'border border-slate-200 bg-white hover:bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900/60 dark:hover:bg-slate-800/60'
                     }`}
                   >
-                    <span className={`text-xs ${channelSelection === 'WhatsApp' ? 'font-bold text-[#2563eb]' : 'font-medium text-slate-600'}`}>
+                    <span className={`text-xs ${channelSelection === 'WhatsApp' ? 'font-bold text-[#2563eb] dark:text-blue-400' : 'font-medium text-slate-600 dark:text-slate-400'}`}>
                       WhatsApp (.txt)
                     </span>
                     <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                      channelSelection === 'WhatsApp' ? 'border-2 border-[#2563eb]' : 'border border-slate-300'
+                      channelSelection === 'WhatsApp' ? 'border-2 border-[#2563eb] dark:border-blue-500' : 'border border-slate-300 dark:border-slate-600'
                     }`}>
-                      {channelSelection === 'WhatsApp' && <div className="w-2 h-2 rounded-full bg-[#2563eb]" />}
+                      {channelSelection === 'WhatsApp' && <div className="w-2 h-2 rounded-full bg-[#2563eb] dark:bg-blue-500" />}
                     </div>
                   </div>
 
@@ -1753,20 +1753,20 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     onClick={() => setChannelSelection('Meeting')}
                     className={`rounded-xl py-2 px-3.5 flex items-center justify-between cursor-pointer transition-all ${
                       channelSelection === 'Meeting'
-                        ? 'border-2 border-[#2563eb] bg-white shadow-2xs'
-                        : 'border border-slate-200 bg-white hover:bg-slate-50/60'
+                        ? 'border-2 border-[#2563eb] bg-white dark:bg-slate-900 shadow-2xs'
+                        : 'border border-slate-200 bg-white hover:bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900/60 dark:hover:bg-slate-800/60'
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <FileText size={14} className={channelSelection === 'Meeting' ? 'text-[#2563eb]' : 'text-slate-400'} />
-                      <span className={`text-xs ${channelSelection === 'Meeting' ? 'font-bold text-[#2563eb]' : 'font-medium text-slate-600'}`}>
+                      <FileText size={14} className={channelSelection === 'Meeting' ? 'text-[#2563eb] dark:text-blue-400' : 'text-slate-400'} />
+                      <span className={`text-xs ${channelSelection === 'Meeting' ? 'font-bold text-[#2563eb] dark:text-blue-400' : 'font-medium text-slate-600 dark:text-slate-400'}`}>
                         Meeting Document
                       </span>
                     </div>
                     <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                      channelSelection === 'Meeting' ? 'border-2 border-[#2563eb]' : 'border border-slate-300'
+                      channelSelection === 'Meeting' ? 'border-2 border-[#2563eb] dark:border-blue-500' : 'border border-slate-300 dark:border-slate-600'
                     }`}>
-                      {channelSelection === 'Meeting' && <div className="w-2 h-2 rounded-full bg-[#2563eb]" />}
+                      {channelSelection === 'Meeting' && <div className="w-2 h-2 rounded-full bg-[#2563eb] dark:bg-blue-500" />}
                     </div>
                   </div>
                 </div>
@@ -1774,7 +1774,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
               {/* Summary * */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Summary <span className="text-red-500">*</span>
                 </label>
                 <textarea
@@ -1783,13 +1783,13 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   value={recordSummary}
                   onChange={(e) => setRecordSummary(e.target.value)}
                   placeholder="Tulis ringkasan percakapan di sini..."
-                  className="w-full bg-[#f8fafc] focus:bg-white border border-slate-200 focus:border-blue-500 rounded-xl p-2.5 text-xs font-normal text-slate-800 leading-relaxed outline-none shadow-2xs transition-colors resize-none placeholder:text-slate-400"
+                  className="w-full bg-[#f8fafc] focus:bg-white border border-slate-200 focus:border-blue-500 rounded-xl p-2.5 text-xs font-normal text-slate-800 leading-relaxed outline-none shadow-2xs transition-colors resize-none placeholder:text-slate-400 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
                 />
               </div>
 
-              {/* File * */}
+              {/* File Attachment */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   File Attachment (Opsional)
                 </label>
                 <div
@@ -1801,20 +1801,20 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     setIsDraggingFile(false);
                     handleCreateFileUpload(e.dataTransfer.files);
                   }}
-                  className={`w-full border rounded-2xl p-4 bg-white flex flex-col items-center justify-center text-center cursor-pointer transition-all shadow-2xs ${
-                    isDraggingFile ? 'border-blue-500 bg-blue-50/20' : 'border-slate-300 hover:border-blue-400'
+                  className={`w-full border rounded-2xl p-4 bg-white flex flex-col items-center justify-center text-center cursor-pointer transition-all shadow-2xs dark:bg-slate-900/60 dark:border-slate-800 ${
+                    isDraggingFile ? 'border-blue-500 bg-blue-50/20 dark:bg-blue-950/20' : 'border-slate-300 hover:border-blue-400 dark:hover:border-slate-700'
                   }`}
                 >
-                  <div className="w-9 h-9 rounded-full bg-[#eff6ff] flex items-center justify-center text-[#2563eb] mb-1.5">
-                    <UploadCloud size={18} className="text-[#2563eb]" />
+                  <div className="w-9 h-9 rounded-full bg-[#eff6ff] dark:bg-blue-950/40 flex items-center justify-center text-[#2563eb] dark:text-blue-400 mb-1.5">
+                    <UploadCloud size={18} className="text-[#2563eb] dark:text-blue-400" />
                   </div>
-                  <p className="text-xs font-bold text-slate-800">
+                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
                     Upload chat export .txt file or meeting notes PDF
                   </p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Drag and drop your file here, or <span className="text-[#2563eb] font-semibold underline">Browse files</span>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    Drag and drop your file here, or <span className="text-[#2563eb] dark:text-blue-400 font-semibold underline">Browse files</span>
                   </p>
-                  <div className="mt-2 px-2.5 py-0.5 rounded-md border border-slate-200 bg-white text-[10px] text-slate-400 font-medium">
+                  <div className="mt-2 px-2.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[10px] text-slate-400 dark:text-slate-400 font-medium">
                     Max file size: 15MB • UTF-8 format supported
                   </div>
                 </div>
@@ -1831,11 +1831,11 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 {newUploadedFiles.length > 0 && (
                   <div className="mt-1.5 space-y-1">
                     {newUploadedFiles.map((file, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+                      <div key={idx} className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs dark:bg-slate-800/80 dark:border-slate-700">
                         <div className="flex items-center gap-2 truncate pr-2">
-                          <FileText size={13} className="text-blue-600 shrink-0" />
-                          <span className="truncate font-medium text-slate-700">{file.file_name}</span>
-                          <span className="text-[10px] text-slate-400 shrink-0">({file.file_size_kb || 12} KB)</span>
+                          <FileText size={13} className="text-blue-600 dark:text-blue-400 shrink-0" />
+                          <span className="truncate font-medium text-slate-700 dark:text-slate-200">{file.file_name}</span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">({file.file_size_kb || 12} KB)</span>
                         </div>
                         <button
                           type="button"
@@ -1851,10 +1851,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
               </div>
 
               {/* Footer */}
-              <div className="pt-2.5 -mx-6 -mb-3.5 px-6 py-3 bg-slate-50/50 border-t border-slate-100 rounded-b-2xl flex items-center justify-between shrink-0">
+              <div className="pt-2.5 -mx-6 -mb-3.5 px-6 py-3 bg-slate-50/50 border-t border-slate-100 rounded-b-2xl flex items-center justify-between shrink-0 dark:bg-slate-900/80 dark:border-slate-800">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#10b981] inline-block" />
-                  <span className="text-xs text-slate-400 font-medium">
+                  <span className="text-xs text-slate-400 dark:text-slate-400 font-medium">
                     Auto-synced with C-Track Timeline
                   </span>
                 </div>
@@ -1863,7 +1863,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   <button
                     type="button"
                     onClick={() => setIsCreateModalOpen(false)}
-                    className="px-4 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 transition-colors cursor-pointer"
+                    className="px-4 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -1885,21 +1885,21 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       {/* 7. PREVIEW MODAL */}
       {previewModal?.isOpen && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-2xl w-full flex flex-col">
-            <div className="px-5 py-3 border-b border-slate-200 flex items-center justify-between">
-              <span className="font-bold text-sm text-slate-800">{previewModal.title}</span>
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-2xl w-full flex flex-col dark:bg-[#0f172a] dark:border dark:border-slate-800">
+            <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <span className="font-bold text-sm text-slate-800 dark:text-white">{previewModal.title}</span>
               <button
                 type="button"
                 onClick={() => setPreviewModal(null)}
-                className="text-slate-400 hover:text-slate-700 cursor-pointer"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
-            <div className="p-4 flex items-center justify-center min-h-[300px] bg-slate-50">
+            <div className="p-4 flex items-center justify-center min-h-[300px] bg-slate-50 dark:bg-slate-900">
               <iframe
                 src={previewModal.url}
-                className="w-full h-96 rounded-lg border border-slate-200"
+                className="w-full h-96 rounded-lg border border-slate-200 dark:border-slate-800"
                 title={previewModal.title}
               />
             </div>

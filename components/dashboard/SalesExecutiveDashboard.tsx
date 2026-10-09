@@ -252,20 +252,20 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
   const statisticsUnavailable = metrics.totalCustomers === null || metrics.meetingsThisWeek === null;
 
   return <div className="mx-auto w-full max-w-[1280px]">
-    <h1 className="mb-0 text-xl sm:text-2xl font-bold tracking-tight text-slate-900">Welcome Back, {displayName}</h1>
-    <p className="mb-5 text-xs sm:text-sm text-slate-500">Here’s your CRM Overview today!</p>
+    <h1 className="mb-0 text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Welcome Back, {displayName}</h1>
+    <p className="mb-5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">Here’s your CRM Overview today!</p>
 
     <section aria-label="Key performance indicators" className="mb-4 grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
       {[
-        { label: "Total Customer", value: metrics.totalCustomers, hint: "Company records", icon: UsersRound, color: "bg-blue-50 text-blue-600" },
-        { label: "Meeting this week", value: metrics.meetingsThisWeek, hint: "Scheduled meetings", icon: CalendarDays, color: "bg-rose-50 text-rose-500" },
-        { label: "Total Job", value: 0, hint: "Tasks", icon: BriefcaseBusiness, color: "bg-sky-50 text-sky-600" },
-      ].map(({ label, value, hint, icon: Icon, color }) => <article key={label} className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs">
-        <h2 className="text-xs font-semibold text-slate-600">{label}</h2>
+        { label: "Total Customer", value: metrics.totalCustomers, hint: "Company records", icon: UsersRound, color: "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400" },
+        { label: "Meeting this week", value: metrics.meetingsThisWeek, hint: "Scheduled meetings", icon: CalendarDays, color: "bg-rose-50 dark:bg-rose-950/40 text-rose-500 dark:text-rose-400" },
+        { label: "Total Job", value: 0, hint: "Tasks", icon: BriefcaseBusiness, color: "bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400" },
+      ].map(({ label, value, hint, icon: Icon, color }) => <article key={label} className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs">
+        <h2 className="text-xs font-semibold text-slate-600 dark:text-slate-400">{label}</h2>
         <div className="mt-2.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${color}`}><Icon className="h-4 w-4" /></span>
-            <p className="text-2xl font-bold text-slate-900">{value ?? "—"}</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white">{value ?? "—"}</p>
           </div>
           <span className="text-[10px] text-slate-400 font-medium">{hint}</span>
         </div>
@@ -275,29 +275,29 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
 
     <section aria-labelledby="weekly-schedule-title" className="mb-5">
       <div className="mb-3 flex items-center justify-between">
-        <h2 id="weekly-schedule-title" className="text-sm font-bold text-slate-800">Schedule this week</h2>
-        <Link href="/dashboard/meeting-schedule" aria-label="Open Meeting Schedule" className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
+        <h2 id="weekly-schedule-title" className="text-sm font-bold text-slate-800 dark:text-slate-200">Schedule this week</h2>
+        <Link href="/dashboard/meeting-schedule" aria-label="Open Meeting Schedule" className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
           <CalendarDays className="h-4 w-4" />
         </Link>
       </div>
       <div className="space-y-2">
         {scheduleLoadError ? (
-          <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
+          <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 dark:bg-rose-950/40 px-4 py-3 text-xs text-rose-700 dark:text-rose-300">
             {scheduleLoadError}<button type="button" onClick={() => void refreshSchedule()} className="ml-2 font-medium underline">Retry</button>
           </div>
         ) : scheduleLoading ? (
-          <div role="status" className="rounded-xl border border-slate-200 px-4 py-4 text-xs text-slate-500">
+          <div role="status" className="rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-4 text-xs text-slate-500">
             Refreshing this week’s schedule...
           </div>
         ) : weeklyMeetings.length ? (
           weeklyMeetings.map(({ customer, date, time }) => (
-            <Link key={`${customer.id}-${date.toISOString()}`} href={`/dashboard/company-list/${customer.id}`} className="flex min-h-[46px] items-center justify-between gap-4 rounded-xl border border-slate-200/90 bg-white px-4 py-2.5 text-xs text-slate-700 shadow-2xs transition-colors hover:border-blue-400">
-              <span className="truncate font-semibold text-slate-800">{customer.companyName}</span>
+            <Link key={`${customer.id}-${date.toISOString()}`} href={`/dashboard/company-list/${customer.id}`} className="flex min-h-[46px] items-center justify-between gap-4 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-xs text-slate-700 dark:text-slate-300 shadow-2xs transition-colors hover:border-blue-400">
+              <span className="truncate font-semibold text-slate-800 dark:text-slate-200">{customer.companyName}</span>
               <span className="shrink-0 text-slate-500">{date.toLocaleDateString("en-GB", { weekday: "long" })}, {time}</span>
             </Link>
           ))
         ) : (
-          <div className="rounded-xl border border-dashed border-slate-200 px-4 py-4 text-xs text-slate-500 text-center">
+          <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 px-4 py-4 text-xs text-slate-500 text-center">
             No meeting scheduled this week.
           </div>
         )}
@@ -313,23 +313,23 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
           onChange={(event) => { setSearch(event.target.value); setPage(1); }}
           placeholder="Search Company or PIC"
           aria-label="Search company or PIC"
-          className="h-10 w-full rounded-xl border border-slate-200/90 bg-white pl-9 pr-4 text-xs font-medium text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all"
+          className="h-10 w-full rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 pl-9 pr-4 text-xs font-medium text-slate-700 dark:text-slate-200 outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all"
         />
       </label>
       <button
         type="button"
         onClick={() => { setExportError(""); setExportOpen(true); }}
         disabled={!customers.length}
-        className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 disabled:opacity-50 transition-colors"
+        className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
       >
         <Download className="h-3.5 w-3.5 text-slate-500" />
         <span>Export</span>
       </button>
     </div>
 
-    <section aria-label="Company records" className="overflow-x-auto rounded-xl border border-slate-200/80 bg-white shadow-2xs">
+    <section aria-label="Company records" className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs">
       <table className="w-full min-w-[850px] table-fixed text-left text-xs">
-        <thead className="bg-[#edf4fb] border-b border-slate-200/70 text-slate-700 font-bold">
+        <thead className="bg-[#edf4fb] dark:bg-slate-800 border-b border-slate-200/70 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold">
           <tr>
             <th className="w-[18%] px-4 py-3 text-center">Transaction ID</th>
             <th className="w-[18%] px-4 py-3 text-center">Job Number</th>
@@ -339,16 +339,16 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
             <th className="w-[12%] px-4 py-3 text-center">Detail</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 text-slate-700">
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
           {customers.map((customer) => (
-            <tr key={customer.id} className="hover:bg-slate-50/60 transition-colors">
-              <td className="break-words px-4 py-3 text-center font-medium text-slate-800">{customer.transactionNo || "—"}</td>
-              <td className="break-words px-4 py-3 text-center font-medium text-blue-600">{customer.jobNumber || "—"}</td>
-              <td className="px-4 py-3 font-semibold text-slate-800">{customer.companyName}</td>
+            <tr key={customer.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+              <td className="break-words px-4 py-3 text-center font-medium text-slate-800 dark:text-slate-200">{customer.transactionNo || "—"}</td>
+              <td className="break-words px-4 py-3 text-center font-medium text-blue-600 dark:text-blue-400">{customer.jobNumber || "—"}</td>
+              <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">{customer.companyName}</td>
               <td className="px-4 py-3 text-center">{customer.primaryPic?.fullName || "—"}</td>
               <td className="break-words px-4 py-3 text-center">{customer.primaryPic?.phoneNumber || "—"}</td>
               <td className="px-4 py-3 text-center">
-                <button type="button" onClick={() => void openCustomerDetail(customer.id)} className="font-semibold text-blue-600 hover:underline">
+                <button type="button" onClick={() => void openCustomerDetail(customer.id)} className="font-semibold text-blue-600 dark:text-blue-400 hover:underline">
                   See more...
                 </button>
               </td>

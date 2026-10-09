@@ -128,14 +128,14 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
       />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-xl mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative z-10 w-full max-w-xl mx-4 bg-white dark:bg-[#0f172a] border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
               <Building2 className="w-4 h-4" />
             </div>
-            <h2 id="customer-modal-title" className="text-base font-semibold text-slate-900">
+            <h2 id="customer-modal-title" className="text-base font-semibold text-slate-900 dark:text-white">
               {customer ? "Edit Company" : "Add Company"}
             </h2>
           </div>
@@ -143,7 +143,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
             type="button"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors disabled:opacity-50"
+            className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors disabled:opacity-50 cursor-pointer"
             aria-label="Close dialog"
           >
             <X className="w-4 h-4" />
@@ -155,7 +155,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
           <div className="px-6 py-5 space-y-5 max-h-[70vh] overflow-y-auto">
             {/* General Error */}
             {errors.general && (
-              <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
+              <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-sm text-red-700 dark:text-red-300">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{errors.general}</span>
               </div>
@@ -163,7 +163,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
 
             {/* Company section */}
             <div>
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3">
+              <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
                 Company Information
               </p>
               <div className="space-y-3">
@@ -171,7 +171,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
                 <div>
                   <label
                     htmlFor="field-company_name"
-                    className="block text-xs font-medium text-slate-700 mb-1.5"
+                    className="block text-xs font-medium text-slate-700 dark:text-slate-200 mb-1.5"
                   >
                     Company Name <span className="text-red-500">*</span>
                   </label>
@@ -185,15 +185,15 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
                       value={form.company_name}
                       onChange={(e) => handleChange("company_name", e.target.value)}
                       placeholder="Example Company, Inc."
-                      className={`w-full pl-9 pr-4 py-2.5 border rounded-lg text-sm transition-all focus:outline-none focus:ring-2 ${
+                      className={`w-full pl-9 pr-4 py-2.5 border rounded-lg text-sm transition-all focus:outline-none focus:ring-2 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 ${
                         errors.company_name
-                          ? "border-red-300 focus:border-red-400 focus:ring-red-500/20"
-                          : "border-slate-200 focus:border-blue-400 focus:ring-blue-500/20"
+                          ? "border-red-300 dark:border-red-800 focus:border-red-400 focus:ring-red-500/20"
+                          : "border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-500/20"
                       }`}
                     />
                   </div>
                   {errors.company_name && (
-                    <p className="mt-1.5 text-[11px] text-red-600">{errors.company_name}</p>
+                    <p className="mt-1.5 text-[11px] text-red-600 dark:text-red-400">{errors.company_name}</p>
                   )}
                 </div>
 
@@ -201,11 +201,11 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
             </div>
 
             {/* Divider */}
-            <div className="border-t border-slate-100" />
+            <div className="border-t border-slate-100 dark:border-slate-800" />
 
             {/* Section: PIC */}
             <div>
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3">
+              <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
                     Company PIC
               </p>
               <div className="space-y-3">
@@ -213,7 +213,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
                 <div>
                   <label
                     htmlFor="field-pic_full_name"
-                    className="block text-xs font-medium text-slate-700 mb-1.5"
+                    className="block text-xs font-medium text-slate-700 dark:text-slate-200 mb-1.5"
                   >
                     PIC Name <span className="text-red-500">*</span>
                   </label>
@@ -227,20 +227,20 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
                       value={form.pic_full_name}
                       onChange={(e) => handleChange("pic_full_name", e.target.value)}
                       placeholder="Full name"
-                      className={`w-full pl-9 pr-4 py-2.5 border rounded-lg text-sm transition-all focus:outline-none focus:ring-2 ${
+                      className={`w-full pl-9 pr-4 py-2.5 border rounded-lg text-sm transition-all focus:outline-none focus:ring-2 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 ${
                         errors.pic_full_name
-                          ? "border-red-300 focus:border-red-400 focus:ring-red-500/20"
-                          : "border-slate-200 focus:border-blue-400 focus:ring-blue-500/20"
+                          ? "border-red-300 dark:border-red-800 focus:border-red-400 focus:ring-red-500/20"
+                          : "border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-500/20"
                       }`}
                     />
                   </div>
                   {errors.pic_full_name && (
-                    <p className="mt-1.5 text-[11px] text-red-600">{errors.pic_full_name}</p>
+                    <p className="mt-1.5 text-[11px] text-red-600 dark:text-red-400">{errors.pic_full_name}</p>
                   )}
                 </div>
 
                 <div>
-                  <label htmlFor="field-pic_phone_number" className="mb-1.5 block text-xs font-medium text-slate-700">
+                  <label htmlFor="field-pic_phone_number" className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-200">
                     PIC Phone Number <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -253,14 +253,14 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
                       value={form.pic_phone_number}
                       onChange={(event) => handleChange("pic_phone_number", event.target.value)}
                       placeholder="e.g. +62 812 3456 7890"
-                      className={`w-full rounded-lg border py-2.5 pl-9 pr-4 text-sm transition-all focus:outline-none focus:ring-2 ${errors.pic_phone_number ? "border-red-300 focus:border-red-400 focus:ring-red-500/20" : "border-slate-200 focus:border-blue-400 focus:ring-blue-500/20"}`}
+                      className={`w-full rounded-lg border py-2.5 pl-9 pr-4 text-sm transition-all focus:outline-none focus:ring-2 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 ${errors.pic_phone_number ? "border-red-300 dark:border-red-800 focus:border-red-400 focus:ring-red-500/20" : "border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-500/20"}`}
                     />
                   </div>
-                  {errors.pic_phone_number && <p className="mt-1.5 text-[11px] text-red-600">{errors.pic_phone_number}</p>}
+                  {errors.pic_phone_number && <p className="mt-1.5 text-[11px] text-red-600 dark:text-red-400">{errors.pic_phone_number}</p>}
                 </div>
 
                 <div>
-                  <label htmlFor="field-address" className="mb-1.5 block text-xs font-medium text-slate-700">
+                  <label htmlFor="field-address" className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-200">
                     Address <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -271,29 +271,29 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
                       onChange={(event) => handleChange("address", event.target.value)}
                       placeholder="Company address"
                       rows={2}
-                      className={`w-full resize-none rounded-lg border py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 ${errors.address ? "border-red-300 focus:border-red-400 focus:ring-red-500/20" : "border-slate-200 focus:border-blue-400 focus:ring-blue-500/20"}`}
+                      className={`w-full resize-none rounded-lg border py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 ${errors.address ? "border-red-300 dark:border-red-800 focus:border-red-400 focus:ring-red-500/20" : "border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-500/20"}`}
                     />
                   </div>
-                  {errors.address && <p className="mt-1.5 text-[11px] text-red-600">{errors.address}</p>}
+                  {errors.address && <p className="mt-1.5 text-[11px] text-red-600 dark:text-red-400">{errors.address}</p>}
                 </div>
               </div>
             </div>
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50 dark:bg-[#0b1324]">
             <button
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
+              className="px-4 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-2xs disabled:opacity-50 cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
             >
               {isSubmitting ? (
                 <>

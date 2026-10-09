@@ -804,19 +804,12 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
         </div>
       )}
 
-      {/* 1. TOP BREADCRUMB */}
-      <div className="flex items-center gap-2 text-xs font-semibold mb-4">
-        <span className="text-slate-900 font-extrabold tracking-wide text-xs">ANDIMA CRM</span>
-        <span className="text-slate-400">CRM /</span>
-        <span className="text-[#0d6efd] font-bold">Field Tasks</span>
-      </div>
-
-      {/* 2. TITLE & SUBTITLE */}
+      {/* TITLE & SUBTITLE */}
       <div className="mb-6">
-        <h1 className="text-[28px] font-bold text-[#0f172a] tracking-tight leading-tight">
+        <h1 className="text-[28px] font-bold text-[#0f172a] dark:text-white tracking-tight leading-tight">
           Field Agent Tasks
         </h1>
-        <p className="text-xs text-slate-400 font-normal mt-1">
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-normal mt-1">
           Monitor task progress and review inspection results dispatched from A3.
         </p>
       </div>
@@ -832,7 +825,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               setCurrentPage(1);
             }}
             placeholder="Search by job number, customer, or field agent..."
-            className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 shadow-2xs transition-colors"
+            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-blue-500 shadow-2xs transition-colors"
           />
         </div>
 
@@ -847,45 +840,45 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       </div>
 
       {/* 4. MAIN DATA TABLE (Exact Figma Layout) */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
         <table className="w-full border-collapse">
           {/* Header */}
-          <thead className="bg-[#edf4fb] border-b border-slate-200/80">
+          <thead className="bg-[#edf4fb] dark:bg-slate-800/70 border-b border-slate-200/80 dark:border-slate-800">
             <tr>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center w-[22%]">
+              <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center w-[22%]">
                 Job Number
               </th>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center w-[18%]">
+              <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center w-[18%]">
                 Field Agent
               </th>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center w-[16%]">
+              <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center w-[16%]">
                 Progress Status
               </th>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center w-[15%]">
+              <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center w-[15%]">
                 Issue / Obstacle
               </th>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center w-[14%]">
+              <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center w-[14%]">
                 Result
               </th>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center w-[15%]">
+              <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center w-[15%]">
                 Action
               </th>
             </tr>
           </thead>
 
           {/* Rows */}
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
             {filteredTasks.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-14 text-center">
                   <div className="max-w-md mx-auto flex flex-col items-center">
-                    <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 mb-3">
                       <FileText size={24} />
                     </div>
-                    <h3 className="text-sm font-bold text-slate-800">
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
                       Tidak Ada Transaksi
                     </h3>
-                    <p className="text-xs text-slate-500 mt-1 max-w-xs">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
                       {searchQuery.trim()
                         ? `Job/Transaksi dengan kata kunci "${searchQuery}" tidak ditemukan dalam sistem.`
                         : 'Belum terdapat data Job/Transaksi dalam sistem. Silakan buat transaksi baru.'}
@@ -903,33 +896,33 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               </tr>
             ) : (
               paginatedTasks.map((task) => (
-                <tr key={task.id} className="hover:bg-slate-50/50 transition-colors">
+                <tr key={task.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
                   {/* Job Number */}
                   <td className="py-4.5 px-6 text-center">
-                    <div className="text-sm font-bold text-slate-900 leading-snug">
+                    <div className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
                       {task.job_number}
                     </div>
-                    <div className="text-xs text-slate-400 font-normal mt-0.5">
+                    <div className="text-xs text-slate-400 dark:text-slate-400 font-normal mt-0.5">
                       {task.customer_name}
                     </div>
                   </td>
 
                   {/* Field Agent */}
-                  <td className="py-4.5 px-6 text-center text-sm font-medium text-slate-800 whitespace-nowrap">
+                  <td className="py-4.5 px-6 text-center text-sm font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap">
                     {task.field_agent_name || (
-                      <span className="text-slate-600 font-normal">Not assigned</span>
+                      <span className="text-slate-400 dark:text-slate-500 font-normal">Not assigned</span>
                     )}
                   </td>
 
                   {/* Status Progress */}
                   <td className="py-4.5 px-6 text-center whitespace-nowrap">
                     {task.status === 'Assigned' ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold text-[#0d6efd] bg-[#edf4fb] border border-[#bfdbfe]">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold text-[#0d6efd] bg-[#edf4fb] border border-[#bfdbfe] dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-400">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#0d6efd]" />
                         <span>Assigned</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-medium text-slate-500 bg-slate-100 border border-slate-300">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-medium text-slate-500 bg-slate-100 border border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400">
                         <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                         <span>Unassigned</span>
                       </span>
@@ -942,14 +935,14 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       <button
                         type="button"
                         onClick={() => handleOpenIssueModal(task)}
-                        className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold text-[#ef4444] bg-[#fef2f2] border border-[#fecaca] hover:bg-red-100 transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold text-[#ef4444] bg-[#fef2f2] border border-[#fecaca] hover:bg-red-100 dark:bg-red-950/40 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/60 transition-colors cursor-pointer"
                         title="Click to view issue details"
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
                         <span>Issue</span>
                       </button>
                     ) : (
-                      <span className="text-slate-400 text-sm font-medium">-</span>
+                      <span className="text-slate-400 dark:text-slate-500 text-sm font-medium">-</span>
                     )}
                   </td>
 
@@ -959,28 +952,28 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       <button
                         type="button"
                         onClick={() => setResultModalTask(task)}
-                        className="inline-flex items-center gap-2 text-xs text-slate-500 hover:text-blue-600 cursor-pointer transition-colors"
+                        className="inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
                         title="View photo and document results"
                       >
                         <span className="flex items-center gap-1">
-                          <Camera size={13} className="text-slate-400" />
+                          <Camera size={13} className="text-slate-400 dark:text-slate-500" />
                           <span>{task.photo_count}</span>
                         </span>
                         <span className="flex items-center gap-1">
-                          <FileText size={13} className="text-slate-400" />
+                          <FileText size={13} className="text-slate-400 dark:text-slate-500" />
                           <span>{task.doc_count}</span>
                         </span>
-                        <ChevronRight size={13} className="text-slate-400" />
+                        <ChevronRight size={13} className="text-slate-400 dark:text-slate-500" />
                       </button>
                     ) : (
                       <button
                         type="button"
                         onClick={() => setResultModalTask(task)}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-[#0d6efd] transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 dark:text-slate-500 hover:text-[#0d6efd] dark:hover:text-blue-400 transition-colors cursor-pointer"
                         title="Lihat status pemeriksaan"
                       >
                         <span>Cek Hasil</span>
-                        <ChevronRight size={12} className="text-slate-400" />
+                        <ChevronRight size={12} className="text-slate-400 dark:text-slate-500" />
                       </button>
                     )}
                   </td>
@@ -1004,9 +997,9 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       <button
                         type="button"
                         onClick={() => setDetailModalTask(task)}
-                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
                       >
-                        <Eye size={12} className="text-slate-400" />
+                        <Eye size={12} className="text-slate-400 dark:text-slate-400" />
                         <span>Detail</span>
                       </button>
                     )}
@@ -1019,7 +1012,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       </div>
 
       {/* 5. PAGINATION (Exact Match with Sales Executive) */}
-      <div className="flex flex-wrap items-center justify-between gap-4 px-3 pt-3 text-xs text-slate-500">
+      <div className="flex flex-wrap items-center justify-between gap-4 px-3 pt-3 text-xs text-slate-500 dark:text-slate-400">
         <span>Showing {firstRow}-{lastRow} of {totalTasks} tasks</span>
         <nav className="flex items-center gap-1" aria-label="Tasks pages">
           <button
@@ -1027,7 +1020,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             aria-label="Previous page"
             disabled={currentPage <= 1}
             onClick={() => setCurrentPage((value) => value - 1)}
-            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
           >
             ‹
           </button>
@@ -1039,7 +1032,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 key={pageNumber}
                 aria-current={currentPage === pageNumber ? "page" : undefined}
                 onClick={() => setCurrentPage(pageNumber)}
-                className={`h-8 min-w-8 rounded-md px-2 cursor-pointer ${currentPage === pageNumber ? "bg-blue-600 font-semibold text-white" : "text-slate-600 hover:bg-slate-100"}`}
+                className={`h-8 min-w-8 rounded-md px-2 cursor-pointer ${currentPage === pageNumber ? "bg-blue-600 font-semibold text-white" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"}`}
               >
                 {pageNumber}
               </button>
@@ -1047,11 +1040,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
           })}
           {totalPages > 5 && (
             <>
-              <span className="px-1">...</span>
+              <span className="px-1 text-slate-400">...</span>
               <button
                 type="button"
                 onClick={() => setCurrentPage(totalPages)}
-                className="h-8 min-w-8 rounded-md px-2 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                className="h-8 min-w-8 rounded-md px-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
               >
                 {totalPages}
               </button>
@@ -1062,7 +1055,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             aria-label="Next page"
             disabled={currentPage >= totalPages}
             onClick={() => setCurrentPage((value) => value + 1)}
-            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
           >
             ›
           </button>
@@ -1074,16 +1067,16 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       {/* ========================================================================= */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-[530px] overflow-hidden flex flex-col max-h-[94vh]">
+          <div className="bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-[530px] overflow-hidden flex flex-col max-h-[94vh]">
             {/* Header */}
-            <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
-              <h3 className="text-base font-bold text-slate-900 tracking-tight">
+            <div className="px-6 py-4.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white dark:bg-[#0f172a]">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
                 New Transaction
               </h3>
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer transition-colors"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 cursor-pointer transition-colors"
                 title="Close"
               >
                 <X size={18} />
@@ -1094,7 +1087,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             <form onSubmit={handleSaveTransaction} className="p-6 overflow-y-auto space-y-4.5 text-xs flex-1">
               {/* Error Alert Banner (UC-CRM-A2-004 E-1 & E-2) */}
               {transactionFormError && (
-                <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700 animate-in fade-in">
+                <div className="p-3.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl flex items-start gap-2.5 text-xs text-red-700 dark:text-red-300 animate-in fade-in">
                   <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
                   <div className="leading-snug">
                     <strong className="block font-bold">Validasi Transaksi Gagal</strong>
@@ -1106,26 +1099,26 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               {/* Field 1: Job Number (Auto-Generated) */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-slate-800">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
                     Job Number (Auto-Generated)
                   </label>
-                  <span className="text-[10px] text-slate-400 flex items-center gap-1 font-medium">
-                    <User size={11} className="text-slate-400" />
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1 font-medium">
+                    <User size={11} className="text-slate-400 dark:text-slate-500" />
                     <span>System Identifier</span>
                   </span>
                 </div>
-                <div className="w-full bg-[#f1f5f9] border border-slate-200/90 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 text-xs font-semibold text-slate-700 shadow-2xs">
-                  <Lock size={13} className="text-slate-400 shrink-0" />
+                <div className="w-full bg-[#f1f5f9] dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-2xs">
+                  <Lock size={13} className="text-slate-400 dark:text-slate-500 shrink-0" />
                   <span>{autoJobNumber}</span>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
                   Automatic system sequence number for operational agent assignment
                 </p>
               </div>
 
               {/* Field 2: Transaction Number * */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
                   Informasi Transaksi / Transaction Number <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -1133,22 +1126,22 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   placeholder="Contoh: TRX-88291-JKT"
                   value={transactionNumber}
                   onChange={(e) => setTransactionNumber(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 shadow-2xs transition-colors"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-blue-500 shadow-2xs transition-colors"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
                   Enter the operational transaction identification number from the CRM/ERP system
                 </p>
               </div>
 
               {/* Field 3: Customer / Company * */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
                   Customer / Company <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={customerCompany}
                   onChange={(e) => setCustomerCompany(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-800 outline-none focus:border-blue-500 shadow-2xs transition-colors cursor-pointer"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 shadow-2xs transition-colors cursor-pointer"
                 >
                   <option value="">Select Customer / Company</option>
                   <option value="PT. JPG TransIndonesia">PT. JPG TransIndonesia</option>
@@ -1163,24 +1156,24 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               {/* Field 4: Sales Executive (PIC) */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-slate-800">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
                     Sales Executive (PIC)
                   </label>
-                  <span className="text-[10px] text-slate-400 flex items-center gap-1 font-medium">
-                    <Shield size={11} className="text-slate-400" />
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1 font-medium">
+                    <Shield size={11} className="text-slate-400 dark:text-slate-500" />
                     <span>Active Session</span>
                   </span>
                 </div>
-                <div className="w-full bg-[#f1f5f9] border border-slate-200/90 rounded-xl px-3.5 py-2 flex items-center justify-between text-xs font-semibold text-slate-800 shadow-2xs">
+                <div className="w-full bg-[#f1f5f9] dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700 rounded-xl px-3.5 py-2 flex items-center justify-between text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-2xs">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-5 h-5 rounded-full bg-[#c7d2fe] text-[#3730a3] flex items-center justify-center font-bold text-[10px]">
+                    <div className="w-5 h-5 rounded-full bg-[#c7d2fe] dark:bg-indigo-900/50 text-[#3730a3] dark:text-indigo-300 flex items-center justify-center font-bold text-[10px]">
                       {activeUserInitial}
                     </div>
                     <span>{activeUserName} (Sales Executive)</span>
                   </div>
-                  <Lock size={13} className="text-slate-400 shrink-0" />
+                  <Lock size={13} className="text-slate-400 dark:text-slate-500 shrink-0" />
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
                   Your account is automatically recorded as the person in charge of this job
                 </p>
               </div>
@@ -1188,10 +1181,10 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               {/* Field 5: Data Shipment (MAWB / HAWB) */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-slate-800">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
                     Data Shipment (MAWB / HAWB) <span className="text-red-500">*</span>
                   </label>
-                  <span className="text-[10px] text-slate-400 font-medium">
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
                     Shipment identifier
                   </span>
                 </div>
@@ -1200,27 +1193,27 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   placeholder="Contoh: 126-9021-4412 atau SHP-001"
                   value={mawbHawb}
                   onChange={(e) => setMawbHawb(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 shadow-2xs transition-colors"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-blue-500 shadow-2xs transition-colors"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
                   Air Waybill / House Air Waybill number related to the shipment of goods
                 </p>
               </div>
 
               {/* Sync Notification Banner */}
-              <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl p-3 flex items-center gap-2.5 text-xs text-emerald-900 shadow-2xs">
-                <RefreshCw size={14} className="text-emerald-600 shrink-0" />
+              <div className="bg-[#f0fdf4] dark:bg-emerald-950/30 border border-[#bbf7d0] dark:border-emerald-900/50 rounded-xl p-3 flex items-center gap-2.5 text-xs text-emerald-900 dark:text-emerald-300 shadow-2xs">
+                <RefreshCw size={14} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span className="text-[11px] leading-snug font-medium">
                   This data will be automatically synced with the C-Track timeline and WhatsApp Field Agent notifications.
                 </span>
               </div>
 
               {/* Footer Buttons */}
-              <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100">
+              <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1241,27 +1234,27 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       {/* ========================================================================= */}
       {assignModalTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-full max-w-[480px] overflow-hidden">
+          <div className="bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200/90 dark:border-slate-800 w-full max-w-[480px] overflow-hidden">
             {/* Header */}
-            <div className="px-6 pt-5 pb-3 flex items-start justify-between">
+            <div className="px-6 pt-5 pb-3 flex items-start justify-between border-b border-slate-100 dark:border-slate-800">
               <div>
-                <h3 className="text-[17px] font-bold text-slate-900 leading-snug">Field Agent Assignment</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Select a field inspector from HRMS records for this job.</p>
+                <h3 className="text-[17px] font-bold text-slate-900 dark:text-white leading-snug">Field Agent Assignment</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Select a field inspector from HRMS records for this job.</p>
               </div>
               <button
                 type="button"
                 onClick={handleCancelAssign}
-                className="text-slate-400 hover:text-slate-600 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 title="Batal Assignment"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="px-6 pb-6 space-y-4">
+            <div className="px-6 py-5 space-y-4">
               {/* Error Alert Banner (UC-CRM-A2-005 E-1 through E-5) */}
               {assignError && (
-                <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700 animate-in fade-in">
+                <div className="p-3.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl flex items-start gap-2.5 text-xs text-red-700 dark:text-red-300 animate-in fade-in">
                   <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
                   <div className="leading-snug">
                     <strong className="block font-bold">Proses Assignment Gagal</strong>
@@ -1271,22 +1264,22 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               )}
 
               {/* Box Read-Only: CURRENT TASK INFORMATION (READ-ONLY) */}
-              <div className="bg-[#f5f8fc] border border-[#e2eaf5] rounded-xl p-3.5 space-y-3">
+              <div className="bg-[#f5f8fc] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3.5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold tracking-wider">
-                    <FileText size={12} className="text-slate-400" />
+                  <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-[10px] font-bold tracking-wider">
+                    <FileText size={12} className="text-slate-400 dark:text-slate-500" />
                     <span>CURRENT TASK INFORMATION (READ-ONLY)</span>
                   </div>
-                  <span className="text-[10px] text-slate-400 font-medium">System Verified</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">System Verified</span>
                 </div>
 
                 <div className="flex items-center justify-between pt-0.5">
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">JOB NUMBER</span>
-                    <span className="text-[13px] font-bold text-[#1d4ed8] mt-0.5 block font-mono">{assignModalTask.job_number}</span>
+                    <span className="text-[13px] font-bold text-[#1d4ed8] dark:text-blue-400 mt-0.5 block font-mono">{assignModalTask.job_number}</span>
                   </div>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fff7ed] border border-[#fed7aa] text-[#c2410c] text-[10px] font-medium">
-                    <Lock size={10} className="text-[#ea580c]" />
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fff7ed] dark:bg-orange-950/40 border border-[#fed7aa] dark:border-orange-900/60 text-[#c2410c] dark:text-orange-400 text-[10px] font-medium">
+                    <Lock size={10} className="text-[#ea580c] dark:text-orange-400" />
                     <span>Locked</span>
                   </span>
                 </div>
@@ -1294,10 +1287,10 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">CUSTOMER / COMPANY</span>
-                    <span className="text-xs font-bold text-slate-900 mt-0.5 block">{assignModalTask.customer_name}</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white mt-0.5 block">{assignModalTask.customer_name}</span>
                   </div>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fff7ed] border border-[#fed7aa] text-[#c2410c] text-[10px] font-medium">
-                    <Lock size={10} className="text-[#ea580c]" />
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fff7ed] dark:bg-orange-950/40 border border-[#fed7aa] dark:border-orange-900/60 text-[#c2410c] dark:text-orange-400 text-[10px] font-medium">
+                    <Lock size={10} className="text-[#ea580c] dark:text-orange-400" />
                     <span>Locked</span>
                   </span>
                 </div>
@@ -1306,16 +1299,16 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               {/* Field: SELECT FIELD AGENT (HRMS) * */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[11px] font-bold text-slate-700 tracking-wider">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-200 tracking-wider">
                     SELECT FIELD AGENT (HRMS) <span className="text-red-500">*</span>
                   </label>
-                  <span className="text-[11px] text-slate-400 font-medium">HRMS Database Connected</span>
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">HRMS Database Connected</span>
                 </div>
                 <div className="relative">
                   <select
                     value={selectedAgent}
                     onChange={(e) => setSelectedAgent(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 appearance-none cursor-pointer pr-10"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 appearance-none cursor-pointer pr-10"
                   >
                     <option value="">Select Field Agent from HRMS...</option>
                     {AVAILABLE_FIELD_AGENTS.map(agent => (
@@ -1330,16 +1323,16 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
               {/* Field: FORM TEMPLATE * */}
               <div>
-                <label className="text-[11px] font-bold text-slate-700 tracking-wider block mb-1.5">
+                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-200 tracking-wider block mb-1.5">
                   FORM TEMPLATE <span className="text-red-500">*</span>
                 </label>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setSelectedTemplate('Standard Inspection Form')}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-blue-200 bg-[#f0f6ff] text-[#1d4ed8] text-xs font-semibold hover:bg-blue-100/70 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-blue-200 dark:border-blue-800 bg-[#f0f6ff] dark:bg-blue-950/40 text-[#1d4ed8] dark:text-blue-400 text-xs font-semibold hover:bg-blue-100/70 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
                   >
-                    <FileText size={13} className="text-[#2563eb]" />
+                    <FileText size={13} className="text-[#2563eb] dark:text-blue-400" />
                     <span>Standard Inspection Form</span>
                   </button>
                 </div>
@@ -1347,7 +1340,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
               {/* Field: INSTRUCTION NOTES FOR AGENT (OPTIONAL) */}
               <div>
-                <label className="text-[11px] font-bold text-slate-700 tracking-wider block mb-1.5">
+                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-200 tracking-wider block mb-1.5">
                   INSTRUCTION NOTES FOR AGENT (OPTIONAL)
                 </label>
                 <textarea
@@ -1355,19 +1348,19 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   onChange={(e) => setInstructionNote(e.target.value)}
                   rows={3}
                   placeholder="Please verify cargo packaging condition before loading..."
-                  className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 resize-none leading-relaxed"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 resize-none leading-relaxed"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
                   These notes will immediately appear in the A3 Field Agent mobile job list.
                 </p>
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={handleCancelAssign}
-                  className="px-5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 cursor-pointer transition-colors"
+                  className="px-5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
@@ -1389,18 +1382,18 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       {/* ========================================================================= */}
       {reassignModalTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-full max-w-[480px] overflow-hidden flex flex-col max-h-[92vh]">
+          <div className="bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200/90 dark:border-slate-800 w-full max-w-[480px] overflow-hidden flex flex-col max-h-[92vh]">
             {/* Header */}
-            <div className="px-6 pt-5 pb-3 flex items-start justify-between">
+            <div className="px-6 pt-5 pb-3 flex items-start justify-between border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-start gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#2563eb] flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-[#2563eb] dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
                   <ArrowLeftRight size={14} />
                 </div>
                 <div>
-                  <h3 className="text-[17px] font-bold text-slate-900 leading-snug">
+                  <h3 className="text-[17px] font-bold text-slate-900 dark:text-white leading-snug">
                     Reassign Field Agent
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Transfer assignment from previous agent to a new agent.
                   </p>
                 </div>
@@ -1408,34 +1401,34 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               <button
                 type="button"
                 onClick={() => setReassignModalTask(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <X size={18} />
               </button>
             </div>
 
             {/* Scrollable Body Content */}
-            <div className="px-6 pb-6 space-y-4 text-xs overflow-y-auto flex-1">
+            <div className="px-6 py-5 space-y-4 text-xs overflow-y-auto flex-1">
               {/* Box Read-Only: CURRENT TASK INFORMATION (READ-ONLY) */}
-              <div className="bg-[#f5f8fc] border border-[#e2eaf5] rounded-xl p-3.5 space-y-3">
+              <div className="bg-[#f5f8fc] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3.5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold tracking-wider">
-                    <FileText size={12} className="text-slate-400" />
+                  <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-[10px] font-bold tracking-wider">
+                    <FileText size={12} className="text-slate-400 dark:text-slate-500" />
                     <span>CURRENT TASK INFORMATION (READ-ONLY)</span>
                   </div>
-                  <span className="text-[10px] text-slate-400 font-medium">System Verified</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">System Verified</span>
                 </div>
 
                 {/* Job Number */}
                 <div className="flex items-center justify-between pt-0.5">
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">JOB NUMBER</span>
-                    <span className="text-[13px] font-bold text-[#1d4ed8] mt-0.5 block font-mono">
+                    <span className="text-[13px] font-bold text-[#1d4ed8] dark:text-blue-400 mt-0.5 block font-mono">
                       {reassignModalTask.job_number}
                     </span>
                   </div>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fff7ed] border border-[#fed7aa] text-[#c2410c] text-[10px] font-medium">
-                    <Lock size={10} className="text-[#ea580c]" />
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fff7ed] dark:bg-orange-950/40 border border-[#fed7aa] dark:border-orange-900/60 text-[#c2410c] dark:text-orange-400 text-[10px] font-medium">
+                    <Lock size={10} className="text-[#ea580c] dark:text-orange-400" />
                     <span>Locked</span>
                   </span>
                 </div>
@@ -1444,12 +1437,12 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">CUSTOMER / COMPANY</span>
-                    <span className="text-xs font-bold text-slate-900 mt-0.5 block">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white mt-0.5 block">
                       {reassignModalTask.customer_name}
                     </span>
                   </div>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fff7ed] border border-[#fed7aa] text-[#c2410c] text-[10px] font-medium">
-                    <Lock size={10} className="text-[#ea580c]" />
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fff7ed] dark:bg-orange-950/40 border border-[#fed7aa] dark:border-orange-900/60 text-[#c2410c] dark:text-orange-400 text-[10px] font-medium">
+                    <Lock size={10} className="text-[#ea580c] dark:text-orange-400" />
                     <span>Locked</span>
                   </span>
                 </div>
@@ -1459,21 +1452,21 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">CURRENT FIELD AGENT</span>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="w-5 h-5 rounded-full bg-blue-100 text-[#2563eb] text-[10px] font-bold inline-flex items-center justify-center">
+                      <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-[#2563eb] dark:text-blue-300 text-[10px] font-bold inline-flex items-center justify-center">
                         {reassignModalTask.field_agent_name
                           ? reassignModalTask.field_agent_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
                           : 'AP'}
                       </span>
-                      <span className="text-xs font-bold text-slate-900">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">
                         {reassignModalTask.field_agent_name || 'Andi Pratama'}
                       </span>
-                      <span className="text-slate-400 text-[11px] font-normal">
+                      <span className="text-slate-400 dark:text-slate-500 text-[11px] font-normal">
                         (FA-1092)
                       </span>
                     </div>
                   </div>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fff7ed] border border-[#fed7aa] text-[#c2410c] text-[10px] font-medium">
-                    <Lock size={10} className="text-[#ea580c]" />
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fff7ed] dark:bg-orange-950/40 border border-[#fed7aa] dark:border-orange-900/60 text-[#c2410c] dark:text-orange-400 text-[10px] font-medium">
+                    <Lock size={10} className="text-[#ea580c] dark:text-orange-400" />
                     <span>Locked</span>
                   </span>
                 </div>
@@ -1482,10 +1475,10 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               {/* Field: SELECT NEW FIELD AGENT (HRMS) * */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[11px] font-bold text-slate-700 tracking-wider">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-200 tracking-wider">
                     SELECT NEW FIELD AGENT (HRMS) <span className="text-red-500">*</span>
                   </label>
-                  <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     <span>HRMS Sync Active</span>
                   </span>
@@ -1494,7 +1487,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <select
                     value={reassignAgent}
                     onChange={(e) => setReassignAgent(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 appearance-none cursor-pointer pr-10"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 appearance-none cursor-pointer pr-10"
                   >
                     <option value="" disabled>Select replacement agent from HRMS...</option>
                     {AVAILABLE_FIELD_AGENTS
@@ -1507,7 +1500,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   </select>
                   <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
                   List automatically filters standby/available inspectors in the target area.
                 </p>
               </div>
@@ -1515,43 +1508,43 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               {/* Field: REASSIGNMENT REASON * */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[11px] font-bold text-slate-700 tracking-wider">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-200 tracking-wider">
                     REASSIGNMENT REASON <span className="text-red-500">*</span>
                   </label>
-                  <span className="text-[10px] text-slate-400 font-medium">Required</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Required</span>
                 </div>
                 <textarea
                   value={reassignReason}
                   onChange={(e) => setReassignReason(e.target.value)}
                   rows={2}
                   placeholder="Previous agent is unavailable / on leave at Cikarang site..."
-                  className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 resize-none leading-relaxed"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 resize-none leading-relaxed"
                 />
               </div>
 
               {/* Field: ADDITIONAL INSTRUCTION NOTES (OPTIONAL) */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[11px] font-bold text-slate-700 tracking-wider">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-200 tracking-wider">
                     ADDITIONAL INSTRUCTION NOTES (OPTIONAL)
                   </label>
-                  <span className="text-[10px] text-slate-400 font-medium">Optional</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Optional</span>
                 </div>
                 <textarea
                   value={reassignNotes}
                   onChange={(e) => setReassignNotes(e.target.value)}
                   rows={2}
                   placeholder="Please continue cargo inspection from the previous agent..."
-                  className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 resize-none leading-relaxed"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 resize-none leading-relaxed"
                 />
               </div>
 
               {/* Footer Button: Save Reassignment */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={() => setReassignModalTask(null)}
-                  className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer transition-colors"
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
@@ -1605,21 +1598,21 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             onClick={(e) => { if (e.target === e.currentTarget) setIssueModalTask(null); }}
             className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-xs animate-in fade-in"
           >
-            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-full max-w-[530px] overflow-hidden flex flex-col max-h-[92vh]">
+            <div className="bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200/90 dark:border-slate-800 w-full max-w-[530px] overflow-hidden flex flex-col max-h-[92vh]">
               {/* Top Header */}
-              <div className="px-6 pt-5 pb-3.5 border-b border-slate-100 flex items-start justify-between shrink-0 bg-white">
+              <div className="px-6 pt-5 pb-3.5 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between shrink-0 bg-white dark:bg-[#0f172a]">
                 <div className="flex items-start gap-2.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] mt-1.5 shrink-0" />
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-[17px] font-bold text-slate-900 tracking-tight leading-tight">
+                      <h3 className="text-[17px] font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
                         Field Issue Detail
                       </h3>
-                      <span className="bg-[#fee2e2] text-[#ef4444] border border-[#fecaca] text-[11px] font-semibold px-2 py-0.5 rounded-md">
+                      <span className="bg-[#fee2e2] dark:bg-red-950/40 text-[#ef4444] dark:text-red-400 border border-[#fecaca] dark:border-red-900/50 text-[11px] font-semibold px-2 py-0.5 rounded-md">
                         Escalation Pending
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 font-normal mt-0.5">
+                    <p className="text-xs text-slate-400 dark:text-slate-500 font-normal mt-0.5">
                       Discrepancy report from the Field Agent on site
                     </p>
                   </div>
@@ -1627,7 +1620,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 <button
                   type="button"
                   onClick={() => setIssueModalTask(null)}
-                  className="text-slate-400 hover:text-slate-600 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   title="Close"
                 >
                   <X size={18} />
@@ -1635,11 +1628,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               </div>
 
               {/* Scrollable Body */}
-              <div className="px-6 py-5 overflow-y-auto space-y-4 text-xs flex-1 bg-white">
+              <div className="px-6 py-5 overflow-y-auto space-y-4 text-xs flex-1 bg-white dark:bg-[#0f172a]">
                 {/* Warning Banner: Data Issue Tidak Lengkap (UC-CRM-A2-002 TC2 / E-1) */}
                 {(!issueModalTask.issue_note || evidenceFiles.length < 2) && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5 text-amber-800 text-xs animate-in fade-in">
-                    <AlertTriangle size={15} className="text-amber-600 shrink-0 mt-0.5" />
+                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl p-3 flex items-start gap-2.5 text-amber-800 dark:text-amber-300 text-xs animate-in fade-in">
+                    <AlertTriangle size={15} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                     <div>
                       <strong className="block font-bold">Data Issue Tidak Lengkap</strong>
                       <span>Informasi detail kendala lapangan belum sepenuhnya dilengkapi oleh Field Agent. Sistem menampilkan data issue yang tersedia.</span>
@@ -1648,15 +1641,15 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 )}
 
                 {/* 1. TASK ID & NOMOR JOB Card */}
-                <div className="border border-blue-200/70 bg-[#f8fbff] rounded-2xl p-4 space-y-3">
+                <div className="border border-blue-200/70 dark:border-slate-700 bg-[#f8fbff] dark:bg-slate-800/50 rounded-2xl p-4 space-y-3">
                   {/* Top info row */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         TASK ID &amp; NOMOR JOB
                       </span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#e2e8f0]/80 text-slate-600 text-[10px] font-medium">
-                        <Lock size={10} className="text-slate-500" />
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#e2e8f0]/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-medium">
+                        <Lock size={10} className="text-slate-500 dark:text-slate-400" />
                         <span>Locked</span>
                       </span>
                     </div>
@@ -1668,24 +1661,24 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                         }
                         showToast(`Report ID ${taskIdCode} copied to clipboard!`);
                       }}
-                      className="text-[#0d6efd] hover:text-blue-700 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                      className="text-[#0d6efd] dark:text-blue-400 hover:text-blue-700 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                     >
-                      <FileText size={12} className="text-[#0d6efd]" />
+                      <FileText size={12} className="text-[#0d6efd] dark:text-blue-400" />
                       <span>Report ID</span>
                     </button>
                   </div>
 
                   {/* Task ID & Nomor Job boxes */}
                   <div className="grid grid-cols-2 gap-2.5">
-                    <div className="bg-white border border-slate-200/90 rounded-xl px-3.5 py-2 flex items-center justify-between shadow-2xs">
-                      <span className="text-xs text-slate-400 font-medium">Task ID:</span>
-                      <span className="text-xs sm:text-sm font-bold text-[#0d6efd] font-mono">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700 rounded-xl px-3.5 py-2 flex items-center justify-between shadow-2xs">
+                      <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">Task ID:</span>
+                      <span className="text-xs sm:text-sm font-bold text-[#0d6efd] dark:text-blue-400 font-mono">
                         {taskIdCode}
                       </span>
                     </div>
-                    <div className="bg-white border border-slate-200/90 rounded-xl px-3.5 py-2 flex items-center justify-between shadow-2xs">
-                      <span className="text-xs text-slate-400 font-medium">Nomor Job:</span>
-                      <span className="text-xs sm:text-sm font-bold text-slate-800 font-mono">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700 rounded-xl px-3.5 py-2 flex items-center justify-between shadow-2xs">
+                      <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">Nomor Job:</span>
+                      <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 font-mono">
                         {issueModalTask.job_number}
                       </span>
                     </div>
@@ -1694,39 +1687,39 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   {/* 3 Pills: Field Agent, Report Time, Location */}
                   <div className="grid grid-cols-3 gap-2">
                     {/* Field Agent */}
-                    <div className="bg-white border border-slate-200/90 rounded-xl p-2.5 flex items-center gap-2 shadow-2xs min-w-0">
-                      <div className="w-7 h-7 rounded-full bg-[#dbeafe] text-[#1d4ed8] font-bold text-[11px] flex items-center justify-center shrink-0">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700 rounded-xl p-2.5 flex items-center gap-2 shadow-2xs min-w-0">
+                      <div className="w-7 h-7 rounded-full bg-[#dbeafe] dark:bg-blue-900/50 text-[#1d4ed8] dark:text-blue-300 font-bold text-[11px] flex items-center justify-center shrink-0">
                         {agentInitials}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="text-[10px] text-slate-400 font-medium block truncate">Field Agent</span>
-                        <span className="text-xs font-bold text-slate-800 block truncate" title={agentName}>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block truncate">Field Agent</span>
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block truncate" title={agentName}>
                           {agentName}
                         </span>
                       </div>
                     </div>
 
                     {/* Report Time */}
-                    <div className="bg-white border border-slate-200/90 rounded-xl p-2.5 flex items-center gap-2 shadow-2xs min-w-0">
-                      <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                        <Calendar size={13} className="text-slate-500" />
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700 rounded-xl p-2.5 flex items-center gap-2 shadow-2xs min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0">
+                        <Calendar size={13} className="text-slate-500 dark:text-slate-400" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="text-[10px] text-slate-400 font-medium block truncate">Report Time</span>
-                        <span className="text-xs font-bold text-slate-800 block truncate" title={reportTime}>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block truncate">Report Time</span>
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block truncate" title={reportTime}>
                           {reportTime}
                         </span>
                       </div>
                     </div>
 
                     {/* Location */}
-                    <div className="bg-white border border-slate-200/90 rounded-xl p-2.5 flex items-center gap-2 shadow-2xs min-w-0">
-                      <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                        <MapPin size={13} className="text-slate-500" />
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700 rounded-xl p-2.5 flex items-center gap-2 shadow-2xs min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0">
+                        <MapPin size={13} className="text-slate-500 dark:text-slate-400" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="text-[10px] text-slate-400 font-medium block truncate">Location</span>
-                        <span className="text-xs font-bold text-slate-800 block truncate" title={locationText}>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block truncate">Location</span>
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block truncate" title={locationText}>
                           {locationText}
                         </span>
                       </div>
@@ -1737,36 +1730,36 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 {/* 2. PROBLEM DESCRIPTION (A3) */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">
+                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                       PROBLEM DESCRIPTION (A3)
                     </span>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fee2e2] text-[#ef4444] border border-[#fecaca] text-[10px] font-semibold">
-                      <AlertTriangle size={11} className="text-[#ef4444]" />
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fee2e2] dark:bg-red-950/40 text-[#ef4444] dark:text-red-400 border border-[#fecaca] dark:border-red-900/50 text-[10px] font-semibold">
+                      <AlertTriangle size={11} className="text-[#ef4444] dark:text-red-400" />
                       <span>{issueCategory}</span>
                     </span>
                   </div>
 
-                  <div className="bg-[#fff5f5] border border-[#fed7d7] rounded-xl p-3.5 space-y-2.5">
+                  <div className="bg-[#fff5f5] dark:bg-red-950/20 border border-[#fed7d7] dark:border-red-900/40 rounded-xl p-3.5 space-y-2.5">
                     <div className="flex items-start gap-2.5">
-                      <div className="w-5 h-5 rounded-full bg-red-100 text-[#ef4444] flex items-center justify-center shrink-0 mt-0.5">
-                        <AlertCircle size={13} className="text-[#ef4444]" />
+                      <div className="w-5 h-5 rounded-full bg-red-100 dark:bg-red-900/40 text-[#ef4444] dark:text-red-400 flex items-center justify-center shrink-0 mt-0.5">
+                        <AlertCircle size={13} className="text-[#ef4444] dark:text-red-400" />
                       </div>
                       {issueModalTask.issue_note && !issueModalTask.issue_note.includes('8 koli') ? (
-                        <p className="text-xs text-slate-800 font-medium leading-relaxed">
+                        <p className="text-xs text-slate-800 dark:text-slate-200 font-medium leading-relaxed">
                           &ldquo;{issueModalTask.issue_note}&rdquo;
                         </p>
                       ) : (
-                        <p className="text-xs text-slate-800 font-medium leading-relaxed">
-                          &ldquo;Jumlah koli fisik yang diterima (<span className="text-[#ef4444] font-bold underline decoration-[#ef4444]">8 koli</span>) tidak sesuai dengan data dokumen awal (<span className="font-bold underline text-slate-900">10 koli</span>). Terdapat 2 koli tertinggal di gudang.&rdquo;
+                        <p className="text-xs text-slate-800 dark:text-slate-200 font-medium leading-relaxed">
+                          &ldquo;Jumlah koli fisik yang diterima (<span className="text-[#ef4444] dark:text-red-400 font-bold underline decoration-[#ef4444]">8 koli</span>) tidak sesuai dengan data dokumen awal (<span className="font-bold underline text-slate-900 dark:text-white">10 koli</span>). Terdapat 2 koli tertinggal di gudang.&rdquo;
                         </p>
                       )}
                     </div>
 
-                    <div className="pt-2 border-t border-[#fecaca]/60 flex items-center justify-between text-[11px]">
-                      <span className="text-slate-500 font-medium">
+                    <div className="pt-2 border-t border-[#fecaca]/60 dark:border-red-900/40 flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 dark:text-slate-400 font-medium">
                         Document Status: {documentStatus}
                       </span>
-                      <span className="text-[#ef4444] font-bold">
+                      <span className="text-[#ef4444] dark:text-red-400 font-bold">
                         Variance Tolerance: {varianceTolerance}
                       </span>
                     </div>
@@ -1776,21 +1769,21 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 {/* 3. FIELD EVIDENCE PHOTOS */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-800">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                       Field Evidence Photos
                     </span>
-                    <span className="text-[10px] text-slate-400 font-medium">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
                       {evidenceFiles.length} Attached Files (EXIF Validated)
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {evidenceFiles.map((file, idx) => (
-                      <div key={idx} className="bg-white border border-slate-200/90 rounded-xl p-3 shadow-2xs space-y-2">
+                      <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700 rounded-xl p-3 shadow-2xs space-y-2">
                         <div className="flex items-center gap-3">
                           <div 
                             onClick={() => setPreviewPhotoUrl(file.url)}
-                            className="w-13 h-13 rounded-lg overflow-hidden bg-slate-900 shrink-0 cursor-pointer group relative border border-slate-200 shadow-2xs"
+                            className="w-13 h-13 rounded-lg overflow-hidden bg-slate-900 shrink-0 cursor-pointer group relative border border-slate-200 dark:border-slate-700 shadow-2xs"
                           >
                             <img 
                               src={file.url} 
@@ -1805,24 +1798,24 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                             </div>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <span className="text-xs font-bold text-slate-800 block truncate" title={file.name}>
+                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block truncate" title={file.name}>
                               {file.name}
                             </span>
-                            <span className="text-[10px] text-slate-400 font-medium block mt-0.5">
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block mt-0.5">
                               {file.size} · {file.type}
                             </span>
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 mt-1">
-                              <CheckCircle size={11} className="text-emerald-500" />
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
+                              <CheckCircle size={11} className="text-emerald-500 dark:text-emerald-400" />
                               <span>{file.badge}</span>
                             </span>
                           </div>
                         </div>
 
-                        <div className="pt-2 border-t border-slate-100 flex items-center justify-center gap-6 text-xs">
+                        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-6 text-xs">
                           <button
                             type="button"
                             onClick={() => setPreviewPhotoUrl(file.url)}
-                            className="inline-flex items-center gap-1.5 text-[#0d6efd] hover:text-blue-700 font-semibold cursor-pointer transition-colors"
+                            className="inline-flex items-center gap-1.5 text-[#0d6efd] dark:text-blue-400 hover:text-blue-700 font-semibold cursor-pointer transition-colors"
                           >
                             <Eye size={13} />
                             <span>Preview</span>
@@ -1830,7 +1823,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                           <button
                             type="button"
                             onClick={() => showToast(`Mengunduh ${file.name}...`)}
-                            className="inline-flex items-center text-slate-400 hover:text-slate-700 cursor-pointer transition-colors p-1"
+                            className="inline-flex items-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition-colors p-1"
                             title={`Download ${file.name}`}
                           >
                             <Download size={13} />
@@ -1844,10 +1837,10 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 {/* 4. DISPATCHER DISPOSITION NOTES (OPSIONAL) */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-800">
+                    <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
                       Dispatcher Disposition Notes (Opsional)
                     </label>
-                    <span className="text-[10px] text-slate-400 font-medium">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
                       Audit Trail Logged
                     </span>
                   </div>
@@ -1856,15 +1849,15 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     onChange={(e) => setDispatcherDispositionNotes(e.target.value)}
                     rows={2}
                     placeholder="Instruksi tindak lanjut armada pengganti atau gudang asal..."
-                    className="w-full bg-white border border-slate-200/90 rounded-xl px-3 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 resize-none transition-colors"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 resize-none transition-colors"
                   />
                 </div>
               </div>
 
               {/* Bottom Footer */}
-              <div className="px-6 py-3.5 bg-white border-t border-slate-100 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                  <Lock size={14} className="text-emerald-600" />
+              <div className="px-6 py-3.5 bg-white dark:bg-[#0f172a] border-t border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                  <Lock size={14} className="text-emerald-600 dark:text-emerald-400" />
                   <span className="hidden sm:inline">Logged under PT ANDIMA Transportindo</span>
                 </div>
 
@@ -1873,7 +1866,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <button
                     type="button"
                     onClick={() => handleResolveIssueInternally(issueModalTask)}
-                    className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer shadow-2xs"
+                    className="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer shadow-2xs"
                     title="Selesaikan kendala secara internal tanpa meneruskan ke Need Backup"
                   >
                     Tidak Butuh Bantuan (Selesai Internal)
@@ -1901,7 +1894,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       {/* ========================================================================= */}
       {resultModalTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-full max-w-[520px] overflow-hidden flex flex-col max-h-[92vh]">
+          <div className="bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200/90 dark:border-slate-800 w-full max-w-[520px] overflow-hidden flex flex-col max-h-[92vh]">
             {/* Top Dark Navy Header */}
             <div className="bg-[#0b1329] px-5 sm:px-6 py-4 text-white shrink-0">
               <div className="flex items-center justify-between">
@@ -1940,10 +1933,10 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             </div>
 
             {/* Scrollable Body Content */}
-            <div className="p-5 sm:p-6 overflow-y-auto space-y-5 text-xs flex-1 bg-white">
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-5 text-xs flex-1 bg-white dark:bg-[#0f172a]">
               {/* E-3: Data Hasil Pemeriksaan Tidak Ditemukan (UC-CRM-A2-001 TC-004) */}
               {(resultModalTask.job_number.includes('999') || resultModalTask.job_number.toLowerCase().includes('notfound')) && (
-                <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700 animate-in fade-in">
+                <div className="p-3.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl flex items-start gap-2.5 text-xs text-red-700 dark:text-red-300 animate-in fade-in">
                   <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
                   <div className="leading-snug">
                     <strong className="block font-bold">Data Hasil Pemeriksaan Tidak Ditemukan</strong>
@@ -1954,8 +1947,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
               {/* E-1: Task Belum Selesai (UC-CRM-A2-001 TC-002) */}
               {resultModalTask.status !== 'Completed' && (
-                <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-xs text-amber-800 animate-in fade-in">
-                  <Clock size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                <div className="p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300 animate-in fade-in">
+                  <Clock size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <div className="leading-snug">
                     <strong className="block font-bold">Task Belum Selesai</strong>
                     <span>Pekerjaan pemeriksaan lapangan masih dalam proses pengerjaan oleh Field Agent ({resultModalTask.field_agent_name || 'Field Inspector'}). Menampilkan status task saat ini.</span>
@@ -1965,8 +1958,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
               {/* E-2: Hasil Pemeriksaan Belum Tersedia (UC-CRM-A2-001 TC-003) */}
               {resultModalTask.status === 'Completed' && resultModalTask.photo_count === 0 && resultModalTask.doc_count === 0 && (
-                <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-2.5 text-xs text-blue-800 animate-in fade-in">
-                  <AlertCircle size={16} className="text-blue-600 shrink-0 mt-0.5" />
+                <div className="p-3.5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 rounded-xl flex items-start gap-2.5 text-xs text-blue-800 dark:text-blue-300 animate-in fade-in">
+                  <AlertCircle size={16} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                   <div className="leading-snug">
                     <strong className="block font-bold">Hasil Pemeriksaan Belum Tersedia</strong>
                     <span>Hasil pemeriksaan belum tersedia. Dokumen dan foto inspeksi belum diunggah oleh Field Agent.</span>
@@ -1977,33 +1970,33 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               {/* 1. JOB INFORMATION */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5 text-slate-800 text-[11px] font-bold uppercase tracking-wider">
-                    <Building2 size={13} className="text-[#2563eb]" />
+                  <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 text-[11px] font-bold uppercase tracking-wider">
+                    <Building2 size={13} className="text-[#2563eb] dark:text-blue-400" />
                     <span>JOB INFORMATION</span>
                   </div>
-                  <span className="text-[10px] text-slate-400 font-mono">
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
                     ID : {resultModalTask.job_number.replace(/^#/, '') || 'DSVEXP/2605/2551'}
                   </span>
                 </div>
-                <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3.5">
+                <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3.5">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <span className="text-[10px] text-slate-400 font-medium block">Job Number</span>
-                      <span className="text-xs font-bold text-slate-900 block mt-0.5 font-mono">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block">Job Number</span>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white block mt-0.5 font-mono">
                         {resultModalTask.job_number || '#DSVEXP/2605/2551'}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-medium block mt-2.5">Sales</span>
-                      <span className="text-xs font-bold text-slate-900 block mt-0.5">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block mt-2.5">Sales</span>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white block mt-0.5">
                         Adelia
                       </span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 font-medium block">Transaction ID</span>
-                      <span className="text-xs font-bold text-slate-900 block mt-0.5 font-mono">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block">Transaction ID</span>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white block mt-0.5 font-mono">
                         TRX-0526-03362
                       </span>
-                      <span className="text-[10px] text-slate-400 font-medium block mt-2.5">Created By</span>
-                      <span className="text-xs font-bold text-slate-900 block mt-0.5">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block mt-2.5">Created By</span>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white block mt-0.5">
                         {resultModalTask.field_agent_name || 'Marsel'}
                       </span>
                     </div>
@@ -2013,56 +2006,56 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
               {/* 2. SHIPMENT INFORMATION */}
               <div>
-                <div className="flex items-center gap-1.5 text-slate-800 text-[11px] font-bold uppercase tracking-wider mb-2">
-                  <Truck size={13} className="text-[#2563eb]" />
+                <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 text-[11px] font-bold uppercase tracking-wider mb-2">
+                  <Truck size={13} className="text-[#2563eb] dark:text-blue-400" />
                   <span>SHIPMENT INFORMATION</span>
                 </div>
-                <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3.5 space-y-2">
+                <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3.5 space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Customer:</span>
-                    <span className="font-bold text-slate-900 text-right">{resultModalTask.customer_name || 'PT DSV Transport Indonesia'}</span>
+                    <span className="text-slate-500 dark:text-slate-400">Customer:</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-right">{resultModalTask.customer_name || 'PT DSV Transport Indonesia'}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Shipper:</span>
-                    <span className="font-bold text-slate-900 text-right">{resultModalTask.shipper || 'PT Example Shipper'}</span>
+                    <span className="text-slate-500 dark:text-slate-400">Shipper:</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-right">{resultModalTask.shipper || 'PT Example Shipper'}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Consignee:</span>
-                    <span className="font-bold text-slate-900 text-right">{resultModalTask.consignee || 'PT Example Consignee'}</span>
+                    <span className="text-slate-500 dark:text-slate-400">Consignee:</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-right">{resultModalTask.consignee || 'PT Example Consignee'}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">MAWB:</span>
-                    <span className="font-bold text-slate-900 font-mono text-right">{resultModalTask.mawb || '123-45678901'}</span>
+                    <span className="text-slate-500 dark:text-slate-400">MAWB:</span>
+                    <span className="font-bold text-slate-900 dark:text-white font-mono text-right">{resultModalTask.mawb || '123-45678901'}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">HAWB:</span>
-                    <span className="font-bold text-[#2563eb] font-mono text-right">{resultModalTask.hawb || 'AWB-00123'}</span>
+                    <span className="text-slate-500 dark:text-slate-400">HAWB:</span>
+                    <span className="font-bold text-[#2563eb] dark:text-blue-400 font-mono text-right">{resultModalTask.hawb || 'AWB-00123'}</span>
                   </div>
                 </div>
               </div>
 
               {/* 3. WAKTU SERAH TERIMA */}
               <div>
-                <div className="flex items-center gap-1.5 text-slate-800 text-[11px] font-bold uppercase tracking-wider mb-2">
-                  <Clock size={13} className="text-[#2563eb]" />
+                <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 text-[11px] font-bold uppercase tracking-wider mb-2">
+                  <Clock size={13} className="text-[#2563eb] dark:text-blue-400" />
                   <span>WAKTU SERAH TERIMA</span>
                 </div>
-                <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3.5 space-y-2">
+                <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3.5 space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1.5 text-slate-500">
-                      <Calendar size={13} className="text-slate-400" />
+                    <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                      <Calendar size={13} className="text-slate-400 dark:text-slate-500" />
                       <span>Handover Time:</span>
                     </span>
-                    <span className="font-bold text-slate-900">
+                    <span className="font-bold text-slate-900 dark:text-white">
                       20 Sep 2026, 10:30
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1.5 text-slate-500">
+                    <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                       <MapPin size={13} className="text-rose-500" />
                       <span>Handover Location:</span>
                     </span>
-                    <span className="font-bold text-slate-900">
+                    <span className="font-bold text-slate-900 dark:text-white">
                       {resultModalTask.handover_location || 'Gate 3 Priok'}
                     </span>
                   </div>
@@ -2071,24 +2064,24 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
               {/* 4. DATA FISIK BARANG */}
               <div>
-                <div className="flex items-center gap-1.5 text-slate-800 text-[11px] font-bold uppercase tracking-wider mb-2">
-                  <Box size={13} className="text-[#2563eb]" />
+                <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 text-[11px] font-bold uppercase tracking-wider mb-2">
+                  <Box size={13} className="text-[#2563eb] dark:text-blue-400" />
                   <span>DATA FISIK BARANG</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2.5">
-                  <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3 text-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">JUMLAH COIL</span>
-                    <span className="text-base font-extrabold text-slate-900 mt-0.5 block">12</span>
+                  <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3 text-center">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">JUMLAH COIL</span>
+                    <span className="text-base font-extrabold text-slate-900 dark:text-white mt-0.5 block">12</span>
                   </div>
-                  <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3 text-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">ACTUAL PIECES</span>
-                    <span className="text-base font-extrabold text-slate-900 mt-0.5 block">
+                  <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3 text-center">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">ACTUAL PIECES</span>
+                    <span className="text-base font-extrabold text-slate-900 dark:text-white mt-0.5 block">
                       {resultModalTask.cargo_pieces || '12 Pcs'}
                     </span>
                   </div>
-                  <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3 text-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">GROSS WEIGHT</span>
-                    <span className="text-base font-extrabold text-[#2563eb] mt-0.5 block">
+                  <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3 text-center">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">GROSS WEIGHT</span>
+                    <span className="text-base font-extrabold text-[#2563eb] dark:text-blue-400 mt-0.5 block">
                       {resultModalTask.gross_weight || '2,450 Kg'}
                     </span>
                   </div>
@@ -2098,81 +2091,81 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               {/* 5. FOTO BUKTI LAPANGAN */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5 text-slate-800 text-[11px] font-bold uppercase tracking-wider">
-                    <Camera size={13} className="text-[#2563eb]" />
+                  <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 text-[11px] font-bold uppercase tracking-wider">
+                    <Camera size={13} className="text-[#2563eb] dark:text-blue-400" />
                     <span>FOTO BUKTI LAPANGAN</span>
                   </div>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold">
-                    <Check size={11} className="text-emerald-600" />
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold">
+                    <Check size={11} className="text-emerald-600 dark:text-emerald-400" />
                     <span>4/4 Verified</span>
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2.5">
                   {/* Card 1: 1. Foto Keseluruhan */}
-                  <div className="border border-[#e2eaf5] rounded-xl overflow-hidden bg-white shadow-2xs">
+                  <div className="border border-[#e2eaf5] dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xs">
                     <div 
-                      className="bg-[#edf2f9] h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
+                      className="bg-[#edf2f9] dark:bg-slate-800 h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] dark:hover:bg-slate-700 transition-colors"
                       onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[0] || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800')}
                     >
-                      <div className="w-7 h-7 rounded-full bg-blue-100 text-[#2563eb] flex items-center justify-center shadow-xs">
+                      <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/50 text-[#2563eb] dark:text-blue-300 flex items-center justify-center shadow-xs">
                         <Camera size={14} />
                       </div>
-                      <span className="text-[9px] text-slate-400 font-mono mt-1">IMG_8411.JPG • 10:12</span>
+                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono mt-1">IMG_8411.JPG • 10:12</span>
                     </div>
-                    <div className="px-2.5 py-1.5 bg-white flex items-center justify-between border-t border-slate-100">
-                      <span className="text-[11px] font-semibold text-slate-800">1. Foto Keseluruhan</span>
-                      <span className="text-[10px] font-bold text-emerald-600">OK</span>
+                    <div className="px-2.5 py-1.5 bg-white dark:bg-slate-900 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+                      <span className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">1. Foto Keseluruhan</span>
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">OK</span>
                     </div>
                   </div>
 
                   {/* Card 2: 2. Marking / Label */}
-                  <div className="border border-[#e2eaf5] rounded-xl overflow-hidden bg-white shadow-2xs">
+                  <div className="border border-[#e2eaf5] dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xs">
                     <div 
-                      className="bg-[#edf2f9] h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
+                      className="bg-[#edf2f9] dark:bg-slate-800 h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] dark:hover:bg-slate-700 transition-colors"
                       onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[1] || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800')}
                     >
-                      <div className="w-7 h-7 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shadow-xs">
+                      <div className="w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 flex items-center justify-center shadow-xs">
                         <Tag size={14} />
                       </div>
-                      <span className="text-[9px] text-slate-400 font-mono mt-1">IMG_8412.JPG • 10:14</span>
+                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono mt-1">IMG_8412.JPG • 10:14</span>
                     </div>
-                    <div className="px-2.5 py-1.5 bg-white flex items-center justify-between border-t border-slate-100">
-                      <span className="text-[11px] font-semibold text-slate-800">2. Marking / Label</span>
-                      <span className="text-[10px] font-bold text-emerald-600">Match</span>
+                    <div className="px-2.5 py-1.5 bg-white dark:bg-slate-900 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+                      <span className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">2. Marking / Label</span>
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Match</span>
                     </div>
                   </div>
 
                   {/* Card 3: 3. Foto Seal */}
-                  <div className="border border-[#e2eaf5] rounded-xl overflow-hidden bg-white shadow-2xs">
+                  <div className="border border-[#e2eaf5] dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xs">
                     <div 
-                      className="bg-[#edf2f9] h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
+                      className="bg-[#edf2f9] dark:bg-slate-800 h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] dark:hover:bg-slate-700 transition-colors"
                       onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[2] || 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?w=800')}
                     >
-                      <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
+                      <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-300 flex items-center justify-center shadow-xs">
                         <Lock size={14} />
                       </div>
-                      <span className="text-[9px] text-slate-400 font-mono mt-1">IMG_8413.JPG • 10:15</span>
+                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono mt-1">IMG_8413.JPG • 10:15</span>
                     </div>
-                    <div className="px-2.5 py-1.5 bg-white flex items-center justify-between border-t border-slate-100">
-                      <span className="text-[11px] font-semibold text-slate-800">3. Foto Seal</span>
-                      <span className="text-[10px] font-bold text-emerald-600">Intact</span>
+                    <div className="px-2.5 py-1.5 bg-white dark:bg-slate-900 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+                      <span className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">3. Foto Seal</span>
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Intact</span>
                     </div>
                   </div>
 
                   {/* Card 4: 4. Area Kerusakan */}
-                  <div className="border border-[#e2eaf5] rounded-xl overflow-hidden bg-white shadow-2xs">
+                  <div className="border border-[#e2eaf5] dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xs">
                     <div 
-                      className="bg-[#edf2f9] h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
+                      className="bg-[#edf2f9] dark:bg-slate-800 h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] dark:hover:bg-slate-700 transition-colors"
                       onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[3] || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800')}
                     >
-                      <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
+                      <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shadow-xs">
                         <Shield size={14} />
                       </div>
-                      <span className="text-[9px] text-slate-400 font-mono mt-1">Inspected • 10:20</span>
+                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono mt-1">Inspected • 10:20</span>
                     </div>
-                    <div className="px-2.5 py-1.5 bg-white flex items-center justify-between border-t border-slate-100">
-                      <span className="text-[11px] font-semibold text-slate-800">4. Area Kerusakan</span>
-                      <span className="text-[9px] font-bold text-emerald-600">No damage reported</span>
+                    <div className="px-2.5 py-1.5 bg-white dark:bg-slate-900 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+                      <span className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">4. Area Kerusakan</span>
+                      <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">No damage reported</span>
                     </div>
                   </div>
                 </div>
@@ -2180,62 +2173,62 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
               {/* 6. DOKUMEN PENDUKUNG & NAMA PETUGAS */}
               <div>
-                <div className="flex items-center gap-1.5 text-slate-800 text-[11px] font-bold uppercase tracking-wider mb-2">
-                  <FileText size={13} className="text-[#2563eb]" />
+                <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 text-[11px] font-bold uppercase tracking-wider mb-2">
+                  <FileText size={13} className="text-[#2563eb] dark:text-blue-400" />
                   <span>DOKUMEN PENDUKUNG &amp; NAMA PETUGAS</span>
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between p-3 bg-white border border-[#e2eaf5] rounded-xl shadow-2xs">
+                  <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 border border-[#e2eaf5] dark:border-slate-700 rounded-xl shadow-2xs">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/50 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0">
                         <FileText size={16} />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-slate-800 block">Packing List.pdf</span>
-                        <span className="text-[10px] text-slate-400">PDF • 1.4 MB • Verified</span>
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Packing List.pdf</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500">PDF • 1.4 MB • Verified</span>
                       </div>
                     </div>
                     <button 
                       type="button"
                       onClick={() => showToast('Downloading Packing List.pdf...')}
-                      className="p-1.5 text-slate-400 hover:text-[#2563eb] rounded-lg transition-colors cursor-pointer"
+                      className="p-1.5 text-slate-400 hover:text-[#2563eb] dark:hover:text-blue-400 rounded-lg transition-colors cursor-pointer"
                     >
                       <Download size={14} />
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-white border border-[#e2eaf5] rounded-xl shadow-2xs">
+                  <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 border border-[#e2eaf5] dark:border-slate-700 rounded-xl shadow-2xs">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/50 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0">
                         <FileText size={16} />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-slate-800 block">MSDS.pdf</span>
-                        <span className="text-[10px] text-slate-400">PDF • 860 KB • Material Safety Sheet</span>
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">MSDS.pdf</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500">PDF • 860 KB • Material Safety Sheet</span>
                       </div>
                     </div>
                     <button 
                       type="button"
                       onClick={() => showToast('Downloading MSDS.pdf...')}
-                      className="p-1.5 text-slate-400 hover:text-[#2563eb] rounded-lg transition-colors cursor-pointer"
+                      className="p-1.5 text-slate-400 hover:text-[#2563eb] dark:hover:text-blue-400 rounded-lg transition-colors cursor-pointer"
                     >
                       <Download size={14} />
                     </button>
                   </div>
 
                   {/* Pihak Penyerah & Pihak Penerima Box */}
-                  <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3 grid grid-cols-2 gap-3 mt-1">
+                  <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3 grid grid-cols-2 gap-3 mt-1">
                     <div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">PIHAK PENYERAH</span>
-                      <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5 mt-0.5">
-                        <User size={12} className="text-slate-500" />
+                      <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">PIHAK PENYERAH</span>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 mt-0.5">
+                        <User size={12} className="text-slate-500 dark:text-slate-400" />
                         <span>Budi Santoso</span>
                       </span>
                     </div>
                     <div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">PIHAK PENERIMA</span>
-                      <span className="text-xs font-bold text-[#2563eb] flex items-center gap-1.5 mt-0.5">
-                        <User size={12} className="text-[#2563eb]" />
+                      <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">PIHAK PENERIMA</span>
+                      <span className="text-xs font-bold text-[#2563eb] dark:text-blue-400 flex items-center gap-1.5 mt-0.5">
+                        <User size={12} className="text-[#2563eb] dark:text-blue-400" />
                         <span>{resultModalTask.field_agent_name || 'Marsel'}</span>
                       </span>
                     </div>
@@ -2245,11 +2238,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
               {/* 7. CHECKLIST CENTANG & STATUS MASALAH */}
               <div>
-                <div className="flex items-center gap-1.5 text-slate-800 text-[11px] font-bold uppercase tracking-wider mb-2">
-                  <CheckCircle size={13} className="text-[#2563eb]" />
+                <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 text-[11px] font-bold uppercase tracking-wider mb-2">
+                  <CheckCircle size={13} className="text-[#2563eb] dark:text-blue-400" />
                   <span>CHECKLIST CENTANG &amp; STATUS MASALAH</span>
                 </div>
-                <div className="bg-white border border-[#e2eaf5] rounded-xl p-3.5 space-y-2.5">
+                <div className="bg-white dark:bg-slate-900 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3.5 space-y-2.5">
                   <div className="space-y-2">
                     {[
                       'Quantity & weight match',
@@ -2259,28 +2252,28 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       'Airline standard conformity'
                     ].map((item, idx) => (
                       <div key={idx} className="flex items-center justify-between text-xs">
-                        <span className="flex items-center gap-2 text-slate-700">
+                        <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
                           <Check size={13} className="text-emerald-500 stroke-[2.5]" />
                           <span>{item}</span>
                         </span>
-                        <span className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold">
+                        <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold">
                           Verified
                         </span>
                       </div>
                     ))}
                   </div>
 
-                  <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-slate-500 text-[11px]">Dangerous Goods:</span>
-                      <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px]">
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px]">Dangerous Goods:</span>
+                      <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-[10px]">
                         NO
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-slate-500 text-[11px]">Special Handling:</span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#fffbeb] border border-[#fef3c7] text-[#b45309] text-[10px] font-bold">
-                        <RefreshCw size={10} className="text-[#b45309]" />
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px]">Special Handling:</span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#fffbeb] dark:bg-amber-950/40 border border-[#fef3c7] dark:border-amber-900/50 text-[#b45309] dark:text-amber-400 text-[10px] font-bold">
+                        <RefreshCw size={10} className="text-[#b45309] dark:text-amber-400" />
                         <span>YES (Kooler / Priority Cargo)</span>
                       </span>
                     </div>
@@ -2290,30 +2283,30 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
               {/* 8. ISSUE */}
               <div>
-                <div className="flex items-center gap-1.5 text-slate-800 text-[11px] font-bold uppercase tracking-wider mb-2">
-                  <AlertCircle size={13} className="text-[#2563eb]" />
+                <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 text-[11px] font-bold uppercase tracking-wider mb-2">
+                  <AlertCircle size={13} className="text-[#2563eb] dark:text-blue-400" />
                   <span>ISSUE</span>
                 </div>
                 {resultModalTask.has_issue ? (
-                  <div className="bg-[#fef2f2] border border-[#fecaca] rounded-xl p-3.5 flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="bg-[#fef2f2] dark:bg-red-950/30 border border-[#fecaca] dark:border-red-900/50 rounded-xl p-3.5 flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 mt-0.5">
                       <AlertOctagon size={14} />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-red-900">{resultModalTask.issue_type || 'Cargo Damage'} Detected</h4>
-                      <p className="text-[11px] text-red-700 mt-0.5 leading-relaxed">
+                      <h4 className="text-xs font-bold text-red-900 dark:text-red-200">{resultModalTask.issue_type || 'Cargo Damage'} Detected</h4>
+                      <p className="text-[11px] text-red-700 dark:text-red-300 mt-0.5 leading-relaxed">
                         {resultModalTask.issue_note || 'Physical damage detected during on-site inspection.'}
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-[#ecfdf5] border border-[#a7f3d0] rounded-xl p-3.5 flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="bg-[#ecfdf5] dark:bg-emerald-950/30 border border-[#a7f3d0] dark:border-emerald-900/50 rounded-xl p-3.5 flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
                       <Check size={14} />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-emerald-900">No operational issue detected.</h4>
-                      <p className="text-[11px] text-emerald-700 mt-0.5 leading-relaxed">
+                      <h4 className="text-xs font-bold text-emerald-900 dark:text-emerald-200">No operational issue detected.</h4>
+                      <p className="text-[11px] text-emerald-700 dark:text-emerald-300 mt-0.5 leading-relaxed">
                         Seluruh parameter kuantitas, segel, dan fisik kargo telah terverifikasi normal.
                       </p>
                     </div>
@@ -2323,11 +2316,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             </div>
 
             {/* Bottom Actions Footer */}
-            <div className="px-5 sm:px-6 py-3.5 bg-white border-t border-slate-200 flex items-center gap-3 shrink-0">
+            <div className="px-5 sm:px-6 py-3.5 bg-white dark:bg-[#0f172a] border-t border-slate-200 dark:border-slate-800 flex items-center gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setResultModalTask(null)}
-                className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 cursor-pointer transition-colors"
+                className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer transition-colors"
               >
                 Close Panel
               </button>
@@ -2352,50 +2345,50 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       {/* ========================================================================= */}
       {detailModalTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-full max-w-[490px] overflow-hidden flex flex-col max-h-[92vh]">
+          <div className="bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200/90 dark:border-slate-800 w-full max-w-[490px] overflow-hidden flex flex-col max-h-[92vh]">
             {/* Header */}
-            <div className="px-6 pt-5 pb-3 flex items-start justify-between border-b border-slate-100">
+            <div className="px-6 pt-5 pb-3 flex items-start justify-between border-b border-slate-100 dark:border-slate-800">
               <div>
-                <h3 className="text-[17px] font-bold text-slate-900 leading-tight">Job / Transaction Detail Summary</h3>
-                <p className="text-xs text-slate-500 font-mono mt-0.5">{detailModalTask.job_number || '#AENAT/2609/0307'}</p>
+                <h3 className="text-[17px] font-bold text-slate-900 dark:text-white leading-tight">Job / Transaction Detail Summary</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">{detailModalTask.job_number || '#AENAT/2609/0307'}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setDetailModalTask(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <X size={18} />
               </button>
             </div>
 
             {/* Scrollable Body Content */}
-            <div className="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs flex-1 bg-white">
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs flex-1 bg-white dark:bg-[#0f172a]">
               {/* 1. JOB NUMBER & STATUS */}
-              <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-4 space-y-3">
+              <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">JOB NUMBER &amp; STATUS</span>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[#2563eb] text-[10px] font-semibold">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">JOB NUMBER &amp; STATUS</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-[#2563eb] dark:text-blue-400 text-[10px] font-semibold">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#2563eb]" />
                     <span>Assigned / In Progress</span>
                   </span>
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900 leading-tight">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
                     {detailModalTask.customer_name || 'PT Schneider Electric Indonesia'}
                   </h4>
-                  <span className="text-xs font-bold text-[#2563eb] font-mono block mt-0.5">
+                  <span className="text-xs font-bold text-[#2563eb] dark:text-blue-400 font-mono block mt-0.5">
                     {detailModalTask.job_number || '#AENAT/2609/0307'}
                   </span>
                 </div>
-                <div className="border-t border-slate-200/70 pt-2.5 grid grid-cols-2 gap-3">
+                <div className="border-t border-slate-200/70 dark:border-slate-700/70 pt-2.5 grid grid-cols-2 gap-3">
                   <div>
                     <span className="text-[10px] text-slate-400 font-medium block">Created At:</span>
-                    <span className="text-xs font-bold text-slate-800 block mt-0.5">06 Oct 2026, 14:30 WIB</span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mt-0.5">06 Oct 2026, 14:30 WIB</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 font-medium block">Sales Executive:</span>
-                    <span className="text-xs font-bold text-slate-800 block mt-0.5">
-                      {activeUserName || 'Adelia'} <span className="text-slate-400 font-normal text-[11px]">(Logged-In User)</span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mt-0.5">
+                      {activeUserName || 'Adelia'} <span className="text-slate-400 dark:text-slate-500 font-normal text-[11px]">(Logged-In User)</span>
                     </span>
                   </div>
                 </div>
@@ -2403,33 +2396,33 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
               {/* 2. CONNECTED TRANSACTION & HAWB */}
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-2">
                   CONNECTED TRANSACTION &amp; HAWB
                 </label>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f0f6ff] border border-blue-200 text-[#1d4ed8] text-xs font-semibold">
-                    <Tag size={12} className="text-[#2563eb]" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f0f6ff] dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-[#1d4ed8] dark:text-blue-300 text-xs font-semibold">
+                    <Tag size={12} className="text-[#2563eb] dark:text-blue-400" />
                     <span>#TRX-0526-03689</span>
                   </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f0f6ff] border border-blue-200 text-[#1d4ed8] text-xs font-semibold">
-                    <Tag size={12} className="text-[#2563eb]" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f0f6ff] dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-[#1d4ed8] dark:text-blue-300 text-xs font-semibold">
+                    <Tag size={12} className="text-[#2563eb] dark:text-blue-400" />
                     <span>MAWB: 123-99887766 (Air Cargo)</span>
                   </span>
                 </div>
               </div>
 
               {/* 3. FIELD AGENT ASSIGNMENT (FR-A2-004) */}
-              <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-4 space-y-2.5">
+              <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-4 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     FIELD AGENT ASSIGNMENT (FR-A2-004)
                   </span>
                   {detailModalTask.status === 'Assigned' ? (
-                    <span className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold">
+                    <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
                       Active
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-bold">
+                    <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-[10px] font-bold">
                       Belum Ditugaskan
                     </span>
                   )}
@@ -2438,26 +2431,26 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 {detailModalTask.status === 'Assigned' && detailModalTask.field_agent_name ? (
                   <>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500">Field Agent Name</span>
+                      <span className="text-slate-500 dark:text-slate-400">Field Agent Name</span>
                       <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-slate-900">{detailModalTask.field_agent_name}</span>
-                        <span className="font-mono text-[9px] bg-slate-100 text-slate-600 border border-slate-200 px-1.5 py-0.5 rounded">
+                        <span className="font-bold text-slate-900 dark:text-white">{detailModalTask.field_agent_name}</span>
+                        <span className="font-mono text-[9px] bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 px-1.5 py-0.5 rounded">
                           [ID: FA-1092 - HRMS]
                         </span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500">Assigned At</span>
-                      <span className="font-bold text-slate-900">06 Oct 2026, 09:00 WIB</span>
+                      <span className="text-slate-500 dark:text-slate-400">Assigned At</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100">06 Oct 2026, 09:00 WIB</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500">Task Area / Location</span>
-                      <span className="font-bold text-slate-900">{detailModalTask.handover_location || 'Kawasan Industri Jababeka, Cikarang'}</span>
+                      <span className="text-slate-500 dark:text-slate-400">Task Area / Location</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100">{detailModalTask.handover_location || 'Kawasan Industri Jababeka, Cikarang'}</span>
                     </div>
                   </>
                 ) : (
-                  <div className="py-2.5 text-center space-y-2 bg-white/70 rounded-lg border border-dashed border-slate-200">
-                    <p className="text-xs text-slate-600 font-medium">
+                  <div className="py-2.5 text-center space-y-2 bg-white/70 dark:bg-slate-800/40 rounded-lg border border-dashed border-slate-200 dark:border-slate-700">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                       Belum Ditugaskan — Transaksi ini belum memiliki Field Agent.
                     </p>
                     <button
@@ -2481,46 +2474,46 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
               {/* EDIT FORM (UC-CRM-A2-004 A-4 / TC10: Mengubah Informasi Job/Transaksi) */}
               {isEditingTransaction && (
-                <div className="bg-[#fffbeb] border border-[#fef3c7] rounded-xl p-4 space-y-3 animate-in fade-in">
+                <div className="bg-[#fffbeb] dark:bg-amber-950/20 border border-[#fef3c7] dark:border-amber-800/40 rounded-xl p-4 space-y-3 animate-in fade-in">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider">
+                    <span className="text-[11px] font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider">
                       Ubah Informasi Job/Transaksi (A-4)
                     </span>
-                    <span className="text-[10px] text-amber-700 font-medium">Diizinkan</span>
+                    <span className="text-[10px] text-amber-700 dark:text-amber-400 font-medium">Diizinkan</span>
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-600 block mb-1">Handover Location</label>
+                    <label className="text-[10px] font-bold text-slate-600 dark:text-slate-300 block mb-1">Handover Location</label>
                     <input
                       type="text"
                       value={editLocation}
                       onChange={(e) => setEditLocation(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-500"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-600 block mb-1">Handover Datetime</label>
+                    <label className="text-[10px] font-bold text-slate-600 dark:text-slate-300 block mb-1">Handover Datetime</label>
                     <input
                       type="text"
                       value={editDatetime}
                       onChange={(e) => setEditDatetime(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-500"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-600 block mb-1">Operational Notes</label>
+                    <label className="text-[10px] font-bold text-slate-600 dark:text-slate-300 block mb-1">Operational Notes</label>
                     <textarea
                       rows={2}
                       value={editNotes}
                       onChange={(e) => setEditNotes(e.target.value)}
                       placeholder="Tambahkan catatan revisi transaksi..."
-                      className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-500 resize-none"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-blue-500 resize-none"
                     />
                   </div>
                   <div className="flex items-center justify-end gap-2 pt-1">
                     <button
                       type="button"
                       onClick={() => setIsEditingTransaction(false)}
-                      className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
                     >
                       Batal
                     </button>
@@ -2537,30 +2530,30 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
               {/* 4. DATA RELATIONSHIPS & CONNECTIVITY (FR-A2-010) */}
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-2">
                   DATA RELATIONSHIPS &amp; CONNECTIVITY (FR-A2-010)
                 </label>
                 <div className="grid grid-cols-3 gap-2.5">
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
-                    <div className="flex items-center gap-1 text-[10px] text-slate-500 font-medium">
-                      <MessageCircle size={11} className="text-[#2563eb]" />
+                  <div className="bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">
+                    <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                      <MessageCircle size={11} className="text-[#2563eb] dark:text-blue-400" />
                       <span>Conversation</span>
                     </div>
-                    <span className="text-xs font-bold text-slate-900 font-mono mt-1 block">CONV-250624-018</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100 font-mono mt-1 block">CONV-250624-018</span>
                   </div>
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
-                    <div className="flex items-center gap-1 text-[10px] text-slate-500 font-medium">
-                      <FileText size={11} className="text-[#2563eb]" />
+                  <div className="bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">
+                    <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                      <FileText size={11} className="text-[#2563eb] dark:text-blue-400" />
                       <span>Field Task</span>
                     </div>
-                    <span className="text-xs font-bold text-slate-900 font-mono mt-1 block">TSK-2508-1208</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100 font-mono mt-1 block">TSK-2508-1208</span>
                   </div>
-                  <div className="bg-[#ecfdf5] border border-[#a7f3d0] rounded-xl p-2.5">
-                    <div className="flex items-center gap-1 text-[10px] text-emerald-700 font-medium">
-                      <CheckCircle size={11} className="text-emerald-600" />
+                  <div className="bg-[#ecfdf5] dark:bg-emerald-950/30 border border-[#a7f3d0] dark:border-emerald-800/40 rounded-xl p-2.5">
+                    <div className="flex items-center gap-1 text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">
+                      <CheckCircle size={11} className="text-emerald-600 dark:text-emerald-400" />
                       <span>Issue Status</span>
                     </div>
-                    <span className="text-xs font-bold text-emerald-900 mt-1 block">Normal / Resolved</span>
+                    <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 mt-1 block">Normal / Resolved</span>
                   </div>
                 </div>
               </div>
@@ -2568,26 +2561,26 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               {/* 5. FIELD INSPECTION RESULT PREVIEW (A3) */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     FIELD INSPECTION RESULT PREVIEW (A3)
                   </span>
                   <ChevronRight size={13} className="text-slate-400" />
                 </div>
                 <div className="grid grid-cols-2 gap-2.5 mb-2.5">
-                  <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-2.5 flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Actual Pieces:</span>
+                  <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 dark:text-slate-400">Actual Pieces:</span>
                     <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-slate-900">{detailModalTask.cargo_pieces || '12 / 12 Koli'}</span>
-                      <span className="px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-bold">
+                      <span className="font-bold text-slate-900 dark:text-slate-100">{detailModalTask.cargo_pieces || '12 / 12 Koli'}</span>
+                      <span className="px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold">
                         Matched
                       </span>
                     </div>
                   </div>
-                  <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-2.5 flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Gross Weight:</span>
+                  <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 dark:text-slate-400">Gross Weight:</span>
                     <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-slate-900">{detailModalTask.gross_weight || '8,450 kg'}</span>
-                      <span className="px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-bold">
+                      <span className="font-bold text-slate-900 dark:text-slate-100">{detailModalTask.gross_weight || '8,450 kg'}</span>
+                      <span className="px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold">
                         Matched
                       </span>
                     </div>
@@ -2595,13 +2588,13 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between p-3 bg-white border border-[#e2eaf5] rounded-xl shadow-2xs">
+                  <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800/80 border border-[#e2eaf5] dark:border-slate-700 rounded-xl shadow-2xs">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 text-[#2563eb] flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-800/60 text-[#2563eb] dark:text-blue-400 flex items-center justify-center shrink-0">
                         <ImageIcon size={16} />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-slate-800 block">Foto_Segel.jpg</span>
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Foto_Segel.jpg</span>
                         <span className="text-[10px] text-slate-400">2.4 MB • JPG Image</span>
                       </div>
                     </div>
@@ -2609,7 +2602,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       <button
                         type="button"
                         onClick={() => showToast('Downloading Foto_Segel.jpg...')}
-                        className="p-1.5 text-slate-400 hover:text-[#2563eb] rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-slate-400 hover:text-[#2563eb] dark:hover:text-blue-400 rounded-lg transition-colors cursor-pointer"
                         title="Download"
                       >
                         <Download size={14} />
@@ -2617,7 +2610,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       <button
                         type="button"
                         onClick={() => setPreviewPhotoUrl(detailModalTask.result_photos?.[0] || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800')}
-                        className="p-1.5 text-slate-400 hover:text-[#2563eb] rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-slate-400 hover:text-[#2563eb] dark:hover:text-blue-400 rounded-lg transition-colors cursor-pointer"
                         title="Preview"
                       >
                         <ExternalLink size={14} />
@@ -2625,13 +2618,13 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-white border border-[#e2eaf5] rounded-xl shadow-2xs">
+                  <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800/80 border border-[#e2eaf5] dark:border-slate-700 rounded-xl shadow-2xs">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-100 dark:border-rose-800/60 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0">
                         <FileText size={16} />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-slate-800 block">Surat_Jalan.pdf</span>
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Surat_Jalan.pdf</span>
                         <span className="text-[10px] text-slate-400">1.2 MB • PDF Document</span>
                       </div>
                     </div>
@@ -2639,7 +2632,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       <button
                         type="button"
                         onClick={() => showToast('Downloading Surat_Jalan.pdf...')}
-                        className="p-1.5 text-slate-400 hover:text-[#2563eb] rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-slate-400 hover:text-[#2563eb] dark:hover:text-blue-400 rounded-lg transition-colors cursor-pointer"
                         title="Download"
                       >
                         <Download size={14} />
@@ -2647,7 +2640,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       <button
                         type="button"
                         onClick={() => showToast('Opening Surat_Jalan.pdf preview...')}
-                        className="p-1.5 text-slate-400 hover:text-[#2563eb] rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-slate-400 hover:text-[#2563eb] dark:hover:text-blue-400 rounded-lg transition-colors cursor-pointer"
                         title="Open"
                       >
                         <ExternalLink size={14} />
@@ -2659,12 +2652,12 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             </div>
 
             {/* Footer Buttons */}
-            <div className="px-6 py-3.5 bg-white border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+            <div className="px-6 py-3.5 bg-white dark:bg-[#0f172a] border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0">
               {!isEditingTransaction ? (
                 <button
                   type="button"
                   onClick={() => handleOpenEditTransaction(detailModalTask)}
-                  className="px-4 py-2 rounded-xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-xs font-bold text-[#0d6efd] cursor-pointer transition-colors shadow-2xs"
+                  className="px-4 py-2 rounded-xl border border-blue-200 dark:border-blue-800/60 bg-blue-50/70 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-xs font-bold text-[#0d6efd] dark:text-blue-400 cursor-pointer transition-colors shadow-2xs"
                 >
                   Edit Info
                 </button>
@@ -2684,7 +2677,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       setReassignNotes('');
                       setReassignModalTask(t);
                     }}
-                    className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer transition-colors"
+                    className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer transition-colors"
                   >
                     Reassign Agent
                   </button>
@@ -2714,50 +2707,50 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
           onClick={(e) => { if (e.target === e.currentTarget) setTimelineModalTask(null); }}
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-xs animate-in fade-in"
         >
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-full max-w-[480px] overflow-hidden flex flex-col max-h-[92vh]">
+          <div className="bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200/90 dark:border-slate-800 w-full max-w-[480px] overflow-hidden flex flex-col max-h-[92vh]">
             {/* Header */}
-            <div className="px-6 pt-5 pb-3 flex items-center justify-between border-b border-slate-100">
-              <h3 className="text-[17px] font-bold text-slate-900 leading-tight">
+            <div className="px-6 pt-5 pb-3 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-[17px] font-bold text-slate-900 dark:text-white leading-tight">
                 Handling Timeline &amp; Audit Log
               </h3>
               <button
                 type="button"
                 onClick={() => setTimelineModalTask(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <X size={18} />
               </button>
             </div>
 
             {/* Scrollable Body Content */}
-            <div className="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs flex-1 bg-white">
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs flex-1 bg-white dark:bg-[#0f172a]">
               {/* INFORMATION Box */}
-              <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-4 space-y-3">
+              <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">INFORMATION</span>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[#2563eb] text-[10px] font-semibold">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">INFORMATION</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-[#2563eb] dark:text-blue-400 text-[10px] font-semibold">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#2563eb]" />
                     <span>Assigned / In Progress</span>
                   </span>
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900 leading-tight">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
                     {timelineModalTask.customer_name || 'PT JPG Trans Indonesia'}
                   </h4>
-                  <span className="text-xs font-bold text-[#2563eb] font-mono block mt-0.5">
+                  <span className="text-xs font-bold text-[#2563eb] dark:text-blue-400 font-mono block mt-0.5">
                     {timelineModalTask.job_number || '#AENAT/2609/0307'}
                   </span>
                 </div>
-                <div className="border-t border-slate-200/70 pt-2.5 grid grid-cols-2 gap-3">
+                <div className="border-t border-slate-200/70 dark:border-slate-700/70 pt-2.5 grid grid-cols-2 gap-3">
                   <div>
                     <span className="text-[10px] text-slate-400 font-medium block">Reporter:</span>
-                    <span className="text-xs font-bold text-slate-800 block mt-0.5">
-                      {activeUserName || 'Adelia'} <span className="text-slate-500 font-normal text-[11px]">(Sales Executive)</span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mt-0.5">
+                      {activeUserName || 'Adelia'} <span className="text-slate-500 dark:text-slate-400 font-normal text-[11px]">(Sales Executive)</span>
                     </span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 font-medium block">Date &amp; Time:</span>
-                    <span className="text-xs font-bold text-slate-800 block mt-0.5">06-10-2026, 14:35 WIB</span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mt-0.5">06-10-2026, 14:35 WIB</span>
                   </div>
                 </div>
               </div>
@@ -2765,32 +2758,32 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               {/* CHRONOLOGICAL ACTIVITY HISTORY Header */}
               <div className="pt-1">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     CHRONOLOGICAL ACTIVITY HISTORY
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[#2563eb] text-[10px] font-bold">
+                  <span className="px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-[#2563eb] dark:text-blue-400 text-[10px] font-bold">
                     4 Logs
                   </span>
                 </div>
 
                 {/* Timeline vertical chain */}
                 <div className="relative pl-6 space-y-4">
-                  <div className="absolute left-[7px] top-2 bottom-3 w-[2px] bg-slate-200" />
+                  <div className="absolute left-[7px] top-2 bottom-3 w-[2px] bg-slate-200 dark:bg-slate-700" />
 
                   {/* Log 1: Reassign Field Agent */}
                   <div className="relative">
-                    <div className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full bg-blue-600 ring-4 ring-blue-100" />
+                    <div className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full bg-blue-600 ring-4 ring-blue-100 dark:ring-blue-950/60" />
                     <div>
                       <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-bold text-slate-900">Reassign Field Agent</h4>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">Reassign Field Agent</h4>
                         <span className="text-[10px] text-slate-400 font-mono">06 Oct 2026 • 14:35 WIB</span>
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        By: <strong className="text-slate-700 font-semibold">{activeUserName || 'Adelia'}</strong> (Sales Executive)
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        By: <strong className="text-slate-700 dark:text-slate-300 font-semibold">{activeUserName || 'Adelia'}</strong> (Sales Executive)
                       </p>
-                      <div className="p-2.5 bg-[#f8fafc] border border-slate-200 rounded-xl text-xs text-slate-700 mt-1.5 leading-relaxed">
+                      <div className="p-2.5 bg-[#f8fafc] dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300 mt-1.5 leading-relaxed">
                         <p>
-                          <span className="font-semibold text-slate-800">Notes:</span> Transferred from Andi Pratama to Marsel Xavier due to previous agent being unavailable at Cikarang site.
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">Notes:</span> Transferred from Andi Pratama to Marsel Xavier due to previous agent being unavailable at Cikarang site.
                         </p>
                       </div>
                     </div>
@@ -2798,24 +2791,24 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
                   {/* Log 2: Field Inspection Result Updated (A3) */}
                   <div className="relative">
-                    <div className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
+                    <div className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100 dark:ring-emerald-950/60" />
                     <div>
                       <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-bold text-slate-900">Field Inspection Result Updated (A3)</h4>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">Field Inspection Result Updated (A3)</h4>
                         <span className="text-[10px] text-slate-400 font-mono">06 Oct 2026 • 10:15 WIB</span>
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        By: <strong className="text-slate-700 font-semibold">{timelineModalTask.field_agent_name || 'Marsel Xavier'}</strong> (Field Agent)
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        By: <strong className="text-slate-700 dark:text-slate-300 font-semibold">{timelineModalTask.field_agent_name || 'Marsel Xavier'}</strong> (Field Agent)
                       </p>
-                      <div className="p-2.5 bg-[#f8fafd] border border-[#e2eaf5] rounded-xl text-xs mt-1.5 space-y-2">
-                        <div className="flex items-start gap-1.5 text-slate-700">
+                      <div className="p-2.5 bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl text-xs mt-1.5 space-y-2">
+                        <div className="flex items-start gap-1.5 text-slate-700 dark:text-slate-300">
                           <CheckCircle size={13} className="text-emerald-500 shrink-0 mt-0.5" />
                           <span>Physical inspection: 10 cargo pieces verified matching client technical specs.</span>
                         </div>
-                        <div className="p-2 bg-white border border-slate-200 rounded-lg flex items-center justify-between text-xs">
+                        <div className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-between text-xs">
                           <div className="flex items-center gap-1.5">
-                            <FileText size={13} className="text-[#2563eb]" />
-                            <span className="text-slate-700 font-medium">Uploaded 2 Cargo Evidence Photos &amp; 1 Signed Delivery Order</span>
+                            <FileText size={13} className="text-[#2563eb] dark:text-blue-400" />
+                            <span className="text-slate-700 dark:text-slate-300 font-medium">Uploaded 2 Cargo Evidence Photos &amp; 1 Signed Delivery Order</span>
                           </div>
                           <button
                             type="button"
@@ -2824,7 +2817,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                               setTimelineModalTask(null);
                               setResultModalTask(t);
                             }}
-                            className="text-[#2563eb] hover:underline font-bold text-[11px] cursor-pointer"
+                            className="text-[#2563eb] dark:text-blue-400 hover:underline font-bold text-[11px] cursor-pointer"
                           >
                             VIEW
                           </button>
@@ -2835,35 +2828,35 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
                   {/* Log 3: Field Agent Assignment */}
                   <div className="relative">
-                    <div className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full bg-blue-600 ring-4 ring-blue-100" />
+                    <div className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full bg-blue-600 ring-4 ring-blue-100 dark:ring-blue-950/60" />
                     <div>
                       <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-bold text-slate-900">Field Agent Assignment</h4>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">Field Agent Assignment</h4>
                         <span className="text-[10px] text-slate-400 font-mono">06 Oct 2026 • 09:00 WIB</span>
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        By: <strong className="text-slate-700 font-semibold">{activeUserName || 'Adelia'}</strong> (Sales Executive)
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        By: <strong className="text-slate-700 dark:text-slate-300 font-semibold">{activeUserName || 'Adelia'}</strong> (Sales Executive)
                       </p>
-                      <div className="p-2.5 bg-[#f8fafc] border border-slate-200 rounded-xl text-xs text-slate-700 mt-1.5">
-                        Assigned to: <strong className="text-slate-900">{timelineModalTask.field_agent_name || 'Andi Pratama'}</strong> <span className="text-slate-500 font-mono text-[11px]">(FA-1092 — HRMS)</span>
+                      <div className="p-2.5 bg-[#f8fafc] dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300 mt-1.5">
+                        Assigned to: <strong className="text-slate-900 dark:text-slate-100">{timelineModalTask.field_agent_name || 'Andi Pratama'}</strong> <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">(FA-1092 — HRMS)</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Log 4: Job Order Created */}
                   <div className="relative">
-                    <div className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full bg-slate-400 ring-4 ring-slate-100" />
+                    <div className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full bg-slate-400 ring-4 ring-slate-100 dark:ring-slate-800" />
                     <div>
                       <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-bold text-slate-900">Job Order Created</h4>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">Job Order Created</h4>
                         <span className="text-[10px] text-slate-400 font-mono">06 Oct 2026 • 08:30 WIB</span>
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        By: <strong className="text-slate-700 font-semibold">{activeUserName || 'Adelia'}</strong> (Sales Executive)
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        By: <strong className="text-slate-700 dark:text-slate-300 font-semibold">{activeUserName || 'Adelia'}</strong> (Sales Executive)
                       </p>
-                      <div className="p-2.5 bg-[#f8fafc] border border-slate-200 rounded-xl text-xs text-slate-700 mt-1.5 flex items-center gap-1.5">
+                      <div className="p-2.5 bg-[#f8fafc] dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300 mt-1.5 flex items-center gap-1.5">
                         <Tag size={12} className="text-slate-400" />
-                        <span>Connected to Transaction ID: <strong className="font-mono text-slate-900">TRX-0526-03689</strong></span>
+                        <span>Connected to Transaction ID: <strong className="font-mono text-slate-900 dark:text-slate-100">TRX-0526-03689</strong></span>
                       </div>
                     </div>
                   </div>
@@ -2872,7 +2865,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             </div>
 
             {/* Bottom Actions Footer */}
-            <div className="px-6 pt-3 pb-4 bg-white border-t border-slate-100 shrink-0">
+            <div className="px-6 pt-3 pb-4 bg-white dark:bg-[#0f172a] border-t border-slate-100 dark:border-slate-800 shrink-0">
               <button
                 type="button"
                 onClick={() => setTimelineModalTask(null)}
@@ -2903,21 +2896,21 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             onClick={(e) => { if (e.target === e.currentTarget) setBackupModalTask(null); }}
             className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-xs animate-in fade-in"
           >
-            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-full max-w-[480px] overflow-hidden flex flex-col max-h-[92vh]">
+            <div className="bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200/90 dark:border-slate-800 w-full max-w-[480px] overflow-hidden flex flex-col max-h-[92vh]">
               {/* Top Header */}
-              <div className="px-6 pt-5 pb-3.5 border-b border-slate-100 flex items-start justify-between shrink-0 bg-white">
+              <div className="px-6 pt-5 pb-3.5 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between shrink-0 bg-white dark:bg-[#0f172a]">
                 <div>
-                  <h3 className="text-[17px] font-bold text-slate-900 tracking-tight leading-tight">
+                  <h3 className="text-[17px] font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
                     Pengajuan Need Backup
                   </h3>
-                  <p className="text-xs text-slate-400 font-normal mt-0.5">
+                  <p className="text-xs text-slate-400 dark:text-slate-400 font-normal mt-0.5">
                     Buat tiket bantuan penanganan masalah untuk tim support/operations.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setBackupModalTask(null)}
-                  className="text-slate-400 hover:text-slate-600 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   title="Close"
                 >
                   <X size={18} />
@@ -2925,19 +2918,19 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               </div>
 
               {/* Scrollable Form Body */}
-              <div className="px-6 py-5 overflow-y-auto space-y-4 text-xs flex-1 bg-white">
+              <div className="px-6 py-5 overflow-y-auto space-y-4 text-xs flex-1 bg-white dark:bg-[#0f172a]">
                 {/* 1. Job Number / Customer */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-bold text-slate-800">
+                    <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
                       Job Number / Customer
                     </label>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#e2e8f0]/80 text-slate-600 text-[10px] font-medium">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#e2e8f0]/80 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-medium">
                       <Lock size={10} className="text-slate-500" />
                       <span>Locked</span>
                     </span>
                   </div>
-                  <div className="w-full bg-[#f1f5f9] border border-slate-200/90 rounded-xl px-3.5 py-2.5 flex items-center justify-between text-xs font-bold text-slate-800 shadow-2xs">
+                  <div className="w-full bg-[#f1f5f9] dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 rounded-xl px-3.5 py-2.5 flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-100 shadow-2xs">
                     <span className="truncate pr-2 font-mono text-[11px] sm:text-xs">
                       {displayJobCustomer}
                     </span>
@@ -2950,21 +2943,21 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
                 {/* 2. Kategori Kendala * */}
                 <div>
-                  <label className="text-xs font-bold text-slate-800 mb-1.5 block">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5 block">
                     Kategori Kendala <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <select
                       value={backupCategory}
                       onChange={(e) => setBackupCategory(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 font-medium outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 appearance-none cursor-pointer pr-10 shadow-2xs transition-colors"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 font-medium outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 dark:focus:ring-blue-900/40 appearance-none cursor-pointer pr-10 shadow-2xs transition-colors"
                     >
-                      <option value="Selisih Koli / Gross Weight">Selisih Koli / Gross Weight</option>
-                      <option value="Kerusakan Kemasan Fisik Kargo">Kerusakan Kemasan Fisik Kargo</option>
-                      <option value="Segel Kontainer Rusak / Tidak Sesuai">Segel Kontainer Rusak / Tidak Sesuai</option>
-                      <option value="Kendala Dokumen Bea Cukai / Pelabuhan">Kendala Dokumen Bea Cukai / Pelabuhan</option>
-                      <option value="Armada Rusak / Butuh Armada Pengganti">Armada Rusak / Butuh Armada Pengganti</option>
-                      <option value="Lainnya / Force Majeure">Lainnya / Force Majeure</option>
+                      <option value="Selisih Koli / Gross Weight" className="dark:bg-slate-900">Selisih Koli / Gross Weight</option>
+                      <option value="Kerusakan Kemasan Fisik Kargo" className="dark:bg-slate-900">Kerusakan Kemasan Fisik Kargo</option>
+                      <option value="Segel Kontainer Rusak / Tidak Sesuai" className="dark:bg-slate-900">Segel Kontainer Rusak / Tidak Sesuai</option>
+                      <option value="Kendala Dokumen Bea Cukai / Pelabuhan" className="dark:bg-slate-900">Kendala Dokumen Bea Cukai / Pelabuhan</option>
+                      <option value="Armada Rusak / Butuh Armada Pengganti" className="dark:bg-slate-900">Armada Rusak / Butuh Armada Pengganti</option>
+                      <option value="Lainnya / Force Majeure" className="dark:bg-slate-900">Lainnya / Force Majeure</option>
                     </select>
                     <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
                   </div>
@@ -2972,7 +2965,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
                 {/* 3. Tingkat Prioritas * */}
                 <div>
-                  <label className="text-xs font-bold text-slate-800 mb-2 block">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-2 block">
                     Tingkat Prioritas <span className="text-red-500">*</span>
                   </label>
                   <div className="grid grid-cols-2 gap-3">
@@ -2981,21 +2974,21 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       onClick={() => setBackupPriority('normal')}
                       className={`border rounded-xl p-3 flex items-start gap-2.5 cursor-pointer transition-all ${
                         backupPriority === 'normal'
-                          ? 'border-2 border-[#0d6efd] bg-[#f0f6ff]/40 shadow-2xs'
-                          : 'border-slate-200 bg-white hover:border-slate-300'
+                          ? 'border-2 border-[#0d6efd] bg-[#f0f6ff]/40 dark:bg-blue-950/30 shadow-2xs'
+                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-600'
                       }`}
                     >
                       <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
                         backupPriority === 'normal'
                           ? 'border-2 border-[#0d6efd]'
-                          : 'border border-slate-300'
+                          : 'border border-slate-300 dark:border-slate-600'
                       }`}>
                         {backupPriority === 'normal' && (
                           <span className="w-2 h-2 rounded-full bg-[#0d6efd]" />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className={`text-xs font-bold block ${backupPriority === 'normal' ? 'text-[#0d6efd]' : 'text-slate-800'}`}>
+                        <span className={`text-xs font-bold block ${backupPriority === 'normal' ? 'text-[#0d6efd] dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>
                           Normal
                         </span>
                         <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -3009,25 +3002,25 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       onClick={() => setBackupPriority('urgent')}
                       className={`border rounded-xl p-3 flex items-start gap-2.5 cursor-pointer transition-all ${
                         backupPriority === 'urgent'
-                          ? 'border-2 border-[#0d6efd] bg-[#f0f6ff]/40 shadow-2xs'
-                          : 'border-slate-200 bg-white hover:border-slate-300'
+                          ? 'border-2 border-[#0d6efd] bg-[#f0f6ff]/40 dark:bg-blue-950/30 shadow-2xs'
+                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-600'
                       }`}
                     >
                       <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
                         backupPriority === 'urgent'
                           ? 'border-2 border-[#0d6efd]'
-                          : 'border border-slate-300'
+                          : 'border border-slate-300 dark:border-slate-600'
                       }`}>
                         {backupPriority === 'urgent' && (
                           <span className="w-2 h-2 rounded-full bg-[#0d6efd]" />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="text-xs font-bold text-[#0d6efd] flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-[#0d6efd] dark:text-blue-400 flex items-center gap-1.5">
                           <span>High / Urgent</span>
                           <span className="w-2 h-2 rounded-full bg-[#ef4444] shrink-0" />
                         </span>
-                        <span className="text-[10px] text-slate-500 block mt-0.5">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">
                           SLA Tindakan Segera (&lt; 30 Menit)
                         </span>
                       </div>
@@ -3037,7 +3030,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
                 {/* 4. Deskripsi Bantuan yang Dibutuhkan * */}
                 <div>
-                  <label className="text-xs font-bold text-slate-800 mb-1.5 block">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5 block">
                     Deskripsi Bantuan yang Dibutuhkan <span className="text-red-500">*</span>
                   </label>
                   <textarea
@@ -3047,7 +3040,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     value={backupDescription}
                     onChange={(e) => setBackupDescription(e.target.value)}
                     placeholder="Jelaskan kebutuhan bantuan operasional, armada, atau perbaikan dokumen..."
-                    className="w-full bg-white border border-slate-300 rounded-xl p-3.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 resize-none transition-colors leading-relaxed shadow-2xs"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3.5 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 dark:focus:ring-blue-900/40 resize-none transition-colors leading-relaxed shadow-2xs"
                   />
                   <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
                     <span>Sertakan PIC atau nomor kontak darurat bila relevan.</span>
@@ -3057,11 +3050,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               </div>
 
               {/* Bottom Footer */}
-              <div className="px-6 py-4 bg-[#f8fafc] border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
+              <div className="px-6 py-4 bg-[#f8fafc] dark:bg-slate-900/60 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setBackupModalTask(null)}
-                  className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 transition-colors cursor-pointer shadow-2xs"
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer shadow-2xs"
                 >
                   Batal
                 </button>

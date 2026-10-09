@@ -66,32 +66,32 @@ export default function DashboardRoute() {
     <div className="space-y-8">
       {/* Welcome Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
           Welcome back, {user?.name || 'User'} 👋
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Role: <span className="font-semibold text-blue-600">{user?.role}</span> — {user?.email}
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Role: <span className="font-semibold text-blue-600 dark:text-blue-400">{user?.role}</span> — {user?.email}
         </p>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {[
-          { label: 'Total Customers', value: '—', color: 'bg-blue-50 text-blue-600' },
-          { label: 'Active Meetings', value: '—', color: 'bg-emerald-50 text-emerald-600' },
-          { label: 'Pending Tasks', value: '—', color: 'bg-amber-50 text-amber-600' },
-          { label: 'Conversations', value: '—', color: 'bg-purple-50 text-purple-600' },
+          { label: 'Total Customers', value: '—', color: 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200/60 dark:border-blue-900/50' },
+          { label: 'Active Meetings', value: '—', color: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-900/50' },
+          { label: 'Pending Tasks', value: '—', color: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200/60 dark:border-amber-900/50' },
+          { label: 'Conversations', value: '—', color: 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border-purple-200/60 dark:border-purple-900/50' },
         ].map((stat) => (
-          <div key={stat.label} className={`rounded-2xl p-5 ${stat.color} border border-current/10`}>
-            <p className="text-xs font-semibold uppercase tracking-wider opacity-70">{stat.label}</p>
+          <div key={stat.label} className={`rounded-2xl p-5 ${stat.color} border`}>
+            <p className="text-xs font-semibold uppercase tracking-wider opacity-80">{stat.label}</p>
             <p className="text-3xl font-bold mt-2">{stat.value}</p>
           </div>
         ))}
       </div>
 
       {/* Info */}
-      <div className="rounded-2xl bg-slate-50 border border-slate-200 p-6">
-        <p className="text-sm text-slate-600">
+      <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 p-6">
+        <p className="text-sm text-slate-600 dark:text-slate-300">
           Use the sidebar navigation to access <strong>Sales Executive</strong> features like Company List, Meeting Schedule, Record Conversation, and more.
         </p>
       </div>
