@@ -3,6 +3,7 @@ import { createCustomer, getCustomers } from "@/lib/services/customer-service";
 import { cancelExpiredOneTimeMeetings } from "@/lib/services/meeting-service";
 import { createSuccessResponse, createErrorResponse } from "@/lib/api-response";
 import { isValidPicPhoneNumber } from "@/lib/validation/pic-phone";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,19 @@ export async function GET(request: NextRequest) {
   const context = request.nextUrl.searchParams.get("context");
   let failedStage = "meeting expiration update";
   try {
+    const supabase = await createServerSupabaseClient();
+    if (!supabase) {
+      return createErrorResponse("DATABASE_001", "Supabase server configuration is missing.", undefined, 503);
+    }
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError) {
+      console.error("[GET /api/v1/customers] login session verification failed", authError);
+      return createErrorResponse("AUTH_002", "Unable to verify the login session. Please try again.", undefined, 503);
+    }
+    if (!user) {
+      return createErrorResponse("AUTH_001", "Please sign in to view customers.", undefined, 401);
+    }
+
     await cancelExpiredOneTimeMeetings();
     failedStage = "customer list query";
     const searchParams = request.nextUrl.searchParams;
@@ -64,6 +78,7 @@ export async function GET(request: NextRequest) {
       : context === "calendar"
         ? "CAL_001"
         : "LIST_001";
+    const status = detail.includes("Authentication is required") ? 401 : 500;
     return createErrorResponse(
       contextError,
       context === "weeklySchedule"
@@ -72,7 +87,7 @@ export async function GET(request: NextRequest) {
           ? `Schedule data is unavailable for this period during ${failedStage}: ${detail}`
           : `Failed to load the customer list during ${failedStage}: ${detail}`,
       undefined,
-      500
+      status
     );
   }
 }

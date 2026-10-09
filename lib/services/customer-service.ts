@@ -87,10 +87,14 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
   };
 
   const supabase = await createServerSupabaseClient();
+  if (!supabase) {
+    throw new Error("Supabase server configuration is missing. Check the deployment environment variables.");
+  }
 
-  if (supabase) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { customers: [], total: 0, page, perPage: validPerPage, totalPages: 1 };
+  {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError) throw new Error(`Unable to verify the login session: ${authError.message}`);
+    if (!user) throw new Error("Authentication is required to load customers.");
     let countQuery = (supabase as any)
       .from("a1_company_list")
       .select("company_list_id", { count: "exact", head: true })
@@ -273,13 +277,6 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
       totalPages: Math.ceil(total / validPerPage) || 1,
     };
   }
-  return {
-    customers: [],
-    total: 0,
-    page: 1,
-    perPage: validPerPage,
-    totalPages: 1,
-  };
 }
 
 /**

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
+import { hasSupabaseConfig, supabase } from '@/lib/supabaseClient';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,10 +19,11 @@ export default function LoginPage() {
   const [countdown, setCountdown] = useState<number>(0);
   const [greeting, setGreeting] = useState<string>('Good Morning');
 
-  // Cek jika sudah login, langsung redirect ke dashboard
+  // Reuse an existing authenticated session; anonymous users stay on login.
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+    if (!hasSupabaseConfig) return;
+    supabase.auth.getUser().then(({ data: { user }, error }) => {
+      if (!error && user) {
         router.replace('/dashboard/sales-executive');
       }
     });
@@ -90,6 +91,11 @@ export default function LoginPage() {
 
     if (isLocked || isPermanentlyBlocked) return;
 
+    if (!hasSupabaseConfig) {
+      setErrorMessage('Supabase is not configured. Add the Supabase URL and public key to the environment, then restart the application.');
+      return;
+    }
+
     if (!email.trim() || !password.trim()) {
       setErrorMessage('Email and Password are required.');
       return;
@@ -117,10 +123,14 @@ export default function LoginPage() {
       });
 
       if (error) {
-        const message = error.message.toLowerCase().includes('email not confirmed')
-          ? 'Email belum dikonfirmasi. Selesaikan konfirmasi melalui email terlebih dahulu.'
-          : 'Email atau password salah.';
-        handleFailedAttempt(message);
+        const normalizedMessage = error.message.toLowerCase();
+        if (normalizedMessage.includes('invalid login credentials')) {
+          handleFailedAttempt('Email or password is incorrect.');
+        } else if (normalizedMessage.includes('email not confirmed')) {
+          setErrorMessage('Your email has not been confirmed. Confirm it using the link sent to your inbox.');
+        } else {
+          setErrorMessage(`Unable to sign in to Supabase: ${error.message}`);
+        }
         return;
       }
 
