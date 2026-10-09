@@ -359,6 +359,11 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
   // Handle create new ticket
   const handleCreateTicket = (e: React.FormEvent) => {
     e.preventDefault();
+    const descWords = newDescription.trim().split(/\s+/).filter(Boolean);
+    if (descWords.length > 200) {
+      alert(`Deskripsi kendala melebihi batas maksimum 200 kata (saat ini ${descWords.length} kata). Mohon persingkat.`);
+      return;
+    }
     const now = new Date();
     const dateStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
     const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
@@ -959,15 +964,8 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end">
-              <button
-                onClick={() => setSelectedTicket(null)}
-                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
-              >
-                Tutup
-              </button>
-            </div>
+            {/* Modal Footer Space */}
+            <div className="p-2 bg-slate-50 border-t border-slate-100 shrink-0" />
           </div>
         </div>
       )}
@@ -1063,9 +1061,18 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                  Deskripsi Kendala &amp; Bantuan yang Dibutuhkan *
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    Deskripsi Kendala &amp; Bantuan yang Dibutuhkan *
+                  </label>
+                  <span className={`text-[10px] font-medium ${
+                    newDescription.trim().split(/\s+/).filter(Boolean).length > 200
+                      ? 'text-red-500 font-bold'
+                      : 'text-slate-400'
+                  }`}>
+                    {newDescription.trim().split(/\s+/).filter(Boolean).length} / 200 kata
+                  </span>
+                </div>
                 <textarea
                   required
                   rows={3}
@@ -1076,14 +1083,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 />
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 cursor-pointer"
-                >
-                  Batal
-                </button>
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end">
                 <button
                   type="submit"
                   className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"

@@ -1148,14 +1148,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               </div>
 
               {/* Footer Buttons */}
-              <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
+              <div className="pt-2 flex items-center justify-end border-t border-slate-100">
                 <button
                   type="submit"
                   className="px-6 py-2.5 rounded-xl bg-[#0d6efd] hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
@@ -1295,14 +1288,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={handleCancelAssign}
-                  className="px-5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 cursor-pointer transition-colors"
-                >
-                  Cancel
-                </button>
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end">
                 <button
                   type="button"
                   onClick={handleConfirmAssign}
@@ -1479,14 +1465,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               </div>
 
               {/* Footer Button: Save Reassignment */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setReassignModalTask(null)}
-                  className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer transition-colors"
-                >
-                  Cancel
-                </button>
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end">
                 <button
                   type="button"
                   onClick={handleConfirmReassign}
@@ -2255,14 +2234,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             </div>
 
             {/* Bottom Actions Footer */}
-            <div className="px-5 sm:px-6 py-3.5 bg-white border-t border-slate-200 flex items-center gap-3 shrink-0">
-              <button
-                type="button"
-                onClick={() => setResultModalTask(null)}
-                className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 cursor-pointer transition-colors"
-              >
-                Close Panel
-              </button>
+            <div className="px-5 sm:px-6 py-3.5 bg-white border-t border-slate-200 flex items-center justify-end gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => {
@@ -2448,14 +2420,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-500 resize-none"
                     />
                   </div>
-                  <div className="flex items-center justify-end gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingTransaction(false)}
-                      className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                    >
-                      Batal
-                    </button>
+                  <div className="flex items-center justify-end pt-1">
                     <button
                       type="button"
                       onClick={handleSaveEditTransaction}
@@ -2803,19 +2768,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               </div>
             </div>
 
-            {/* Bottom Actions Footer */}
-            <div className="px-6 pt-3 pb-4 bg-white border-t border-slate-100 shrink-0">
-              <button
-                type="button"
-                onClick={() => setTimelineModalTask(null)}
-                className="w-full py-2.5 rounded-xl bg-[#0d6efd] hover:bg-blue-700 text-white font-bold text-xs cursor-pointer shadow-xs transition-colors"
-              >
-                Close
-              </button>
-              <p className="text-[9px] text-slate-400 tracking-wider text-center mt-2 font-medium uppercase">
-                PRESS ESC OR CLICK OUTSIDE TO CLOSE LOG
-              </p>
-            </div>
+            {/* Bottom Actions Footer Space */}
+            <div className="p-2 bg-slate-50 border-t border-slate-100 shrink-0" />
           </div>
         </div>
       )}
@@ -2989,14 +2943,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               </div>
 
               {/* Bottom Footer */}
-              <div className="px-6 py-4 bg-[#f8fafc] border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setBackupModalTask(null)}
-                  className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 transition-colors cursor-pointer shadow-2xs"
-                >
-                  Batal
-                </button>
+              <div className="px-6 py-4 bg-[#f8fafc] border-t border-slate-100 flex items-center justify-end shrink-0">
                 <button
                   type="button"
                   onClick={handleConfirmBackup}
