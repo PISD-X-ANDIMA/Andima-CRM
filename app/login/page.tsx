@@ -119,7 +119,8 @@ export default function LoginPage() {
       return;
     }
 
-    const userAccount = REGISTERED_USERS[email.toLowerCase() as keyof typeof REGISTERED_USERS];
+    const normalizedEmail = email.toLowerCase().trim();
+    const userAccount = REGISTERED_USERS[normalizedEmail as keyof typeof REGISTERED_USERS];
     if (userAccount && userAccount.passwordRole === password) {
       setLoginAttempts(0);
       try {

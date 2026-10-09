@@ -313,6 +313,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
 
 export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps) {
   const [tasks, setTasks] = useState<FieldTaskItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [issueFilter, setIssueFilter] = useState('All');
   const [periodFilter, setPeriodFilter] = useState('All');
@@ -338,6 +339,31 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
   const [editingNoteText, setEditingNoteText] = useState('');
   const [assignedAgentName, setAssignedAgentName] = useState('');
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
+
+  const formatTaskDateDisplay = (dateStr?: string | null): string => {
+    if (!dateStr || dateStr === 'MM/DD/YYYY') return '08/10/2026';
+    const clean = dateStr.trim();
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(clean)) return clean;
+    if (/^\d{2}-\d{2}-\d{4}$/.test(clean)) return clean.replace(/-/g, '/');
+    if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+      const [y, m, d] = clean.split('-');
+      return `${d}/${m}/${y}`;
+    }
+    if (/^\d{4}\/\d{2}\/\d{2}$/.test(clean)) {
+      const [y, m, d] = clean.split('/');
+      return `${d}/${m}/${y}`;
+    }
+    try {
+      const d = new Date(clean);
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+    } catch { }
+    return clean.replace(/-/g, '/');
+  };
 
   const countWords = (text: string): number => {
     const trimmed = text.trim();
@@ -563,15 +589,29 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     }
     setTasks(stored);
 
+    setLoading(true);
     // Attempt to hydrate from Supabase database if connected
     getFieldAgentTasks().then(dbTasks => {
       if (dbTasks && dbTasks.length > 0) {
-        setTasks(dbTasks);
+        const allTasks = [...dbTasks, ...stored];
+        const uniqueTasks: FieldTaskItem[] = [];
+        const seenKeys = new Set<string>();
+        for (const t of allTasks) {
+          const key = t.id || t.job_number;
+          if (key && !seenKeys.has(key)) {
+            seenKeys.add(key);
+            uniqueTasks.push(t);
+          }
+        }
+        setTasks(uniqueTasks);
         if (typeof window !== 'undefined') {
-          localStorage.setItem('andima_field_agent_figma_tasks', JSON.stringify(dbTasks));
+          localStorage.setItem('andima_field_agent_figma_tasks', JSON.stringify(uniqueTasks));
         }
       }
-    }).catch(() => { });
+    }).catch(() => { })
+    .finally(() => {
+      setLoading(false);
+    });
   }, []);
 
   const saveTasks = (newTasks: FieldTaskItem[]) => {
@@ -973,7 +1013,18 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
           {/* Table Rows */}
           <tbody className="divide-y divide-slate-200/80 bg-white">
-            {filteredTasks.length === 0 ? (
+            {loading ? (
+              Array.from({ length: 5 }).map((_, idx) => (
+                <tr key={`task-skeleton-${idx}`} className="animate-pulse border-b border-slate-100">
+                  <td className="py-4 px-4"><div className="h-4 bg-slate-200/70 rounded-md w-28 mx-auto" /></td>
+                  <td className="py-4 px-4"><div className="h-4 bg-slate-200/70 rounded-md w-40 mx-auto" /></td>
+                  <td className="py-4 px-4"><div className="h-4 bg-slate-200/70 rounded-md w-20 mx-auto" /></td>
+                  <td className="py-4 px-4"><div className="h-6 bg-slate-200/70 rounded-full w-24 mx-auto" /></td>
+                  <td className="py-4 px-4"><div className="h-4 bg-slate-200/70 rounded-md w-24 mx-auto" /></td>
+                  <td className="py-4 px-4"><div className="h-7 bg-slate-200/70 rounded-xl w-24 mx-auto" /></td>
+                </tr>
+              ))
+            ) : filteredTasks.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-14 text-center">
                   <div className="max-w-md mx-auto flex flex-col items-center">
@@ -1005,8 +1056,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   </td>
 
                   {/* Column 3: Date */}
-                  <td className="py-3.5 px-4 text-center text-xs font-medium text-slate-600 font-mono whitespace-nowrap">
-                    {task.handover_datetime || 'MM/DD/YYYY'}
+                  <td className="py-4 px-4 text-center text-sm font-semibold text-slate-900 whitespace-nowrap">
+                    {formatTaskDateDisplay(task.handover_datetime)}
                   </td>
 
                   {/* Column 4: Status */}
@@ -1121,14 +1172,6 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <span>{notesModalTask.customer_name || 'PT Geodis Freight Forwarding'}</span>
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setNotesModalTask(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
-                title="Tutup"
-              >
-                <X size={20} />
-              </button>
             </div>
 
             {/* Current Issue Status Banner */}
@@ -1251,8 +1294,15 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               </p>
             </div>
 
-            {/* Footer Buttons (No Tutup button per user instruction) */}
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-end">
+            {/* Footer Buttons */}
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setNotesModalTask(null)}
+                className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Close
+              </button>
               <button
                 type="button"
                 onClick={handleSaveTaskNote}
@@ -1276,14 +1326,6 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               <h3 className="text-base font-bold text-slate-900 tracking-tight">
                 New Transaction
               </h3>
-              <button
-                type="button"
-                onClick={() => setIsCreateModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer transition-colors"
-                title="Close"
-              >
-                <X size={18} />
-              </button>
             </div>
 
             {/* Form Body */}
@@ -1412,7 +1454,14 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               </div>
 
               {/* Footer Buttons */}
-              <div className="pt-2 flex items-center justify-end border-t border-slate-100">
+              <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
                 <button
                   type="submit"
                   className="px-6 py-2.5 rounded-xl bg-[#0d6efd] hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
@@ -1437,14 +1486,6 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 <h3 className="text-[17px] font-bold text-slate-900 leading-snug">Field Agent Assignment</h3>
                 <p className="text-xs text-slate-500 mt-0.5">Select a field inspector from HRMS records for this job.</p>
               </div>
-              <button
-                type="button"
-                onClick={handleCancelAssign}
-                className="text-slate-400 hover:text-slate-600 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
-                title="Batal Assignment"
-              >
-                <X size={18} />
-              </button>
             </div>
 
             <div className="px-6 pb-6 space-y-4">
@@ -1552,7 +1593,14 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end">
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleCancelAssign}
+                  className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
                 <button
                   type="button"
                   onClick={handleConfirmAssign}
@@ -1587,13 +1635,6 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setReassignModalTask(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
-              >
-                <X size={18} />
-              </button>
             </div>
 
             {/* Scrollable Body Content */}
@@ -1729,7 +1770,14 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               </div>
 
               {/* Footer Button: Save Reassignment */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end">
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setReassignModalTask(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
                 <button
                   type="button"
                   onClick={handleConfirmReassign}
@@ -1762,14 +1810,6 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   Job <span className="font-semibold text-slate-700">{issueModalTask.job_number}</span> • <span className="font-semibold text-slate-700">{issueModalTask.customer_name}</span>
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setIssueModalTask(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
-                title="Tutup"
-              >
-                <X size={20} />
-              </button>
             </div>
 
             {/* Scrollable Modal Content */}
@@ -1904,7 +1944,14 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             </div>
 
             {/* Footer Button: Save Notes */}
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-end shrink-0">
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIssueModalTask(null)}
+                className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Close
+              </button>
               <button
                 type="button"
                 onClick={handleSaveIssueModalNotes}
@@ -1943,14 +1990,6 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     </span>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setResultModalTask(null)}
-                  className="text-slate-400 hover:text-white text-xs font-medium flex items-center gap-1 cursor-pointer transition-colors"
-                >
-                  <X size={14} />
-                  <span>Close</span>
-                </button>
               </div>
               <div className="mt-2.5">
                 <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">Field Agent Worksheet</h2>
@@ -2338,6 +2377,13 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             <div className="px-5 sm:px-6 py-3.5 bg-white border-t border-slate-200 flex items-center justify-end gap-3 shrink-0">
               <button
                 type="button"
+                onClick={() => setResultModalTask(null)}
+                className="px-5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+              <button
+                type="button"
                 onClick={() => {
                   showToast('Generating official PDF export...');
                   window.print();
@@ -2364,13 +2410,6 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 <h3 className="text-[17px] font-bold text-slate-900 leading-tight">Job / Transaction Detail Summary</h3>
                 <p className="text-xs text-slate-500 font-mono mt-0.5">{detailModalTask.job_number || '#AENAT/2609/0307'}</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setDetailModalTask(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
-              >
-                <X size={18} />
-              </button>
             </div>
 
             {/* Scrollable Body Content */}
@@ -2658,6 +2697,13 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
             {/* Footer Buttons */}
             <div className="px-6 py-3.5 bg-white border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setDetailModalTask(null)}
+                className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Close
+              </button>
               {!isEditingTransaction ? (
                 <button
                   type="button"
@@ -2718,13 +2764,6 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               <h3 className="text-[17px] font-bold text-slate-900 leading-tight">
                 Handling Timeline &amp; Audit Log
               </h3>
-              <button
-                type="button"
-                onClick={() => setTimelineModalTask(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
-              >
-                <X size={18} />
-              </button>
             </div>
 
             {/* Scrollable Body Content */}
@@ -2870,7 +2909,15 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             </div>
 
             {/* Bottom Actions Footer Space */}
-            <div className="p-2 bg-slate-50 border-t border-slate-100 shrink-0" />
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setTimelineModalTask(null)}
+                className="px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -2901,14 +2948,6 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     Buat tiket bantuan penanganan masalah untuk tim support/operations.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setBackupModalTask(null)}
-                  className="text-slate-400 hover:text-slate-600 p-1 -mr-1 -mt-0.5 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
-                  title="Close"
-                >
-                  <X size={18} />
-                </button>
               </div>
 
               {/* Scrollable Form Body */}
@@ -3040,7 +3079,14 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               </div>
 
               {/* Bottom Footer */}
-              <div className="px-6 py-4 bg-[#f8fafc] border-t border-slate-100 flex items-center justify-end shrink-0">
+              <div className="px-6 py-4 bg-[#f8fafc] border-t border-slate-100 flex items-center justify-end gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setBackupModalTask(null)}
+                  className="px-5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
                 <button
                   type="button"
                   onClick={handleConfirmBackup}
@@ -3060,14 +3106,16 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
           onClick={() => setPreviewPhotoUrl(null)}
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 cursor-pointer animate-in fade-in"
         >
-          <div className="relative max-w-2xl max-h-[85vh] overflow-hidden rounded-2xl bg-black">
+          <div className="relative max-w-2xl max-h-[85vh] overflow-hidden rounded-2xl bg-black flex flex-col">
             <img src={previewPhotoUrl} alt="Preview" className="w-full h-auto object-contain" />
-            <button
-              onClick={() => setPreviewPhotoUrl(null)}
-              className="absolute top-3 right-3 p-2 bg-black/60 rounded-full text-white hover:bg-black/90"
-            >
-              <X size={18} />
-            </button>
+            <div className="p-3 bg-slate-900 border-t border-slate-800 flex justify-end">
+              <button
+                onClick={() => setPreviewPhotoUrl(null)}
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

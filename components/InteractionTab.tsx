@@ -1058,13 +1058,18 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
             {/* TABLE BODY */}
             <tbody className="divide-y divide-slate-100">
-              {loading && conversations.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-xs text-slate-400">
-                    <Loader2 size={18} className="animate-spin inline mr-2 text-blue-500" />
-                    Memuat data percakapan...
-                  </td>
-                </tr>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, idx) => (
+                  <tr key={`conv-skeleton-${idx}`} className="animate-pulse border-b border-slate-100">
+                    <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-24 mx-auto" /></td>
+                    <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-32 mx-auto" /></td>
+                    <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-44" /></td>
+                    <td className="py-4.5 px-6"><div className="h-6 bg-slate-200/70 rounded-full w-24 mx-auto" /></td>
+                    <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-24 mx-auto" /></td>
+                    <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-20 mx-auto" /></td>
+                    <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-16 mx-auto" /></td>
+                  </tr>
+                ))
               ) : filteredRows.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-14 text-center">
@@ -1220,14 +1225,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsDetailModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors p-1 cursor-pointer"
-                title="Close"
-              >
-                <X size={18} />
-              </button>
             </div>
 
             {/* Scrollable Body */}
@@ -1376,8 +1373,16 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
               </div>
             </div>
 
-            {/* Modal Bottom Footer (Closed via top-right X button) */}
-            <div className="p-2 bg-slate-50/50 border-t border-slate-100 rounded-b-3xl shrink-0" />
+            {/* Modal Bottom Footer */}
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 rounded-b-3xl flex items-center justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsDetailModalOpen(false)}
+                className="px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1408,14 +1413,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsCreateModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors p-1 cursor-pointer"
-                title="Close"
-              >
-                <X size={18} />
-              </button>
             </div>
 
             {/* Form Body */}
@@ -1807,6 +1804,13 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
                 <div className="flex items-center gap-2.5">
                   <button
+                    type="button"
+                    onClick={() => setIsCreateModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Close
+                  </button>
+                  <button
                     type="submit"
                     disabled={isSubmittingNew}
                     className="px-5 py-2 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
@@ -1825,15 +1829,8 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       {previewModal?.isOpen && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-2xl w-full flex flex-col">
-            <div className="px-5 py-3 border-b border-slate-200 flex items-center justify-between">
+            <div className="px-5 py-3 border-b border-slate-200">
               <span className="font-bold text-sm text-slate-800">{previewModal.title}</span>
-              <button
-                type="button"
-                onClick={() => setPreviewModal(null)}
-                className="text-slate-400 hover:text-slate-700 cursor-pointer"
-              >
-                <X size={18} />
-              </button>
             </div>
             <div className="p-4 flex items-center justify-center min-h-[300px] bg-slate-50">
               <iframe
@@ -1841,6 +1838,15 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 className="w-full h-96 rounded-lg border border-slate-200"
                 title={previewModal.title}
               />
+            </div>
+            <div className="px-5 py-3 border-t border-slate-200 flex justify-end bg-slate-50">
+              <button
+                type="button"
+                onClick={() => setPreviewModal(null)}
+                className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
