@@ -13,6 +13,7 @@ import {
   Briefcase,
   Settings,
   LogOut,
+  X,
 } from "lucide-react";
 
 interface SubMenuItem {
@@ -24,6 +25,11 @@ interface MenuItem {
   name: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
+}
+
+export interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 const salesExecutiveMenus: SubMenuItem[] = [
@@ -70,7 +76,7 @@ const bottomMenuItems: MenuItem[] = [
   },
 ];
 
-export function Sidebar() {
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -89,18 +95,30 @@ export function Sidebar() {
     pathname.startsWith("/dashboard/manage-field-agent-account");
   const isCrmActive = isSalesExecutiveActive;
 
-  return (
-    <aside className="sticky top-0 flex h-screen w-[260px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
-      <div className="mx-4 flex h-[102px] items-center gap-4 border-b border-white/10">
-        <Image src="/andima-logo.png" alt="PT Andima Transportindo" width={470} height={300} className="h-12 w-[54px] shrink-0 object-contain" priority />
-        <div className="leading-tight text-white">
-          <h1 className="text-[17px] font-extrabold tracking-wide">ANDIMA</h1>
-          <p className="text-[13px] font-bold tracking-[0.04em]">TRANSPORTINDO</p>
-          <p className="mt-1 text-[6px] tracking-[0.18em] text-slate-400">ENTERPRISE DIGITAL ECOSYSTEM</p>
+  const sidebarContent = (
+    <>
+      <div className="mx-4 flex h-[102px] items-center justify-between border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <Image src="/andima-logo.png" alt="PT Andima Transportindo" width={470} height={300} className="h-11 w-[50px] shrink-0 object-contain" priority />
+          <div className="leading-tight text-white">
+            <h1 className="text-[16px] font-extrabold tracking-wide">ANDIMA</h1>
+            <p className="text-[12px] font-bold tracking-[0.04em]">TRANSPORTINDO</p>
+            <p className="mt-0.5 text-[6px] tracking-[0.18em] text-slate-400">ENTERPRISE DIGITAL ECOSYSTEM</p>
+          </div>
         </div>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg lg:hidden"
+            aria-label="Close sidebar"
+          >
+            <X size={20} />
+          </button>
+        )}
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pt-14 pb-4">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pt-6 pb-4">
         {topMenuItems.map((item) => {
           const Icon = item.icon;
           const isActive = item.href !== "#" && (
@@ -285,6 +303,28 @@ export function Sidebar() {
           <span>Logout</span>
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex sticky top-0 h-screen w-[260px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Drawer */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            onClick={onClose}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in cursor-pointer"
+          />
+          <aside className="fixed inset-y-0 left-0 z-50 flex h-full w-[270px] flex-col bg-[#102445] shadow-2xl animate-in slide-in-from-left duration-200">
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+    </>
   );
 }

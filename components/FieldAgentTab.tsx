@@ -225,8 +225,8 @@ function WorksheetPanel({ worksheetId, onClose }: { worksheetId: number; onClose
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-end">
-      <div className="bg-white h-full w-full max-w-[600px] flex flex-col animate-in slide-in-from-right shadow-2xl">
-        <div className="bg-slate-900 text-white px-5 py-4 shrink-0">
+      <div className="printable-modal-card bg-white h-full w-full max-w-[600px] flex flex-col animate-in slide-in-from-right shadow-2xl">
+        <div className="printable-header bg-slate-900 text-white px-5 py-4 shrink-0">
           <div className="flex justify-between items-center mb-3">
             <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 tracking-wider">
               C-TRACK FIELD APP <span className="w-1 h-1 rounded-full bg-slate-600" />
@@ -248,7 +248,7 @@ function WorksheetPanel({ worksheetId, onClose }: { worksheetId: number; onClose
           <div className="text-xs text-blue-400 font-bold">#{data?.job_no || '...'}</div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-white">
+        <div className="printable-body flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-white">
           {loading ? (
             <div className="py-20 text-center text-xs text-slate-400">
               <Loader2 size={24} className="animate-spin inline mr-2 text-blue-500" />
@@ -409,11 +409,14 @@ function WorksheetPanel({ worksheetId, onClose }: { worksheetId: number; onClose
           ) : null}
         </div>
 
-        <div className="px-5 py-4 bg-white border-t border-slate-200 flex gap-3 shrink-0">
+        <div className="printable-footer px-5 py-4 bg-white border-t border-slate-200 flex gap-3 shrink-0">
           <button className="w-1/3 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg font-bold text-xs transition-colors" onClick={onClose}>
             Close Panel
           </button>
-          <button onClick={() => window.print()} className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-1.5">
+          <button
+            onClick={() => window.print()}
+            className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+          >
             <Download size={13} /> Export PDF
           </button>
         </div>

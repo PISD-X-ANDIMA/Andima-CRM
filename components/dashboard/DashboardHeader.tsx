@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { Bell, HelpCircle, Check, FileText, ChevronRight, X, Sparkles } from "lucide-react";
+import { Bell, HelpCircle, Check, FileText, ChevronRight, X, Sparkles, Menu } from "lucide-react";
+
+export interface DashboardHeaderProps {
+  onMenuClick?: () => void;
+}
 
 const routeLabels: Record<string, string> = {
   "sales-executive": "Sales Executive",
@@ -49,7 +53,7 @@ const DEFAULT_MANAGER_NOTIFS: ManagerNotificationItem[] = [
   },
 ];
 
-export function DashboardHeader() {
+export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [username, setUsername] = useState("User");
@@ -147,14 +151,27 @@ export function DashboardHeader() {
   }, [pathname]);
 
   return (
-    <header className="mb-6 flex min-h-10 items-center justify-between gap-4 border-b border-slate-100 pb-4">
-      <nav aria-label="Breadcrumb" className="flex min-w-0 flex-wrap items-center gap-1 text-xs uppercase text-slate-500">
-        {breadcrumbs.map((label, index) => (
-          <span key={`${label}-${index}`} className={index === breadcrumbs.length - 1 ? "font-medium text-blue-600" : ""}>
-            {index > 0 && <span className="px-1 text-slate-300">/</span>}{label}
-          </span>
-        ))}
-      </nav>
+    <header className="mb-6 flex min-h-10 items-center justify-between gap-3 border-b border-slate-100 pb-4">
+      <div className="flex items-center gap-2 min-w-0">
+        {onMenuClick && (
+          <button
+            type="button"
+            onClick={onMenuClick}
+            className="p-2 -ml-1 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded-lg lg:hidden shrink-0 cursor-pointer"
+            aria-label="Toggle navigation menu"
+          >
+            <Menu size={20} />
+          </button>
+        )}
+
+        <nav aria-label="Breadcrumb" className="flex min-w-0 flex-wrap items-center gap-1 text-[11px] sm:text-xs uppercase text-slate-500">
+          {breadcrumbs.map((label, index) => (
+            <span key={`${label}-${index}`} className={index === breadcrumbs.length - 1 ? "font-medium text-blue-600 truncate" : "hidden sm:inline"}>
+              {index > 0 && <span className="px-1 text-slate-300 hidden sm:inline">/</span>}{label}
+            </span>
+          ))}
+        </nav>
+      </div>
 
       {/* Right User Controls & Notification Bell */}
       <div className="flex shrink-0 items-center gap-3">

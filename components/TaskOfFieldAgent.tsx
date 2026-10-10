@@ -2484,9 +2484,9 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       {/* ========================================================================= */}
       {resultModalTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-full max-w-[520px] overflow-hidden flex flex-col max-h-[92vh]">
+          <div className="printable-modal-card bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-full max-w-[520px] overflow-hidden flex flex-col max-h-[92vh]">
             {/* Top Dark Navy Header */}
-            <div className="bg-[#0b1329] px-5 sm:px-6 py-4 text-white shrink-0">
+            <div className="printable-header bg-[#0b1329] px-5 sm:px-6 py-4 text-white shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono tracking-wider text-slate-400 font-bold uppercase">
@@ -2515,7 +2515,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             </div>
 
             {/* Scrollable Body Content */}
-            <div className="p-5 sm:p-6 overflow-y-auto space-y-5 text-xs flex-1 bg-white">
+            <div className="printable-body p-5 sm:p-6 overflow-y-auto space-y-4 text-xs flex-1 bg-white">
               {/* E-3: Data Hasil Pemeriksaan Tidak Ditemukan (UC-CRM-A2-001 TC-004) */}
               {(resultModalTask.job_number.includes('999') || resultModalTask.job_number.toLowerCase().includes('notfound')) && (
                 <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700 animate-in fade-in">
@@ -2526,8 +2526,6 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   </div>
                 </div>
               )}
-
-
 
               {/* E-2: Hasil Pemeriksaan Belum Tersedia (UC-CRM-A2-001 TC-003) */}
               {resultModalTask.status === 'Completed' && resultModalTask.photo_count === 0 && resultModalTask.doc_count === 0 && (
@@ -2551,14 +2549,14 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     ID : {resultModalTask.job_number.replace(/^#/, '') || 'DSVEXP/2605/2551'}
                   </span>
                 </div>
-                <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3.5">
+                <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <span className="text-[10px] text-slate-400 font-medium block">Job Number</span>
                       <span className="text-xs font-bold text-slate-900 block mt-0.5 font-mono">
                         {resultModalTask.job_number || '#DSVEXP/2605/2551'}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-medium block mt-2.5">Sales</span>
+                      <span className="text-[10px] text-slate-400 font-medium block mt-2">Sales</span>
                       <span className="text-xs font-bold text-slate-900 block mt-0.5">
                         Adelia
                       </span>
@@ -2568,7 +2566,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       <span className="text-xs font-bold text-slate-900 block mt-0.5 font-mono">
                         TRX-0526-03382
                       </span>
-                      <span className="text-[10px] text-slate-400 font-medium block mt-2.5">Created By</span>
+                      <span className="text-[10px] text-slate-400 font-medium block mt-2">Created By</span>
                       <span className="text-xs font-bold text-slate-900 block mt-0.5">
                         {resultModalTask.field_agent_name || 'Marsel'}
                       </span>
@@ -2583,7 +2581,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <Truck size={13} className="text-[#2563eb]" />
                   <span>SHIPMENT INFORMATION</span>
                 </div>
-                <div className="bg-[#f8fafd] border border-[#e2e8f0] rounded-xl p-3.5 space-y-2">
+                <div className="bg-[#f8fafd] border border-[#e2e8f0] rounded-xl p-3 space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-500">Customer:</span>
                     <span className="font-bold text-slate-900 text-right">{resultModalTask.customer_name || 'PT DSV Transport Indonesia'}</span>
@@ -2613,7 +2611,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <Clock size={13} className="text-[#2563eb]" />
                   <span>WAKTU SERAH TERIMA</span>
                 </div>
-                <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3.5 space-y-2">
+                <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3 space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
                     <span className="flex items-center gap-1.5 text-slate-500">
                       <Calendar size={13} className="text-slate-400" />
@@ -2642,19 +2640,19 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <span>DATA FISIK BARANG</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2.5">
-                  <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3 text-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">JUMLAH COIL</span>
-                    <span className="text-base font-extrabold text-slate-900 mt-0.5 block">12</span>
+                  <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-2.5 text-center">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">JUMLAH COIL</span>
+                    <span className="text-sm font-extrabold text-slate-900 mt-0.5 block">12</span>
                   </div>
-                  <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3 text-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">ACTUAL PIECES</span>
-                    <span className="text-base font-extrabold text-slate-900 mt-0.5 block">
+                  <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-2.5 text-center">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">ACTUAL PIECES</span>
+                    <span className="text-sm font-extrabold text-slate-900 mt-0.5 block">
                       {resultModalTask.cargo_pieces || '12 Pcs'}
                     </span>
                   </div>
-                  <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3 text-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">GROSS WEIGHT</span>
-                    <span className="text-base font-extrabold text-[#2563eb] mt-0.5 block">
+                  <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-2.5 text-center">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">GROSS WEIGHT</span>
+                    <span className="text-sm font-extrabold text-[#2563eb] mt-0.5 block">
                       {resultModalTask.gross_weight || '2,450 Kg'}
                     </span>
                   </div>
@@ -2673,20 +2671,20 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     <span>4/4 Verified</span>
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-2 gap-2">
                   {/* Card 1: 1. Foto Keseluruhan */}
                   <div className="border border-[#e2eaf5] rounded-xl overflow-hidden bg-white shadow-2xs">
                     <div
-                      className="bg-[#edf2f9] h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
+                      className="printable-photo-box bg-[#edf2f9] h-16 flex flex-col items-center justify-center p-1.5 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
                       onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[0] || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800')}
                     >
-                      <div className="w-7 h-7 rounded-full bg-blue-100 text-[#2563eb] flex items-center justify-center shadow-xs">
-                        <Camera size={14} />
+                      <div className="w-6 h-6 rounded-full bg-blue-100 text-[#2563eb] flex items-center justify-center shadow-xs">
+                        <Camera size={12} />
                       </div>
-                      <span className="text-[9px] text-slate-400 font-mono mt-1">IMG_8411.JPG • 10:12</span>
+                      <span className="text-[9px] text-slate-400 font-mono mt-0.5">IMG_8411.JPG • 10:12</span>
                     </div>
-                    <div className="px-2.5 py-1.5 bg-white flex items-center justify-between border-t border-slate-100">
-                      <span className="text-[11px] font-semibold text-slate-800">1. Foto Keseluruhan</span>
+                    <div className="px-2 py-1 bg-white flex items-center justify-between border-t border-slate-100">
+                      <span className="text-[10px] font-semibold text-slate-800">1. Foto Keseluruhan</span>
                       <span className="text-[10px] font-bold text-emerald-600">OK</span>
                     </div>
                   </div>
@@ -2694,16 +2692,16 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   {/* Card 2: 2. Marking / Label */}
                   <div className="border border-[#e2eaf5] rounded-xl overflow-hidden bg-white shadow-2xs">
                     <div
-                      className="bg-[#edf2f9] h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
+                      className="printable-photo-box bg-[#edf2f9] h-16 flex flex-col items-center justify-center p-1.5 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
                       onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[1] || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800')}
                     >
-                      <div className="w-7 h-7 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shadow-xs">
-                        <Tag size={14} />
+                      <div className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shadow-xs">
+                        <Tag size={12} />
                       </div>
-                      <span className="text-[9px] text-slate-400 font-mono mt-1">IMG_8412.JPG • 10:14</span>
+                      <span className="text-[9px] text-slate-400 font-mono mt-0.5">IMG_8412.JPG • 10:14</span>
                     </div>
-                    <div className="px-2.5 py-1.5 bg-white flex items-center justify-between border-t border-slate-100">
-                      <span className="text-[11px] font-semibold text-slate-800">2. Marking / Label</span>
+                    <div className="px-2 py-1 bg-white flex items-center justify-between border-t border-slate-100">
+                      <span className="text-[10px] font-semibold text-slate-800">2. Marking / Label</span>
                       <span className="text-[10px] font-bold text-emerald-600">Match</span>
                     </div>
                   </div>
@@ -2711,16 +2709,16 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   {/* Card 3: 3. Foto Seal */}
                   <div className="border border-[#e2eaf5] rounded-xl overflow-hidden bg-white shadow-2xs">
                     <div
-                      className="bg-[#edf2f9] h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
+                      className="printable-photo-box bg-[#edf2f9] h-16 flex flex-col items-center justify-center p-1.5 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
                       onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[2] || 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?w=800')}
                     >
-                      <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
-                        <Lock size={14} />
+                      <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
+                        <Lock size={12} />
                       </div>
-                      <span className="text-[9px] text-slate-400 font-mono mt-1">IMG_8413.JPG • 10:15</span>
+                      <span className="text-[9px] text-slate-400 font-mono mt-0.5">IMG_8413.JPG • 10:15</span>
                     </div>
-                    <div className="px-2.5 py-1.5 bg-white flex items-center justify-between border-t border-slate-100">
-                      <span className="text-[11px] font-semibold text-slate-800">3. Foto Seal</span>
+                    <div className="px-2 py-1 bg-white flex items-center justify-between border-t border-slate-100">
+                      <span className="text-[10px] font-semibold text-slate-800">3. Foto Seal</span>
                       <span className="text-[10px] font-bold text-emerald-600">Intact</span>
                     </div>
                   </div>
@@ -2728,16 +2726,16 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   {/* Card 4: 4. Area Kerusakan */}
                   <div className="border border-[#e2eaf5] rounded-xl overflow-hidden bg-white shadow-2xs">
                     <div
-                      className="bg-[#edf2f9] h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
+                      className="printable-photo-box bg-[#edf2f9] h-16 flex flex-col items-center justify-center p-1.5 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
                       onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[3] || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800')}
                     >
-                      <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
-                        <Shield size={14} />
+                      <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
+                        <Shield size={12} />
                       </div>
-                      <span className="text-[9px] text-slate-400 font-mono mt-1">Inspected • 10:20</span>
+                      <span className="text-[9px] text-slate-400 font-mono mt-0.5">Inspected • 10:20</span>
                     </div>
-                    <div className="px-2.5 py-1.5 bg-white flex items-center justify-between border-t border-slate-100">
-                      <span className="text-[11px] font-semibold text-slate-800">4. Area Kerusakan</span>
+                    <div className="px-2 py-1 bg-white flex items-center justify-between border-t border-slate-100">
+                      <span className="text-[10px] font-semibold text-slate-800">4. Area Kerusakan</span>
                       <span className="text-[9px] font-bold text-emerald-600">No damage reported</span>
                     </div>
                   </div>
@@ -2750,11 +2748,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <FileText size={13} className="text-[#2563eb]" />
                   <span>DOKUMEN PENDUKUNG &amp; NAMA PETUGAS</span>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-3 bg-white border border-[#e2eaf5] rounded-xl shadow-2xs">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
-                        <FileText size={16} />
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between p-2.5 bg-white border border-[#e2eaf5] rounded-xl shadow-2xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
+                        <FileText size={14} />
                       </div>
                       <div>
                         <span className="text-xs font-bold text-slate-800 block">Packing List.pdf</span>
@@ -2770,10 +2768,10 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-white border border-[#e2eaf5] rounded-xl shadow-2xs">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
-                        <FileText size={16} />
+                  <div className="flex items-center justify-between p-2.5 bg-white border border-[#e2eaf5] rounded-xl shadow-2xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
+                        <FileText size={14} />
                       </div>
                       <div>
                         <span className="text-xs font-bold text-slate-800 block">MSDS.pdf</span>
@@ -2790,7 +2788,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   </div>
 
                   {/* Pihak Penyerah & Pihak Penerima Box */}
-                  <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3 grid grid-cols-2 gap-3 mt-1">
+                  <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-2.5 grid grid-cols-2 gap-3 mt-1">
                     <div>
                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">PIHAK PENYERAH</span>
                       <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5 mt-0.5">
@@ -2815,8 +2813,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <CheckCircle size={13} className="text-[#2563eb]" />
                   <span>CHECKLIST CENTANG &amp; STATUS MASALAH</span>
                 </div>
-                <div className="bg-white border border-[#e2eaf5] rounded-xl p-3.5 space-y-2.5">
-                  <div className="space-y-2">
+                <div className="bg-white border border-[#e2eaf5] rounded-xl p-3 space-y-2">
+                  <div className="space-y-1.5">
                     {[
                       'Quantity & weight match',
                       'Visual condition good',
@@ -2836,7 +2834,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     ))}
                   </div>
 
-                  <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
                     <div className="flex items-center gap-1.5">
                       <span className="text-slate-500 text-[11px]">Dangerous Goods:</span>
                       <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px]">
@@ -2861,7 +2859,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <span>ISSUE</span>
                 </div>
                 {resultModalTask.has_issue ? (
-                  <div className="bg-[#fef2f2] border border-[#fecaca] rounded-xl p-3.5 flex items-start gap-3">
+                  <div className="bg-[#fef2f2] border border-[#fecaca] rounded-xl p-3 flex items-start gap-3">
                     <div className="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0 mt-0.5">
                       <AlertOctagon size={14} />
                     </div>
@@ -2873,7 +2871,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-[#ecfdf5] border border-[#a7f3d0] rounded-xl p-3.5 flex items-start gap-3">
+                  <div className="bg-[#ecfdf5] border border-[#a7f3d0] rounded-xl p-3 flex items-start gap-3">
                     <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
                       <Check size={14} />
                     </div>
@@ -2889,7 +2887,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             </div>
 
             {/* Bottom Actions Footer */}
-            <div className="px-5 sm:px-6 py-3.5 bg-white border-t border-slate-200 flex items-center justify-end gap-3 shrink-0">
+            <div className="printable-footer px-5 sm:px-6 py-3.5 bg-white border-t border-slate-200 flex items-center justify-end gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setResultModalTask(null)}
@@ -2900,7 +2898,6 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               <button
                 type="button"
                 onClick={() => {
-                  showToast('Generating official PDF export...');
                   window.print();
                 }}
                 className="flex-1 py-2.5 px-4 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white text-xs font-bold shadow-xs cursor-pointer flex items-center justify-center gap-2 transition-colors"
