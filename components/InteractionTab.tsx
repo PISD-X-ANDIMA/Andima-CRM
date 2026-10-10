@@ -341,28 +341,8 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
             };
           });
 
-          const parseAndSanitizeLocal = (raw: string | null): ConversationDisplayItem[] => {
-            if (!raw) return [];
-            try {
-              const parsed: ConversationDisplayItem[] = JSON.parse(raw);
-              return parsed.map(item => {
-                const cleanedAtts = (item.evidence_attachments || []).filter(
-                  att => att.name !== 'Notula_Meeting_03032026.pdf' && att.name !== 'SS_WA_Confirmation.png'
-                );
-                return { ...item, evidence_attachments: cleanedAtts };
-              });
-            } catch {
-              return [];
-            }
-          };
-
-          let localSaved: ConversationDisplayItem[] = [];
-          if (typeof window !== 'undefined') {
-            localSaved = parseAndSanitizeLocal(localStorage.getItem('andima_recorded_conversations'));
-          }
-
           // Gabungkan seluruh sumber data dan pastikan setiap id unik
-          const allItems = [...localSaved, ...mappedDb, ...SCREENSHOT_DEFAULT_CONVERSATIONS];
+          const allItems = [...mappedDb, ...SCREENSHOT_DEFAULT_CONVERSATIONS];
           const uniqueItems: ConversationDisplayItem[] = [];
           const seenIds = new Set<string>();
 
@@ -373,22 +353,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           }
           setConversations(uniqueItems);
         } else {
-          let localSaved: ConversationDisplayItem[] = [];
-          if (typeof window !== 'undefined') {
-            try {
-              const raw = localStorage.getItem('andima_recorded_conversations');
-              if (raw) {
-                const parsed: ConversationDisplayItem[] = JSON.parse(raw);
-                localSaved = parsed.map(item => ({
-                  ...item,
-                  evidence_attachments: (item.evidence_attachments || []).filter(
-                    att => att.name !== 'Notula_Meeting_03032026.pdf' && att.name !== 'SS_WA_Confirmation.png'
-                  )
-                }));
-              }
-            } catch {}
-          }
-          const allItems = [...localSaved, ...SCREENSHOT_DEFAULT_CONVERSATIONS];
+          const allItems = [...SCREENSHOT_DEFAULT_CONVERSATIONS];
           const uniqueItems: ConversationDisplayItem[] = [];
           const seenIds = new Set<string>();
           for (const item of allItems) {
@@ -611,14 +576,16 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         ...editAuditLogs.map(l => ({ ...l, isLatest: false }))
       ];
 
-      // If it has a real DB UUID id, update through API
-      if (!selectedConversation.id.startsWith('mock-')) {
-        await updateApiConversation({
-          id: selectedConversation.id,
-          summary: editSummary.trim(),
-          status: editStatus as any,
-          document_urls: editAttachments.map(a => a.url)
-        });
+      // Update through API unconditionally
+      const res = await updateApiConversation({
+        id: selectedConversation.id,
+        summary: editSummary.trim(),
+        status: editStatus as any,
+        document_urls: editAttachments.map(a => a.url)
+      });
+      
+      if (!res.success) {
+        throw new Error(res.error || "Gagal mengubah data ke backend");
       }
 
       // Update local state
@@ -633,14 +600,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       };
 
       setConversations(prev => prev.map(c => c.id === selectedConversation.id ? updatedItem : c));
-      if (typeof window !== 'undefined') {
-        try {
-          const raw = localStorage.getItem('andima_recorded_conversations');
-          const stored: ConversationDisplayItem[] = raw ? JSON.parse(raw) : [];
-          const updatedStored = stored.map(s => s.id === selectedConversation.id ? updatedItem : s);
-          localStorage.setItem('andima_recorded_conversations', JSON.stringify(updatedStored));
-        } catch {}
-      }
       setSelectedConversation(updatedItem);
       setEditAuditLogs(updatedAuditLogs);
       setIsEditDetailMode(false);
@@ -792,6 +751,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       if (matchedCompany) {
         matchedCustomerId = matchedCompany.company_list_id;
       }
+      
+      if (!matchedCustomerId) {
+        throw new Error("Customer tidak valid atau tidak ditemukan di database.");
+      }
 
       // TC-005 (Job Number opsional) & TC-006 (Lebih dari satu Job Number)
       let finalJobNumber = '-';
@@ -812,28 +775,24 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
       const displayDate = formatDateDisplay(recordDate);
 
-      // Try creating in backend
+      // Create in backend
       let createdBackendItem: RecordConversationItem | undefined;
-      try {
-        if (matchedCustomerId) {
-          const res = await createApiConversation({
-            customer_id: matchedCustomerId,
-            customer_code: custCode,
-            job_number: finalJobNumber !== '-' ? finalJobNumber.replace(/^#/, '') : undefined,
-            channel_type: channelSelection,
-            conversation_date: recordDate.includes('-') && recordDate.length === 10 ? recordDate : new Date().toISOString().split('T')[0],
-            summary: recordSummary.trim(),
-            need_assistance: false,
-            urgency_level: 'standard',
-            sales_pic_name: activeUserName,
-            uploaded_files: newUploadedFiles
-          });
-          if (res.success && res.data) {
-            createdBackendItem = res.data;
-          }
-        }
-      } catch (backendErr) {
-        console.warn('Backend insert skipped, saving to client view:', backendErr);
+      const res = await createApiConversation({
+        customer_id: matchedCustomerId,
+        customer_code: custCode,
+        job_number: finalJobNumber !== '-' ? finalJobNumber.replace(/^#/, '') : undefined,
+        channel_type: channelSelection,
+        conversation_date: recordDate.includes('-') && recordDate.length === 10 ? recordDate : new Date().toISOString().split('T')[0],
+        summary: recordSummary.trim(),
+        need_assistance: false,
+        urgency_level: 'standard',
+        sales_pic_name: activeUserName,
+        uploaded_files: newUploadedFiles
+      });
+      if (res.success && res.data) {
+        createdBackendItem = res.data;
+      } else {
+        throw new Error(res.error || "Gagal menyimpan data ke backend");
       }
 
       const createdAttachments: EvidenceAttachmentItem[] = newUploadedFiles.map((f, idx) => {
@@ -876,16 +835,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
       setConversations(prev => {
         const filteredPrev = prev.filter(it => it.id !== newItem.id);
-        const next = [newItem, ...filteredPrev];
-        if (typeof window !== 'undefined') {
-          try {
-            const raw = localStorage.getItem('andima_recorded_conversations');
-            const prevStored: ConversationDisplayItem[] = raw ? JSON.parse(raw) : [];
-            const filteredStored = prevStored.filter(it => it.id !== newItem.id);
-            localStorage.setItem('andima_recorded_conversations', JSON.stringify([newItem, ...filteredStored]));
-          } catch {}
-        }
-        return next;
+        return [newItem, ...filteredPrev];
       });
 
       setRecordSummary('');
