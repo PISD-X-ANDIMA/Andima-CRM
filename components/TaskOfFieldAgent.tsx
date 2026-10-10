@@ -133,7 +133,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     field_agent_name: 'Maselinus',
     status: 'Completed',
     has_issue: false,
-    photo_count: 5,
+    photo_count: 4,
     doc_count: 2,
     handover_datetime: '08/10/2026',
     handover_location: 'Soekarno-Hatta Cargo Terminal 530, Cengkareng',
@@ -170,7 +170,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     variance_tolerance: '0%',
     issue_reported_at: '08 Oct 2026, 10:30 WIB',
     handover_location: 'Area Cargo MM2100, Cikarang Barat',
-    photo_count: 5,
+    photo_count: 4,
     doc_count: 2,
     notes: 'Hasil rapat internal: Kendala selisih koli telah akan dselesaikan secara langsung bersama Tim Supervisor Warehouse Cikarang. 2 koli tertinggal akan diangkut ke armada kedua.',
     issue_photos: [
@@ -232,7 +232,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     status: 'Completed',
     has_issue: false,
     issue_status: 'None',
-    photo_count: 5,
+    photo_count: 4,
     doc_count: 3,
     notes: '',
     result_photos: [
@@ -264,7 +264,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     field_agent_name: 'Khoirul Anwar',
     status: 'Completed',
     has_issue: false,
-    photo_count: 5,
+    photo_count: 4,
     doc_count: 3,
     notes: '',
     handover_datetime: '08/10/2026',
@@ -284,7 +284,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     field_agent_name: 'Khoirul Anwar',
     status: 'Completed',
     has_issue: false,
-    photo_count: 5,
+    photo_count: 4,
     doc_count: 2,
     notes: '',
     handover_datetime: '08/10/2026',
@@ -332,7 +332,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     field_agent_name: 'Maselinus',
     status: 'Completed',
     has_issue: false,
-    photo_count: 5,
+    photo_count: 4,
     doc_count: 4,
     handover_datetime: '09/10/2026',
     handover_location: 'Warehouse MM2100 Cikarang',
@@ -360,7 +360,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     has_issue: true,
     issue_status: 'Issue',
     issue_note: 'Kemasan karton luar mengalami kelembapan berlebih.',
-    photo_count: 5,
+    photo_count: 4,
     doc_count: 3,
     handover_datetime: '10/10/2026',
     handover_location: 'Marunda Logistics Park',
@@ -373,7 +373,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     field_agent_name: 'Andi Pratama',
     status: 'Completed',
     has_issue: false,
-    photo_count: 5,
+    photo_count: 4,
     doc_count: 2,
     handover_datetime: '10/10/2026',
     handover_location: 'Tanjung Priok Gate 2',
@@ -399,7 +399,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     field_agent_name: 'Maselinus',
     status: 'Completed',
     has_issue: false,
-    photo_count: 5,
+    photo_count: 4,
     doc_count: 2,
     handover_datetime: '07/10/2026',
     handover_location: 'Bandara Halim Cargo Area',
@@ -427,7 +427,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     field_agent_name: 'Khoirul Anwar',
     status: 'Completed',
     has_issue: false,
-    photo_count: 5,
+    photo_count: 4,
     doc_count: 1,
     handover_datetime: '07/10/2026',
     handover_location: 'Tanjung Priok Pier 3',
@@ -453,7 +453,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     field_agent_name: 'Budi Santoso',
     status: 'Completed',
     has_issue: false,
-    photo_count: 5,
+    photo_count: 4,
     doc_count: 2,
     handover_datetime: '06/10/2026',
     handover_location: 'Sunda Kelapa Gate 1',
@@ -468,7 +468,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     has_issue: true,
     issue_status: 'Issue',
     issue_note: 'Pallet kayu tidak memiliki stempel sertifikasi ISPM-15.',
-    photo_count: 5,
+    photo_count: 4,
     doc_count: 2,
     handover_datetime: '06/10/2026',
     handover_location: 'Warehouse MM2100',
@@ -494,7 +494,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     field_agent_name: 'Khoirul Anwar',
     status: 'Completed',
     has_issue: false,
-    photo_count: 5,
+    photo_count: 4,
     doc_count: 3,
     handover_datetime: '05/10/2026',
     handover_location: 'Soekarno Hatta Terminal 530',
@@ -522,7 +522,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     has_issue: true,
     issue_status: 'Issue',
     issue_note: 'Terdapat kerusakan minor pada sudut peti kemas.',
-    photo_count: 5,
+    photo_count: 4,
     doc_count: 1,
     handover_datetime: '04/10/2026',
     handover_location: 'Marunda Logistics Hub',
@@ -535,7 +535,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     field_agent_name: 'Maselinus',
     status: 'Completed',
     has_issue: false,
-    photo_count: 5,
+    photo_count: 4,
     doc_count: 2,
     handover_datetime: '04/10/2026',
     handover_location: 'Tanjung Priok Gate 1',
@@ -642,7 +642,13 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
 
   const formatTaskDateDisplay = (dateStr?: string | null): string => {
-    if (!dateStr || dateStr === 'MM/DD/YYYY') return '08/10/2026';
+    if (!dateStr || dateStr === 'MM/DD/YYYY') {
+      const now = new Date();
+      const dd = String(now.getDate()).padStart(2, '0');
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const yyyy = now.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    }
     const clean = dateStr.trim();
     if (/^\d{2}\/\d{2}\/\d{4}$/.test(clean)) return clean;
     if (/^\d{2}-\d{2}-\d{4}$/.test(clean)) return clean.replace(/-/g, '/');
@@ -672,13 +678,13 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     return trimmed.split(/\s+/).filter(Boolean).length;
   };
 
-  const handleMax200WordsChange = (
+  const handleMax50WordsChange = (
     value: string,
     setter: (val: string) => void
   ) => {
     const words = value.trim() ? value.trim().split(/\s+/).filter(Boolean) : [];
-    if (words.length > 200) {
-      const truncated = value.split(/\s+/).slice(0, 200).join(' ');
+    if (words.length > 50) {
+      const truncated = value.split(/\s+/).slice(0, 50).join(' ');
       setter(truncated);
     } else {
       setter(value);
@@ -1323,43 +1329,43 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       if (!periodFilter || periodFilter === 'All' || periodFilter === 'All Periods') return true;
 
       const taskDate = parseTaskDate(t);
-      if (!taskDate) return true;
+      if (!taskDate) return false;
 
       const now = new Date();
-      const refToday = new Date(2026, 9, 8); // Seed date 08 Oct 2026
 
       if (periodFilter === 'Today') {
-        const isTodayActual = (
+        return (
           taskDate.getDate() === now.getDate() &&
           taskDate.getMonth() === now.getMonth() &&
           taskDate.getFullYear() === now.getFullYear()
         );
-        const isTodayRef = (
-          taskDate.getDate() === refToday.getDate() &&
-          taskDate.getMonth() === refToday.getMonth() &&
-          taskDate.getFullYear() === refToday.getFullYear()
-        );
-        return isTodayActual || isTodayRef;
       }
 
       if (periodFilter === 'This Week') {
-        const diffTimeNow = Math.abs(now.getTime() - taskDate.getTime());
-        const diffDaysNow = Math.ceil(diffTimeNow / (1000 * 60 * 60 * 24));
-        const diffTimeRef = Math.abs(refToday.getTime() - taskDate.getTime());
-        const diffDaysRef = Math.ceil(diffTimeRef / (1000 * 60 * 60 * 24));
-        return diffDaysNow <= 7 || diffDaysRef <= 7;
+        const startOfWeek = new Date(now);
+        const dayOfWeek = now.getDay();
+        const diffToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+        startOfWeek.setDate(now.getDate() + diffToMonday);
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        return taskDate >= startOfWeek && taskDate <= endOfWeek;
       }
 
       if (periodFilter === 'This Month') {
-        const isSameMonthNow = taskDate.getMonth() === now.getMonth() && taskDate.getFullYear() === now.getFullYear();
-        const isSameMonthRef = taskDate.getMonth() === refToday.getMonth() && taskDate.getFullYear() === refToday.getFullYear();
-        return isSameMonthNow || isSameMonthRef;
+        return (
+          taskDate.getMonth() === now.getMonth() &&
+          taskDate.getFullYear() === now.getFullYear()
+        );
       }
 
       const formattedTaskDate = formatTaskDateDisplay(t.handover_datetime);
       if (periodFilter === formattedTaskDate) return true;
 
-      return true;
+      return false;
     })();
 
     const matchesRoleAccess = (() => {
@@ -1452,7 +1458,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Dropdown 1: Issue */}
+            {/* Dropdown 1: Status */}
             <div className="relative min-w-[130px]">
               <select
                 value={issueFilter}
@@ -1462,10 +1468,9 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 }}
                 className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
               >
-                <option value="All">Issue</option>
+                <option value="All">Status</option>
                 <option value="Issue">● Issue</option>
                 <option value="Completed">✓ Completed</option>
-                <option value="No Issue">No Issue</option>
               </select>
               <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
             </div>
@@ -1604,7 +1609,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     <div className="flex flex-col items-center justify-center">
                       <div className="flex items-center gap-1 text-[11px] text-slate-400">
                         <Camera size={11} className="text-slate-400" />
-                        <span>{task.photo_count || 5}</span>
+                        <span>{task.photo_count === 0 ? 0 : 4}</span>
                         <FileText size={11} className="text-slate-400 ml-1" />
                         <span>{task.doc_count || 2}</span>
                       </div>
@@ -1787,8 +1792,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   + ADD FOLLOW-UP NOTES <span className="text-slate-400 font-normal">(opsional)</span>
                 </label>
                 <div className="flex items-center gap-3">
-                  <span className={`text-xs font-semibold ${countWords(editingNoteText) >= 200 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
-                    {countWords(editingNoteText)}/200 kata
+                  <span className={`text-xs font-semibold ${countWords(editingNoteText) >= 50 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
+                    {countWords(editingNoteText)}/50 kata
                   </span>
                   <div className="flex items-center gap-1 text-xs font-bold text-[#059669]">
                     <CheckCircle size={14} className="text-[#059669]" />
@@ -1800,7 +1805,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               <textarea
                 rows={3}
                 value={editingNoteText}
-                onChange={(e) => handleMax200WordsChange(e.target.value, setEditingNoteText)}
+                onChange={(e) => handleMax50WordsChange(e.target.value, setEditingNoteText)}
                 placeholder="Ketik catatan tambahan di sini jika ada update baru..."
                 className="w-full bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-4 text-xs sm:text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 min-h-[90px] resize-none shadow-2xs leading-relaxed"
               />
@@ -2432,7 +2437,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 <div className="space-y-2 pt-1">
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-bold text-slate-700 tracking-wider">
-                      + ADD MORE NOTES <span className="text-slate-400 font-normal">(max 200 words)</span>
+                      + ADD MORE NOTES <span className="text-slate-400 font-normal">(max 50 words)</span>
                     </label>
                     <div className="flex items-center gap-1 text-[11px] font-bold text-[#059669]">
                       <Shield size={13} className="text-[#059669]" />
@@ -2443,15 +2448,15 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <textarea
                     rows={3}
                     value={issueModalNoteText}
-                    onChange={(e) => handleMax200WordsChange(e.target.value, setIssueModalNoteText)}
+                    onChange={(e) => handleMax50WordsChange(e.target.value, setIssueModalNoteText)}
                     placeholder="Ketik catatan tambahan di sini jika ada update baru..."
                     className="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 resize-none leading-relaxed shadow-2xs"
                   />
 
                   <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400">
                     <span>Catatan ini akan langsung terbit pada modul job list mobile A3 Field Agent &amp; tersimpan dalam audit trail.</span>
-                    <span className={countWords(issueModalNoteText) >= 200 ? 'text-red-500 font-bold shrink-0 ml-2' : 'text-slate-400 shrink-0 ml-2'}>
-                      {countWords(issueModalNoteText)}/200 kata
+                    <span className={countWords(issueModalNoteText) >= 50 ? 'text-red-500 font-bold shrink-0 ml-2' : 'text-slate-400 shrink-0 ml-2'}>
+                      {countWords(issueModalNoteText)}/50 kata
                     </span>
                   </div>
                 </div>

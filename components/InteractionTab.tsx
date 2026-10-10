@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Search, ChevronDown, ChevronRight, Plus, Download, Video, MessageCircle, 
-  X, UploadCloud, FileText, Check, Loader2, Calendar, 
+import {
+  Search, ChevronDown, ChevronRight, Plus, Download, Video, MessageCircle,
+  X, UploadCloud, FileText, Check, Loader2, Calendar,
   ExternalLink, AlertCircle, Save, Tag, Trash2, HelpCircle,
   ShieldCheck, Lock as LockIcon, CheckCircle, XCircle
 } from 'lucide-react';
@@ -164,7 +164,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           const parsed = JSON.parse(stored);
           if (parsed?.name && parsed.name.trim()) return parsed.name.trim();
         }
-      } catch {}
+      } catch { }
     }
     return 'Sales Executive';
   });
@@ -178,7 +178,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           const parsed = JSON.parse(stored);
           if (parsed?.role && parsed.role.trim()) return parsed.role.trim();
         }
-      } catch {}
+      } catch { }
     }
     return 'Sales Executive';
   });
@@ -197,7 +197,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           if (parsed?.name && parsed.name.trim()) setActiveUserName(parsed.name.trim());
           if (parsed?.role && parsed.role.trim()) setActiveUserRole(parsed.role.trim());
         }
-      } catch {}
+      } catch { }
     }
   }, [currentUser]);
 
@@ -260,12 +260,18 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
   const [channelSelection, setChannelSelection] = useState<'WhatsApp' | 'Meeting'>('WhatsApp');
   const [recordSummary, setRecordSummary] = useState('');
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [newUploadedFiles, setNewUploadedFiles] = useState<UploadedFileMetadata[]>([]);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [isSubmittingNew, setIsSubmittingNew] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [saveSuccessNotif, setSaveSuccessNotif] = useState(false);
   const [createFormError, setCreateFormError] = useState<string | null>(null);
+
+  const getWordCount = (str: string): number => {
+    return str.trim() ? str.trim().split(/\s+/).filter(Boolean).length : 0;
+  };
 
   const accountDropdownRef = useRef<HTMLDivElement | null>(null);
   const jobNumberDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -337,16 +343,16 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
           const attachments: EvidenceAttachmentItem[] = (c.document_urls && c.document_urls.length > 0)
             ? c.document_urls.map((url, uIdx) => {
-                const fileName = url.split('/').pop()?.split('?')[0] || `Attachment_${uIdx + 1}`;
-                const isImg = /\.(png|jpe?g|webp|gif|svg)$/i.test(fileName);
-                return {
-                  id: `att-db-${c.id}-${uIdx}`,
-                  name: decodeURIComponent(fileName),
-                  size: 'Dokumen',
-                  type: isImg ? 'image' : 'pdf',
-                  url
-                };
-              })
+              const fileName = url.split('/').pop()?.split('?')[0] || `Attachment_${uIdx + 1}`;
+              const isImg = /\.(png|jpe?g|webp|gif|svg)$/i.test(fileName);
+              return {
+                id: `att-db-${c.id}-${uIdx}`,
+                name: decodeURIComponent(fileName),
+                size: 'Dokumen',
+                type: isImg ? 'image' : 'pdf',
+                url
+              };
+            })
             : [];
 
           const displayJob = c.job_number
@@ -417,8 +423,8 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
   // Role Oversight & Privacy Isolation Check
   const isManager = activeUserRole.toLowerCase().includes('manager') ||
-                    activeUserRole.toLowerCase().includes('manajemen') ||
-                    activeUserRole.toLowerCase().includes('director');
+    activeUserRole.toLowerCase().includes('manajemen') ||
+    activeUserRole.toLowerCase().includes('director');
 
   // Export Text Summary Helper Function
   const handleExportTextSummary = (item: ConversationDisplayItem) => {
@@ -609,6 +615,8 @@ Exported on: ${new Date().toLocaleString('id-ID')}
   // Open Create Modal
   const handleOpenCreateModal = () => {
     setCreateFormError(null);
+    setSummaryError(null);
+    setAttachmentError(null);
     if (accountOptions.length > 0) {
       setSelectedAccount(accountOptions[0]);
     } else {
@@ -629,22 +637,67 @@ Exported on: ${new Date().toLocaleString('id-ID')}
     setIsCreateModalOpen(true);
   };
 
-  // Upload file in Create Modal
+  // Switch channel with automatic file re-validation
+  const handleChannelSelectionChange = (newChannel: 'WhatsApp' | 'Meeting') => {
+    setChannelSelection(newChannel);
+    setAttachmentError(null);
+
+    // If switched to WhatsApp, check existing uploaded files for non-.txt formats
+    if (newChannel === 'WhatsApp' && newUploadedFiles.length > 0) {
+      const invalidFiles = newUploadedFiles.filter(f => {
+        const ext = f.file_name.split('.').pop()?.toLowerCase() || '';
+        return ext !== 'txt' && f.file_type !== 'txt' && f.file_type !== 'text/plain';
+      });
+
+      if (invalidFiles.length > 0) {
+        const validFiles = newUploadedFiles.filter(f => {
+          const ext = f.file_name.split('.').pop()?.toLowerCase() || '';
+          return ext === 'txt' || f.file_type === 'txt' || f.file_type === 'text/plain';
+        });
+        setNewUploadedFiles(validFiles);
+        setAttachmentError(`Beberapa berkas (${invalidFiles.map(i => i.file_name).join(', ')}) dihapus karena channel WhatsApp hanya menerima file berformat .txt (Export Chat).`);
+      }
+    }
+  };
+
+  // Upload file in Create Modal with 5 MB & Channel Type validation (Lecturer Rules 3 & 4)
   const handleCreateFileUpload = async (files: FileList | File[] | null) => {
     if (!files) return;
     const fileList = Array.from(files);
     if (fileList.length === 0) return;
 
+    setAttachmentError(null);
+
     if (newUploadedFiles.length + fileList.length > 5) {
-      setCreateFormError('Maksimal 5 berkas per percakapan.');
+      setAttachmentError('Maksimal 5 berkas lampiran per percakapan.');
+      if (createFileInputRef.current) createFileInputRef.current.value = '';
       return;
     }
 
     for (const file of fileList) {
+      // Lecturer Rule 4: Ukuran attachment lebih dari 5 MB -> Menolak attachment
       if (file.size > 5 * 1024 * 1024) {
-        setCreateFormError(`Ukuran file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimum 5 MB.`);
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+        setAttachmentError(`Ukuran attachment "${file.name}" (${sizeMb} MB) melebihi batas maksimal 5 MB. Menolak attachment.`);
         if (createFileInputRef.current) createFileInputRef.current.value = '';
         return;
+      }
+
+      // Lecturer Rule 3: Jenis attachment tidak sesuai channel -> Menolak attachment
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      if (channelSelection === 'WhatsApp') {
+        if (ext !== 'txt' && file.type !== 'text/plain') {
+          setAttachmentError(`Jenis attachment "${file.name}" (.${ext}) tidak sesuai channel WhatsApp. Channel WhatsApp HANYA menerima berkas .txt (Export Chat). Menolak attachment.`);
+          if (createFileInputRef.current) createFileInputRef.current.value = '';
+          return;
+        }
+      } else if (channelSelection === 'Meeting') {
+        const allowedMeetingExts = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'png', 'jpg', 'jpeg', 'webp', 'txt', 'csv'];
+        if (!allowedMeetingExts.includes(ext)) {
+          setAttachmentError(`Jenis attachment "${file.name}" (.${ext}) tidak sesuai channel Meeting. Format berkas tidak didukung. Menolak attachment.`);
+          if (createFileInputRef.current) createFileInputRef.current.value = '';
+          return;
+        }
       }
     }
 
@@ -655,39 +708,28 @@ Exported on: ${new Date().toLocaleString('id-ID')}
         if (res.success && res.data) {
           setNewUploadedFiles(prev => [...prev, res.data!]);
         } else {
-          setNewUploadedFiles(prev => [
-            ...prev,
-            {
-              file_name: file.name,
-              file_type: file.type || 'application/octet-stream',
-              file_url: URL.createObjectURL(file),
-              file_size_kb: Math.round(file.size / 1024)
-            }
-          ]);
+          setAttachmentError(`Gagal mengunggah berkas "${file.name}": ${res.error || 'Terjadi kesalahan pada server/storage.'}`);
         }
       }
     } catch (err: any) {
       console.error('File upload error:', err);
+      setAttachmentError(`Gagal mengunggah berkas: ${err?.message || 'Terjadi kesalahan koneksi.'}`);
     } finally {
       setIsUploadingFile(false);
       if (createFileInputRef.current) createFileInputRef.current.value = '';
     }
   };
 
-  // Submit New Conversation to Database
+  // Submit New Conversation to Database with Lecturer Rules 1 & 2
   const handleSubmitNewConversation = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreateFormError(null);
+    setSummaryError(null);
 
     const hasAccount = Boolean(selectedAccount.trim());
     const hasDate = Boolean(recordDate.trim());
     const hasChannel = Boolean(channelSelection);
-    const hasSummary = Boolean(recordSummary.trim());
-
-    if (!hasAccount && !hasDate && !hasChannel && !hasSummary) {
-      setCreateFormError('Data wajib Record Conversation tidak diisi. Harap lengkapi Customer/Company, Tanggal/Waktu, Channel, Isi/Ringkasan, dan Berkas Lampiran.');
-      return;
-    }
+    const summaryText = recordSummary.trim();
 
     if (!hasAccount) {
       setCreateFormError('Customer/Company harus dipilih.');
@@ -704,14 +746,23 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       return;
     }
 
-    if (!hasSummary) {
-      setCreateFormError('Isi/Ringkasan harus diisi.');
+    // Lecturer Rule 1: Text Summary belum diisi -> Menolak penyimpanan dan menampilkan validasi pada field
+    if (!summaryText) {
+      setSummaryError('Text Summary belum diisi. Menolak penyimpanan dan menampilkan validasi pada field.');
+      setCreateFormError('Text Summary belum diisi. Harap lengkapi ringkasan percakapan.');
       return;
     }
 
-    const summaryWords = recordSummary.trim().split(/\s+/).filter(Boolean);
-    if (summaryWords.length > 200) {
-      setCreateFormError(`Isi ringkasan percakapan melebihi batas maksimum 200 kata (saat ini ${summaryWords.length} kata). Mohon persingkat.`);
+    // Lecturer Rule 2: Text Summary melebihi 100 words -> Menolak penyimpanan dan menampilkan informasi batas maksimal
+    const wordCount = getWordCount(recordSummary);
+    if (wordCount > 100) {
+      setSummaryError(`Text Summary melebihi 100 words (saat ini ${wordCount} kata). Menolak penyimpanan dan menampilkan informasi batas maksimal.`);
+      setCreateFormError(`Text Summary melebihi batas maksimum 100 kata (saat ini ${wordCount} kata). Mohon persingkat.`);
+      return;
+    }
+
+    if (attachmentError) {
+      setCreateFormError('Terdapat masalah pada berkas lampiran. Harap perbaiki sebelum menyimpan.');
       return;
     }
 
@@ -776,7 +827,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
           const existingNotifsStr = localStorage.getItem('andima_manager_notifications');
           let existingNotifs: ManagerNotificationItem[] = [];
           if (existingNotifsStr) {
-            try { existingNotifs = JSON.parse(existingNotifsStr); } catch {}
+            try { existingNotifs = JSON.parse(existingNotifsStr); } catch { }
           }
           const updatedNotifs = [newNotif, ...existingNotifs];
           localStorage.setItem('andima_manager_notifications', JSON.stringify(updatedNotifs));
@@ -903,9 +954,8 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                       setCurrentPage(1);
                       setIsChannelDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-                      channelFilter === opt ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
-                    }`}
+                    className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${channelFilter === opt ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
+                      }`}
                   >
                     <span>{opt}</span>
                     {channelFilter === opt && <Check size={13} className="text-blue-600" />}
@@ -940,9 +990,8 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                       setCurrentPage(1);
                       setIsDateDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-                      dateFilter === opt ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
-                    }`}
+                    className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${dateFilter === opt ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
+                      }`}
                   >
                     <span>{opt === 'All Dates' ? 'All Periods' : opt}</span>
                     {dateFilter === opt && <Check size={13} className="text-blue-600" />}
@@ -1038,8 +1087,8 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 </tr>
               ) : (
                 pagedRows.map((row, idx) => (
-                  <tr 
-                    key={`${row.id || 'row'}-${idx}`} 
+                  <tr
+                    key={`${row.id || 'row'}-${idx}`}
                     className="border-l-4 border-l-transparent hover:border-l-blue-600 hover:bg-blue-50/30 transition-all duration-150"
                   >
                     {/* Conversation ID */}
@@ -1101,7 +1150,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
           </div>
 
           <div className="flex items-center gap-1.5">
-            <button 
+            <button
               type="button"
               disabled={validCurrentPage <= 1}
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
@@ -1109,23 +1158,22 @@ Exported on: ${new Date().toLocaleString('id-ID')}
             >
               Previous
             </button>
-            
+
             {[1, 2, 3].map(p => (
               <button
                 key={p}
                 type="button"
                 onClick={() => setCurrentPage(p)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                  validCurrentPage === p
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${validCurrentPage === p
                     ? 'bg-[#2563eb] text-white shadow-2xs'
                     : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
+                  }`}
               >
                 {p}
               </button>
             ))}
 
-            <button 
+            <button
               type="button"
               disabled={validCurrentPage >= totalPages}
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
@@ -1249,9 +1297,6 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     EVIDENCE ATTACHMENTS ({(selectedConversation.evidence_attachments || []).length || 2})
                   </span>
-                  <span className="text-[10px] font-normal text-slate-400">
-                    Max size 5 MB
-                  </span>
                 </div>
 
                 {selectedConversation.evidence_attachments && selectedConversation.evidence_attachments.length > 0 ? (
@@ -1346,7 +1391,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 <div className="border border-slate-200 rounded-2xl divide-y divide-slate-100 bg-white overflow-hidden shadow-2xs">
                   {selectedConversation.need_assistance ? (
                     /* Item Yes: Need Assistance (CLICKABLE) */
-                    <div 
+                    <div
                       onClick={() => setIsManagerFeedbackModalOpen(true)}
                       className="p-3.5 flex items-center justify-between bg-blue-50/20 hover:bg-blue-50/60 border-l-4 border-blue-600 transition-all cursor-pointer group"
                     >
@@ -1424,7 +1469,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
 
       {/* MODAL: MANAGER RESPONSE & FEEDBACK (Exact Match to User Screenshot) */}
       {isManagerFeedbackModalOpen && selectedConversation && (
-        <div 
+        <div
           onClick={(e) => { if (e.target === e.currentTarget) setIsManagerFeedbackModalOpen(false); }}
           className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in"
         >
@@ -1577,9 +1622,8 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                               setSelectedAccount(acc);
                               setIsAccountDropdownOpen(false);
                             }}
-                            className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-                              selectedAccount === acc ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-700 hover:bg-slate-50'
-                            }`}
+                            className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-lg flex items-center justify-between transition-colors cursor-pointer ${selectedAccount === acc ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-700 hover:bg-slate-50'
+                              }`}
                           >
                             <span className="truncate">{acc}</span>
                             {selectedAccount === acc && <Check size={14} className="text-blue-600 shrink-0" />}
@@ -1637,30 +1681,27 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <div
-                    onClick={() => setChannelSelection('WhatsApp')}
-                    className={`rounded-xl py-3 px-4 flex items-center justify-between cursor-pointer transition-all ${
-                      channelSelection === 'WhatsApp'
+                    onClick={() => handleChannelSelectionChange('WhatsApp')}
+                    className={`rounded-xl py-3 px-4 flex items-center justify-between cursor-pointer transition-all ${channelSelection === 'WhatsApp'
                         ? 'border-2 border-[#3b82f6] bg-white shadow-xs'
                         : 'border border-slate-200 bg-white hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <span className={`text-xs ${channelSelection === 'WhatsApp' ? 'font-bold text-[#2563eb]' : 'font-medium text-slate-700'}`}>
                       WhatsApp (.txt)
                     </span>
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                      channelSelection === 'WhatsApp' ? 'border-2 border-[#3b82f6]' : 'border border-slate-300'
-                    }`}>
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${channelSelection === 'WhatsApp' ? 'border-2 border-[#3b82f6]' : 'border border-slate-300'
+                      }`}>
                       {channelSelection === 'WhatsApp' && <div className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]" />}
                     </div>
                   </div>
 
                   <div
-                    onClick={() => setChannelSelection('Meeting')}
-                    className={`rounded-xl py-3 px-4 flex items-center justify-between cursor-pointer transition-all ${
-                      channelSelection === 'Meeting'
+                    onClick={() => handleChannelSelectionChange('Meeting')}
+                    className={`rounded-xl py-3 px-4 flex items-center justify-between cursor-pointer transition-all ${channelSelection === 'Meeting'
                         ? 'border-2 border-[#3b82f6] bg-white shadow-xs'
                         : 'border border-slate-200 bg-white hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <FileText size={15} className={channelSelection === 'Meeting' ? 'text-[#3b82f6]' : 'text-slate-400'} />
@@ -1668,40 +1709,63 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                         Meeting Document
                       </span>
                     </div>
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                      channelSelection === 'Meeting' ? 'border-2 border-[#3b82f6]' : 'border border-slate-300'
-                    }`}>
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${channelSelection === 'Meeting' ? 'border-2 border-[#3b82f6]' : 'border border-slate-300'
+                      }`}>
                       {channelSelection === 'Meeting' && <div className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]" />}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Text Summary * */}
+              {/* Text Summary * (Lecturer Rules 1 & 2) */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-bold text-slate-800">
                     Text Summary<span className="text-red-500">*</span>
                   </label>
-                  <span className="text-[11px] font-normal text-slate-400">
-                    Max 200 words
+                  <span className={`text-[11px] font-bold ${getWordCount(recordSummary) > 100 ? 'text-red-600 animate-pulse' : 'text-slate-400'}`}>
+                    {getWordCount(recordSummary)} / 100 words {getWordCount(recordSummary) > 100 ? '(Batas Maksimal Terlampaui!)' : ''}
                   </span>
                 </div>
                 <textarea
                   rows={3}
-                  required
                   value={recordSummary}
-                  onChange={(e) => setRecordSummary(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setRecordSummary(val);
+                    const count = getWordCount(val);
+                    if (!val.trim()) {
+                      setSummaryError('Text Summary belum diisi. Menolak penyimpanan dan menampilkan validasi pada field.');
+                    } else if (count > 100) {
+                      setSummaryError(`Text Summary melebihi 100 words (saat ini ${count} kata). Menolak penyimpanan dan menampilkan informasi batas maksimal.`);
+                    } else {
+                      setSummaryError(null);
+                    }
+                  }}
                   placeholder="Diskusi bersama Pak Hendra (DSV) mengenai kepastian jadwal kontainer di Gate 3 Priok. Membutuhkan verifikasi fisik cepat dan pendampingan customs clearance untuk mencegah denda demurrage."
-                  className="w-full bg-[#f8fafc] border border-slate-200 focus:border-blue-500 focus:bg-white rounded-xl p-3.5 text-xs font-normal text-slate-800 leading-relaxed outline-none shadow-2xs transition-colors resize-none placeholder:text-slate-400"
+                  className={`w-full bg-[#f8fafc] border rounded-xl p-3.5 text-xs font-normal text-slate-800 leading-relaxed outline-none shadow-2xs transition-colors resize-none placeholder:text-slate-400 ${summaryError
+                      ? 'border-red-500 bg-red-50/20 focus:border-red-600 focus:ring-1 focus:ring-red-500'
+                      : 'border-slate-200 focus:border-blue-500 focus:bg-white'
+                    }`}
                 />
+                {summaryError && (
+                  <p className="mt-1.5 text-xs text-red-600 font-semibold flex items-center gap-1 animate-in fade-in slide-in-from-top-1">
+                    <AlertCircle size={13} className="shrink-0 text-red-500" />
+                    <span>{summaryError}</span>
+                  </p>
+                )}
               </div>
 
-              {/* File (Opsional) */}
+              {/* File (Opsional) (Lecturer Rules 3 & 4) */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                  File (Opsional)
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-slate-800">
+                    File Lampiran (Opsional)
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    {channelSelection === 'WhatsApp' ? 'Khusus .txt • Max 5MB' : 'Dokumen / Gambar • Max 5MB'}
+                  </span>
+                </div>
                 <div
                   onClick={() => createFileInputRef.current?.click()}
                   onDragOver={(e) => { e.preventDefault(); setIsDraggingFile(true); }}
@@ -1711,31 +1775,43 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     setIsDraggingFile(false);
                     handleCreateFileUpload(e.dataTransfer.files);
                   }}
-                  className={`w-full border-2 border-dashed rounded-2xl p-5 bg-white flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
-                    isDraggingFile ? 'border-blue-500 bg-blue-50/20' : 'border-slate-300 hover:border-blue-400'
-                  }`}
+                  className={`w-full border-2 border-dashed rounded-2xl p-5 bg-white flex flex-col items-center justify-center text-center cursor-pointer transition-all ${attachmentError
+                      ? 'border-red-400 bg-red-50/20'
+                      : isDraggingFile
+                        ? 'border-blue-500 bg-blue-50/20'
+                        : 'border-slate-300 hover:border-blue-400'
+                    }`}
                 >
-                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#2563eb] mb-2 shadow-2xs">
-                    <UploadCloud size={20} className="text-[#2563eb]" />
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 shadow-2xs ${attachmentError ? 'bg-red-100 text-red-600' : 'bg-blue-50 text-[#2563eb]'}`}>
+                    <UploadCloud size={20} />
                   </div>
                   <p className="text-xs font-bold text-slate-800">
-                    Upload chat export .txt file or meeting notes all format
+                    {channelSelection === 'WhatsApp'
+                      ? 'Upload chat export .txt file (Khusus WhatsApp)'
+                      : 'Upload meeting notes & dokumen (.pdf, .docx, .xlsx, .png)'}
                   </p>
                   <p className="text-[11px] text-slate-500 mt-1">
-                    Drag and drop your file here, or <span className="text-[#2563eb] font-semibold underline">Browse files</span>
+                    Drag &amp; drop berkas di sini, atau <span className="text-[#2563eb] font-semibold underline">Browse files</span>
                   </p>
-                  <div className="mt-3 px-3 py-1 rounded-lg border border-slate-200 bg-slate-50 text-[10px] text-slate-400 font-medium">
-                    Max file size: 5MB • All file formats supported
+                  <div className={`mt-3 px-3 py-1 rounded-lg border text-[10px] font-semibold ${attachmentError ? 'border-red-200 bg-red-50 text-red-600' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
+                    Ukuran maks: 5MB • Format Channel {channelSelection}: {channelSelection === 'WhatsApp' ? 'HANYA .txt' : '.pdf, .docx, .xlsx, .png'}
                   </div>
                 </div>
                 <input
                   ref={createFileInputRef}
                   type="file"
                   multiple
-                  accept="*"
+                  accept={channelSelection === 'WhatsApp' ? '.txt,text/plain' : '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.webp,.txt,.csv'}
                   onChange={(e) => handleCreateFileUpload(e.target.files)}
                   className="hidden"
                 />
+
+                {attachmentError && (
+                  <p className="mt-2 text-xs text-red-600 font-semibold flex items-center gap-1 animate-in fade-in slide-in-from-top-1">
+                    <AlertCircle size={13} className="shrink-0 text-red-500" />
+                    <span>{attachmentError}</span>
+                  </p>
+                )}
 
                 {newUploadedFiles.length > 0 && (
                   <div className="mt-2 space-y-1">
@@ -1767,36 +1843,32 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 <div className="grid grid-cols-2 gap-3">
                   <div
                     onClick={() => setCreateNeedAssistance(true)}
-                    className={`rounded-xl py-3 px-4 flex items-center justify-between cursor-pointer transition-all ${
-                      createNeedAssistance === true
+                    className={`rounded-xl py-3 px-4 flex items-center justify-between cursor-pointer transition-all ${createNeedAssistance === true
                         ? 'border-2 border-[#3b82f6] bg-white shadow-xs'
                         : 'border border-slate-200 bg-white hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <span className={`text-xs ${createNeedAssistance === true ? 'font-bold text-[#2563eb]' : 'font-medium text-slate-700'}`}>
                       Yes
                     </span>
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                      createNeedAssistance === true ? 'border-2 border-[#3b82f6]' : 'border border-slate-300'
-                    }`}>
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${createNeedAssistance === true ? 'border-2 border-[#3b82f6]' : 'border border-slate-300'
+                      }`}>
                       {createNeedAssistance === true && <div className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]" />}
                     </div>
                   </div>
 
                   <div
                     onClick={() => setCreateNeedAssistance(false)}
-                    className={`rounded-xl py-3 px-4 flex items-center justify-between cursor-pointer transition-all ${
-                      createNeedAssistance === false
+                    className={`rounded-xl py-3 px-4 flex items-center justify-between cursor-pointer transition-all ${createNeedAssistance === false
                         ? 'border-2 border-[#3b82f6] bg-white shadow-xs'
                         : 'border border-slate-200 bg-white hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <span className={`text-xs ${createNeedAssistance === false ? 'font-bold text-[#2563eb]' : 'font-medium text-slate-700'}`}>
                       No
                     </span>
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                      createNeedAssistance === false ? 'border-2 border-[#3b82f6]' : 'border border-slate-300'
-                    }`}>
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${createNeedAssistance === false ? 'border-2 border-[#3b82f6]' : 'border border-slate-300'
+                      }`}>
                       {createNeedAssistance === false && <div className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]" />}
                     </div>
                   </div>

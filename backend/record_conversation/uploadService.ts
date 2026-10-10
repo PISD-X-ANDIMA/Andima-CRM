@@ -8,16 +8,16 @@ export interface UploadedFileMetadata {
 }
 
 const BUCKET_NAME = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || 'a2-record-documents';
-const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB per system rules
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB per lecturer rules
 
 /**
- * Validasi batas ukuran file 20 MB dan pemeriksaan malware/format dasar
+ * Validasi batas ukuran file 5 MB dan pemeriksaan format
  */
 export function validateFile(file: File): { valid: boolean; error?: string } {
   if (file.size > MAX_FILE_SIZE_BYTES) {
     return {
       valid: false,
-      error: `Ukuran file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimal 20 MB.`,
+      error: `Ukuran file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimal 5 MB.`,
     };
   }
 
