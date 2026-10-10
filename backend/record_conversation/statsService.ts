@@ -15,27 +15,27 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       supabase.from('a2_worksheets').select('worksheet_id', { count: 'exact', head: true }).or('status_kendala.eq.kendala_terdeteksi,has_issue.eq.true'),
     ]);
 
-    const totalCustomers = companyRes.count ?? 24;
-    const meetingCount = meetingRes.count ?? 3;
-    const issueCount = issueRes.count ?? 1;
+    const totalCustomers = companyRes.count ?? 0;
+    const meetingCount = meetingRes.count ?? 0;
+    const issueCount = issueRes.count ?? 0;
 
     return {
       totalManagedCustomers: totalCustomers,
-      managedCustomersGrowth: '+3',
+      managedCustomersGrowth: '+0',
       upcomingMeetingsCount: meetingCount,
-      upcomingMeetingNote: 'Hari ini 14:00 WIB dengan DSV Transport',
+      upcomingMeetingNote: meetingCount > 0 ? `${meetingCount} percakapan meeting tercatat` : 'Belum ada meeting',
       activeFieldIssuesCount: issueCount,
-      activeFieldIssuesNote: 'Memerlukan verifikasi di Gerbang 3 Priok',
+      activeFieldIssuesNote: issueCount > 0 ? `${issueCount} kendala memerlukan penanganan` : 'Tidak ada kendala aktif',
     };
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
     return {
-      totalManagedCustomers: 24,
-      managedCustomersGrowth: '+3',
-      upcomingMeetingsCount: 3,
-      upcomingMeetingNote: 'Hari ini 14:00 WIB dengan DSV Transport',
-      activeFieldIssuesCount: 1,
-      activeFieldIssuesNote: 'Memerlukan verifikasi di Gerbang 3 Priok',
+      totalManagedCustomers: 0,
+      managedCustomersGrowth: '0',
+      upcomingMeetingsCount: 0,
+      upcomingMeetingNote: 'Tidak ada data',
+      activeFieldIssuesCount: 0,
+      activeFieldIssuesNote: 'Tidak ada data',
     };
   }
 }

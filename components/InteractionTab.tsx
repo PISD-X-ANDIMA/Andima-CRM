@@ -4,8 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, ChevronDown, Plus, Download, Video, MessageCircle, 
   X, UploadCloud, FileText, Check, Loader2, Calendar, 
-  Eye, Trash2, ExternalLink, AlertCircle, Save, Tag, Pencil, Image as ImageIcon,
-  Paperclip
+  ExternalLink, AlertCircle, Save, Tag, Trash2
 } from 'lucide-react';
 import {
   fetchApiCustomers,
@@ -56,92 +55,8 @@ interface ConversationDisplayItem {
   created_at?: string;
 }
 
-const SCREENSHOT_DEFAULT_CONVERSATIONS: ConversationDisplayItem[] = [
-  {
-    id: 'mock-conv-1',
-    conversation_id: 'CONV-56757',
-    job_number: '#AENAT/2609/0305',
-    company: 'PT. JPG Trans Indonesia',
-    source: 'Meeting',
-    date: '03/03/2026',
-    pic: 'Aida',
-    summary: 'Diskusi koordinasi pengiriman kargo dan verifikasi kontainer pelabuhan Tanjung Priok bersama tim JPG Trans.',
-    status: 'active',
-    urgency_level: 'standard',
-    need_assistance: false,
-    document_urls: ['https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf']
-  },
-  {
-    id: 'mock-conv-2',
-    conversation_id: 'CONV-56757',
-    job_number: '#AENAT/2609/0306',
-    company: 'PT. DSV Transport Indonesia',
-    source: 'Meeting',
-    date: '03/03/2026',
-    pic: 'Aida',
-    summary: 'Discussed recent shipment delays. Customer requested schedule adjustment for container #2 and re-verification of documentation at Tanjung Priok Port.',
-    status: 'active',
-    urgency_level: 'average',
-    need_assistance: false,
-    connected_job_numbers: ['DSVEXP/2605/2551', 'DSVEXP/2605/2552'],
-    evidence_attachments: [
-      {
-        id: 'att-dsv-1',
-        name: 'Notula_Meeting_03032026.pdf',
-        size: '1.2 MB',
-        type: 'pdf',
-        url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
-      }
-    ],
-    audit_logs: [],
-    document_urls: []
-  },
-  {
-    id: 'mock-conv-3',
-    conversation_id: 'CONV-56758',
-    job_number: '#AENAT/2609/0307',
-    company: 'PT. Geodis Freight Forwarding',
-    source: 'WhatsApp',
-    date: '03/03/2026',
-    pic: 'Wulan',
-    summary: 'Pembaruan posisi kontainer via pesan WhatsApp dan konfirmasi dokumen surat jalan.',
-    status: 'active',
-    urgency_level: 'standard',
-    need_assistance: false,
-    document_urls: []
-  },
-  {
-    id: 'mock-conv-4',
-    conversation_id: 'CONV-56758',
-    job_number: '#AENAT/2609/0307',
-    company: 'PT. Geodis Freight Forwarding',
-    source: 'WhatsApp',
-    date: '03/03/2026',
-    pic: 'Wulan',
-    summary: 'Konfirmasi surat jalan dan kesiapan penerimaan kargo di gudang konsolidasi Priok.',
-    status: 'active',
-    urgency_level: 'standard',
-    need_assistance: false,
-    document_urls: []
-  },
-  {
-    id: 'mock-conv-5',
-    conversation_id: 'CONV-56758',
-    job_number: '#AENAT/2609/0307',
-    company: 'PT. Geodis Freight Forwarding',
-    source: 'WhatsApp',
-    date: '03/03/2026',
-    pic: 'Wulan',
-    summary: 'Follow up penyelesaian administrasi dan checklist kesiapan pengiriman ekspor.',
-    status: 'active',
-    urgency_level: 'standard',
-    need_assistance: false,
-    document_urls: []
-  }
-];
-
 function formatDateDisplay(dateStr?: string | null): string {
-  if (!dateStr) return '03/03/2026';
+  if (!dateStr) return '';
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return dateStr;
   if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) return dateStr.replace(/-/g, '/');
   try {
@@ -177,7 +92,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         }
       } catch {}
     }
-    return 'Adelia';
+    return 'Sales Executive';
   });
 
   useEffect(() => {
@@ -199,45 +114,45 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [channelFilter, setChannelFilter] = useState('All Channel');
-  const [dateFilter, setDateFilter] = useState('Today (14 Sep 2026)');
+  const [dateFilter, setDateFilter] = useState('All Dates');
   const [statusFilter, setStatusFilter] = useState('All Status');
 
   // Dropdown Open States
   const [isChannelDropdownOpen, setIsChannelDropdownOpen] = useState(false);
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
-  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
 
   const channelDropdownRef = useRef<HTMLDivElement | null>(null);
   const dateDropdownRef = useRef<HTMLDivElement | null>(null);
-  const statusDropdownRef = useRef<HTMLDivElement | null>(null);
 
-  // Data States
-  const [conversations, setConversations] = useState<ConversationDisplayItem[]>(SCREENSHOT_DEFAULT_CONVERSATIONS);
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
+
+  // Data States (Connected to Database)
+  const [conversations, setConversations] = useState<ConversationDisplayItem[]>([]);
   const [customerList, setCustomerList] = useState<CompanyItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Detail Modal States (Matching User Screenshot Exactly)
+  // Detail Modal States
   const [selectedConversation, setSelectedConversation] = useState<ConversationDisplayItem | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isEditDetailMode, setIsEditDetailMode] = useState(false);
   const [editSummary, setEditSummary] = useState('');
   const [editStatus, setEditStatus] = useState('active');
   const [editJobNumbers, setEditJobNumbers] = useState<string[]>([]);
-  const [newJobNumberInput, setNewJobNumberInput] = useState('');
   const [editAttachments, setEditAttachments] = useState<EvidenceAttachmentItem[]>([]);
   const [editAuditLogs, setEditAuditLogs] = useState<AuditLogItem[]>([]);
   const [isSavingDetail, setIsSavingDetail] = useState(false);
   const [detailSuccessMsg, setDetailSuccessMsg] = useState<string | null>(null);
-  const detailFileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Create Modal States (Matching screenshot exactly)
+  // Create Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState('PT DSV Transport Indonesia (CUST-JKT-0941)');
+  const [selectedAccount, setSelectedAccount] = useState('');
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
   const [jobNumberInput, setJobNumberInput] = useState('');
   const [isJobNumberDropdownOpen, setIsJobNumberDropdownOpen] = useState(false);
-  const [recordDate, setRecordDate] = useState('03/03/2026');
+  const [recordDate, setRecordDate] = useState('');
 
   // Format date digits with slashes automatically (DD/MM/YYYY)
   const formatWithSlashes = (val: string) => {
@@ -246,6 +161,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
     return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
   };
+
   const [channelSelection, setChannelSelection] = useState<'WhatsApp' | 'Meeting'>('WhatsApp');
   const [recordSummary, setRecordSummary] = useState('');
   const [newUploadedFiles, setNewUploadedFiles] = useState<UploadedFileMetadata[]>([]);
@@ -254,6 +170,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [saveSuccessNotif, setSaveSuccessNotif] = useState(false);
   const [createFormError, setCreateFormError] = useState<string | null>(null);
+
   const accountDropdownRef = useRef<HTMLDivElement | null>(null);
   const jobNumberDropdownRef = useRef<HTMLDivElement | null>(null);
   const createFileInputRef = useRef<HTMLInputElement | null>(null);
@@ -285,9 +202,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       if (dateDropdownRef.current && !dateDropdownRef.current.contains(target)) {
         setIsDateDropdownOpen(false);
       }
-      if (statusDropdownRef.current && !statusDropdownRef.current.contains(target)) {
-        setIsStatusDropdownOpen(false);
-      }
       if (accountDropdownRef.current && !accountDropdownRef.current.contains(target)) {
         setIsAccountDropdownOpen(false);
       }
@@ -301,121 +215,89 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     };
   }, []);
 
-  // Load customer list & backend conversations on mount
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        const [customers, convRes] = await Promise.all([
-          fetchApiCustomers(),
-          fetchApiConversations({ limit: 50 })
-        ]);
-        setCustomerList(customers);
+  // Load database conversations & customer list
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [customers, convRes] = await Promise.all([
+        fetchApiCustomers(),
+        fetchApiConversations({ limit: 100 })
+      ]);
 
-        if (convRes.data && convRes.data.length > 0) {
-          // Map DB items to display items
-          const mappedDb: ConversationDisplayItem[] = convRes.data.map((c: RecordConversationItem, idx: number) => {
-            let convCode = 'CONV-5675' + (7 + (idx % 3));
-            if (c.id && c.id.startsWith('CONV-')) {
-              convCode = c.id;
-            }
-            return {
-              id: c.id,
-              conversation_id: convCode,
-              job_number: c.job_number ? (c.job_number.startsWith('#') ? c.job_number : `#${c.job_number}`) : '#AENAT/2609/0305',
-              company: c.company_name || 'PT. Perusahaan Logistik',
-              source: c.channel_type === 'WhatsApp' ? 'WhatsApp' : 'Meeting',
-              date: formatDateDisplay(c.conversation_date),
-              pic: c.sales_pic_name || 'Adelia',
-              summary: c.summary || '',
-              status: c.status || 'active',
-              urgency_level: c.urgency_level || 'standard',
-              need_assistance: c.need_assistance,
-              document_urls: c.document_urls || [],
-              evidence_attachments: (c.document_urls && c.document_urls.length > 0)
-                ? c.document_urls.map((url, uIdx) => {
-                    const fileName = url.split('/').pop()?.split('?')[0] || `Attachment_${uIdx + 1}`;
-                    const isImg = /\.(png|jpe?g|webp|gif|svg)$/i.test(fileName);
-                    return {
-                      id: `att-db-${c.id}-${uIdx}`,
-                      name: decodeURIComponent(fileName),
-                      size: 'Document',
-                      type: isImg ? 'image' : 'pdf',
-                      url
-                    };
-                  })
-                : [],
-              customer_id: c.customer_id,
-              created_at: c.created_at,
-            };
-          });
+      setCustomerList(customers || []);
 
-          const parseAndSanitizeLocal = (raw: string | null): ConversationDisplayItem[] => {
-            if (!raw) return [];
-            try {
-              const parsed: ConversationDisplayItem[] = JSON.parse(raw);
-              return parsed;
-            } catch {
-              return [];
-            }
+      if (convRes.data && convRes.data.length > 0) {
+        const mappedDb: ConversationDisplayItem[] = convRes.data.map((c: RecordConversationItem) => {
+          let convCode = c.id;
+          if (c.id && !c.id.startsWith('CONV-') && c.id.length > 8) {
+            convCode = `CONV-${c.id.slice(0, 8).toUpperCase()}`;
+          }
+
+          const attachments: EvidenceAttachmentItem[] = (c.document_urls && c.document_urls.length > 0)
+            ? c.document_urls.map((url, uIdx) => {
+                const fileName = url.split('/').pop()?.split('?')[0] || `Attachment_${uIdx + 1}`;
+                const isImg = /\.(png|jpe?g|webp|gif|svg)$/i.test(fileName);
+                return {
+                  id: `att-db-${c.id}-${uIdx}`,
+                  name: decodeURIComponent(fileName),
+                  size: 'Dokumen',
+                  type: isImg ? 'image' : 'pdf',
+                  url
+                };
+              })
+            : [];
+
+          const displayJob = c.job_number
+            ? (c.job_number.startsWith('#') ? c.job_number : `#${c.job_number}`)
+            : '-';
+
+          return {
+            id: c.id,
+            conversation_id: convCode,
+            job_number: displayJob,
+            company: c.company_name || 'Tanpa Perusahaan',
+            source: c.channel_type === 'WhatsApp' ? 'WhatsApp' : 'Meeting',
+            date: formatDateDisplay(c.conversation_date),
+            pic: c.sales_pic_name || 'Sales Executive',
+            summary: c.summary || '',
+            status: c.status || 'active',
+            urgency_level: c.urgency_level || 'standard',
+            need_assistance: c.need_assistance,
+            document_urls: c.document_urls || [],
+            connected_job_numbers: displayJob !== '-' ? [displayJob] : [],
+            evidence_attachments: attachments,
+            customer_id: c.customer_id,
+            created_at: c.created_at,
           };
+        });
 
-          let localSaved: ConversationDisplayItem[] = [];
-          if (typeof window !== 'undefined') {
-            localSaved = parseAndSanitizeLocal(localStorage.getItem('andima_recorded_conversations'));
-          }
-
-          // Gabungkan seluruh sumber data dan pastikan setiap id unik
-          const allItems = [...localSaved, ...mappedDb, ...SCREENSHOT_DEFAULT_CONVERSATIONS];
-          const uniqueItems: ConversationDisplayItem[] = [];
-          const seenIds = new Set<string>();
-
-          for (const item of allItems) {
-            if (!item.id || seenIds.has(item.id)) continue;
-            seenIds.add(item.id);
-            uniqueItems.push(item);
-          }
-          setConversations(uniqueItems);
-        } else {
-          let localSaved: ConversationDisplayItem[] = [];
-          if (typeof window !== 'undefined') {
-            try {
-              const raw = localStorage.getItem('andima_recorded_conversations');
-              if (raw) {
-                localSaved = JSON.parse(raw);
-              }
-            } catch {}
-          }
-          const allItems = [...localSaved, ...SCREENSHOT_DEFAULT_CONVERSATIONS];
-          const uniqueItems: ConversationDisplayItem[] = [];
-          const seenIds = new Set<string>();
-          for (const item of allItems) {
-            if (!item.id || seenIds.has(item.id)) continue;
-            seenIds.add(item.id);
-            uniqueItems.push(item);
-          }
-          setConversations(uniqueItems);
-        }
-      } catch (err) {
-        console.error('Error loading data:', err);
-        setConversations(SCREENSHOT_DEFAULT_CONVERSATIONS);
-      } finally {
-        setLoading(false);
+        setConversations(mappedDb);
+      } else {
+        setConversations([]);
       }
+    } catch (err) {
+      console.error('Error loading database conversations:', err);
+      setConversations([]);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadData();
   }, []);
 
   // Filtered rows
   const filteredRows = conversations.filter(item => {
-    // Search query filter (matches Job Number, Company, Conversation ID, or PIC)
+    // Search query filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       const matchJob = item.job_number.toLowerCase().includes(q);
       const matchComp = item.company.toLowerCase().includes(q);
       const matchId = item.conversation_id.toLowerCase().includes(q);
       const matchPic = item.pic.toLowerCase().includes(q);
-      if (!matchJob && !matchComp && !matchId && !matchPic) {
+      const matchSummary = (item.summary || '').toLowerCase().includes(q);
+      if (!matchJob && !matchComp && !matchId && !matchPic && !matchSummary) {
         return false;
       }
     }
@@ -435,8 +317,11 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     }
 
     // Date filter
-    if (dateFilter !== 'Today (14 Sep 2026)' && dateFilter !== 'All Dates') {
-      if (item.date !== dateFilter) {
+    if (dateFilter !== 'All Dates') {
+      if (dateFilter === 'Today') {
+        const todayStr = formatDateDisplay(new Date().toISOString());
+        if (item.date !== todayStr) return false;
+      } else if (item.date !== dateFilter) {
         return false;
       }
     }
@@ -444,7 +329,17 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     return true;
   });
 
-  // Handle Export to CSV
+  // Calculate Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const validCurrentPage = Math.min(currentPage, totalPages);
+  const pagedRows = filteredRows.slice((validCurrentPage - 1) * pageSize, validCurrentPage * pageSize);
+
+  // Real Customer Options from Database
+  const accountOptions = customerList.map(
+    c => `${c.company_name} (${c.customer_code || 'CUST-001'})`
+  );
+
+  // Export CSV
   const handleExportCSV = () => {
     try {
       const headers = ['Conversation ID', 'Job Number', 'Company', 'Source', 'Date', 'PIC', 'Summary', 'Status'];
@@ -474,33 +369,23 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     }
   };
 
-  // Open "See more.." Detail Modal (Matching User Screenshot Exactly)
+  // Open Detail Modal
   const handleOpenDetail = (item: ConversationDisplayItem) => {
     setSelectedConversation(item);
     setIsEditDetailMode(false);
-    setEditSummary(
-      item.summary ||
-      'Discussed recent shipment delays. Customer requested schedule adjustment for container #2 and re-verification of documentation at Tanjung Priok Port.'
-    );
+    setEditSummary(item.summary || '');
     setEditStatus(item.status || 'active');
 
-    // Connected Job Numbers
     if (item.connected_job_numbers && item.connected_job_numbers.length > 0) {
       setEditJobNumbers([...item.connected_job_numbers]);
-    } else if (item.company.includes('DSV') || item.conversation_id === 'CONV-56757') {
-      setEditJobNumbers(['DSVEXP/2605/2551', 'DSVEXP/2605/2552']);
+    } else if (item.job_number && item.job_number !== '-') {
+      setEditJobNumbers([item.job_number]);
     } else {
-      const cleanJob = item.job_number.replace(/^#/, '');
-      setEditJobNumbers([cleanJob]);
+      setEditJobNumbers([]);
     }
-    setNewJobNumberInput('');
 
-    // Evidence Attachments: Hanya tampilkan jika PIC memang melampirkan berkas, jika tidak ada dibuat kosong
     if (item.evidence_attachments && item.evidence_attachments.length > 0) {
-      const realAttachments = item.evidence_attachments.filter(
-        att => att.name !== 'Notula_Meeting_03032026.pdf' && att.name !== 'SS_WA_Confirmation.png'
-      );
-      setEditAttachments(realAttachments);
+      setEditAttachments(item.evidence_attachments);
     } else if (item.document_urls && item.document_urls.length > 0) {
       const mappedDocs: EvidenceAttachmentItem[] = item.document_urls.map((url, idx) => {
         const fileName = url.split('/').pop()?.split('?')[0] || `Attachment_${idx + 1}`;
@@ -508,7 +393,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         return {
           id: `att-doc-${idx}-${Date.now()}`,
           name: decodeURIComponent(fileName),
-          size: 'Document',
+          size: 'Dokumen',
           type: isImage ? 'image' : 'pdf',
           url
         };
@@ -518,160 +403,34 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       setEditAttachments([]);
     }
 
-    // Audit History Logs (kosong jika belum di-update seseorang)
-    if (item.audit_logs && item.audit_logs.length > 0) {
-      setEditAuditLogs([...item.audit_logs]);
-    } else {
-      setEditAuditLogs([]);
-    }
-
+    setEditAuditLogs(item.audit_logs || []);
     setDetailSuccessMsg(null);
     setIsDetailModalOpen(true);
   };
 
-  // Handle uploading files when editing in Detail Modal
-  const handleDetailFileUpload = async (files: FileList | File[] | null) => {
-    if (!files) return;
-    const fileList = Array.from(files);
-    if (fileList.length === 0) return;
-
-    for (const file of fileList) {
-      try {
-        const res = await uploadApiFile(file);
-        const isPdf = file.type.includes('pdf') || file.name.toLowerCase().endsWith('.pdf');
-        const isImg = file.type.includes('image') || /\.(png|jpe?g|webp|gif)$/i.test(file.name);
-        if (res.success && res.data) {
-          setEditAttachments(prev => [
-            ...prev,
-            {
-              id: `att-${Date.now()}-${Math.random()}`,
-              name: res.data!.file_name,
-              size: `${res.data!.file_size_kb || Math.round(file.size / 1024)} KB`,
-              type: isPdf ? 'pdf' : isImg ? 'image' : 'document',
-              url: res.data!.file_url
-            }
-          ]);
-        } else {
-          setEditAttachments(prev => [
-            ...prev,
-            {
-              id: `att-${Date.now()}-${Math.random()}`,
-              name: file.name,
-              size: `${Math.round(file.size / 1024)} KB`,
-              type: isPdf ? 'pdf' : isImg ? 'image' : 'document',
-              url: URL.createObjectURL(file)
-            }
-          ]);
-        }
-      } catch (e) {
-        console.error('Detail file upload error:', e);
-      }
-    }
-    if (detailFileInputRef.current) detailFileInputRef.current.value = '';
-  };
-
-  // Save Detail Modal
-  const handleSaveDetail = async () => {
-    if (!selectedConversation) return;
-    setIsSavingDetail(true);
-    setDetailSuccessMsg(null);
-    try {
-      const now = new Date();
-      const day = String(now.getDate()).padStart(2, '0');
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const year = now.getFullYear();
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const currentTimestamp = `${day}-${month}-${year} ${hours}:${minutes}`;
-
-      const newLog: AuditLogItem = {
-        id: `log-${Date.now()}`,
-        user: 'Adelia',
-        timestamp: currentTimestamp,
-        badge: 'Updated Linked Job Number',
-        isLatest: true
-      };
-
-      const updatedAuditLogs = [
-        newLog,
-        ...editAuditLogs.map(l => ({ ...l, isLatest: false }))
-      ];
-
-      // If it has a real DB UUID id, update through API
-      if (!selectedConversation.id.startsWith('mock-')) {
-        await updateApiConversation({
-          id: selectedConversation.id,
-          summary: editSummary.trim(),
-          status: editStatus as any,
-          document_urls: editAttachments.map(a => a.url)
-        });
-      }
-
-      // Update local state
-      const updatedItem: ConversationDisplayItem = {
-        ...selectedConversation,
-        summary: editSummary.trim(),
-        status: editStatus,
-        connected_job_numbers: editJobNumbers,
-        evidence_attachments: editAttachments,
-        audit_logs: updatedAuditLogs,
-        job_number: editJobNumbers.length > 0 ? (editJobNumbers[0].startsWith('#') ? editJobNumbers[0] : `#${editJobNumbers[0]}`) : selectedConversation.job_number
-      };
-
-      setConversations(prev => prev.map(c => c.id === selectedConversation.id ? updatedItem : c));
-      if (typeof window !== 'undefined') {
-        try {
-          const raw = localStorage.getItem('andima_recorded_conversations');
-          const stored: ConversationDisplayItem[] = raw ? JSON.parse(raw) : [];
-          const updatedStored = stored.map(s => s.id === selectedConversation.id ? updatedItem : s);
-          localStorage.setItem('andima_recorded_conversations', JSON.stringify(updatedStored));
-        } catch {}
-      }
-      setSelectedConversation(updatedItem);
-      setEditAuditLogs(updatedAuditLogs);
-      setIsEditDetailMode(false);
-      setSaveSuccessNotif(true);
-    } catch (err: any) {
-      console.error('Error saving detail:', err);
-      alert(`Gagal menyimpan: ${err?.message || err}`);
-    } finally {
-      setIsSavingDetail(false);
-    }
-  };
-
-  // Pre-defined customer accounts matching the screenshot
-  const DEFAULT_CUSTOMER_ACCOUNTS = [
-    'PT DSV Transport Indonesia (CUST-JKT-0941)',
-    'PT JPG Trans Indonesia (CUST-JKT-0942)',
-    'PT Geodis Freight Forwarding (CUST-JKT-0943)',
-    'PT Sinar Logistik (CUST-SBY-0418)',
-    'PT Samudera Freight Nusantara (CUST-MDN-0442)',
-    'PT Kargo Global Andalan (CUST-JKT-1029)',
-    'PT Trans Megah Maritim (CUST-SBY-0512)',
-    'PT Berkah Cargo Pratama (CUST-BDG-0319)'
-  ];
-
-  // Combine default with loaded customers
-  const accountOptions = [
-    ...DEFAULT_CUSTOMER_ACCOUNTS,
-    ...customerList
-      .map(c => `${c.company_name} (${c.customer_code || 'CUST-001'})`)
-      .filter(acc => !DEFAULT_CUSTOMER_ACCOUNTS.includes(acc))
-  ];
-
   // Open Create Modal
   const handleOpenCreateModal = () => {
     setCreateFormError(null);
-    setSelectedAccount('PT DSV Transport Indonesia (CUST-JKT-0941)');
+    if (accountOptions.length > 0) {
+      setSelectedAccount(accountOptions[0]);
+    } else {
+      setSelectedAccount('');
+    }
     setJobNumberInput('');
-    setRecordDate('03/03/2026');
+
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    setRecordDate(`${dd}/${mm}/${yyyy}`);
+
     setChannelSelection('WhatsApp');
     setRecordSummary('');
     setNewUploadedFiles([]);
     setIsCreateModalOpen(true);
   };
 
-  // Handle uploading files in Create Modal (supports dropzone and input)
+  // Upload file in Create Modal
   const handleCreateFileUpload = async (files: FileList | File[] | null) => {
     if (!files) return;
     const fileList = Array.from(files);
@@ -682,7 +441,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       return;
     }
 
-    // REVISION 4: Batas ukuran file maks 10 MB
     for (const file of fileList) {
       if (file.size > 10 * 1024 * 1024) {
         setCreateFormError(`Ukuran file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimum 10 MB.`);
@@ -698,12 +456,11 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         if (res.success && res.data) {
           setNewUploadedFiles(prev => [...prev, res.data!]);
         } else {
-          // Fallback local attachment
           setNewUploadedFiles(prev => [
             ...prev,
             {
               file_name: file.name,
-              file_type: file.type || (file.name.endsWith('.txt') ? 'text/plain' : 'application/pdf'),
+              file_type: file.type || 'application/pdf',
               file_url: URL.createObjectURL(file),
               file_size_kb: Math.round(file.size / 1024)
             }
@@ -718,178 +475,93 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     }
   };
 
-  // Submit New Conversation (Conforms to UC-CRM-A2-003 and QA Test Cases TC-001 through TC-013)
+  // Submit New Conversation to Database
   const handleSubmitNewConversation = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreateFormError(null);
 
-    // Validity Checks based on FR-A2-001 & QA Document
     const hasAccount = Boolean(selectedAccount.trim());
     const hasDate = Boolean(recordDate.trim());
     const hasChannel = Boolean(channelSelection);
     const hasSummary = Boolean(recordSummary.trim());
 
-    // TC-012: Seluruh data wajib tidak diisi
     if (!hasAccount && !hasDate && !hasChannel && !hasSummary) {
       setCreateFormError('Data wajib Record Conversation tidak diisi. Harap lengkapi Customer/Company, Tanggal/Waktu, Channel, dan Isi/Ringkasan.');
       return;
     }
 
-    // TC-007: Customer/Company belum dipilih
     if (!hasAccount) {
       setCreateFormError('Customer/Company harus dipilih.');
       return;
     }
 
-    // TC-009: Tanggal/Waktu tidak diisi
     if (!hasDate) {
       setCreateFormError('Tanggal/Waktu harus diisi.');
       return;
     }
 
-    // TC-010: Channel tidak dipilih
     if (!hasChannel) {
       setCreateFormError('Channel harus dipilih.');
       return;
     }
 
-    // TC-011: Isi/Ringkasan tidak diisi
     if (!hasSummary) {
       setCreateFormError('Isi/Ringkasan harus diisi.');
       return;
     }
 
-    // REVISION 4: Batas ringkasan maks 200 kata
     const summaryWords = recordSummary.trim().split(/\s+/).filter(Boolean);
     if (summaryWords.length > 200) {
       setCreateFormError(`Isi ringkasan percakapan melebihi batas maksimum 200 kata (saat ini ${summaryWords.length} kata). Mohon persingkat.`);
       return;
     }
 
-    // TC-008: Job Number tidak ditemukan jika diisi dengan nomor fiktif (misal JOB-2026-999)
-    const rawJob = jobNumberInput.trim();
-    if (rawJob && (rawJob.includes('999') || rawJob.toLowerCase() === 'invalid')) {
-      setCreateFormError('Job Number tidak ditemukan dalam sistem.');
+    // Match customer from DB customerList
+    let matchedCompany = customerList.find(c => {
+      const optionStr = `${c.company_name} (${c.customer_code || 'CUST-001'})`;
+      return optionStr === selectedAccount || c.company_name.toLowerCase() === selectedAccount.toLowerCase();
+    });
+
+    if (!matchedCompany && customerList.length > 0) {
+      matchedCompany = customerList[0];
+    }
+
+    if (!matchedCompany) {
+      setCreateFormError('Tidak dapat menemukan data akun Customer dari database.');
       return;
     }
 
+    // Convert date string DD/MM/YYYY to YYYY-MM-DD for database
+    let formattedDateForDb = new Date().toISOString().split('T')[0];
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(recordDate)) {
+      const [dd, mm, yyyy] = recordDate.split('/');
+      formattedDateForDb = `${yyyy}-${mm}-${dd}`;
+    }
+
+    const rawJob = jobNumberInput.trim();
+
     setIsSubmittingNew(true);
     try {
-      const docUrls = newUploadedFiles.map(f => f.file_url).filter(Boolean);
-      const randomConvId = 'CONV-' + Math.floor(56759 + Math.random() * 100);
-
-      let companyName = selectedAccount;
-      let custCode = 'CUST-JKT-0941';
-      const match = selectedAccount.match(/^(.*?)\s*\((.*?)\)$/);
-      if (match) {
-        companyName = match[1].trim();
-        custCode = match[2].trim();
-      }
-
-      let matchedCustomerId: string | undefined = undefined;
-      const matchedCompany = customerList.find(c =>
-        c.company_name.toLowerCase().includes(companyName.toLowerCase()) ||
-        companyName.toLowerCase().includes(c.company_name.toLowerCase())
-      );
-      if (matchedCompany) {
-        matchedCustomerId = matchedCompany.company_list_id;
-      }
-
-      // TC-005 (Job Number opsional) & TC-006 (Lebih dari satu Job Number)
-      let finalJobNumber = '-';
-      let connectedJobNumbers: string[] = [];
-
-      if (rawJob) {
-        const splitJobs = rawJob
-          .split(/[,;\n]+/)
-          .map(j => j.trim())
-          .filter(Boolean)
-          .map(j => (j.startsWith('#') ? j : `#${j}`));
-
-        if (splitJobs.length > 0) {
-          finalJobNumber = splitJobs[0];
-          connectedJobNumbers = splitJobs;
-        }
-      }
-
-      const displayDate = formatDateDisplay(recordDate);
-
-      // Try creating in backend
-      let createdBackendItem: RecordConversationItem | undefined;
-      try {
-        if (matchedCustomerId) {
-          const res = await createApiConversation({
-            customer_id: matchedCustomerId,
-            customer_code: custCode,
-            job_number: finalJobNumber !== '-' ? finalJobNumber.replace(/^#/, '') : undefined,
-            channel_type: channelSelection,
-            conversation_date: recordDate.includes('-') && recordDate.length === 10 ? recordDate : new Date().toISOString().split('T')[0],
-            summary: recordSummary.trim(),
-            need_assistance: false,
-            urgency_level: 'standard',
-            sales_pic_name: activeUserName,
-            uploaded_files: newUploadedFiles
-          });
-          if (res.success && res.data) {
-            createdBackendItem = res.data;
-          }
-        }
-      } catch (backendErr) {
-        console.warn('Backend insert skipped, saving to client view:', backendErr);
-      }
-
-      const createdAttachments: EvidenceAttachmentItem[] = newUploadedFiles.map((f, idx) => {
-        const isPdf = f.file_type?.toLowerCase().includes('pdf') || f.file_name.toLowerCase().endsWith('.pdf');
-        const isImg = f.file_type?.toLowerCase().includes('image') || /\.(png|jpe?g|webp|gif|jpg)$/i.test(f.file_name);
-        return {
-          id: `att-${Date.now()}-${idx}`,
-          name: f.file_name,
-          size: f.file_size_kb ? `${f.file_size_kb} KB` : '1.0 MB',
-          type: isPdf ? 'pdf' : isImg ? 'image' : 'document',
-          url: f.file_url || '#'
-        };
-      });
-
-      const newItem: ConversationDisplayItem = {
-        id: createdBackendItem?.id || `conv-new-${Date.now()}`,
-        conversation_id: randomConvId,
-        job_number: finalJobNumber,
-        company: companyName,
-        source: channelSelection,
-        date: displayDate,
-        pic: activeUserName,
+      const res = await createApiConversation({
+        customer_id: matchedCompany.company_list_id,
+        customer_code: matchedCompany.customer_code || undefined,
+        job_number: rawJob ? rawJob.replace(/^#/, '') : undefined,
+        channel_type: channelSelection,
+        conversation_date: formattedDateForDb,
         summary: recordSummary.trim(),
-        status: 'active',
-        urgency_level: 'standard',
         need_assistance: false,
-        document_urls: docUrls,
-        connected_job_numbers: connectedJobNumbers.length > 0 ? connectedJobNumbers : undefined,
-        evidence_attachments: createdAttachments,
-        audit_logs: [
-          {
-            id: `log-${Date.now()}`,
-            user: activeUserName,
-            timestamp: `${displayDate} 09:00`,
-            badge: 'Created',
-            note: 'Record Conversation berhasil dibuat dan tersimpan'
-          }
-        ]
-      };
-
-      setConversations(prev => {
-        const filteredPrev = prev.filter(it => it.id !== newItem.id);
-        const next = [newItem, ...filteredPrev];
-        if (typeof window !== 'undefined') {
-          try {
-            const raw = localStorage.getItem('andima_recorded_conversations');
-            const prevStored: ConversationDisplayItem[] = raw ? JSON.parse(raw) : [];
-            const filteredStored = prevStored.filter(it => it.id !== newItem.id);
-            localStorage.setItem('andima_recorded_conversations', JSON.stringify([newItem, ...filteredStored]));
-          } catch {}
-        }
-        return next;
+        urgency_level: 'standard',
+        sales_pic_name: activeUserName,
+        uploaded_files: newUploadedFiles
       });
 
+      if (!res.success || !res.data) {
+        setCreateFormError(res.error || 'Gagal menyimpan percakapan ke database');
+        setIsSubmittingNew(false);
+        return;
+      }
+
+      await loadData();
       setRecordSummary('');
       setNewUploadedFiles([]);
       setJobNumberInput('');
@@ -897,15 +569,45 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       setSaveSuccessNotif(true);
     } catch (err: any) {
       console.error('Error creating conversation:', err);
-      alert(`Gagal menyimpan percakapan: ${err?.message || err}`);
+      setCreateFormError(`Gagal menyimpan percakapan ke database: ${err?.message || err}`);
     } finally {
       setIsSubmittingNew(false);
     }
   };
 
+  // Save Edit Detail to Database
+  const handleSaveDetail = async () => {
+    if (!selectedConversation) return;
+    setIsSavingDetail(true);
+    setDetailSuccessMsg(null);
+    try {
+      const res = await updateApiConversation({
+        id: selectedConversation.id,
+        summary: editSummary.trim(),
+        status: editStatus as any,
+        document_urls: editAttachments.map(a => a.url),
+        job_number: editJobNumbers.length > 0 ? editJobNumbers[0].replace(/^#/, '') : undefined
+      });
+
+      if (res.success) {
+        setDetailSuccessMsg('Perubahan berhasil disimpan ke database');
+        await loadData();
+        setIsEditDetailMode(false);
+        setSaveSuccessNotif(true);
+      } else {
+        alert(`Gagal memperbarui percakapan: ${res.error}`);
+      }
+    } catch (err: any) {
+      console.error('Error saving detail:', err);
+      alert(`Gagal menyimpan: ${err?.message || err}`);
+    } finally {
+      setIsSavingDetail(false);
+    }
+  };
+
   return (
     <div className="w-full pb-10">
-      {/* Save Record Success Notification Toast (Exact Match to User Screenshot) */}
+      {/* Save Record Success Notification Toast */}
       {saveSuccessNotif && (
         <div
           onClick={() => setSaveSuccessNotif(false)}
@@ -913,12 +615,12 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           title="Tutup notifikasi"
         >
           <div className="h-[31px] w-[210px] bg-[#ecfdf5] border-[1.5px] border-[#059669] rounded-lg px-3.5 flex items-center">
-            <span className="text-xs font-bold text-[#006838] leading-none">Succes</span>
+            <span className="text-xs font-bold text-[#006838] leading-none">Success</span>
           </div>
         </div>
       )}
 
-      {/* 1. TOP CONTROLS AND ACTION BAR CARD (Enclosed White Card matching screenshot) */}
+      {/* 1. TOP CONTROLS AND ACTION BAR CARD */}
       <div className="bg-white border border-slate-200/80 rounded-2xl p-3.5 px-4 shadow-2xs flex flex-wrap items-center justify-between gap-3">
         {/* Left: Search input & Filters */}
         <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
@@ -928,7 +630,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               placeholder="Cari Job Number, Customer, PIC, ID..."
               className="w-full bg-[#f4f6fa] border border-slate-200/60 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-700 placeholder:text-slate-400 outline-none focus:bg-white focus:border-blue-400 transition-colors"
             />
@@ -941,7 +646,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
               onClick={() => {
                 setIsChannelDropdownOpen(!isChannelDropdownOpen);
                 setIsDateDropdownOpen(false);
-                setIsStatusDropdownOpen(false);
               }}
               className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
             >
@@ -957,6 +661,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     type="button"
                     onClick={() => {
                       setChannelFilter(opt);
+                      setCurrentPage(1);
                       setIsChannelDropdownOpen(false);
                     }}
                     className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
@@ -971,45 +676,19 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
             )}
           </div>
 
-          {/* All Periods Dropdown */}
-          <div className="relative" ref={dateDropdownRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsDateDropdownOpen(!isDateDropdownOpen);
-                setIsChannelDropdownOpen(false);
-                setIsStatusDropdownOpen(false);
-              }}
-              className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
-            >
-              <span>{dateFilter === 'All Dates' || dateFilter === 'Today (14 Sep 2026)' ? 'All Periods' : dateFilter}</span>
-              <ChevronDown size={14} className={`text-slate-400 transition-transform ${isDateDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
-            </button>
-
-            {isDateDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1.5 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1">
-                {['All Periods', '03/03/2026', 'Today', 'This Week', 'This Month'].map(d => (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => {
-                      setDateFilter(d === 'All Periods' ? 'All Dates' : d);
-                      setIsDateDropdownOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-                      (dateFilter === d || (dateFilter === 'All Dates' && d === 'All Periods')) ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <span>{d}</span>
-                    {(dateFilter === d || (dateFilter === 'All Dates' && d === 'All Periods')) && <Check size={13} className="text-blue-600" />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Export CSV Button */}
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+            title="Export CSV"
+          >
+            <Download size={14} className="text-slate-500" />
+            <span>Export</span>
+          </button>
         </div>
 
-        {/* Far Right: + Record Conversation Button */}
+        {/* Right: + Record Conversation Button */}
         <button
           type="button"
           onClick={handleOpenCreateModal}
@@ -1029,7 +708,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[780px]">
-            {/* TABLE HEADER (Exact match to user screenshot header background #c6d2e6) */}
+            {/* TABLE HEADER */}
             <thead className="bg-[#c6d2e6] border-b border-slate-300/60">
               <tr>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
@@ -1081,7 +760,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                         Record Conversation Tidak Ditemukan
                       </h4>
                       <p className="text-xs text-slate-500 mt-1">
-                        Tidak terdapat percakapan yang sesuai dengan kriteria pencarian atau filter saat ini.
+                        Belum ada percakapan tersimpan di database yang sesuai dengan filter pencarian.
                       </p>
                       <button
                         type="button"
@@ -1095,7 +774,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((row, idx) => (
+                pagedRows.map((row, idx) => (
                   <tr 
                     key={`${row.id || 'row'}-${idx}`} 
                     className="hover:bg-slate-50/70 transition-colors"
@@ -1105,7 +784,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                       {row.conversation_id}
                     </td>
 
-                    {/* Job Number (Bold Dark #AENAT/...) */}
+                    {/* Job Number */}
                     <td className="py-4.5 px-6 text-center text-sm font-bold text-slate-900 whitespace-nowrap">
                       {row.job_number}
                     </td>
@@ -1115,7 +794,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                       {row.company}
                     </td>
 
-                    {/* Channel Badge (Meeting lavender, WhatsApp mint-green) */}
+                    {/* Channel Badge */}
                     <td className="py-4.5 px-6 text-center whitespace-nowrap">
                       {row.source.toLowerCase() === 'meeting' ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-[#f4e8ff] text-[#9333ea] border border-[#e9d5ff]">
@@ -1132,7 +811,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
                     {/* Date */}
                     <td className="py-4.5 px-6 text-center text-sm text-slate-700 whitespace-nowrap font-normal">
-                      {row.date}
+                      {row.date || '-'}
                     </td>
 
                     {/* PIC */}
@@ -1140,7 +819,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                       {row.pic}
                     </td>
 
-                    {/* Detail Link ("See more..") */}
+                    {/* Detail Link */}
                     <td className="py-4.5 px-6 text-center whitespace-nowrap">
                       <button
                         type="button"
@@ -1157,40 +836,42 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           </table>
         </div>
 
-        {/* 4. PAGINATION FOOTER (Matching screenshot exactly) */}
+        {/* 4. DYNAMIC PAGINATION FOOTER */}
         <div className="py-3.5 px-6 bg-white border-t border-slate-100 flex items-center justify-between">
-          <div className="text-xs text-slate-400">
-            Showing <strong className="text-slate-600">1-5</strong> of <strong className="text-slate-600">24</strong> customers
+          <div className="text-xs text-slate-500 font-medium">
+            Showing <strong className="text-slate-800">{filteredRows.length === 0 ? 0 : (validCurrentPage - 1) * pageSize + 1}</strong> to <strong className="text-slate-800">{Math.min(validCurrentPage * pageSize, filteredRows.length)}</strong> of <strong className="text-slate-800">{filteredRows.length}</strong> conversations
           </div>
 
           <div className="flex items-center gap-1.5">
             <button 
               type="button"
-              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-400 hover:bg-slate-50 transition-colors cursor-pointer"
+              disabled={validCurrentPage <= 1}
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
               Previous
             </button>
+            
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setCurrentPage(p)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                  validCurrentPage === p
+                    ? 'bg-[#1d4ed8] text-white shadow-2xs'
+                    : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+
             <button 
               type="button"
-              className="px-3 py-1.5 rounded-lg bg-[#1d4ed8] text-white text-xs font-bold shadow-2xs"
-            >
-              1
-            </button>
-            <button 
-              type="button"
-              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              2
-            </button>
-            <button 
-              type="button"
-              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              3
-            </button>
-            <button 
-              type="button"
-              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+              disabled={validCurrentPage >= totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
               Next
             </button>
@@ -1198,14 +879,13 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         </div>
       </div>
 
-      {/* 5. "SEE MORE.." DETAIL MODAL (Matching User Screenshot Exactly) */}
+      {/* 5. "SEE MORE.." DETAIL MODAL */}
       {isDetailModalOpen && selectedConversation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in">
           <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-[500px] overflow-hidden flex flex-col max-h-[94vh]">
-            {/* Header with ANDIMA Logo Preserved */}
+            {/* Header with Logo */}
             <div className="px-6 pt-5 pb-4 flex items-start justify-between border-b border-slate-200/80 bg-white shrink-0">
               <div className="flex items-center gap-3">
-                {/* Official ANDIMA Logo Preserved */}
                 <div className="w-10 h-10 bg-[#07111e] rounded-xl flex items-center justify-center p-1.5 shrink-0 shadow-xs border border-slate-700/20 select-none">
                   <img
                     src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo-ANDIMA-wzx4gpZx20EFE5IYcH3jqabixELIo3.png"
@@ -1227,8 +907,14 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
               </div>
             </div>
 
-            {/* Scrollable Body */}
+            {/* Body */}
             <div className="px-6 py-4 overflow-y-auto space-y-4 flex-1 text-xs">
+              {detailSuccessMsg && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl font-semibold">
+                  {detailSuccessMsg}
+                </div>
+              )}
+
               {/* 1. Customer / Company Card */}
               <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs">
                 <div className="flex items-start justify-between gap-2">
@@ -1241,7 +927,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     </h4>
                   </div>
 
-                  {/* Channel Badge (Meeting lavender, WhatsApp mint-green) */}
                   {selectedConversation.source.toLowerCase() === 'meeting' ? (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#f4e8ff] text-[#9333ea] border border-[#e9d5ff] shrink-0">
                       <Video size={13} className="text-[#9333ea]" />
@@ -1261,13 +946,13 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   <div>
                     <span className="text-xs text-slate-400 font-normal block">Dibuat Oleh:</span>
                     <span className="font-bold text-slate-800 text-xs block mt-0.5">
-                      {selectedConversation.pic} (Sales Executive)
+                      {selectedConversation.pic}
                     </span>
                   </div>
                   <div>
-                    <span className="text-xs text-slate-400 font-normal block">Tanggal & Waktu:</span>
+                    <span className="text-xs text-slate-400 font-normal block">Tanggal:</span>
                     <span className="font-bold text-slate-800 text-xs block mt-0.5">
-                      {selectedConversation.date}, 14:00 WIB
+                      {selectedConversation.date || '-'}
                     </span>
                   </div>
                 </div>
@@ -1279,28 +964,34 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   CONNECTED JOB NUMBERS
                 </label>
                 <div className="flex flex-wrap items-center gap-2">
-                  {(selectedConversation.connected_job_numbers && selectedConversation.connected_job_numbers.length > 0
-                    ? selectedConversation.connected_job_numbers
-                    : ['DSVEXP/2605/2551', 'DSVEXP/2605/2552']
-                  ).map((job, idx) => (
-                    <div
-                      key={idx}
-                      className="inline-flex items-center gap-1.5 bg-white text-slate-700 border border-slate-200/90 rounded-full px-3.5 py-1.5 text-xs font-semibold shadow-2xs"
-                    >
+                  {selectedConversation.connected_job_numbers && selectedConversation.connected_job_numbers.length > 0 ? (
+                    selectedConversation.connected_job_numbers.map((job, idx) => (
+                      <div
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 bg-white text-slate-700 border border-slate-200/90 rounded-full px-3.5 py-1.5 text-xs font-semibold shadow-2xs"
+                      >
+                        <Tag size={13} className="text-[#2563eb]" />
+                        <span>{job}</span>
+                      </div>
+                    ))
+                  ) : selectedConversation.job_number && selectedConversation.job_number !== '-' ? (
+                    <div className="inline-flex items-center gap-1.5 bg-white text-slate-700 border border-slate-200/90 rounded-full px-3.5 py-1.5 text-xs font-semibold shadow-2xs">
                       <Tag size={13} className="text-[#2563eb]" />
-                      <span>{job}</span>
+                      <span>{selectedConversation.job_number}</span>
                     </div>
-                  ))}
+                  ) : (
+                    <span className="text-xs text-slate-400 italic">Belum ada Job Number terhubung</span>
+                  )}
                 </div>
               </div>
 
-              {/* 3. Full Resume / Conclusion */}
+              {/* 3. Full Resume / Summary */}
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
                   FULL RESUME / CONCLUSION
                 </label>
                 <div className="bg-white border border-slate-200/90 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed font-normal shadow-2xs">
-                  {selectedConversation.summary || 'Discussed recent shipment delays. Customer requested schedule adjustment for container #2 and re-verification of documentation at Tanjung Priok Port.'}
+                  {selectedConversation.summary || 'Tidak ada isi/ringkasan percakapan.'}
                 </div>
               </div>
 
@@ -1308,68 +999,57 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    EVIDENCE ATTACHMENTS ({(editAttachments.length > 0 ? editAttachments : (selectedConversation.evidence_attachments || [])).length || 2})
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-normal">
-                    Max size 10MB
+                    EVIDENCE ATTACHMENTS ({(selectedConversation.evidence_attachments || []).length})
                   </span>
                 </div>
 
-                {(editAttachments.length > 0
-                  ? editAttachments
-                  : (selectedConversation.evidence_attachments && selectedConversation.evidence_attachments.length > 0
-                    ? selectedConversation.evidence_attachments
-                    : [
-                        {
-                          id: 'att-default-1',
-                          name: 'Notula_Meeting_03032026.pdf',
-                          size: '1.2 MB',
-                          type: 'pdf',
-                          url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
-                        }
-                      ]
-                    )
-                ).map((file) => (
-                  <div
-                    key={file.id}
-                    className="bg-white border border-slate-200/90 rounded-2xl p-3 flex items-center justify-between shadow-2xs hover:border-slate-300 transition-colors"
-                  >
-                    <div className="flex items-center gap-3 truncate pr-2">
-                      <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
-                        <FileText size={18} />
+                {selectedConversation.evidence_attachments && selectedConversation.evidence_attachments.length > 0 ? (
+                  selectedConversation.evidence_attachments.map((file) => (
+                    <div
+                      key={file.id}
+                      className="bg-white border border-slate-200/90 rounded-2xl p-3 flex items-center justify-between shadow-2xs hover:border-slate-300 transition-colors mb-2"
+                    >
+                      <div className="flex items-center gap-3 truncate pr-2">
+                        <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
+                          <FileText size={18} />
+                        </div>
+                        <div className="truncate">
+                          <p className="text-xs font-bold text-slate-800 truncate">
+                            {file.name}
+                          </p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            {file.size}
+                          </p>
+                        </div>
                       </div>
-                      <div className="truncate">
-                        <p className="text-xs font-bold text-slate-800 truncate">
-                          {file.name}
-                        </p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">
-                          {file.size} • PDF Document
-                        </p>
-                      </div>
-                    </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <a
-                        href={file.url}
-                        download={file.name}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-1 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                        title="Download"
-                      >
-                        <Download size={16} />
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => setPreviewModal({ isOpen: true, url: file.url, title: file.name })}
-                        className="p-1 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                        title="View"
-                      >
-                        <ExternalLink size={16} />
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <a
+                          href={file.url}
+                          download={file.name}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-1 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                          title="Download"
+                        >
+                          <Download size={16} />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewModal({ isOpen: true, url: file.url, title: file.name })}
+                          className="p-1 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                          title="View"
+                        >
+                          <ExternalLink size={16} />
+                        </button>
+                      </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-center text-xs text-slate-400">
+                    Tidak ada berkas terlampir pada percakapan ini.
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
@@ -1386,14 +1066,14 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           </div>
         </div>
       )}
-      {/* 6. "+ RECORD CONVERSATION" CREATION MODAL (Matching User Screenshot Exactly + Preserving Logo) */}
+
+      {/* 6. "+ RECORD CONVERSATION" CREATION MODAL */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in">
           <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-[540px] overflow-hidden flex flex-col max-h-[94vh]">
-            {/* Header with ANDIMA Logo Preserved */}
+            {/* Header with Logo */}
             <div className="px-6 py-4 flex items-start justify-between border-b border-slate-100 bg-white shrink-0">
               <div className="flex items-center gap-3">
-                {/* Official ANDIMA Logo Preserved */}
                 <div className="w-10 h-10 bg-[#07111e] rounded-xl flex items-center justify-center p-1.5 shrink-0 shadow-xs border border-slate-700/20 select-none">
                   <img
                     src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo-ANDIMA-wzx4gpZx20EFE5IYcH3jqabixELIo3.png"
@@ -1409,7 +1089,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     Record Customer Conversation
                   </h3>
                   <p className="text-[11px] text-slate-400 font-normal leading-tight mt-0.5">
-                    Log WhatsApp threads or meeting documents and declare assistance requirement.
+                    Log WhatsApp threads or meeting documents directly to database.
                   </p>
                 </div>
               </div>
@@ -1435,7 +1115,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   onClick={() => setIsAccountDropdownOpen(!isAccountDropdownOpen)}
                   className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-xl px-4 py-2.5 flex items-center justify-between text-xs font-semibold text-slate-800 shadow-2xs transition-colors cursor-pointer"
                 >
-                  <span className="truncate">{selectedAccount}</span>
+                  <span className="truncate">{selectedAccount || 'Pilih Customer...'}</span>
                   <ChevronDown size={16} className={`text-slate-400 shrink-0 transition-transform ${isAccountDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
                 </button>
 
@@ -1481,7 +1161,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 )}
               </div>
 
-              {/* Job Number (Optional) with Live Search Query */}
+              {/* Job Number (Optional) */}
               <div className="relative" ref={jobNumberDropdownRef}>
                 <label className="block text-xs font-semibold text-slate-800 mb-1.5 flex items-center justify-between">
                   <span>Job Number (Optional)</span>
@@ -1500,7 +1180,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                       setJobNumberInput(e.target.value);
                       setIsJobNumberDropdownOpen(true);
                     }}
-                    placeholder="Cari atau ketik Job Number... (mis. #AENAT/2609/0305)"
+                    placeholder="Ketik Job Number... (mis. #AENAT/2609/0305)"
                     className="w-full bg-white border border-slate-200 focus:border-blue-500 rounded-xl pl-9 pr-9 py-2.5 text-xs font-medium text-slate-800 outline-none shadow-2xs transition-colors placeholder:text-slate-400"
                   />
                   <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -1519,93 +1199,43 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   )}
                 </div>
 
-                {/* Search Query Floating Dropdown Results */}
                 {isJobNumberDropdownOpen && (
                   <div className="absolute top-full left-0 right-0 mt-1 max-h-52 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-40 p-1.5 animate-in fade-in slide-in-from-top-1">
                     <div className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between border-b border-slate-100 mb-1">
-                      <span>Rekomendasi Job Number</span>
+                      <span>Rekomendasi Job Number DB</span>
                       <span>{
-                        Array.from(new Set([
-                          '#AENAT/2609/0305',
-                          '#AENAT/2609/0306',
-                          '#AENAT/2609/0307',
-                          '#AENAT/2609/0308',
-                          '#AENAT/2609/0309',
-                          'DSVEXP/2605/2551',
-                          'DSVEXP/2605/2552',
-                          'DSVEXP/2605/2553',
-                          'JPG/EXP-2026-001',
-                          'GEODIS/IMP-2026-042',
-                          ...conversations.map(c => c.job_number),
-                          ...conversations.flatMap(c => c.connected_job_numbers || [])
-                        ])).filter(Boolean).filter(j => j.toLowerCase().includes(jobNumberInput.toLowerCase().trim())).length
+                        Array.from(new Set(conversations.map(c => c.job_number).filter(j => j && j !== '-')))
+                          .filter(j => j.toLowerCase().includes(jobNumberInput.toLowerCase().trim())).length
                       } opsi</span>
                     </div>
-                    {Array.from(new Set([
-                      '#AENAT/2609/0305',
-                      '#AENAT/2609/0306',
-                      '#AENAT/2609/0307',
-                      '#AENAT/2609/0308',
-                      '#AENAT/2609/0309',
-                      'DSVEXP/2605/2551',
-                      'DSVEXP/2605/2552',
-                      'DSVEXP/2605/2553',
-                      'JPG/EXP-2026-001',
-                      'GEODIS/IMP-2026-042',
-                      ...conversations.map(c => c.job_number),
-                      ...conversations.flatMap(c => c.connected_job_numbers || [])
-                    ])).filter(Boolean).filter(j => j.toLowerCase().includes(jobNumberInput.toLowerCase().trim())).length > 0 ? (
-                      Array.from(new Set([
-                        '#AENAT/2609/0305',
-                        '#AENAT/2609/0306',
-                        '#AENAT/2609/0307',
-                        '#AENAT/2609/0308',
-                        '#AENAT/2609/0309',
-                        'DSVEXP/2605/2551',
-                        'DSVEXP/2605/2552',
-                        'DSVEXP/2605/2553',
-                        'JPG/EXP-2026-001',
-                        'GEODIS/IMP-2026-042',
-                        ...conversations.map(c => c.job_number),
-                        ...conversations.flatMap(c => c.connected_job_numbers || [])
-                      ])).filter(Boolean).filter(j => j.toLowerCase().includes(jobNumberInput.toLowerCase().trim())).map((job) => (
-                        <button
-                          key={job}
-                          type="button"
-                          onClick={() => {
-                            setJobNumberInput(job);
-                            setIsJobNumberDropdownOpen(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-                            jobNumberInput === job ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-700 hover:bg-slate-50'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 truncate">
-                            <Tag size={13} className="text-blue-500 shrink-0" />
-                            <span className="truncate">{job}</span>
-                          </div>
-                          {jobNumberInput === job && <Check size={14} className="text-blue-600 shrink-0" />}
-                        </button>
-                      ))
+                    {Array.from(new Set(conversations.map(c => c.job_number).filter(j => j && j !== '-')))
+                      .filter(j => j.toLowerCase().includes(jobNumberInput.toLowerCase().trim())).length > 0 ? (
+                        Array.from(new Set(conversations.map(c => c.job_number).filter(j => j && j !== '-')))
+                          .filter(j => j.toLowerCase().includes(jobNumberInput.toLowerCase().trim())).map((job) => (
+                            <button
+                              key={job}
+                              type="button"
+                              onClick={() => {
+                                setJobNumberInput(job);
+                                setIsJobNumberDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
+                                jobNumberInput === job ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                <Tag size={13} className="text-blue-500 shrink-0" />
+                                <span className="truncate">{job}</span>
+                              </div>
+                              {jobNumberInput === job && <Check size={14} className="text-blue-600 shrink-0" />}
+                            </button>
+                          ))
                     ) : (
                       <div className="p-2 text-center text-xs text-slate-400">
-                        Tidak ada Job Number yang cocok dengan kata kunci &quot;{jobNumberInput}&quot;
+                        Tidak ada Job Number tersimpan yang cocok dengan &quot;{jobNumberInput}&quot;
                       </div>
                     )}
-                    {jobNumberInput.trim() && !Array.from(new Set([
-                      '#AENAT/2609/0305',
-                      '#AENAT/2609/0306',
-                      '#AENAT/2609/0307',
-                      '#AENAT/2609/0308',
-                      '#AENAT/2609/0309',
-                      'DSVEXP/2605/2551',
-                      'DSVEXP/2605/2552',
-                      'DSVEXP/2605/2553',
-                      'JPG/EXP-2026-001',
-                      'GEODIS/IMP-2026-042',
-                      ...conversations.map(c => c.job_number),
-                      ...conversations.flatMap(c => c.connected_job_numbers || [])
-                    ])).includes(jobNumberInput.trim()) && (
+                    {jobNumberInput.trim() && (
                       <button
                         type="button"
                         onClick={() => setIsJobNumberDropdownOpen(false)}
@@ -1652,9 +1282,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     <Calendar size={16} className="text-blue-600 pointer-events-none" />
                   </div>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
-                  <span>Pilih dari kalender (klik ikon) atau ketik angka (otomatis format DD/MM/YYYY)</span>
-                </p>
               </div>
 
               {/* Channel Type * */}
@@ -1663,7 +1290,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   Channel Type<span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 gap-3">
-                  {/* WhatsApp (.txt) */}
                   <div
                     onClick={() => setChannelSelection('WhatsApp')}
                     className={`rounded-xl py-2.5 px-4 flex items-center justify-between cursor-pointer transition-all ${
@@ -1682,7 +1308,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     </div>
                   </div>
 
-                  {/* Meeting Document */}
                   <div
                     onClick={() => setChannelSelection('Meeting')}
                     className={`rounded-xl py-2.5 px-4 flex items-center justify-between cursor-pointer transition-all ${
@@ -1725,15 +1350,15 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   required
                   value={recordSummary}
                   onChange={(e) => setRecordSummary(e.target.value)}
-                  placeholder="Diskusi bersama Pak Hendra (DSV) mengenai kepastian jadwal kontainer di Gate 3 Priok..."
+                  placeholder="Diskusi koordinasi pengiriman kargo dan verifikasi kontainer..."
                   className="w-full bg-white border border-slate-200 focus:border-blue-500 rounded-xl p-3 text-xs font-normal text-slate-800 leading-relaxed outline-none shadow-2xs transition-colors resize-none placeholder:text-slate-400"
                 />
               </div>
 
-              {/* File * */}
+              {/* File Upload */}
               <div>
                 <label className="block text-xs font-semibold text-slate-800 mb-1.5">
-                  File<span className="text-red-500">*</span>
+                  File Attachment (Optional)
                 </label>
                 <div
                   onClick={() => createFileInputRef.current?.click()}
@@ -1758,7 +1383,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     Drag and drop your file here, or <span className="text-[#2563eb] font-semibold underline">Browse files</span>
                   </p>
                   <div className="mt-2.5 px-3 py-1 rounded-lg border border-slate-200 bg-white text-[10px] text-slate-400 font-medium">
-                    Max file size: 10MB • UTF-8 format supported
+                    Max file size: 10MB
                   </div>
                 </div>
                 <input
@@ -1770,7 +1395,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   className="hidden"
                 />
 
-                {/* Uploaded items feedback */}
                 {newUploadedFiles.length > 0 && (
                   <div className="mt-2 space-y-1">
                     {newUploadedFiles.map((file, idx) => (
@@ -1798,7 +1422,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#10b981] inline-block" />
                   <span className="text-xs text-slate-400 font-medium">
-                    Auto-synced with C-Track Timeline
+                    Auto-synced with Supabase Database
                   </span>
                 </div>
 
@@ -1812,7 +1436,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   </button>
                   <button
                     type="submit"
-                    disabled={isSubmittingNew}
+                    disabled={isSubmittingNew || isUploadingFile}
                     className="px-5 py-2 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
                   >
                     {isSubmittingNew ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
@@ -1829,8 +1453,15 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       {previewModal?.isOpen && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-2xl w-full flex flex-col">
-            <div className="px-5 py-3 border-b border-slate-200">
+            <div className="px-5 py-3 border-b border-slate-200 flex items-center justify-between">
               <span className="font-bold text-sm text-slate-800">{previewModal.title}</span>
+              <button
+                type="button"
+                onClick={() => setPreviewModal(null)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                <X size={16} />
+              </button>
             </div>
             <div className="p-4 flex items-center justify-center min-h-[300px] bg-slate-50">
               <iframe

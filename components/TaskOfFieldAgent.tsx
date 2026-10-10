@@ -890,6 +890,26 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     showToast(`Assignment transferred to ${targetAgent}!`);
   };
 
+  const parseTaskDate = (task: FieldTaskItem): Date | null => {
+    const raw = task.handover_datetime || (task.timeline && task.timeline[0]?.timestamp) || task.issue_reported_at;
+    if (!raw) return null;
+    const clean = raw.trim();
+    if (/^\d{2}\/\d{2}\/\d{4}/.test(clean)) {
+      const [d, m, y] = clean.slice(0, 10).split('/');
+      return new Date(Number(y), Number(m) - 1, Number(d));
+    }
+    if (/^\d{2}-\d{2}-\d{4}/.test(clean)) {
+      const [d, m, y] = clean.slice(0, 10).split('-');
+      return new Date(Number(y), Number(m) - 1, Number(d));
+    }
+    if (/^\d{4}-\d{2}-\d{2}/.test(clean)) {
+      const [y, m, d] = clean.slice(0, 10).split('-');
+      return new Date(Number(y), Number(m) - 1, Number(d));
+    }
+    const parsed = new Date(clean);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  };
+
   // Filter tasks
   const filteredTasks = tasks.filter(t => {
     const q = searchQuery.toLowerCase().trim();
@@ -905,7 +925,50 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       (issueFilter === 'Resolved' && (!t.has_issue || t.issue_status === 'Resolved' || t.status === 'Completed')) ||
       (issueFilter === 'No Issue' && !t.has_issue && t.issue_status !== 'Issue');
 
-    return matchesSearch && matchesIssue;
+    const matchesPeriod = (() => {
+      if (!periodFilter || periodFilter === 'All' || periodFilter === 'All Periods') return true;
+
+      const taskDate = parseTaskDate(t);
+      if (!taskDate) return true;
+
+      const now = new Date();
+      const refToday = new Date(2026, 9, 8); // Seed date 08 Oct 2026
+
+      if (periodFilter === 'Today') {
+        const isTodayActual = (
+          taskDate.getDate() === now.getDate() &&
+          taskDate.getMonth() === now.getMonth() &&
+          taskDate.getFullYear() === now.getFullYear()
+        );
+        const isTodayRef = (
+          taskDate.getDate() === refToday.getDate() &&
+          taskDate.getMonth() === refToday.getMonth() &&
+          taskDate.getFullYear() === refToday.getFullYear()
+        );
+        return isTodayActual || isTodayRef;
+      }
+
+      if (periodFilter === 'This Week') {
+        const diffTimeNow = Math.abs(now.getTime() - taskDate.getTime());
+        const diffDaysNow = Math.ceil(diffTimeNow / (1000 * 60 * 60 * 24));
+        const diffTimeRef = Math.abs(refToday.getTime() - taskDate.getTime());
+        const diffDaysRef = Math.ceil(diffTimeRef / (1000 * 60 * 60 * 24));
+        return diffDaysNow <= 7 || diffDaysRef <= 7;
+      }
+
+      if (periodFilter === 'This Month') {
+        const isSameMonthNow = taskDate.getMonth() === now.getMonth() && taskDate.getFullYear() === now.getFullYear();
+        const isSameMonthRef = taskDate.getMonth() === refToday.getMonth() && taskDate.getFullYear() === refToday.getFullYear();
+        return isSameMonthNow || isSameMonthRef;
+      }
+
+      const formattedTaskDate = formatTaskDateDisplay(t.handover_datetime);
+      if (periodFilter === formattedTaskDate) return true;
+
+      return true;
+    })();
+
+    return matchesSearch && matchesIssue && matchesPeriod;
   });
 
   return (
@@ -967,7 +1030,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             </div>
 
             {/* Dropdown 2: All Periods */}
-            <div className="relative min-w-[130px]">
+            <div className="relative min-w-[140px]">
               <select
                 value={periodFilter}
                 onChange={(e) => setPeriodFilter(e.target.value)}
@@ -977,6 +1040,9 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 <option value="Today">Today</option>
                 <option value="This Week">This Week</option>
                 <option value="This Month">This Month</option>
+                {Array.from(new Set(tasks.map(t => formatTaskDateDisplay(t.handover_datetime)).filter(Boolean))).map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
               </select>
               <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
             </div>
