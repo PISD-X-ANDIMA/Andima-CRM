@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { cancelExpiredOneTimeMeetings } from "@/lib/services/meeting-service";
+import { getCurrentUserScope } from "@/lib/auth/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -39,12 +40,19 @@ export async function GET(request: NextRequest) {
 
   try {
     await cancelExpiredOneTimeMeetings();
-    const { data, error } = await (supabase as any)
+    const userScope = await getCurrentUserScope(supabase);
+    let meetingQuery = (supabase as any)
       .from("a1_customer_meetings")
-      .select("id, company_id, meeting_day, schedule_type, meeting_date, effective_start_date, start_time, end_time, status, a1_company_list!inner(company_name)")
+      .select("id, company_id, meeting_day, schedule_type, meeting_date, effective_start_date, start_time, end_time, status, representative_name, a1_company_list!inner(company_name, created_by)")
       .eq("is_active", true)
       .is("deleted_at", null)
       .neq("status", "cancelled");
+
+    if (userScope && !userScope.isManager) {
+      meetingQuery = meetingQuery.in("a1_company_list.created_by", userScope.identifiers);
+    }
+
+    const { data, error } = await meetingQuery;
     if (error) throw error;
     const matching = (data || []).filter((meeting: any) => {
       if (meeting.schedule_type === "one_day") return meeting.meeting_date === date;

@@ -4,9 +4,10 @@ import { getSalesExecutiveMetrics } from "@/lib/services/sales-executive-metrics
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const stats = await getSalesExecutiveMetrics();
+    const assignedTo = request.nextUrl.searchParams.get("assigned_to") || undefined;
+    const stats = await getSalesExecutiveMetrics(assignedTo);
     if (stats.totalCustomers === null || stats.upcomingMeetings === null || stats.tasks === null) {
       return createErrorResponse("STAT_001", "Dashboard statistics are temporarily unavailable", undefined, 503);
     }

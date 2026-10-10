@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createSupabaseOperationError } from "@/lib/supabase/errors";
 import { isValidPicPhoneNumber } from "@/lib/validation/pic-phone";
+import { getCurrentUserScope } from "@/lib/auth/roles";
 import {
   CustomerListItem,
   CustomerDetailItem,
@@ -49,6 +50,8 @@ export interface GetCustomersOptions {
   sortOrder?: "asc" | "desc";
   requireMeetings?: boolean;
   requireTransactions?: boolean;
+  executiveId?: string;
+  forceAll?: boolean;
 }
 
 /**
@@ -94,7 +97,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
   {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError) throw createSupabaseOperationError("Login session verification failed", authError);
-    if (!user) throw new Error("Authentication is required to load customers.");
+    const userScope = await getCurrentUserScope(supabase);
     let countQuery = (supabase as any)
       .from("a1_company_list")
       .select("company_list_id", { count: "exact", head: true })
@@ -104,9 +107,18 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
       .select("company_list_id, company_name, address, name, pic_phone_number, customer_code, job_number, created_by, created_at")
       .is("deleted_at", null);
 
+    // Data scoping: filter by specific Sales Executive if requested, or isolate to own data for non-managers
+    if (options.executiveId) {
+      countQuery = countQuery.eq("created_by", options.executiveId);
+      dataQuery = dataQuery.eq("created_by", options.executiveId);
+    } else if (!options.forceAll && userScope && !userScope.isManager) {
+      countQuery = countQuery.in("created_by", userScope.identifiers);
+      dataQuery = dataQuery.in("created_by", userScope.identifiers);
+    }
+
     if (search.trim()) {
       const term = `%${search.trim()}%`;
-      const searchFilter = `company_name.ilike.${term},name.ilike.${term},pic_phone_number.ilike.${term}`;
+      const searchFilter = `company_name.ilike.${term},name.ilike.${term},pic_phone_number.ilike.${term},created_by.ilike.${term}`;
       countQuery = countQuery.or(searchFilter);
       dataQuery = dataQuery.or(searchFilter);
     }
@@ -289,8 +301,8 @@ export async function getCustomerById(
   try {
     // Load the legacy Company List columns first. Related tables and migration-added
     // columns are optional so a saved customer remains viewable on the shared schema.
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    const userScope = await getCurrentUserScope(supabase);
+    if (!userScope) return null;
     const { data, error } = await (supabase as any)
       .from("a1_company_list")
       .select("company_list_id, company_name, name, pic_phone_number, address, customer_code, job_number, created_by, created_at, updated_at")
@@ -299,6 +311,9 @@ export async function getCustomerById(
       .maybeSingle();
     if (error) throw createSupabaseOperationError("a1_company_list detail query failed", error);
     if (!data) return null;
+    if (!userScope.isManager && data.created_by && !userScope.identifiers.includes(data.created_by)) {
+      return null;
+    }
 
     const { data: meetingRows, error: meetingError } = await (supabase as any)
       .from("a1_customer_meetings")
@@ -391,30 +406,30 @@ export async function createCustomer(
   }
 
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const userScope = await getCurrentUserScope(supabase);
+    if (!userScope) {
       return { success: false, error: "No login session found. Please sign in again." };
     }
 
-    const metadata = user?.user_metadata as Record<string, unknown> | undefined;
-    const createdBy =
-      (typeof metadata?.full_name === "string" && metadata.full_name.trim()) ||
-      (typeof metadata?.name === "string" && metadata.name.trim()) ||
-      user.email;
+    const createdBy = userScope.name || userScope.user.id || userScope.user.email;
     if (!createdBy) {
       return { success: false, error: "User identity is unavailable for the customer record." };
     }
 
-    const { data: existing, error: duplicateCheckError } = await (supabase as any)
+    let dupQuery = (supabase as any)
       .from("a1_company_list")
       .select("company_list_id")
       .ilike("company_name", input.company_name.trim().replace(/[\\%_]/g, "\\$&"))
       .is("deleted_at", null);
+    if (!userScope.isManager) {
+      dupQuery = dupQuery.in("created_by", userScope.identifiers);
+    }
+    const { data: existing, error: duplicateCheckError } = await dupQuery;
     if (duplicateCheckError) return { success: false, error: duplicateCheckError.message };
     if (existing?.length) {
       return {
         success: false,
-        error: "DUPLICATE_COMPANY: This company is already on your customer list",
+        error: "CUSTOMER_003: Gunakan nama unik",
       };
     }
 
@@ -452,8 +467,8 @@ export async function updateCustomer(
   if (!supabase) return { success: false, error: "Database client unavailable" };
 
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const userScope = await getCurrentUserScope(supabase);
+    if (!userScope) {
       return { success: false, error: "No login session found. Please sign in again." };
     }
     const updatePayload: Record<string, any> = {
@@ -465,10 +480,16 @@ export async function updateCustomer(
     if (input.pic_full_name) updatePayload.name = input.pic_full_name.trim();
     if (input.pic_phone_number !== undefined) updatePayload.pic_phone_number = input.pic_phone_number.trim();
 
-    const { error } = await (supabase as any)
+    let updateQuery = (supabase as any)
       .from("a1_company_list")
       .update(updatePayload)
       .eq("company_list_id", customerId);
+
+    if (!userScope.isManager) {
+      updateQuery = updateQuery.in("created_by", userScope.identifiers);
+    }
+
+    const { error } = await updateQuery;
 
     if (error) return { success: false, error: error.message.includes("a1_company_list_unique_active_company_name") ? "DUPLICATE_COMPANY: This company is already on the company list" : error.message };
 
@@ -488,8 +509,20 @@ export async function deleteCustomer(
   if (!supabase) return { success: false, error: "Database client unavailable" };
 
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No login session found. Please sign in again." };
+    const userScope = await getCurrentUserScope(supabase);
+    if (!userScope) return { success: false, error: "No login session found. Please sign in again." };
+
+    if (!userScope.isManager) {
+      const { data: existing } = await (supabase as any)
+        .from("a1_company_list")
+        .select("created_by")
+        .eq("company_list_id", customerId)
+        .maybeSingle();
+      if (!existing || (existing.created_by && !userScope.identifiers.includes(existing.created_by))) {
+        return { success: false, error: "Unauthorized: You can only delete your own customer." };
+      }
+    }
+
     const now = new Date().toISOString();
 
     // Deactivate scheduled meetings first. Their rows remain as history.

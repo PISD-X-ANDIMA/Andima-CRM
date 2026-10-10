@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
   const search = params.get("search")?.trim() || "";
   const page = Math.max(1, Number.parseInt(params.get("page") || "1", 10) || 1);
   const limit = Math.min(100, Math.max(1, Number.parseInt(params.get("limit") || "5", 10) || 5));
+  const assignedTo = params.get("assigned_to")?.trim() || "";
 
   try {
     // Collect company pages before paginating the rows which actually have an A2 transaction.
@@ -41,6 +42,8 @@ export async function GET(request: NextRequest) {
         page: pageNumber,
         perPage: 100,
         requireTransactions: true,
+        executiveId: assignedTo || undefined,
+        forceAll: !assignedTo,
       });
       transactionRows.push(...result.customers.filter((customer) => customer.transactionNo));
       totalPages = result.totalPages;

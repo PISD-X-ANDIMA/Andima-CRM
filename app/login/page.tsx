@@ -38,7 +38,7 @@ export default function LoginPage() {
         return;
       }
 
-      if (user) router.replace('/dashboard/sales-executive');
+      if (user) router.replace('/dashboard');
     })();
     return () => { active = false; };
   }, [router]);
@@ -201,7 +201,7 @@ export default function LoginPage() {
       }
 
       setSuccessMessage(`Login successful. Welcome, ${displayName}. Redirecting to the dashboard...`);
-      window.setTimeout(() => { router.replace('/dashboard/sales-executive'); }, 1200);
+      window.setTimeout(() => { router.replace('/dashboard'); }, 1200);
 
     } catch {
       setErrorMessage('Unable to reach the login server. Please try again.');

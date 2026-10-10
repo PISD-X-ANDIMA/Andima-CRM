@@ -16,27 +16,24 @@ interface SubMenuItem {
   href: string;
 }
 
-const salesExecutiveMenus: SubMenuItem[] = [
-  {
-    name: "Company List",
-    href: "/dashboard/company-list",
-  },
-  {
-    name: "Meeting Schedule",
-    href: "/dashboard/meeting-schedule",
-  },
-  {
-    name: "Record Conversation",
-    href: "/dashboard/record-conversation",
-  },
-  {
-    name: "Task of Field Agent",
-    href: "/dashboard/task-of-field-agent",
-  },
-  {
-    name: "Need Backup",
-    href: "/dashboard/need-backup",
-  },
+const defaultSalesExecutiveMenus: SubMenuItem[] = [
+  { name: "Dashboard", href: "/dashboard/sales-executive" },
+  { name: "Company List", href: "/dashboard/company-list" },
+  { name: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
+  { name: "Record Conversation", href: "/dashboard/record-conversation" },
+  { name: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
+  { name: "Need Backup", href: "/dashboard/need-backup" },
+  { name: "Field Agent Access", href: "/dashboard/field-agent-access" },
+];
+
+const defaultManagerMenus: SubMenuItem[] = [
+  { name: "Dashboard", href: "/dashboard/manager-customer-success" },
+  { name: "Company List", href: "/dashboard/company-list" },
+  { name: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
+  { name: "Record Conversation", href: "/dashboard/record-conversation" },
+  { name: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
+  { name: "Need Backup", href: "/dashboard/need-backup" },
+  { name: "Manage User Roles", href: "/dashboard/manager-customer-success/role-management" },
 ];
 
 export function Sidebar({ onHide }: { onHide: () => void }) {
@@ -44,37 +41,55 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
   const router = useRouter();
 
   const [crmOpen, setCrmOpen] = useState(true);
-  const [salesExecOpen, setSalesExecOpen] = useState(true);
-  const [submenuItems, setSubmenuItems] = useState(salesExecutiveMenus);
+  const [sectionOpen, setSectionOpen] = useState(true);
+  const [isManagerRole, setIsManagerRole] = useState(false);
+  const [roleTitle, setRoleTitle] = useState("Sales Executive");
+  const [sectionHref, setSectionHref] = useState("/dashboard/sales-executive");
+  const [submenuItems, setSubmenuItems] = useState(defaultSalesExecutiveMenus);
 
   useEffect(() => {
     let active = true;
     fetch("/api/v1/navigation/sidebar", { cache: "no-store" })
       .then((response) => response.json())
       .then((result) => {
-        if (!active || !result?.success || !Array.isArray(result.data?.menu)) return;
-        const crm = result.data.menu.find((item: { label?: string }) => item.label === "CRM");
-        const salesExecutive = crm?.children?.find((item: { label?: string }) => item.label === "Sales Executive");
-        if (!Array.isArray(salesExecutive?.children)) return;
-        const items = salesExecutive.children
-          .filter((item: { label?: string; href?: string | null }) => item.href && item.label)
-          .map((item: { label: string; href: string }) => ({ name: item.label, href: item.href }));
-        if (items.length) setSubmenuItems(items);
+        if (!active || !result?.success) return;
+        const isMgr = Boolean(result.data?.isManager);
+        setIsManagerRole(isMgr);
+        setRoleTitle(isMgr ? "Manager of Customer Success" : "Sales Executive");
+        setSectionHref(isMgr ? "/dashboard/manager-customer-success" : "/dashboard/sales-executive");
+
+        const crm = result.data?.menu?.find((item: { label?: string }) => item.label === "CRM");
+        const activeSection = crm?.children?.[0];
+        if (Array.isArray(activeSection?.children) && activeSection.children.length > 0) {
+          const items = activeSection.children
+            .filter((item: { label?: string; href?: string | null }) => item.href && item.label)
+            .map((item: { label: string; href: string }) => ({ name: item.label, href: item.href }));
+          if (items.length) setSubmenuItems(items);
+        } else {
+          setSubmenuItems(isMgr ? defaultManagerMenus : defaultSalesExecutiveMenus);
+        }
       })
-      .catch(() => { /* Keep the local menu when the navigation API is unavailable. */ });
+      .catch(() => {
+        if (pathname.includes("manager-customer-success")) {
+          setIsManagerRole(true);
+          setRoleTitle("Manager of Customer Success");
+          setSectionHref("/dashboard/manager-customer-success");
+          setSubmenuItems(defaultManagerMenus);
+        }
+      });
     return () => { active = false; };
-  }, []);
+  }, [pathname]);
 
-  const isSalesExecutiveDashboard =
-    pathname === "/dashboard/sales-executive";
-
-  const isSalesExecutiveActive =
+  const isCurrentDashboard = pathname === sectionHref;
+  const isCrmActive =
     pathname.startsWith("/dashboard/sales-executive") ||
+    pathname.startsWith("/dashboard/manager-customer-success") ||
     pathname.startsWith("/dashboard/company-list") ||
     pathname.startsWith("/dashboard/meeting-schedule") ||
     pathname.startsWith("/dashboard/record-conversation") ||
-    pathname.startsWith("/dashboard/need-backup");
-  const isCrmActive = isSalesExecutiveActive;
+    pathname.startsWith("/dashboard/task-of-field-agent") ||
+    pathname.startsWith("/dashboard/need-backup") ||
+    pathname.startsWith("/dashboard/field-agent-access");
 
   return (
     <aside className="group relative flex h-screen h-dvh w-[260px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
@@ -86,6 +101,8 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
+
+      {/* Header Logo */}
       <div className="mx-4 flex h-[102px] items-center gap-4 border-b border-white/10">
         <Image src="/andima-logo.png" alt="PT Andima Transportindo" width={470} height={300} className="h-12 w-[54px] shrink-0 object-contain" priority />
         <div className="leading-tight text-white">
@@ -112,72 +129,67 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
                   isCrmActive ? "text-blue-400" : "text-slate-500"
                 }`}
               />
-            <span>CRM</span>
+              <span>CRM</span>
             </span>
 
             <ChevronDown
-              className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${
+              className={`h-4 w-4 text-slate-300 transition-transform duration-200 ${
                 crmOpen ? "rotate-0" : "-rotate-90"
               }`}
             />
           </button>
 
           {crmOpen && (
-            <div className="mt-0.5 ml-2">
+            <div className="mt-1 ml-2">
               <div className="flex w-full items-center rounded-lg text-[13px] font-medium">
-              <Link
-                href="/dashboard/sales-executive"
-                prefetch
-                onClick={() => {
-                  setCrmOpen(true);
-                  setSalesExecOpen(true);
-                }}
-                className={`flex flex-1 items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors ${
-                  isSalesExecutiveDashboard
-                    ? "bg-[#b4c9d4] text-slate-700"
-                    : isSalesExecutiveActive
-                      ? "text-white"
-                      : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                <span>Sales Executive</span>
-
-              </Link>
+                <Link
+                  href={sectionHref}
+                  prefetch
+                  onClick={() => {
+                    setCrmOpen(true);
+                    setSectionOpen(true);
+                  }}
+                  className={`flex flex-1 items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
+                    isCurrentDashboard
+                      ? "bg-[#b4c9d4] text-slate-700 font-bold"
+                      : "text-slate-300 hover:text-white hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <span className="truncate">{roleTitle}</span>
+                </Link>
                 <button
                   type="button"
-                  aria-label="Toggle Sales Executive submenu"
+                  aria-label="Toggle section submenu"
                   onClick={(event) => {
                     event.stopPropagation();
-                    setSalesExecOpen((value) => !value);
+                    setSectionOpen((value) => !value);
                   }}
-                  className="rounded p-0.5 hover:bg-white/10"
+                  className="rounded p-1 hover:bg-white/10 text-slate-400"
                 >
                   <ChevronDown
                     className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                      salesExecOpen ? "rotate-0" : "-rotate-90"
-                    } ${
-                      isSalesExecutiveDashboard
-                        ? "text-blue-300"
-                        : "text-slate-500"
+                      sectionOpen ? "rotate-0" : "-rotate-90"
                     }`}
                   />
                 </button>
               </div>
 
-              {salesExecOpen && (
-                <div className="mt-0.5 ml-3 space-y-0.5">
+              {sectionOpen && (
+                <div className="mt-1 ml-3 space-y-0.5 border-l border-white/10 pl-2">
                   {submenuItems.map((item) => {
                     const isActive =
                       pathname === item.href ||
-                      pathname.startsWith(`${item.href}/`);
+                      (item.href !== "/dashboard/manager-customer-success" &&
+                       item.href !== "/dashboard/sales-executive" &&
+                       pathname.startsWith(`${item.href}/`));
 
                     return (
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`flex items-center rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150 ${
+                        className={`flex items-center rounded-lg px-3 py-2 text-[12.5px] font-medium transition-all duration-150 ${
                           isActive
-                            ? "bg-blue-600 text-white shadow-sm shadow-blue-600/25"
+                            ? "bg-blue-600 text-white shadow-sm shadow-blue-600/25 font-semibold"
                             : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
                         }`}
                       >
@@ -187,17 +199,12 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
                   })}
                 </div>
               )}
-
-              <div className="mt-0.5 flex w-full items-center rounded-lg px-3 py-2 text-[13px] font-medium text-slate-400">
-                <span>Field Agent</span>
-              </div>
-
             </div>
           )}
         </div>
-
       </nav>
 
+      {/* Logout Button */}
       <div className="px-[17px] pb-5 pt-3">
         <button
           type="button"

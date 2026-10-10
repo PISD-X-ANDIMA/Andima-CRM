@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { cancelExpiredOneTimeMeetings } from "@/lib/services/meeting-service";
+import { getCurrentUserScope } from "@/lib/auth/roles";
 
 export interface SalesExecutiveMetrics {
   totalCustomers: number | null;
@@ -35,15 +36,42 @@ function nextOccurrence(meeting: any, now: Date): Date | null {
   return occurrence;
 }
 
-export async function getSalesExecutiveMetrics(): Promise<SalesExecutiveMetrics> {
+export async function getSalesExecutiveMetrics(executiveId?: string): Promise<SalesExecutiveMetrics> {
   const supabase = await createServerSupabaseClient();
   if (!supabase) return EMPTY_METRICS;
   try {
     await cancelExpiredOneTimeMeetings();
+    const userScope = await getCurrentUserScope(supabase);
+
+    let custCountQuery = (supabase as any).from("a1_company_list").select("company_list_id", { count: "exact", head: true }).is("deleted_at", null);
+    let custIdQuery = (supabase as any).from("a1_company_list").select("company_list_id").is("deleted_at", null);
+
+    const isFiltered = Boolean(executiveId) || (userScope && !userScope.isManager);
+    if (executiveId) {
+      custCountQuery = custCountQuery.eq("created_by", executiveId);
+      custIdQuery = custIdQuery.eq("created_by", executiveId);
+    } else if (userScope && !userScope.isManager) {
+      custCountQuery = custCountQuery.in("created_by", userScope.identifiers);
+      custIdQuery = custIdQuery.in("created_by", userScope.identifiers);
+    }
+
+    const { data: userCompanies } = isFiltered ? await custIdQuery : { data: [] };
+    const userCompanyIds = (userCompanies || []).map((c: any) => c.company_list_id);
+
+    let meetQuery = (supabase as any)
+      .from("a1_customer_meetings")
+      .select("meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date")
+      .eq("is_active", true)
+      .is("deleted_at", null)
+      .eq("status", "scheduled");
+
+    if (isFiltered) {
+      meetQuery = meetQuery.in("company_id", userCompanyIds.length ? userCompanyIds : ["00000000-0000-0000-0000-000000000000"]);
+    }
+
     const [customersResult, meetingsResult, tasksResult] = await Promise.all([
-      (supabase as any).from("a1_company_list").select("company_list_id", { count: "exact", head: true }).is("deleted_at", null),
-      (supabase as any).from("a1_customer_meetings").select("meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date").eq("is_active", true).is("deleted_at", null).eq("status", "scheduled"),
-      // Squad A2 owns worksheet/task data; only read its row count for the dashboard KPI.
+      custCountQuery,
+      meetQuery,
       (supabase as any).from("a2_worksheets").select("*", { count: "exact", head: true }),
     ]);
     const now = new Date();

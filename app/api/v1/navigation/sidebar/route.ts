@@ -1,51 +1,56 @@
 import { NextRequest } from "next/server";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentUserScope } from "@/lib/auth/roles";
 
 export const dynamic = "force-dynamic";
 
 const salesExecutiveMenu = [
+  { label: "Dashboard", href: "/dashboard/sales-executive" },
   { label: "Company List", href: "/dashboard/company-list" },
   { label: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { label: "Record Conversation", href: "/dashboard/record-conversation" },
   { label: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
   { label: "Need Backup", href: "/dashboard/need-backup" },
+  { label: "Field Agent Access", href: "/dashboard/field-agent-access" },
+];
+
+const managerCustomerSuccessMenu = [
+  { label: "Dashboard", href: "/dashboard/manager-customer-success" },
+  { label: "Company List", href: "/dashboard/company-list" },
+  { label: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
+  { label: "Record Conversation", href: "/dashboard/record-conversation" },
+  { label: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
+  { label: "Need Backup", href: "/dashboard/need-backup" },
+  { label: "Manage User Roles", href: "/dashboard/manager-customer-success/role-management" },
 ];
 
 export async function GET(_request: NextRequest) {
   const supabase = await createServerSupabaseClient();
   if (!supabase) return createErrorResponse("DATABASE_001", "Database client unavailable", undefined, 503);
+
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return createErrorResponse("AUTH_001", "Authentication is required", undefined, 401);
+    const userScope = await getCurrentUserScope(supabase);
+    if (!userScope) return createErrorResponse("AUTH_001", "Authentication is required", undefined, 401);
 
-    let role = String(user.app_metadata?.role || user.user_metadata?.role || "").trim();
-    if (!role) {
-      const { data: profile } = await (supabase as any)
-        .from("b2_register")
-        .select("position_id")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (profile?.position_id) {
-        const { data: position } = await (supabase as any)
-          .from("d3_positions")
-          .select("title, name")
-          .eq("id", profile.position_id)
-          .maybeSingle();
-        role = String(position?.title || position?.name || "").trim();
-      }
-    }
-    if (!role) role = "CRM Staff";
+    const isManager = userScope.isManager;
+    const roleTitle = isManager ? "Manager of Customer Success" : "Sales Executive";
+    const sectionHref = isManager ? "/dashboard/manager-customer-success" : "/dashboard/sales-executive";
+    const submenus = isManager ? managerCustomerSuccessMenu : salesExecutiveMenu;
 
-    const isFieldAgent = role.toLowerCase().includes("field agent");
-    const crmChildren = isFieldAgent
-      ? [{ label: "Field Agent", href: null, children: [] }]
-      : [
-          { label: "Sales Executive", href: "/dashboard/sales-executive", children: salesExecutiveMenu },
-          { label: "Field Agent", href: null, children: [] },
-        ];
+    const crmChildren = [
+      {
+        label: roleTitle,
+        href: sectionHref,
+        children: submenus,
+      },
+    ];
+
     return createSuccessResponse({
-      role,
+      role: userScope.role,
+      roleTitle,
+      isManager,
+      name: userScope.name,
       menu: [
         { label: "CRM", href: null, children: crmChildren },
       ],
