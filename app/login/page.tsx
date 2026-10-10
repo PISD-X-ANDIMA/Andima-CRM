@@ -33,13 +33,7 @@ export default function LoginPage() {
   const [countdown, setCountdown] = useState<number>(0);
   const [greeting, setGreeting] = useState<string>('Good Morning');
 
-  // Cek jika sudah login di session ini, langsung redirect ke dashboard
-  useEffect(() => {
-    const isSessionLoggedIn = typeof window !== 'undefined' ? sessionStorage.getItem('andima_logged_in') : null;
-    if (isSessionLoggedIn) {
-      router.replace('/dashboard');
-    }
-  }, [router]);
+
   useEffect(() => {
     const hour = new Date().getHours();
     if (hour >= 3 && hour < 12) setGreeting('Good Morning');

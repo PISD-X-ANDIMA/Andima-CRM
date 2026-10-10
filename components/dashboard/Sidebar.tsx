@@ -272,7 +272,11 @@ export function Sidebar() {
           type="button"
           onClick={async () => {
             await supabase.auth.signOut();
-            try { localStorage.removeItem('andima_user'); } catch {}
+            try {
+              localStorage.removeItem('andima_user');
+              sessionStorage.removeItem('andima_logged_in');
+              sessionStorage.clear();
+            } catch {}
             router.push('/login');
           }}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300"
