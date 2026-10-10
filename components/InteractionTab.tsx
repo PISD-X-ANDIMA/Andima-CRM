@@ -1017,7 +1017,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              placeholder="Search by Employee's Name"
+              placeholder="Search by ID, Company, Summary..."
               className="w-full bg-[#f4f6fa] border border-slate-200/60 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-700 placeholder:text-slate-400 outline-none focus:bg-white focus:border-blue-400 transition-colors"
             />
           </div>
@@ -1133,9 +1133,6 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                   Date
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
-                  PIC
-                </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
                   Detail
                 </th>
               </tr>
@@ -1151,12 +1148,11 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     <td className="py-4.5 px-6"><div className="h-6 bg-slate-200/70 rounded-full w-24 mx-auto" /></td>
                     <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-24 mx-auto" /></td>
                     <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-20 mx-auto" /></td>
-                    <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-20 mx-auto" /></td>
                   </tr>
                 ))
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-14 text-center">
+                  <td colSpan={5} className="py-14 text-center">
                     <div className="flex flex-col items-center justify-center max-w-sm mx-auto text-center">
                       <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
                         <Search size={20} />
@@ -1212,11 +1208,6 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     {/* Date */}
                     <td className="py-4.5 px-6 text-center text-sm text-slate-700 whitespace-nowrap font-medium">
                       {row.date || '-'}
-                    </td>
-
-                    {/* PIC */}
-                    <td className="py-4.5 px-6 text-center text-sm text-slate-800 whitespace-nowrap font-medium">
-                      {row.pic}
                     </td>
 
                     {/* Detail Link */}
