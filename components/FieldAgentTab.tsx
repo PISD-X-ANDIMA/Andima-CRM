@@ -182,7 +182,7 @@ function EskalasiSubTab() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {items.map(item => (
-                <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
+                <tr key={item.id} className="border-l-4 border-l-transparent hover:border-l-blue-600 hover:bg-blue-50/30 transition-all duration-150">
                   <td className="px-4 py-3 text-xs text-slate-600 whitespace-nowrap">{item.date}</td>
                   <td className="px-4 py-3 text-xs font-semibold text-slate-800 whitespace-nowrap">{item.job_number}</td>
                   <td className="px-4 py-3 text-xs text-slate-700 max-w-xs">{item.reason}</td>

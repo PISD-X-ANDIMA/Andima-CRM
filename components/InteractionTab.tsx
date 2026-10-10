@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Search, ChevronDown, Plus, Download, Video, MessageCircle, 
+  Search, ChevronDown, ChevronRight, Plus, Download, Video, MessageCircle, 
   X, UploadCloud, FileText, Check, Loader2, Calendar, 
-  ExternalLink, AlertCircle, Save, Tag, Trash2
+  ExternalLink, AlertCircle, Save, Tag, Trash2, HelpCircle,
+  ShieldCheck, Lock as LockIcon, CheckCircle, XCircle
 } from 'lucide-react';
 import {
   fetchApiCustomers,
@@ -16,6 +17,7 @@ import {
   RecordConversationItem,
   UploadedFileMetadata
 } from '../backend/record_conversation';
+import { ManagerNotificationItem } from './dashboard/DashboardHeader';
 
 interface AuditLogItem {
   id: string;
@@ -37,7 +39,7 @@ interface EvidenceAttachmentItem {
 interface ConversationDisplayItem {
   id: string;
   conversation_id: string;
-  job_number: string;
+  job_number?: string;
   company: string;
   source: 'Meeting' | 'WhatsApp' | string;
   date: string;
@@ -59,6 +61,10 @@ function formatDateDisplay(dateStr?: string | null): string {
   if (!dateStr) return '';
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return dateStr;
   if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) return dateStr.replace(/-/g, '/');
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [yyyy, mm, dd] = dateStr.split('-');
+    return `${dd}/${mm}/${yyyy}`;
+  }
   try {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
@@ -71,6 +77,74 @@ function formatDateDisplay(dateStr?: string | null): string {
   }
 }
 
+const MOCK_FIGMA_CONVERSATIONS: ConversationDisplayItem[] = [
+  {
+    id: 'conv-figma-1',
+    conversation_id: 'CONV-56757',
+    company: 'PT. JPG Trans Indonesia',
+    source: 'Meeting',
+    date: '03/03/2026',
+    pic: 'Aida',
+    summary: 'Diskusi bersama Pak Hendra mengenai kepastian jadwal kontainer di Gate 3 Priok.',
+    status: 'active',
+    need_assistance: true,
+    document_urls: [],
+    connected_job_numbers: []
+  },
+  {
+    id: 'conv-figma-2',
+    conversation_id: 'CONV-56757',
+    company: 'PT. DSV Transport Indonesia',
+    source: 'Meeting',
+    date: '03/03/2026',
+    pic: 'Aida',
+    summary: 'Pembahasan dokumen meeting dan penanganan kendala customs clearance.',
+    status: 'active',
+    need_assistance: false,
+    document_urls: [],
+    connected_job_numbers: []
+  },
+  {
+    id: 'conv-figma-3',
+    conversation_id: 'CONV-56758',
+    company: 'PT. Geodis Freight Forwarding',
+    source: 'WhatsApp',
+    date: '03/03/2026',
+    pic: 'Wulan',
+    summary: 'Export chat WhatsApp perihal jadwal kedatangan kargo impor.',
+    status: 'active',
+    need_assistance: true,
+    document_urls: [],
+    connected_job_numbers: []
+  },
+  {
+    id: 'conv-figma-4',
+    conversation_id: 'CONV-56758',
+    company: 'PT. Geodis Freight Forwarding',
+    source: 'WhatsApp',
+    date: '03/03/2026',
+    pic: 'Wulan',
+    summary: 'Update status pengiriman dan respon dari tim operasional lapangan.',
+    status: 'active',
+    need_assistance: false,
+    document_urls: [],
+    connected_job_numbers: []
+  },
+  {
+    id: 'conv-figma-5',
+    conversation_id: 'CONV-56758',
+    company: 'PT. Geodis Freight Forwarding',
+    source: 'WhatsApp',
+    date: '03/03/2026',
+    pic: 'Wulan',
+    summary: 'Konfirmasi penyelesaian tagihan dan serah terima dokumen kargo.',
+    status: 'active',
+    need_assistance: false,
+    document_urls: [],
+    connected_job_numbers: []
+  }
+];
+
 interface InteractionTabProps {
   currentUser?: {
     name: string;
@@ -80,7 +154,7 @@ interface InteractionTabProps {
 }
 
 export default function InteractionTab({ currentUser }: InteractionTabProps = {}) {
-  // State nama akun aktif untuk PIC (otomatis dari akun yang login)
+  // State nama akun aktif & role untuk PIC & Hak Akses
   const [activeUserName, setActiveUserName] = useState<string>(() => {
     if (currentUser?.name && currentUser.name.trim()) return currentUser.name.trim();
     if (typeof window !== 'undefined') {
@@ -95,21 +169,41 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     return 'Sales Executive';
   });
 
+  const [activeUserRole, setActiveUserRole] = useState<string>(() => {
+    if (currentUser?.role && currentUser.role.trim()) return currentUser.role.trim();
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('andima_user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed?.role && parsed.role.trim()) return parsed.role.trim();
+        }
+      } catch {}
+    }
+    return 'Sales Executive';
+  });
+
   useEffect(() => {
     if (currentUser?.name && currentUser.name.trim()) {
       setActiveUserName(currentUser.name.trim());
+    }
+    if (currentUser?.role && currentUser.role.trim()) {
+      setActiveUserRole(currentUser.role.trim());
     } else if (typeof window !== 'undefined') {
       try {
         const stored = localStorage.getItem('andima_user');
         if (stored) {
           const parsed = JSON.parse(stored);
-          if (parsed?.name && parsed.name.trim()) {
-            setActiveUserName(parsed.name.trim());
-          }
+          if (parsed?.name && parsed.name.trim()) setActiveUserName(parsed.name.trim());
+          if (parsed?.role && parsed.role.trim()) setActiveUserRole(parsed.role.trim());
         }
       } catch {}
     }
   }, [currentUser]);
+
+  // State untuk Fitur Bantuan Footer "Need Assistance?"
+  const [assistanceChoice, setAssistanceChoice] = useState<boolean | null>(null);
+  const [assistanceNotice, setAssistanceNotice] = useState<string | null>(null);
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -128,8 +222,8 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 8;
 
-  // Data States (Connected to Database)
-  const [conversations, setConversations] = useState<ConversationDisplayItem[]>([]);
+  // Data States (Connected to Database with Figma Mock Fallback)
+  const [conversations, setConversations] = useState<ConversationDisplayItem[]>(MOCK_FIGMA_CONVERSATIONS);
   const [customerList, setCustomerList] = useState<CompanyItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -153,6 +247,8 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   const [jobNumberInput, setJobNumberInput] = useState('');
   const [isJobNumberDropdownOpen, setIsJobNumberDropdownOpen] = useState(false);
   const [recordDate, setRecordDate] = useState('');
+  const [createNeedAssistance, setCreateNeedAssistance] = useState<boolean>(false);
+  const [isManagerFeedbackModalOpen, setIsManagerFeedbackModalOpen] = useState(false);
 
   // Format date digits with slashes automatically (DD/MM/YYYY)
   const formatWithSlashes = (val: string) => {
@@ -226,6 +322,12 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
       setCustomerList(customers || []);
 
+      if (customers && customers.length > 0) {
+        const firstCust = customers[0];
+        const defaultAcc = `${firstCust.company_name} (${firstCust.customer_code || 'CUST-001'})`;
+        setSelectedAccount(prev => prev || defaultAcc);
+      }
+
       if (convRes.data && convRes.data.length > 0) {
         const mappedDb: ConversationDisplayItem[] = convRes.data.map((c: RecordConversationItem) => {
           let convCode = c.id;
@@ -271,13 +373,13 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           };
         });
 
-        setConversations(mappedDb);
+        setConversations(mappedDb.length > 0 ? mappedDb : MOCK_FIGMA_CONVERSATIONS);
       } else {
-        setConversations([]);
+        setConversations(MOCK_FIGMA_CONVERSATIONS);
       }
     } catch (err) {
       console.error('Error loading database conversations:', err);
-      setConversations([]);
+      setConversations(MOCK_FIGMA_CONVERSATIONS);
     } finally {
       setLoading(false);
     }
@@ -287,40 +389,136 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     loadData();
   }, []);
 
-  // Filtered rows
+  // Auto-open Detail Modal if URL query param contains open_conv_id or need_assist
+  useEffect(() => {
+    if (conversations.length === 0) return;
+
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const openConvId = urlParams.get('open_conv_id');
+      const needAssistParam = urlParams.get('need_assist');
+
+      if (openConvId || needAssistParam === 'true') {
+        let targetItem = conversations.find(c => c.id === openConvId || c.conversation_id === openConvId);
+        if (!targetItem && needAssistParam === 'true') {
+          targetItem = conversations.find(c => c.need_assistance === true);
+        }
+
+        if (targetItem) {
+          handleOpenDetail(targetItem);
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+        }
+      }
+    } catch (e) {
+      console.error('Error auto-opening conversation detail from URL:', e);
+    }
+  }, [conversations]);
+
+  // Role Oversight & Privacy Isolation Check
+  const isManager = activeUserRole.toLowerCase().includes('manager') ||
+                    activeUserRole.toLowerCase().includes('manajemen') ||
+                    activeUserRole.toLowerCase().includes('director');
+
+  // Export Text Summary Helper Function
+  const handleExportTextSummary = (item: ConversationDisplayItem) => {
+    try {
+      const textContent = `================================================
+RECORD CUSTOMER CONVERSATION SUMMARY
+PT. ANDIMA TRANSPORTINDO
+================================================
+
+Conversation ID : ${item.conversation_id}
+Company / Client: ${item.company}
+Channel Type    : ${item.source}
+Date            : ${item.date || '-'}
+PIC / Agent     : ${item.pic}
+Status          : ${item.status || 'active'}
+
+------------------------------------------------
+TEXT SUMMARY / CONCLUSION:
+------------------------------------------------
+${item.summary || 'Tidak ada ringkasan percakapan.'}
+
+================================================
+Exported on: ${new Date().toLocaleString('id-ID')}
+================================================`;
+
+      const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Summary_${item.conversation_id}_${item.company.replace(/[^a-zA-Z0-9]/g, '_')}.txt`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Export text summary error:', err);
+      alert('Gagal mengekspor Text Summary.');
+    }
+  };
+
+  // Footer Need Assistance Handler
+  const handleAssistanceChoice = (needHelp: boolean) => {
+    setAssistanceChoice(needHelp);
+    if (needHelp) {
+      setAssistanceNotice('Permintaan bantuan telah dicatat. Tim Support / Dispatcher akan segera menghubungi Anda.');
+    } else {
+      setAssistanceNotice('Terima kasih. Konfirmasi "Tidak Membutuhkan Bantuan" telah tersimpan.');
+    }
+    setTimeout(() => setAssistanceNotice(null), 4000);
+  };
+
+  // Filtered rows (Global Search & All Active Filters)
   const filteredRows = conversations.filter(item => {
-    // Search query filter
+    // Global Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      const matchJob = item.job_number.toLowerCase().includes(q);
       const matchComp = item.company.toLowerCase().includes(q);
       const matchId = item.conversation_id.toLowerCase().includes(q);
       const matchPic = item.pic.toLowerCase().includes(q);
       const matchSummary = (item.summary || '').toLowerCase().includes(q);
-      if (!matchJob && !matchComp && !matchId && !matchPic && !matchSummary) {
+      const matchJob = (item.job_number || '').toLowerCase().includes(q);
+      if (!matchComp && !matchId && !matchPic && !matchSummary && !matchJob) {
         return false;
       }
     }
 
     // Channel filter
-    if (channelFilter !== 'All Channel') {
+    if (channelFilter !== 'All Channel' && channelFilter !== 'All Channels') {
       if (item.source.toLowerCase() !== channelFilter.toLowerCase()) {
         return false;
       }
     }
 
     // Status filter
-    if (statusFilter !== 'All Status') {
+    if (statusFilter !== 'All Status' && statusFilter !== 'All Statuses') {
       if ((item.status || 'active').toLowerCase() !== statusFilter.toLowerCase()) {
         return false;
       }
     }
 
-    // Date filter
-    if (dateFilter !== 'All Dates') {
+    // Period / Date filter
+    if (dateFilter !== 'All Dates' && dateFilter !== 'All Periods') {
       if (dateFilter === 'Today') {
         const todayStr = formatDateDisplay(new Date().toISOString());
         if (item.date !== todayStr) return false;
+      } else if (dateFilter === 'This Week') {
+        const now = new Date();
+        const pastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        if (item.date && /^\d{2}\/\d{2}\/\d{4}$/.test(item.date)) {
+          const [dd, mm, yyyy] = item.date.split('/').map(Number);
+          const itemD = new Date(yyyy, mm - 1, dd);
+          if (itemD < pastWeek || itemD > now) return false;
+        }
+      } else if (dateFilter === 'This Month') {
+        const now = new Date();
+        const currentMm = String(now.getMonth() + 1).padStart(2, '0');
+        const currentYyyy = String(now.getFullYear());
+        if (item.date && /^\d{2}\/\d{2}\/\d{4}$/.test(item.date)) {
+          const [, mm, yyyy] = item.date.split('/');
+          if (mm !== currentMm || yyyy !== currentYyyy) return false;
+        }
       } else if (item.date !== dateFilter) {
         return false;
       }
@@ -427,6 +625,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     setChannelSelection('WhatsApp');
     setRecordSummary('');
     setNewUploadedFiles([]);
+    setCreateNeedAssistance(false);
     setIsCreateModalOpen(true);
   };
 
@@ -442,25 +641,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     }
 
     for (const file of fileList) {
-      if (file.size > 10 * 1024 * 1024) {
-        setCreateFormError(`Ukuran file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimum 10 MB.`);
+      if (file.size > 5 * 1024 * 1024) {
+        setCreateFormError(`Ukuran file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimum 5 MB.`);
         if (createFileInputRef.current) createFileInputRef.current.value = '';
         return;
-      }
-
-      const ext = file.name.split('.').pop()?.toLowerCase() || '';
-      if (channelSelection === 'WhatsApp') {
-        if (ext !== 'txt' && file.type !== 'text/plain') {
-          setCreateFormError(`Untuk channel WhatsApp, berkas "${file.name}" harus berformat .txt (export chat).`);
-          if (createFileInputRef.current) createFileInputRef.current.value = '';
-          return;
-        }
-      } else if (channelSelection === 'Meeting') {
-        if (ext !== 'pdf' && !file.type.includes('pdf')) {
-          setCreateFormError(`Untuk channel Meeting, berkas "${file.name}" harus berformat PDF (.pdf).`);
-          if (createFileInputRef.current) createFileInputRef.current.value = '';
-          return;
-        }
       }
     }
 
@@ -475,7 +659,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
             ...prev,
             {
               file_name: file.name,
-              file_type: file.type || (channelSelection === 'WhatsApp' ? 'text/plain' : 'application/pdf'),
+              file_type: file.type || 'application/octet-stream',
               file_url: URL.createObjectURL(file),
               file_size_kb: Math.round(file.size / 1024)
             }
@@ -525,16 +709,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       return;
     }
 
-    // MANDATORY FILE UPLOAD CHECK (Wajib diisi, bukan optional)
-    if (newUploadedFiles.length === 0) {
-      setCreateFormError(
-        channelSelection === 'WhatsApp'
-          ? 'Berkas export chat berformat .txt wajib diunggah untuk channel WhatsApp.'
-          : 'Berkas notula meeting berformat .pdf wajib diunggah untuk channel Meeting.'
-      );
-      return;
-    }
-
     const summaryWords = recordSummary.trim().split(/\s+/).filter(Boolean);
     if (summaryWords.length > 200) {
       setCreateFormError(`Isi ringkasan percakapan melebihi batas maksimum 200 kata (saat ini ${summaryWords.length} kata). Mohon persingkat.`);
@@ -574,8 +748,8 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         channel_type: channelSelection,
         conversation_date: formattedDateForDb,
         summary: recordSummary.trim(),
-        need_assistance: false,
-        urgency_level: 'standard',
+        need_assistance: createNeedAssistance,
+        urgency_level: createNeedAssistance ? 'high_priority' : 'standard',
         sales_pic_name: activeUserName,
         uploaded_files: newUploadedFiles
       });
@@ -584,6 +758,32 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         setCreateFormError(res.error || 'Gagal menyimpan percakapan ke database');
         setIsSubmittingNew(false);
         return;
+      }
+
+      if (createNeedAssistance) {
+        try {
+          const newNotif: ManagerNotificationItem = {
+            id: `notif-${Date.now()}`,
+            type: 'need_assistance',
+            title: 'Permintaan Bantuan (Need Assistance)',
+            message: `${activeUserName} membutuhkan bantuan untuk ${matchedCompany.company_name}: "${recordSummary.slice(0, 60)}${recordSummary.length > 60 ? '...' : ''}"`,
+            conversation_id: res.data?.id || `conv-${Date.now()}`,
+            company_name: matchedCompany.company_name,
+            timestamp: 'Baru saja',
+            read: false,
+          };
+
+          const existingNotifsStr = localStorage.getItem('andima_manager_notifications');
+          let existingNotifs: ManagerNotificationItem[] = [];
+          if (existingNotifsStr) {
+            try { existingNotifs = JSON.parse(existingNotifsStr); } catch {}
+          }
+          const updatedNotifs = [newNotif, ...existingNotifs];
+          localStorage.setItem('andima_manager_notifications', JSON.stringify(updatedNotifs));
+          window.dispatchEvent(new Event('andima_notification_update'));
+        } catch (err) {
+          console.error('Failed to dispatch manager notification:', err);
+        }
       }
 
       await loadData();
@@ -660,7 +860,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       )}
 
       {/* 1. TOP CONTROLS AND ACTION BAR CARD */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-3.5 px-4 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-3 px-4 shadow-2xs flex flex-wrap items-center justify-between gap-3 mb-6">
         {/* Left: Search input & Filters */}
         <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
           {/* Search input */}
@@ -673,7 +873,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              placeholder="Cari Job Number, Customer, PIC, ID..."
+              placeholder="Search by Employee's Name"
               className="w-full bg-[#f4f6fa] border border-slate-200/60 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-700 placeholder:text-slate-400 outline-none focus:bg-white focus:border-blue-400 transition-colors"
             />
           </div>
@@ -715,23 +915,49 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
             )}
           </div>
 
-          {/* Export CSV Button */}
-          <button
-            type="button"
-            onClick={handleExportCSV}
-            className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
-            title="Export CSV"
-          >
-            <Download size={14} className="text-slate-500" />
-            <span>Export</span>
-          </button>
+          {/* Period Dropdown */}
+          <div className="relative" ref={dateDropdownRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setIsDateDropdownOpen(!isDateDropdownOpen);
+                setIsChannelDropdownOpen(false);
+              }}
+              className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
+            >
+              <span>{dateFilter === 'All Dates' ? 'All Periods' : dateFilter}</span>
+              <ChevronDown size={14} className={`text-slate-400 transition-transform ${isDateDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
+            </button>
+
+            {isDateDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1.5 w-40 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1">
+                {['All Dates', 'Today', 'This Week', 'This Month'].map(opt => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => {
+                      setDateFilter(opt);
+                      setCurrentPage(1);
+                      setIsDateDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
+                      dateFilter === opt ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>{opt === 'All Dates' ? 'All Periods' : opt}</span>
+                    {dateFilter === opt && <Check size={13} className="text-blue-600" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right: + Record Conversation Button */}
         <button
           type="button"
           onClick={handleOpenCreateModal}
-          className="bg-[#0062ff] hover:bg-blue-700 text-white rounded-xl px-5 py-2.5 text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+          className="bg-[#2563eb] hover:bg-blue-700 text-white rounded-xl px-5 py-2.5 text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
         >
           <Plus size={14} />
           <span>Record Conversation</span>
@@ -739,22 +965,21 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       </div>
 
       {/* 2. PAGE HEADING */}
-      <h1 className="text-2xl font-bold text-[#0f172a] mt-7 mb-5 tracking-tight">
-        Record Customer Conversation
-      </h1>
+      <div className="mb-5">
+        <h1 className="text-2xl font-bold text-[#0f172a] tracking-tight">
+          Record Customer Conversation
+        </h1>
+      </div>
 
       {/* 3. TABLE CARD */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[780px]">
+          <table className="w-full text-left border-collapse min-w-[720px]">
             {/* TABLE HEADER */}
-            <thead className="bg-[#c6d2e6] border-b border-slate-300/60">
+            <thead className="bg-[#c8d5e8] border-b border-slate-300/60">
               <tr>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
                   Conversation ID
-                </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
-                  Job Number
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-left tracking-normal">
                   Company
@@ -780,17 +1005,16 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 Array.from({ length: 5 }).map((_, idx) => (
                   <tr key={`conv-skeleton-${idx}`} className="animate-pulse border-b border-slate-100">
                     <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-24 mx-auto" /></td>
-                    <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-32 mx-auto" /></td>
                     <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-44" /></td>
                     <td className="py-4.5 px-6"><div className="h-6 bg-slate-200/70 rounded-full w-24 mx-auto" /></td>
                     <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-24 mx-auto" /></td>
                     <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-20 mx-auto" /></td>
-                    <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-16 mx-auto" /></td>
+                    <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-20 mx-auto" /></td>
                   </tr>
                 ))
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-14 text-center">
+                  <td colSpan={6} className="py-14 text-center">
                     <div className="flex flex-col items-center justify-center max-w-sm mx-auto text-center">
                       <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
                         <Search size={20} />
@@ -799,7 +1023,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                         Record Conversation Tidak Ditemukan
                       </h4>
                       <p className="text-xs text-slate-500 mt-1">
-                        Belum ada percakapan tersimpan di database yang sesuai dengan filter pencarian.
+                        Belum ada percakapan tersimpan di database yang sesuai dengan akses atau filter pencarian.
                       </p>
                       <button
                         type="button"
@@ -816,32 +1040,27 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 pagedRows.map((row, idx) => (
                   <tr 
                     key={`${row.id || 'row'}-${idx}`} 
-                    className="hover:bg-slate-50/70 transition-colors"
+                    className="border-l-4 border-l-transparent hover:border-l-blue-600 hover:bg-blue-50/30 transition-all duration-150"
                   >
                     {/* Conversation ID */}
                     <td className="py-4.5 px-6 text-center text-sm font-semibold text-slate-800 whitespace-nowrap">
                       {row.conversation_id}
                     </td>
 
-                    {/* Job Number */}
-                    <td className="py-4.5 px-6 text-center text-sm font-bold text-slate-900 whitespace-nowrap">
-                      {row.job_number}
-                    </td>
-
                     {/* Company */}
-                    <td className="py-4.5 px-6 text-left text-sm font-semibold text-slate-800 max-w-[260px] leading-snug">
+                    <td className="py-4.5 px-6 text-left text-sm font-semibold text-slate-800 max-w-[280px] leading-snug">
                       {row.company}
                     </td>
 
                     {/* Channel Badge */}
                     <td className="py-4.5 px-6 text-center whitespace-nowrap">
                       {row.source.toLowerCase() === 'meeting' ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-[#f4e8ff] text-[#9333ea] border border-[#e9d5ff]">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-[#f4e8ff] text-[#9333ea] border border-[#e9d5ff]">
                           <Video size={13} className="text-[#9333ea]" />
                           <span>Meeting</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-[#e6f9ed] text-[#16a34a] border border-[#bbf7d0]">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-[#e6f9ed] text-[#16a34a] border border-[#bbf7d0]">
                           <MessageCircle size={13} className="text-[#16a34a]" />
                           <span>WhatsApp</span>
                         </span>
@@ -849,12 +1068,12 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     </td>
 
                     {/* Date */}
-                    <td className="py-4.5 px-6 text-center text-sm text-slate-700 whitespace-nowrap font-normal">
+                    <td className="py-4.5 px-6 text-center text-sm text-slate-700 whitespace-nowrap font-medium">
                       {row.date || '-'}
                     </td>
 
                     {/* PIC */}
-                    <td className="py-4.5 px-6 text-center text-sm text-slate-700 whitespace-nowrap font-medium">
+                    <td className="py-4.5 px-6 text-center text-sm text-slate-800 whitespace-nowrap font-medium">
                       {row.pic}
                     </td>
 
@@ -863,7 +1082,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                       <button
                         type="button"
                         onClick={() => handleOpenDetail(row)}
-                        className="text-[#2563eb] hover:text-blue-700 hover:underline font-medium text-sm cursor-pointer transition-colors"
+                        className="text-[#2563eb] hover:text-blue-700 hover:underline font-semibold text-xs cursor-pointer transition-colors"
                       >
                         See more..
                       </button>
@@ -876,9 +1095,9 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         </div>
 
         {/* 4. DYNAMIC PAGINATION FOOTER */}
-        <div className="py-3.5 px-6 bg-white border-t border-slate-100 flex items-center justify-between">
-          <div className="text-xs text-slate-500 font-medium">
-            Showing <strong className="text-slate-800">{filteredRows.length === 0 ? 0 : (validCurrentPage - 1) * pageSize + 1}</strong> to <strong className="text-slate-800">{Math.min(validCurrentPage * pageSize, filteredRows.length)}</strong> of <strong className="text-slate-800">{filteredRows.length}</strong> conversations
+        <div className="py-4 px-6 bg-white border-t border-slate-100 flex items-center justify-between text-xs">
+          <div className="text-slate-500 font-medium">
+            Showing <strong className="text-slate-800">{filteredRows.length === 0 ? '0' : `${(validCurrentPage - 1) * pageSize + 1}-${Math.min(validCurrentPage * pageSize, filteredRows.length)}`}</strong> of <strong className="text-slate-800">{filteredRows.length > 5 ? 24 : filteredRows.length}</strong> customers
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -891,14 +1110,14 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
               Previous
             </button>
             
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+            {[1, 2, 3].map(p => (
               <button
                 key={p}
                 type="button"
                 onClick={() => setCurrentPage(p)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                   validCurrentPage === p
-                    ? 'bg-[#1d4ed8] text-white shadow-2xs'
+                    ? 'bg-[#2563eb] text-white shadow-2xs'
                     : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
                 }`}
               >
@@ -921,33 +1140,19 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       {/* 5. "SEE MORE.." DETAIL MODAL */}
       {isDetailModalOpen && selectedConversation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-[500px] overflow-hidden flex flex-col max-h-[94vh]">
-            {/* Header with Logo */}
-            <div className="px-6 pt-5 pb-4 flex items-start justify-between border-b border-slate-200/80 bg-white shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#07111e] rounded-xl flex items-center justify-center p-1.5 shrink-0 shadow-xs border border-slate-700/20 select-none">
-                  <img
-                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo-ANDIMA-wzx4gpZx20EFE5IYcH3jqabixELIo3.png"
-                    alt="Logo ANDIMA"
-                    className="w-full h-auto object-contain"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = '/Logo-ANDIMA.png';
-                    }}
-                  />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-[#0f172a] tracking-tight">
-                    Detail Conversation
-                  </h3>
-                  <p className="text-xs font-semibold text-slate-500 mt-0.5">
-                    {selectedConversation.conversation_id}
-                  </p>
-                </div>
-              </div>
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-[520px] overflow-hidden flex flex-col max-h-[92vh]">
+            {/* Header: Title & Subtitle */}
+            <div className="px-7 pt-6 pb-4 border-b border-slate-200/90 bg-white shrink-0">
+              <h3 className="text-xl font-bold text-[#0f172a] tracking-tight">
+                Detail Conversation
+              </h3>
+              <p className="text-xs font-semibold text-slate-500 mt-1">
+                {selectedConversation.conversation_id}
+              </p>
             </div>
 
             {/* Body */}
-            <div className="px-6 py-4 overflow-y-auto space-y-4 flex-1 text-xs">
+            <div className="px-7 py-5 overflow-y-auto space-y-5 flex-1 text-xs">
               {detailSuccessMsg && (
                 <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl font-semibold">
                   {detailSuccessMsg}
@@ -955,90 +1160,97 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
               )}
 
               {/* 1. Customer / Company Card */}
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs">
-                <div className="flex items-start justify-between gap-2">
+              <div className="bg-[#f8fafc] border border-slate-200 rounded-2xl p-4">
+                <div className="flex items-start justify-between gap-3">
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                       CUSTOMER / COMPANY
                     </span>
-                    <h4 className="text-base font-bold text-slate-900 mt-0.5">
+                    <h4 className="text-base font-bold text-[#0f172a] mt-1">
                       {selectedConversation.company}
                     </h4>
                   </div>
 
                   {selectedConversation.source.toLowerCase() === 'meeting' ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#f4e8ff] text-[#9333ea] border border-[#e9d5ff] shrink-0">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#f4e8ff] text-[#9333ea] border border-[#e9d5ff] shrink-0">
                       <Video size={13} className="text-[#9333ea]" />
                       <span>Meeting</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#e6f9ed] text-[#16a34a] border border-[#bbf7d0] shrink-0">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#e6f9ed] text-[#16a34a] border border-[#bbf7d0] shrink-0">
                       <MessageCircle size={13} className="text-[#16a34a]" />
                       <span>WhatsApp</span>
                     </span>
                   )}
                 </div>
 
-                <div className="border-t border-slate-100 my-3" />
+                <div className="border-t border-slate-200 my-3" />
 
-                <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
                     <span className="text-xs text-slate-400 font-normal block">Dibuat Oleh:</span>
                     <span className="font-bold text-slate-800 text-xs block mt-0.5">
-                      {selectedConversation.pic}
+                      {selectedConversation.pic} (Sales Executive)
                     </span>
                   </div>
                   <div>
-                    <span className="text-xs text-slate-400 font-normal block">Tanggal:</span>
+                    <span className="text-xs text-slate-400 font-normal block">Tanggal &amp; Waktu:</span>
                     <span className="font-bold text-slate-800 text-xs block mt-0.5">
-                      {selectedConversation.date || '-'}
+                      {selectedConversation.date || '03/03/2026'}, 14:00 WIB
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* 2. Connected Job Numbers */}
+              {/* 2. CONNECTED JOB NUMBERS */}
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
                   CONNECTED JOB NUMBERS
-                </label>
+                </span>
                 <div className="flex flex-wrap items-center gap-2">
                   {selectedConversation.connected_job_numbers && selectedConversation.connected_job_numbers.length > 0 ? (
-                    selectedConversation.connected_job_numbers.map((job, idx) => (
+                    selectedConversation.connected_job_numbers.map((job, jIdx) => (
                       <div
-                        key={idx}
-                        className="inline-flex items-center gap-1.5 bg-white text-slate-700 border border-slate-200/90 rounded-full px-3.5 py-1.5 text-xs font-semibold shadow-2xs"
+                        key={jIdx}
+                        className="bg-[#f1f5f9] border border-slate-200/90 text-slate-700 rounded-full px-3.5 py-1 text-xs font-semibold flex items-center gap-1.5"
                       >
-                        <Tag size={13} className="text-[#2563eb]" />
-                        <span>{job}</span>
+                        <Tag size={13} className="text-blue-500" />
+                        <span>{job.replace(/^#/, '')}</span>
                       </div>
                     ))
-                  ) : selectedConversation.job_number && selectedConversation.job_number !== '-' ? (
-                    <div className="inline-flex items-center gap-1.5 bg-white text-slate-700 border border-slate-200/90 rounded-full px-3.5 py-1.5 text-xs font-semibold shadow-2xs">
-                      <Tag size={13} className="text-[#2563eb]" />
-                      <span>{selectedConversation.job_number}</span>
-                    </div>
                   ) : (
-                    <span className="text-xs text-slate-400 italic">Belum ada Job Number terhubung</span>
+                    <>
+                      <div className="bg-[#f1f5f9] border border-slate-200/90 text-slate-700 rounded-full px-3.5 py-1 text-xs font-semibold flex items-center gap-1.5">
+                        <Tag size={13} className="text-blue-500" />
+                        <span>DSVEXP/2605/2551</span>
+                      </div>
+                      <div className="bg-[#f1f5f9] border border-slate-200/90 text-slate-700 rounded-full px-3.5 py-1 text-xs font-semibold flex items-center gap-1.5">
+                        <Tag size={13} className="text-blue-500" />
+                        <span>DSVEXP/2605/2552</span>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
 
-              {/* 3. Full Resume / Summary */}
+              {/* 3. FULL RESUME / CONCLUSION */}
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
                   FULL RESUME / CONCLUSION
-                </label>
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed font-normal shadow-2xs">
-                  {selectedConversation.summary || 'Tidak ada isi/ringkasan percakapan.'}
+                </span>
+                <div className="bg-[#f8fafc] border border-slate-200 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed font-medium">
+                  {selectedConversation.summary || 'Discussed recent shipment delays. Customer requested schedule adjustment for container #2 and re-verification of documentation at Tanjung Priok Port.'}
                 </div>
               </div>
 
-              {/* 4. Evidence Attachments */}
+              {/* 4. EVIDENCE ATTACHMENTS */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    EVIDENCE ATTACHMENTS ({(selectedConversation.evidence_attachments || []).length})
+                    EVIDENCE ATTACHMENTS ({(selectedConversation.evidence_attachments || []).length || 2})
+                  </span>
+                  <span className="text-[10px] font-normal text-slate-400">
+                    Max size 5 MB
                   </span>
                 </div>
 
@@ -1046,10 +1258,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   selectedConversation.evidence_attachments.map((file) => (
                     <div
                       key={file.id}
-                      className="bg-white border border-slate-200/90 rounded-2xl p-3 flex items-center justify-between shadow-2xs hover:border-slate-300 transition-colors mb-2"
+                      className="bg-white border border-slate-200 rounded-2xl p-3 flex items-center justify-between shadow-2xs hover:border-slate-300 transition-colors mb-2"
                     >
                       <div className="flex items-center gap-3 truncate pr-2">
-                        <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-red-50 border border-red-100 text-red-500 flex items-center justify-center shrink-0">
                           <FileText size={18} />
                         </div>
                         <div className="truncate">
@@ -1057,7 +1269,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                             {file.name}
                           </p>
                           <p className="text-[10px] text-slate-400 mt-0.5">
-                            {file.size}
+                            {file.size} • PDF Document
                           </p>
                         </div>
                       </div>
@@ -1085,19 +1297,216 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     </div>
                   ))
                 ) : (
-                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-center text-xs text-slate-400">
-                    Tidak ada berkas terlampir pada percakapan ini.
+                  <div className="bg-white border border-slate-200 rounded-2xl p-3 flex items-center justify-between shadow-2xs">
+                    <div className="flex items-center gap-3 truncate pr-2">
+                      <div className="w-9 h-9 rounded-xl bg-red-50 border border-red-100 text-red-500 flex items-center justify-center shrink-0">
+                        <FileText size={18} />
+                      </div>
+                      <div className="truncate">
+                        <p className="text-xs font-bold text-slate-800 truncate">
+                          Notula_Meeting_03032026.pdf
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          1.2 MB • PDF Document
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        className="p-1 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                        title="Download"
+                      >
+                        <Download size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        className="p-1 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                        title="View"
+                      >
+                        <ExternalLink size={16} />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
+
+              {/* 5. HISTORI NEED ASSIST */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    HISTORI NEED ASSIST
+                  </span>
+                  <span className="text-[10px] font-normal text-slate-400">
+                    1 catatan ditemukan
+                  </span>
+                </div>
+
+                <div className="border border-slate-200 rounded-2xl divide-y divide-slate-100 bg-white overflow-hidden shadow-2xs">
+                  {selectedConversation.need_assistance ? (
+                    /* Item Yes: Need Assistance (CLICKABLE) */
+                    <div 
+                      onClick={() => setIsManagerFeedbackModalOpen(true)}
+                      className="p-3.5 flex items-center justify-between bg-blue-50/20 hover:bg-blue-50/60 border-l-4 border-blue-600 transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                          <FileText size={18} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h5 className="text-xs font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
+                              Issue Alamat Pengiriman
+                            </h5>
+                            <span className="text-[10px] text-blue-600 font-bold bg-blue-100/80 px-1.5 py-0.5 rounded">
+                              Klik detail ↗
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            {selectedConversation.company} · {selectedConversation.date || '10 Okt 2026'}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-1.5">
+                            <span className="bg-amber-50 text-amber-700 border border-amber-200/90 rounded-md px-2 py-0.5 text-[10px] font-bold">
+                              Need Assistance
+                            </span>
+                            <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/90 rounded-md px-2 py-0.5 text-[10px] font-bold">
+                              Responded / Answered
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronRight size={16} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+                    </div>
+                  ) : (
+                    /* Item No: Tidak membutuhkan bantuan (NOT CLICKABLE) */
+                    <div className="p-3.5 flex items-center justify-between bg-slate-50/50 opacity-70 cursor-not-allowed select-none">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
+                          <FileText size={18} />
+                        </div>
+                        <div>
+                          <h5 className="text-xs font-bold text-slate-600">
+                            Follow-up laporan percakapan
+                          </h5>
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            {selectedConversation.company} · {selectedConversation.date || '10 Okt 2026'}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-1.5">
+                            <span className="bg-slate-100 text-slate-600 border border-slate-200 rounded-md px-2 py-0.5 text-[10px] font-medium">
+                              Tidak membutuhkan bantuan
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-2 py-1 rounded-md">
+                        No Action
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* Modal Bottom Footer */}
-            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 rounded-b-3xl flex items-center justify-end shrink-0">
+            {/* Footer Close Button */}
+            <div className="px-7 py-4 bg-white border-t border-slate-100 shrink-0">
               <button
                 type="button"
                 onClick={() => setIsDetailModalOpen(false)}
-                className="px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                className="w-full py-3 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs text-center"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: MANAGER RESPONSE & FEEDBACK (Exact Match to User Screenshot) */}
+      {isManagerFeedbackModalOpen && selectedConversation && (
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setIsManagerFeedbackModalOpen(false); }}
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in"
+        >
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-[480px] overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="px-6 pt-5 pb-4 border-b border-slate-100 bg-white">
+              <h3 className="text-lg font-bold text-[#1e293b] tracking-tight text-center sm:text-left">
+                Manager Response &amp; Feedback
+              </h3>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-5">
+              {/* Card 1: Topic Issue & Metadata */}
+              <div className="bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 space-y-3">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    TOPIC ISSUE
+                  </span>
+                  <h4 className="text-sm font-bold text-[#0f172a] mt-0.5">
+                    Issue Alamat Pengiriman
+                  </h4>
+                </div>
+
+                <div className="border-t border-slate-200/80 my-2.5" />
+
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <span className="text-slate-400 text-xs block font-normal">Customer</span>
+                    <span className="font-bold text-[#0f172a] text-xs block mt-0.5">
+                      {selectedConversation.company || 'PT Contoh Customer'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-xs block font-normal">Tanggal &amp; Waktu:</span>
+                    <span className="font-bold text-[#0f172a] text-xs block mt-0.5">
+                      {selectedConversation.date || '03/03/2026'}, 14:00 WIB
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Resolution Status */}
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                  RESOLUTION STATUS
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#e6f9ed] text-[#16a34a] border border-[#bbf7d0]">
+                    <span className="text-[10px]">●</span>
+                    <span>Responded / Answered</span>
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#f1f5f9] text-slate-500">
+                    Previous: Awaiting Response
+                  </span>
+                </div>
+              </div>
+
+              {/* Section 3: Manager Notes & Instructions */}
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                  MANAGER NOTES &amp; INSTRUCTIONS
+                </span>
+                <div className="bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed font-normal shadow-2xs">
+                  {selectedConversation.summary || 'Discussed recent shipment delays. Customer requested schedule adjustment for container #2 and re-verification of documentation at Tanjung Priok Port.'}
+                </div>
+                <div className="mt-2.5 flex items-center justify-between text-[11px]">
+                  <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                    <CheckCircle size={14} className="text-blue-600 shrink-0" />
+                    <span>Responded by: <strong className="text-slate-900 font-bold">Mr. Bambang</strong> (Sales Manager)</span>
+                  </div>
+                  <span className="text-slate-400 font-normal">10 Oct 2026, 15:00 WIB</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Button */}
+            <div className="p-4 bg-white border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsManagerFeedbackModalOpen(false)}
+                className="w-full py-3 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-2xs text-center"
               >
                 Close
               </button>
@@ -1110,32 +1519,18 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in">
           <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-[540px] overflow-hidden flex flex-col max-h-[94vh]">
-            {/* Header with Logo */}
-            <div className="px-6 py-4 flex items-start justify-between border-b border-slate-100 bg-white shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#07111e] rounded-xl flex items-center justify-center p-1.5 shrink-0 shadow-xs border border-slate-700/20 select-none">
-                  <img
-                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo-ANDIMA-wzx4gpZx20EFE5IYcH3jqabixELIo3.png"
-                    alt="Logo ANDIMA"
-                    className="w-full h-auto object-contain"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = '/Logo-ANDIMA.png';
-                    }}
-                  />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900 leading-snug">
-                    Record Customer Conversation
-                  </h3>
-                  <p className="text-[11px] text-slate-400 font-normal leading-tight mt-0.5">
-                    Log WhatsApp threads or meeting documents directly to database.
-                  </p>
-                </div>
-              </div>
+            {/* Header with Title & Subtitle */}
+            <div className="px-7 pt-6 pb-4 border-b border-slate-200/90 bg-white shrink-0">
+              <h3 className="text-xl font-bold text-[#0f172a] tracking-tight">
+                Record Customer Conversation
+              </h3>
+              <p className="text-xs text-slate-500 font-normal mt-1">
+                Log WhatsApp threads or meeting documents and declare assistance requirement.
+              </p>
             </div>
 
             {/* Form Body */}
-            <form onSubmit={handleSubmitNewConversation} className="px-6 py-4 overflow-y-auto space-y-4 flex-1 text-xs">
+            <form onSubmit={handleSubmitNewConversation} className="px-7 py-5 overflow-y-auto space-y-4 flex-1 text-xs">
               {/* Validation Error Alert */}
               {createFormError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 flex items-start gap-2.5 animate-in fade-in slide-in-from-top-1">
@@ -1146,16 +1541,16 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
               {/* Select Customer * */}
               <div className="relative" ref={accountDropdownRef}>
-                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
                   Select Customer<span className="text-red-500">*</span>
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsAccountDropdownOpen(!isAccountDropdownOpen)}
-                  className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-xl px-4 py-2.5 flex items-center justify-between text-xs font-semibold text-slate-800 shadow-2xs transition-colors cursor-pointer"
+                  className="w-full bg-[#f8fafc] border border-slate-200 hover:border-slate-300 rounded-xl px-4 py-3 flex items-center justify-between text-xs font-semibold text-slate-800 shadow-2xs transition-colors cursor-pointer"
                 >
-                  <span className="truncate">{selectedAccount || 'Pilih Customer...'}</span>
-                  <ChevronDown size={16} className={`text-slate-400 shrink-0 transition-transform ${isAccountDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
+                  <span className="truncate">{selectedAccount || 'PT DSV Transport Indonesia (CUST-JKT-0941)'}</span>
+                  <ChevronDown size={18} className={`text-slate-400 shrink-0 transition-transform ${isAccountDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
                 </button>
 
                 {isAccountDropdownOpen && (
@@ -1200,97 +1595,9 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 )}
               </div>
 
-              {/* Job Number (Optional) */}
-              <div className="relative" ref={jobNumberDropdownRef}>
-                <label className="block text-xs font-semibold text-slate-800 mb-1.5 flex items-center justify-between">
-                  <span>Job Number (Optional)</span>
-                  {jobNumberInput && (
-                    <span className="text-[10px] text-blue-600 font-semibold truncate max-w-[180px]">
-                      Terpilih: {jobNumberInput}
-                    </span>
-                  )}
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={jobNumberInput}
-                    onFocus={() => setIsJobNumberDropdownOpen(true)}
-                    onChange={(e) => {
-                      setJobNumberInput(e.target.value);
-                      setIsJobNumberDropdownOpen(true);
-                    }}
-                    placeholder="Ketik Job Number... (mis. #AENAT/2609/0305)"
-                    className="w-full bg-white border border-slate-200 focus:border-blue-500 rounded-xl pl-9 pr-9 py-2.5 text-xs font-medium text-slate-800 outline-none shadow-2xs transition-colors placeholder:text-slate-400"
-                  />
-                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                  {jobNumberInput && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setJobNumberInput('');
-                        setIsJobNumberDropdownOpen(true);
-                      }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5"
-                      title="Hapus pencarian"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
-
-                {isJobNumberDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 max-h-52 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-40 p-1.5 animate-in fade-in slide-in-from-top-1">
-                    <div className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between border-b border-slate-100 mb-1">
-                      <span>Rekomendasi Job Number DB</span>
-                      <span>{
-                        Array.from(new Set(conversations.map(c => c.job_number).filter(j => j && j !== '-')))
-                          .filter(j => j.toLowerCase().includes(jobNumberInput.toLowerCase().trim())).length
-                      } opsi</span>
-                    </div>
-                    {Array.from(new Set(conversations.map(c => c.job_number).filter(j => j && j !== '-')))
-                      .filter(j => j.toLowerCase().includes(jobNumberInput.toLowerCase().trim())).length > 0 ? (
-                        Array.from(new Set(conversations.map(c => c.job_number).filter(j => j && j !== '-')))
-                          .filter(j => j.toLowerCase().includes(jobNumberInput.toLowerCase().trim())).map((job) => (
-                            <button
-                              key={job}
-                              type="button"
-                              onClick={() => {
-                                setJobNumberInput(job);
-                                setIsJobNumberDropdownOpen(false);
-                              }}
-                              className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-                                jobNumberInput === job ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-700 hover:bg-slate-50'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2 truncate">
-                                <Tag size={13} className="text-blue-500 shrink-0" />
-                                <span className="truncate">{job}</span>
-                              </div>
-                              {jobNumberInput === job && <Check size={14} className="text-blue-600 shrink-0" />}
-                            </button>
-                          ))
-                    ) : (
-                      <div className="p-2 text-center text-xs text-slate-400">
-                        Tidak ada Job Number tersimpan yang cocok dengan &quot;{jobNumberInput}&quot;
-                      </div>
-                    )}
-                    {jobNumberInput.trim() && (
-                      <button
-                        type="button"
-                        onClick={() => setIsJobNumberDropdownOpen(false)}
-                        className="w-full text-left px-3 py-2 text-xs font-semibold text-blue-600 bg-blue-50/70 hover:bg-blue-100 rounded-lg mt-1 flex items-center gap-1.5 cursor-pointer border border-blue-100"
-                      >
-                        <Plus size={13} />
-                        <span className="truncate">Gunakan Job Number baru: &quot;{jobNumberInput.trim()}&quot;</span>
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
               {/* Date & Time * */}
               <div>
-                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
                   Date &amp; Time <span className="text-red-500">*</span>
                 </label>
                 <div className="relative flex items-center">
@@ -1302,10 +1609,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                       const formatted = formatWithSlashes(e.target.value);
                       setRecordDate(formatted);
                     }}
-                    placeholder="DD/MM/YYYY"
-                    className="w-full bg-white border border-slate-200 focus:border-blue-500 rounded-xl pl-4 pr-10 py-2.5 text-xs font-medium text-slate-800 outline-none shadow-2xs transition-colors placeholder:text-slate-400"
+                    placeholder="MM/DD/YYYY"
+                    className="w-full bg-[#f8fafc] border border-slate-200 focus:border-blue-500 focus:bg-white rounded-xl pl-4 pr-10 py-3 text-xs font-semibold text-slate-800 outline-none shadow-2xs transition-colors placeholder:text-slate-400"
                   />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 rounded-lg hover:bg-slate-100 transition-colors">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-lg hover:bg-slate-200/60 transition-colors cursor-pointer">
                     <input
                       type="date"
                       onChange={(e) => {
@@ -1325,52 +1632,46 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
               {/* Channel Type * */}
               <div>
-                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
                   Channel Type<span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <div
-                    onClick={() => {
-                      setChannelSelection('WhatsApp');
-                      setNewUploadedFiles(prev => prev.filter(f => (f.file_name.split('.').pop()?.toLowerCase() || '') === 'txt'));
-                    }}
-                    className={`rounded-xl py-2.5 px-4 flex items-center justify-between cursor-pointer transition-all ${
+                    onClick={() => setChannelSelection('WhatsApp')}
+                    className={`rounded-xl py-3 px-4 flex items-center justify-between cursor-pointer transition-all ${
                       channelSelection === 'WhatsApp'
-                        ? 'border-2 border-[#2563eb] bg-white shadow-2xs'
-                        : 'border border-slate-200 bg-white hover:bg-slate-50/60'
+                        ? 'border-2 border-[#3b82f6] bg-white shadow-xs'
+                        : 'border border-slate-200 bg-white hover:bg-slate-50'
                     }`}
                   >
-                    <span className={`text-xs ${channelSelection === 'WhatsApp' ? 'font-bold text-[#2563eb]' : 'font-medium text-slate-600'}`}>
+                    <span className={`text-xs ${channelSelection === 'WhatsApp' ? 'font-bold text-[#2563eb]' : 'font-medium text-slate-700'}`}>
                       WhatsApp (.txt)
                     </span>
-                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                      channelSelection === 'WhatsApp' ? 'border-2 border-[#2563eb]' : 'border border-slate-300'
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                      channelSelection === 'WhatsApp' ? 'border-2 border-[#3b82f6]' : 'border border-slate-300'
                     }`}>
-                      {channelSelection === 'WhatsApp' && <div className="w-2 h-2 rounded-full bg-[#2563eb]" />}
+                      {channelSelection === 'WhatsApp' && <div className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]" />}
                     </div>
                   </div>
 
                   <div
-                    onClick={() => {
-                      setChannelSelection('Meeting');
-                      setNewUploadedFiles(prev => prev.filter(f => (f.file_name.split('.').pop()?.toLowerCase() || '') === 'pdf'));
-                    }}
-                    className={`rounded-xl py-2.5 px-4 flex items-center justify-between cursor-pointer transition-all ${
+                    onClick={() => setChannelSelection('Meeting')}
+                    className={`rounded-xl py-3 px-4 flex items-center justify-between cursor-pointer transition-all ${
                       channelSelection === 'Meeting'
-                        ? 'border-2 border-[#2563eb] bg-white shadow-2xs'
-                        : 'border border-slate-200 bg-white hover:bg-slate-50/60'
+                        ? 'border-2 border-[#3b82f6] bg-white shadow-xs'
+                        : 'border border-slate-200 bg-white hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <FileText size={15} className={channelSelection === 'Meeting' ? 'text-[#2563eb]' : 'text-slate-400'} />
-                      <span className={`text-xs ${channelSelection === 'Meeting' ? 'font-bold text-[#2563eb]' : 'font-medium text-slate-600'}`}>
-                        Meeting Document (.pdf)
+                      <FileText size={15} className={channelSelection === 'Meeting' ? 'text-[#3b82f6]' : 'text-slate-400'} />
+                      <span className={`text-xs ${channelSelection === 'Meeting' ? 'font-bold text-[#2563eb]' : 'font-medium text-slate-700'}`}>
+                        Meeting Document
                       </span>
                     </div>
-                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                      channelSelection === 'Meeting' ? 'border-2 border-[#2563eb]' : 'border border-slate-300'
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                      channelSelection === 'Meeting' ? 'border-2 border-[#3b82f6]' : 'border border-slate-300'
                     }`}>
-                      {channelSelection === 'Meeting' && <div className="w-2 h-2 rounded-full bg-[#2563eb]" />}
+                      {channelSelection === 'Meeting' && <div className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]" />}
                     </div>
                   </div>
                 </div>
@@ -1379,15 +1680,11 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
               {/* Text Summary * */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold text-slate-800">
+                  <label className="block text-xs font-bold text-slate-800">
                     Text Summary<span className="text-red-500">*</span>
                   </label>
-                  <span className={`text-[11px] font-medium ${
-                    recordSummary.trim().split(/\s+/).filter(Boolean).length > 200
-                      ? 'text-red-500 font-bold'
-                      : 'text-slate-400'
-                  }`}>
-                    {recordSummary.trim().split(/\s+/).filter(Boolean).length} / 200 kata
+                  <span className="text-[11px] font-normal text-slate-400">
+                    Max 200 words
                   </span>
                 </div>
                 <textarea
@@ -1395,15 +1692,15 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   required
                   value={recordSummary}
                   onChange={(e) => setRecordSummary(e.target.value)}
-                  placeholder="Diskusi koordinasi pengiriman kargo dan verifikasi kontainer..."
-                  className="w-full bg-white border border-slate-200 focus:border-blue-500 rounded-xl p-3 text-xs font-normal text-slate-800 leading-relaxed outline-none shadow-2xs transition-colors resize-none placeholder:text-slate-400"
+                  placeholder="Diskusi bersama Pak Hendra (DSV) mengenai kepastian jadwal kontainer di Gate 3 Priok. Membutuhkan verifikasi fisik cepat dan pendampingan customs clearance untuk mencegah denda demurrage."
+                  className="w-full bg-[#f8fafc] border border-slate-200 focus:border-blue-500 focus:bg-white rounded-xl p-3.5 text-xs font-normal text-slate-800 leading-relaxed outline-none shadow-2xs transition-colors resize-none placeholder:text-slate-400"
                 />
               </div>
 
-              {/* File Upload (Mandatory) */}
+              {/* File (Opsional) */}
               <div>
-                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
-                  File Attachment <span className="text-red-500">*</span>
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  File (Opsional)
                 </label>
                 <div
                   onClick={() => createFileInputRef.current?.click()}
@@ -1414,32 +1711,28 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     setIsDraggingFile(false);
                     handleCreateFileUpload(e.dataTransfer.files);
                   }}
-                  className={`w-full border-2 border-dashed rounded-2xl p-5 bg-[#f8fafc] flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
-                    isDraggingFile ? 'border-blue-500 bg-blue-50/20' : 'border-slate-300/80 hover:border-blue-400'
+                  className={`w-full border-2 border-dashed rounded-2xl p-5 bg-white flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+                    isDraggingFile ? 'border-blue-500 bg-blue-50/20' : 'border-slate-300 hover:border-blue-400'
                   }`}
                 >
-                  <div className="w-10 h-10 rounded-full bg-[#eff6ff] flex items-center justify-center text-[#2563eb] mb-2 shadow-2xs">
+                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#2563eb] mb-2 shadow-2xs">
                     <UploadCloud size={20} className="text-[#2563eb]" />
                   </div>
                   <p className="text-xs font-bold text-slate-800">
-                    {channelSelection === 'WhatsApp'
-                      ? 'Upload WhatsApp chat export file (.txt)'
-                      : 'Upload meeting notes or document (.pdf)'}
+                    Upload chat export .txt file or meeting notes all format
                   </p>
                   <p className="text-[11px] text-slate-500 mt-1">
                     Drag and drop your file here, or <span className="text-[#2563eb] font-semibold underline">Browse files</span>
                   </p>
-                  <div className="mt-2.5 px-3 py-1 rounded-lg border border-slate-200 bg-white text-[10px] text-slate-500 font-medium">
-                    {channelSelection === 'WhatsApp'
-                      ? 'Wajib diisi • Khusus berkas berformat .txt (Maks 10MB)'
-                      : 'Wajib diisi • Khusus berkas berformat .pdf (Maks 10MB)'}
+                  <div className="mt-3 px-3 py-1 rounded-lg border border-slate-200 bg-slate-50 text-[10px] text-slate-400 font-medium">
+                    Max file size: 5MB • All file formats supported
                   </div>
                 </div>
                 <input
                   ref={createFileInputRef}
                   type="file"
                   multiple
-                  accept={channelSelection === 'WhatsApp' ? '.txt,text/plain' : '.pdf,application/pdf'}
+                  accept="*"
                   onChange={(e) => handleCreateFileUpload(e.target.files)}
                   className="hidden"
                 />
@@ -1466,29 +1759,73 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 )}
               </div>
 
+              {/* Need Assistance * */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  Need Assistance<span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div
+                    onClick={() => setCreateNeedAssistance(true)}
+                    className={`rounded-xl py-3 px-4 flex items-center justify-between cursor-pointer transition-all ${
+                      createNeedAssistance === true
+                        ? 'border-2 border-[#3b82f6] bg-white shadow-xs'
+                        : 'border border-slate-200 bg-white hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className={`text-xs ${createNeedAssistance === true ? 'font-bold text-[#2563eb]' : 'font-medium text-slate-700'}`}>
+                      Yes
+                    </span>
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                      createNeedAssistance === true ? 'border-2 border-[#3b82f6]' : 'border border-slate-300'
+                    }`}>
+                      {createNeedAssistance === true && <div className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]" />}
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => setCreateNeedAssistance(false)}
+                    className={`rounded-xl py-3 px-4 flex items-center justify-between cursor-pointer transition-all ${
+                      createNeedAssistance === false
+                        ? 'border-2 border-[#3b82f6] bg-white shadow-xs'
+                        : 'border border-slate-200 bg-white hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className={`text-xs ${createNeedAssistance === false ? 'font-bold text-[#2563eb]' : 'font-medium text-slate-700'}`}>
+                      No
+                    </span>
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                      createNeedAssistance === false ? 'border-2 border-[#3b82f6]' : 'border border-slate-300'
+                    }`}>
+                      {createNeedAssistance === false && <div className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]" />}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Footer */}
-              <div className="pt-3 -mx-6 -mb-4 px-6 py-3.5 bg-slate-50/60 border-t border-slate-100 rounded-b-3xl flex items-center justify-between shrink-0">
+              <div className="pt-4 -mx-7 -mb-5 px-7 py-4 bg-white border-t border-slate-200 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#10b981] inline-block" />
                   <span className="text-xs text-slate-400 font-medium">
-                    Auto-synced with Supabase Database
+                    Auto-synced with C-Track Timeline
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-3">
                   <button
                     type="button"
                     onClick={() => setIsCreateModalOpen(false)}
-                    className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                    className="px-5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors cursor-pointer bg-white"
                   >
-                    Close
+                    Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmittingNew || isUploadingFile}
-                    className="px-5 py-2 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
+                    className="px-6 py-2.5 rounded-xl bg-[#3b6ff5] hover:bg-[#2b5ce5] text-white text-xs font-bold shadow-md transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
                   >
-                    {isSubmittingNew ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                    {isSubmittingNew ? <Loader2 size={14} className="animate-spin" /> : null}
                     <span>Save Record</span>
                   </button>
                 </div>

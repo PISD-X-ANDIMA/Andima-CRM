@@ -59,13 +59,6 @@ export default function LoginPage() {
     return emailRegex.test(emailVal);
   };
 
-  const validatePasswordStrength = (passVal: string): boolean => {
-    const hasLetter = /[a-zA-Z]/.test(passVal);
-    const hasDigit = /\d/.test(passVal);
-    const hasSpecial = /[^a-zA-Z0-9]/.test(passVal);
-    return passVal.length >= 10 && hasLetter && hasDigit && hasSpecial;
-  };
-
   const handleFailedAttempt = (customMessage: string) => {
     const newAttempts = loginAttempts + 1;
     setLoginAttempts(newAttempts);
@@ -103,13 +96,6 @@ export default function LoginPage() {
 
     if (!validateEmailFormat(email)) {
       setErrorMessage('Invalid email format (example: name@andima.co.id).');
-      return;
-    }
-
-    if (!validatePasswordStrength(password)) {
-      setErrorMessage(
-        'Password must be at least 10 characters long and contain a mix of letters, numbers, and special characters.'
-      );
       return;
     }
 

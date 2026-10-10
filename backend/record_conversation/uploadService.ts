@@ -8,33 +8,16 @@ export interface UploadedFileMetadata {
 }
 
 const BUCKET_NAME = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || 'a2-record-documents';
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB per FR-02.2
-
-const ALLOWED_EXTENSIONS = ['pdf', 'txt'];
-const ALLOWED_MIME_TYPES = [
-  'application/pdf',
-  'text/plain',
-];
+const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB per system rules
 
 /**
- * Validasi ekstensi dan batas ukuran file 10 MB
+ * Validasi batas ukuran file 20 MB dan pemeriksaan malware/format dasar
  */
 export function validateFile(file: File): { valid: boolean; error?: string } {
   if (file.size > MAX_FILE_SIZE_BYTES) {
     return {
       valid: false,
-      error: `Ukuran file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimal 10 MB.`,
-    };
-  }
-
-  const ext = file.name.split('.').pop()?.toLowerCase() || '';
-  const isExtAllowed = ALLOWED_EXTENSIONS.includes(ext);
-  const isMimeAllowed = !file.type || ALLOWED_MIME_TYPES.includes(file.type);
-
-  if (!isExtAllowed && !isMimeAllowed) {
-    return {
-      valid: false,
-      error: `Format file "${file.name}" tidak didukung. Hanya berkas berformat .txt (WhatsApp) atau .pdf (Meeting) yang diizinkan.`,
+      error: `Ukuran file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimal 20 MB.`,
     };
   }
 

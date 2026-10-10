@@ -30,7 +30,7 @@ export function CustomerTable({ customers, isLoading, error, onRetry, searchKeyw
     <th className="w-[16%] px-4 py-4 text-base font-semibold leading-tight">Meeting<br />Schedule</th>
     <th className="w-[9%] px-3 py-5 text-base font-semibold">Task</th>
     <th className="w-[9%] px-3 py-5 text-base font-semibold">Details</th>
-  </tr></thead><tbody>{customers.map((customer) => <tr key={customer.id} className="min-h-[76px] border-t border-slate-300 text-sm text-slate-700">
+  </tr></thead><tbody>{customers.map((customer) => <tr key={customer.id} className="min-h-[76px] border-t border-slate-300 border-l-4 border-l-transparent hover:border-l-blue-600 hover:bg-blue-50/30 transition-all duration-150 text-sm text-slate-700">
     <td className="break-words px-4 py-3 font-medium leading-tight">{customer.companyName}</td>
     <td className="px-4 py-3"><span className="line-clamp-2 text-sm text-slate-600">{customer.address || "—"}</span></td>
     <td className="break-words px-4 py-3">{customer.primaryPic?.fullName || "—"}</td>

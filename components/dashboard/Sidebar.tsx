@@ -44,8 +44,8 @@ const salesExecutiveMenus: SubMenuItem[] = [
     href: "/dashboard/task-of-field-agent",
   },
   {
-    name: "Need Backup",
-    href: "/dashboard/need-backup",
+    name: "Manage Field Agent Account",
+    href: "/dashboard/manage-field-agent-account",
   },
 ];
 
@@ -86,7 +86,7 @@ export function Sidebar() {
     pathname.startsWith("/dashboard/meeting-schedule") ||
     pathname.startsWith("/dashboard/record-conversation") ||
     pathname.startsWith("/dashboard/task-of-field-agent") ||
-    pathname.startsWith("/dashboard/need-backup");
+    pathname.startsWith("/dashboard/manage-field-agent-account");
   const isCrmActive = isSalesExecutiveActive;
 
   return (

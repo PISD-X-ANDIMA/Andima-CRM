@@ -25,6 +25,15 @@ export interface TimelineEvent {
   status: 'completed' | 'current' | 'pending' | 'alert';
 }
 
+export interface FieldAgentAccount {
+  id: string;
+  agent_id: string;
+  name: string;
+  email: string;
+  field_area: string;
+  status: 'Active' | 'Inactive';
+}
+
 export interface FieldTaskItem {
   id: string;
   task_id_code?: string;
@@ -81,14 +90,41 @@ export type MonitoringIssueTabProps = TaskOfFieldAgentProps;
 // Available Field Inspectors
 const AVAILABLE_FIELD_AGENTS = [
   { name: 'Andi Pratama', role: 'Field Inspector', shift: 'Tanjung Priok - S1' },
-  { name: 'Marsel', role: 'Field Inspector', shift: 'Tanjung Priok - S1' },
-  { name: 'Choirul', role: 'Field Inspector', shift: 'Tanjung Priok - S1' },
-  { name: 'Rizky Pratama', role: 'Field Inspector', shift: 'Cengkareng - S2' },
+  { name: 'Maselinus', role: 'Field Inspector', shift: 'Tanjung Priok - S1' },
+  { name: 'Eysa Franata', role: 'Field Inspector', shift: 'Bekasi - S1' },
+  { name: 'Khoirul Anwar', role: 'Field Inspector', shift: 'Bekasi - S1' },
   { name: 'Budi Santoso', role: 'Field Inspector', shift: 'Sunda Kelapa - S1' },
   { name: 'Adelia', role: 'Operations Supervisor', shift: 'HQ Dispatcher' },
 ];
 
-// Initial dataset exactly matching the user's Figma screenshot
+const DEFAULT_FIELD_AGENT_ACCOUNTS: FieldAgentAccount[] = [
+  { id: 'agent-1', agent_id: '#AENAT/2609/0305', name: 'Maselinus', email: 'marsel@and.com', field_area: 'Bekasi', status: 'Active' },
+  { id: 'agent-2', agent_id: '#AENAT/2609/0306', name: 'Eysa Franata', email: 'eysa@and.com', field_area: 'Bekasi', status: 'Active' },
+  { id: 'agent-3', agent_id: '#AENAT/2609/0307', name: 'Maselinus', email: 'marsel@and.com', field_area: 'Bekasi', status: 'Inactive' },
+  { id: 'agent-4', agent_id: '#AENAT/2609/0308', name: 'Khoirul Anwar', email: 'eysa@and.com', field_area: 'Bekasi', status: 'Active' },
+  { id: 'agent-5', agent_id: '#AENAT/2609/0309', name: 'Khoirul Anwar', email: 'eysa@and.com', field_area: 'Bekasi', status: 'Inactive' },
+  { id: 'agent-6', agent_id: '#AENAT/2609/0310', name: 'Andi Pratama', email: 'andi@and.com', field_area: 'Tanjung Priok', status: 'Active' },
+  { id: 'agent-7', agent_id: '#AENAT/2609/0311', name: 'Budi Santoso', email: 'budi@and.com', field_area: 'Sunda Kelapa', status: 'Inactive' },
+  { id: 'agent-8', agent_id: '#AENAT/2609/0312', name: 'Rizky Pratama', email: 'rizky@and.com', field_area: 'Cengkareng', status: 'Active' },
+  { id: 'agent-9', agent_id: '#AENAT/2609/0313', name: 'Hendra Wijaya', email: 'hendra@and.com', field_area: 'Tanjung Priok', status: 'Active' },
+  { id: 'agent-10', agent_id: '#AENAT/2609/0314', name: 'Suryadi', email: 'suryadi@and.com', field_area: 'Marunda', status: 'Inactive' },
+  { id: 'agent-11', agent_id: '#AENAT/2609/0315', name: 'Agus Setiawan', email: 'agus@and.com', field_area: 'Cikarang Dry Port', status: 'Active' },
+  { id: 'agent-12', agent_id: '#AENAT/2609/0316', name: 'Dedi Kurniawan', email: 'dedi@and.com', field_area: 'Bandara Soetta', status: 'Active' },
+  { id: 'agent-13', agent_id: '#AENAT/2609/0317', name: 'Bambang Subianto', email: 'bambang@and.com', field_area: 'Tanjung Priok', status: 'Inactive' },
+  { id: 'agent-14', agent_id: '#AENAT/2609/0318', name: 'Irwan Gunawan', email: 'irwan@and.com', field_area: 'MM2100 Cikarang', status: 'Active' },
+  { id: 'agent-15', agent_id: '#AENAT/2609/0319', name: 'Rahmat Hidayat', email: 'rahmat@and.com', field_area: 'Karawang', status: 'Active' },
+  { id: 'agent-16', agent_id: '#AENAT/2609/0320', name: 'Herman Hermansyah', email: 'herman@and.com', field_area: 'Tanjung Priok', status: 'Active' },
+  { id: 'agent-17', agent_id: '#AENAT/2609/0321', name: 'Doni Prasetyo', email: 'doni@and.com', field_area: 'Bandara Halim', status: 'Inactive' },
+  { id: 'agent-18', agent_id: '#AENAT/2609/0322', name: 'Farhan Ramadhan', email: 'farhan@and.com', field_area: 'Sunda Kelapa', status: 'Active' },
+  { id: 'agent-19', agent_id: '#AENAT/2609/0323', name: 'Gilang Perkasa', email: 'gilang@and.com', field_area: 'Bekasi', status: 'Active' },
+  { id: 'agent-20', agent_id: '#AENAT/2609/0324', name: 'Fajar Kurnia', email: 'fajar@and.com', field_area: 'Cengkareng', status: 'Inactive' },
+  { id: 'agent-21', agent_id: '#AENAT/2609/0325', name: 'Yudi Firmansyah', email: 'yudi@and.com', field_area: 'Tanjung Priok', status: 'Active' },
+  { id: 'agent-22', agent_id: '#AENAT/2609/0326', name: 'Wahyu Hidayat', email: 'wahyu@and.com', field_area: 'Marunda', status: 'Active' },
+  { id: 'agent-23', agent_id: '#AENAT/2609/0327', name: 'Arif Rahman', email: 'arif@and.com', field_area: 'Cikarang Dry Port', status: 'Active' },
+  { id: 'agent-24', agent_id: '#AENAT/2609/0328', name: 'Teguh Santoso', email: 'teguh@and.com', field_area: 'Bekasi', status: 'Inactive' }
+];
+
+// Initial dataset exactly matching the user's Figma screenshot (Expanded to 24 database dummy records)
 const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
   {
     id: 'task-1',
@@ -197,14 +233,11 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     has_issue: false,
     issue_status: 'None',
     photo_count: 5,
-    doc_count: 2,
+    doc_count: 3,
     notes: '',
     result_photos: [
       'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1519003722824-194d4455a60c?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop'
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop'
     ],
     result_docs: [
       { name: 'DSV_Delivery_Order.pdf', size: '1.1 MB', url: '#' },
@@ -218,15 +251,10 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     cargo_pieces: '16 Reinforced Crates',
     packaging_type: 'Reinforced Crates',
     checklists: [
-      { label: 'Quantity & Gross Weight verification', is_verified: true },
-      { label: 'Visual packaging condition sound', is_verified: true },
-      { label: 'Container seal number matches manifest', is_verified: true },
-      { label: 'Customs & port documentation match', is_verified: true },
-      { label: 'Safe for maritime transport protocol', is_verified: true }
+      { label: 'Quantity & Gross Weight verification', is_verified: true }
     ],
     timeline: [
-      { id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '08-10-2026 10:00 WIB', author: 'Adelia', status: 'completed' },
-      { id: 'tl-2', title: 'Inspector Assigned', description: 'Assigned to Maselinus', timestamp: '08-10-2026 10:30 WIB', author: 'Dispatcher', status: 'completed' }
+      { id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '08-10-2026 10:00 WIB', author: 'Adelia', status: 'completed' }
     ]
   },
   {
@@ -237,36 +265,16 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     status: 'Completed',
     has_issue: false,
     photo_count: 5,
-    doc_count: 2,
+    doc_count: 3,
     notes: '',
-    result_photos: [
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1519003722824-194d4455a60c?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop'
-    ],
-    result_docs: [
-      { name: 'DSV_Delivery_Order_2.pdf', size: '1.2 MB', url: '#' },
-      { name: 'Inspection_Log.pdf', size: '710 KB', url: '#' }
-    ],
     handover_datetime: '08/10/2026',
     handover_location: 'Cikarang Dry Port Terminal 2, West Java',
     shipper: 'PT. DSV Transport Indonesia',
     consignee: 'Toyota Tsusho Asia',
     gross_weight: '3,200 Kg',
     cargo_pieces: '16 Reinforced Crates',
-    packaging_type: 'Reinforced Crates',
-    checklists: [
-      { label: 'Quantity & Gross Weight verification', is_verified: true },
-      { label: 'Visual packaging condition sound', is_verified: true },
-      { label: 'Container seal number matches manifest', is_verified: true },
-      { label: 'Customs & port documentation match', is_verified: true },
-      { label: 'Safe for maritime transport protocol', is_verified: true }
-    ],
     timeline: [
-      { id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '08-10-2026 10:15 WIB', author: 'Adelia', status: 'completed' },
-      { id: 'tl-2', title: 'Inspector Assigned', description: 'Assigned to Khoirul Anwar', timestamp: '08-10-2026 10:45 WIB', author: 'Dispatcher', status: 'completed' }
+      { id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '08-10-2026 10:15 WIB', author: 'Adelia', status: 'completed' }
     ]
   },
   {
@@ -279,35 +287,272 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     photo_count: 5,
     doc_count: 2,
     notes: '',
-    result_photos: [
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1519003722824-194d4455a60c?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop'
-    ],
-    result_docs: [
-      { name: 'DSV_Delivery_Order_3.pdf', size: '1.2 MB', url: '#' },
-      { name: 'Inspection_Log_3.pdf', size: '690 KB', url: '#' }
-    ],
     handover_datetime: '08/10/2026',
     handover_location: 'Cikarang Dry Port Terminal 2, West Java',
     shipper: 'PT. DSV Transport Indonesia',
     consignee: 'Toyota Tsusho Asia',
     gross_weight: '3,200 Kg',
     cargo_pieces: '16 Reinforced Crates',
-    packaging_type: 'Reinforced Crates',
-    checklists: [
-      { label: 'Quantity & Gross Weight verification', is_verified: true },
-      { label: 'Visual packaging condition sound', is_verified: true },
-      { label: 'Container seal number matches manifest', is_verified: true },
-      { label: 'Customs & port documentation match', is_verified: true },
-      { label: 'Safe for maritime transport protocol', is_verified: true }
-    ],
     timeline: [
-      { id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '08-10-2026 11:00 WIB', author: 'Adelia', status: 'completed' },
-      { id: 'tl-2', title: 'Inspector Assigned', description: 'Assigned to Khoirul Anwar', timestamp: '08-10-2026 11:30 WIB', author: 'Dispatcher', status: 'completed' }
+      { id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '08-10-2026 11:00 WIB', author: 'Adelia', status: 'completed' }
     ]
+  },
+  {
+    id: 'task-6',
+    job_number: '#AENAT/2609/0310',
+    customer_name: 'PT. Geodis Freight Forwarding',
+    field_agent_name: 'Andi Pratama',
+    status: 'Completed',
+    has_issue: false,
+    photo_count: 4,
+    doc_count: 2,
+    handover_datetime: '09/10/2026',
+    handover_location: 'Gate 3 Tanjung Priok Port, Jakarta',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '09-10-2026 09:00 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-7',
+    job_number: '#AENAT/2609/0311',
+    customer_name: 'PT. Kuehne Nagel Indonesia',
+    field_agent_name: 'Budi Santoso',
+    status: 'Assigned',
+    has_issue: true,
+    issue_status: 'Issue',
+    issue_note: 'Segel kontainer tidak tertera jelas pada dokumen surat jalan.',
+    photo_count: 6,
+    doc_count: 1,
+    handover_datetime: '09/10/2026',
+    handover_location: 'Sunda Kelapa Pier 4, Jakarta',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '09-10-2026 10:00 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-8',
+    job_number: '#AENAT/2609/0312',
+    customer_name: 'PT. Nippon Express Indonesia',
+    field_agent_name: 'Maselinus',
+    status: 'Completed',
+    has_issue: false,
+    photo_count: 5,
+    doc_count: 4,
+    handover_datetime: '09/10/2026',
+    handover_location: 'Warehouse MM2100 Cikarang',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '09-10-2026 11:30 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-9',
+    job_number: '#AENAT/2609/0313',
+    customer_name: 'PT. Schenker Petrolog Utama',
+    field_agent_name: 'Eysa Franata',
+    status: 'Completed',
+    has_issue: false,
+    photo_count: 3,
+    doc_count: 2,
+    handover_datetime: '10/10/2026',
+    handover_location: 'Cargo Terminal Soekarno-Hatta',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '10-10-2026 08:00 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-10',
+    job_number: '#AENAT/2609/0314',
+    customer_name: 'PT. DHL Global Forwarding',
+    field_agent_name: 'Khoirul Anwar',
+    status: 'Assigned',
+    has_issue: true,
+    issue_status: 'Issue',
+    issue_note: 'Kemasan karton luar mengalami kelembapan berlebih.',
+    photo_count: 5,
+    doc_count: 3,
+    handover_datetime: '10/10/2026',
+    handover_location: 'Marunda Logistics Park',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '10-10-2026 09:30 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-11',
+    job_number: '#AENAT/2609/0315',
+    customer_name: 'PT. Yusen Logistics Indonesia',
+    field_agent_name: 'Andi Pratama',
+    status: 'Completed',
+    has_issue: false,
+    photo_count: 5,
+    doc_count: 2,
+    handover_datetime: '10/10/2026',
+    handover_location: 'Tanjung Priok Gate 2',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '10-10-2026 10:45 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-12',
+    job_number: '#AENAT/2609/0316',
+    customer_name: 'PT. Kintetsu World Express',
+    field_agent_name: 'Budi Santoso',
+    status: 'Completed',
+    has_issue: false,
+    photo_count: 4,
+    doc_count: 3,
+    handover_datetime: '10/10/2026',
+    handover_location: 'Cikarang Dry Port',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '10-10-2026 11:15 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-13',
+    job_number: '#AENAT/2609/0317',
+    customer_name: 'PT. Agility International',
+    field_agent_name: 'Maselinus',
+    status: 'Completed',
+    has_issue: false,
+    photo_count: 5,
+    doc_count: 2,
+    handover_datetime: '07/10/2026',
+    handover_location: 'Bandara Halim Cargo Area',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '07-10-2026 09:00 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-14',
+    job_number: '#AENAT/2609/0318',
+    customer_name: 'PT. Expeditors Indonesia',
+    field_agent_name: 'Eysa Franata',
+    status: 'Assigned',
+    has_issue: true,
+    issue_status: 'Issue',
+    issue_note: 'BEDA timbangan gross weight sebesar 45 kg.',
+    photo_count: 6,
+    doc_count: 2,
+    handover_datetime: '07/10/2026',
+    handover_location: 'Warehouse Jababeka 2',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '07-10-2026 10:30 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-15',
+    job_number: '#AENAT/2609/0319',
+    customer_name: 'PT. CEVA Logistics Indonesia',
+    field_agent_name: 'Khoirul Anwar',
+    status: 'Completed',
+    has_issue: false,
+    photo_count: 5,
+    doc_count: 1,
+    handover_datetime: '07/10/2026',
+    handover_location: 'Tanjung Priok Pier 3',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '07-10-2026 11:45 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-16',
+    job_number: '#AENAT/2609/0320',
+    customer_name: 'PT. Bollore Logistics Indonesia',
+    field_agent_name: 'Andi Pratama',
+    status: 'Completed',
+    has_issue: false,
+    photo_count: 4,
+    doc_count: 3,
+    handover_datetime: '06/10/2026',
+    handover_location: 'Karawang International Port',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '06-10-2026 08:30 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-17',
+    job_number: '#AENAT/2609/0321',
+    customer_name: 'PT. Kerry Logistics Indonesia',
+    field_agent_name: 'Budi Santoso',
+    status: 'Completed',
+    has_issue: false,
+    photo_count: 5,
+    doc_count: 2,
+    handover_datetime: '06/10/2026',
+    handover_location: 'Sunda Kelapa Gate 1',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '06-10-2026 10:00 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-18',
+    job_number: '#AENAT/2609/0322',
+    customer_name: 'PT. Hellmann Worldwide Logistics',
+    field_agent_name: 'Maselinus',
+    status: 'Assigned',
+    has_issue: true,
+    issue_status: 'Issue',
+    issue_note: 'Pallet kayu tidak memiliki stempel sertifikasi ISPM-15.',
+    photo_count: 5,
+    doc_count: 2,
+    handover_datetime: '06/10/2026',
+    handover_location: 'Warehouse MM2100',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '06-10-2026 11:30 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-19',
+    job_number: '#AENAT/2609/0323',
+    customer_name: 'PT. Sinotrans Indonesia',
+    field_agent_name: 'Eysa Franata',
+    status: 'Completed',
+    has_issue: false,
+    photo_count: 3,
+    doc_count: 2,
+    handover_datetime: '05/10/2026',
+    handover_location: 'Gate 3 Tanjung Priok',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '05-10-2026 09:00 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-20',
+    job_number: '#AENAT/2609/0324',
+    customer_name: 'PT. NIPPON CONVEYOR',
+    field_agent_name: 'Khoirul Anwar',
+    status: 'Completed',
+    has_issue: false,
+    photo_count: 5,
+    doc_count: 3,
+    handover_datetime: '05/10/2026',
+    handover_location: 'Soekarno Hatta Terminal 530',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '05-10-2026 10:15 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-21',
+    job_number: '#AENAT/2609/0325',
+    customer_name: 'PT. Toyota Tsusho Logistics',
+    field_agent_name: 'Andi Pratama',
+    status: 'Completed',
+    has_issue: false,
+    photo_count: 4,
+    doc_count: 2,
+    handover_datetime: '05/10/2026',
+    handover_location: 'Cikarang Dry Port Terminal 1',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '05-10-2026 11:45 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-22',
+    job_number: '#AENAT/2609/0326',
+    customer_name: 'PT. Mitsubishi Logistics',
+    field_agent_name: 'Budi Santoso',
+    status: 'Assigned',
+    has_issue: true,
+    issue_status: 'Issue',
+    issue_note: 'Terdapat kerusakan minor pada sudut peti kemas.',
+    photo_count: 5,
+    doc_count: 1,
+    handover_datetime: '04/10/2026',
+    handover_location: 'Marunda Logistics Hub',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '04-10-2026 09:30 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-23',
+    job_number: '#AENAT/2609/0327',
+    customer_name: 'PT. Sumitomo Global Logistics',
+    field_agent_name: 'Maselinus',
+    status: 'Completed',
+    has_issue: false,
+    photo_count: 5,
+    doc_count: 2,
+    handover_datetime: '04/10/2026',
+    handover_location: 'Tanjung Priok Gate 1',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '04-10-2026 10:45 WIB', author: 'Adelia', status: 'completed' }]
+  },
+  {
+    id: 'task-24',
+    job_number: '#AENAT/2609/0328',
+    customer_name: 'PT. Sankyu Indonesia International',
+    field_agent_name: 'Eysa Franata',
+    status: 'Completed',
+    has_issue: false,
+    photo_count: 4,
+    doc_count: 3,
+    handover_datetime: '04/10/2026',
+    handover_location: 'Cikarang Dry Port Terminal 2',
+    timeline: [{ id: 'tl-1', title: 'Job Created', description: 'Inspection scheduled', timestamp: '04-10-2026 11:30 WIB', author: 'Adelia', status: 'completed' }]
   }
 ];
 
@@ -318,9 +563,65 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
   const [issueFilter, setIssueFilter] = useState('All');
   const [periodFilter, setPeriodFilter] = useState('All');
 
-  // Active User session (fallback to Adelia)
+  // Table 2 State: Manage Field Agent Accounts
+  const [agentAccounts, setAgentAccounts] = useState<FieldAgentAccount[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('andima_field_agent_accounts');
+        if (stored) {
+          const parsed: FieldAgentAccount[] = JSON.parse(stored);
+          if (parsed.length >= 24) {
+            return parsed;
+          }
+        }
+      } catch {}
+    }
+    return DEFAULT_FIELD_AGENT_ACCOUNTS;
+  });
+
+  const [agentSearchQuery, setAgentSearchQuery] = useState('');
+  const [agentStatusFilter, setAgentStatusFilter] = useState('All');
+
+  // Modals for Field Agent Account Management
+  const [editingAgent, setEditingAgent] = useState<FieldAgentAccount | null>(null);
+  const [isAddAgentModalOpen, setIsAddAgentModalOpen] = useState(false);
+  const [agentToDelete, setAgentToDelete] = useState<FieldAgentAccount | null>(null);
+
+  // Form states for Edit / Add Agent
+  const [formAgentName, setFormAgentName] = useState('');
+  const [formAgentEmail, setFormAgentEmail] = useState('');
+  const [formAgentArea, setFormAgentArea] = useState('Bekasi');
+  const [formAgentStatus, setFormAgentStatus] = useState<'Active' | 'Inactive'>('Active');
+  const [agentFormError, setAgentFormError] = useState<string | null>(null);
+
+  // Pagination states
+  const [t1Page, setT1Page] = useState(1);
+  const [t2Page, setT2Page] = useState(1);
+
+  // Active User session & role
   const activeUserName = currentUser?.name || 'Adelia';
   const activeUserInitial = activeUserName.trim().charAt(0).toUpperCase() || 'A';
+
+  const [activeUserRole, setActiveUserRole] = useState<string>(() => {
+    if (currentUser?.role && currentUser.role.trim()) return currentUser.role.trim();
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('andima_user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed?.role && parsed.role.trim()) return parsed.role.trim();
+        }
+      } catch {}
+    }
+    return 'Sales Executive';
+  });
+
+  const isManager = activeUserRole.toLowerCase().includes('manager') ||
+                    activeUserRole.toLowerCase().includes('manajemen') ||
+                    activeUserRole.toLowerCase().includes('director');
+
+  const isFieldAgent = activeUserRole.toLowerCase().includes('field') ||
+                       activeUserRole.toLowerCase().includes('inspector');
 
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -523,6 +824,99 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  const saveAgentAccounts = (accounts: FieldAgentAccount[]) => {
+    setAgentAccounts(accounts);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('andima_field_agent_accounts', JSON.stringify(accounts));
+      } catch {}
+    }
+  };
+
+  const handleOpenEditAgent = (agent: FieldAgentAccount) => {
+    setEditingAgent(agent);
+    setFormAgentName(agent.name);
+    setFormAgentEmail(agent.email);
+    setFormAgentArea(agent.field_area);
+    setFormAgentStatus(agent.status);
+    setAgentFormError(null);
+  };
+
+  const handleSaveEditAgent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAgent) return;
+
+    if (!formAgentName.trim()) {
+      setAgentFormError('Nama Field Agent wajib diisi.');
+      return;
+    }
+    if (!formAgentEmail.trim() || !formAgentEmail.includes('@')) {
+      setAgentFormError('Email valid wajib diisi.');
+      return;
+    }
+
+    const updated = agentAccounts.map(a => {
+      if (a.id === editingAgent.id) {
+        return {
+          ...a,
+          name: formAgentName.trim(),
+          email: formAgentEmail.trim(),
+          field_area: formAgentArea.trim() || 'Bekasi',
+          status: formAgentStatus
+        };
+      }
+      return a;
+    });
+
+    saveAgentAccounts(updated);
+    setEditingAgent(null);
+    showToast(`Akun Field Agent "${formAgentName}" berhasil diperbarui.`);
+  };
+
+  const handleOpenAddAgent = () => {
+    setFormAgentName('');
+    setFormAgentEmail('');
+    setFormAgentArea('Bekasi');
+    setFormAgentStatus('Active');
+    setAgentFormError(null);
+    setIsAddAgentModalOpen(true);
+  };
+
+  const handleSaveAddAgent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formAgentName.trim()) {
+      setAgentFormError('Nama Field Agent wajib diisi.');
+      return;
+    }
+    if (!formAgentEmail.trim() || !formAgentEmail.includes('@')) {
+      setAgentFormError('Email valid wajib diisi.');
+      return;
+    }
+
+    const nextIdNum = String(agentAccounts.length + 305).padStart(4, '0');
+    const newAgent: FieldAgentAccount = {
+      id: `agent-${Date.now()}`,
+      agent_id: `#AENAT/2609/${nextIdNum}`,
+      name: formAgentName.trim(),
+      email: formAgentEmail.trim(),
+      field_area: formAgentArea.trim() || 'Bekasi',
+      status: formAgentStatus
+    };
+
+    const updated = [newAgent, ...agentAccounts];
+    saveAgentAccounts(updated);
+    setIsAddAgentModalOpen(false);
+    showToast(`Akun Field Agent "${newAgent.name}" (${newAgent.agent_id}) berhasil ditambahkan.`);
+  };
+
+  const handleConfirmDeleteAgent = () => {
+    if (!agentToDelete) return;
+    const updated = agentAccounts.filter(a => a.id !== agentToDelete.id);
+    saveAgentAccounts(updated);
+    showToast(`Akun Field Agent "${agentToDelete.name}" (${agentToDelete.agent_id}) berhasil dihapus.`);
+    setAgentToDelete(null);
+  };
+
   useEffect(() => {
     let stored: FieldTaskItem[] = [];
     if (typeof window !== 'undefined') {
@@ -531,7 +925,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
         if (raw) stored = JSON.parse(raw);
       } catch { }
     }
-    if (stored.length === 0 || stored[0]?.handover_datetime !== '08/10/2026' || stored[0]?.customer_name !== 'PT. JPG Trans Indonesia' || stored.length < 5) {
+    if (stored.length === 0 || stored[0]?.handover_datetime !== '08/10/2026' || stored[0]?.customer_name !== 'PT. JPG Trans Indonesia' || stored.length < 24) {
       stored = EXACT_FIGMA_TASKS;
       if (typeof window !== 'undefined') {
         localStorage.setItem('andima_field_agent_figma_tasks', JSON.stringify(EXACT_FIGMA_TASKS));
@@ -968,8 +1362,49 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       return true;
     })();
 
-    return matchesSearch && matchesIssue && matchesPeriod;
+    const matchesRoleAccess = (() => {
+      if (isManager) return true; // Full Oversight Mode for Manager of Customer Success
+      if (isFieldAgent) {
+        return !t.field_agent_name || t.field_agent_name.toLowerCase().includes(activeUserName.toLowerCase());
+      }
+      // Sales Executive view: sees tasks under their sales responsibility / created by them / assigned to their field agents
+      const isMine = t.customer_name?.toLowerCase().includes(activeUserName.toLowerCase()) ||
+                     t.timeline?.some(ev => ev.author?.toLowerCase().includes(activeUserName.toLowerCase())) ||
+                     t.notes?.toLowerCase().includes(activeUserName.toLowerCase()) ||
+                     !t.field_agent_name ||
+                     t.field_agent_name === activeUserName;
+      return isMine;
+    })();
+
+    return matchesSearch && matchesIssue && matchesPeriod && matchesRoleAccess;
   });
+
+  // Filter & Pagination logic for Table 2 (Field Agent Accounts)
+  const filteredAgents = agentAccounts.filter(a => {
+    const q = agentSearchQuery.toLowerCase().trim();
+    const matchesSearch = !q ||
+      a.agent_id.toLowerCase().includes(q) ||
+      a.name.toLowerCase().includes(q) ||
+      a.email.toLowerCase().includes(q) ||
+      a.field_area.toLowerCase().includes(q);
+
+    const matchesStatus =
+      agentStatusFilter === 'All' ||
+      agentStatusFilter === 'Status' ||
+      a.status.toLowerCase() === agentStatusFilter.toLowerCase();
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const t1PageSize = 5;
+  const t1TotalPages = Math.min(5, Math.max(1, Math.ceil(filteredTasks.length / t1PageSize)));
+  const t1ValidPage = Math.min(t1Page, t1TotalPages);
+  const pagedTasks = filteredTasks.slice((t1ValidPage - 1) * t1PageSize, t1ValidPage * t1PageSize);
+
+  const t2PageSize = 5;
+  const t2TotalPages = Math.min(5, Math.max(1, Math.ceil(filteredAgents.length / t2PageSize)));
+  const t2ValidPage = Math.min(t2Page, t2TotalPages);
+  const pagedAgents = filteredAgents.slice((t2ValidPage - 1) * t2PageSize, t2ValidPage * t2PageSize);
 
   return (
     <div className="w-full pb-20 animate-in fade-in duration-200">
@@ -1007,7 +1442,10 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setT1Page(1);
+              }}
               placeholder="Job Number, Company Name, dan Field Agent"
               className="w-full bg-[#f8fafc] border border-slate-200/90 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 transition-colors"
             />
@@ -1018,7 +1456,10 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             <div className="relative min-w-[130px]">
               <select
                 value={issueFilter}
-                onChange={(e) => setIssueFilter(e.target.value)}
+                onChange={(e) => {
+                  setIssueFilter(e.target.value);
+                  setT1Page(1);
+                }}
                 className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
               >
                 <option value="All">Issue</option>
@@ -1029,20 +1470,20 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
             </div>
 
-            {/* Dropdown 2: All Periods */}
+            {/* Dropdown 2: All Periods (Exact 3 period choices: Today, This Week, This Month) */}
             <div className="relative min-w-[140px]">
               <select
                 value={periodFilter}
-                onChange={(e) => setPeriodFilter(e.target.value)}
+                onChange={(e) => {
+                  setPeriodFilter(e.target.value);
+                  setT1Page(1);
+                }}
                 className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
               >
                 <option value="All">All Periods</option>
                 <option value="Today">Today</option>
                 <option value="This Week">This Week</option>
                 <option value="This Month">This Month</option>
-                {Array.from(new Set(tasks.map(t => formatTaskDateDisplay(t.handover_datetime)).filter(Boolean))).map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
               </select>
               <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
             </div>
@@ -1109,8 +1550,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 </td>
               </tr>
             ) : (
-              filteredTasks.map((task) => (
-                <tr key={task.id} className="hover:bg-slate-50/60 transition-colors">
+              pagedTasks.map((task) => (
+                <tr key={task.id} className="border-l-4 border-l-transparent hover:border-l-blue-600 hover:bg-blue-50/30 transition-all duration-150">
                   {/* Column 1: Job Number */}
                   <td className="py-3.5 px-4 text-center text-xs sm:text-sm font-bold text-slate-900 font-mono tracking-tight">
                     {task.job_number}
@@ -1172,7 +1613,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                         onClick={() => setResultModalTask(task)}
                         className="text-xs font-semibold text-[#0d6efd] hover:underline cursor-pointer transition-colors mt-0.5"
                       >
-                        Lihat
+                        See more...
                       </button>
                     </div>
                   </td>
@@ -1183,39 +1624,47 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
         </table>
       </div>
 
-      {/* 5. BOTTOM PAGINATION (Exact screenshot layout) */}
-      <div className="mt-4 flex items-center justify-end gap-1.5 text-xs">
-        <button
-          type="button"
-          className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 cursor-pointer"
-        >
-          Previous
-        </button>
-        <button
-          type="button"
-          className="px-3 py-1.5 rounded-lg bg-[#2563eb] text-white font-bold cursor-pointer"
-        >
-          1
-        </button>
-        <button
-          type="button"
-          className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer"
-        >
-          2
-        </button>
-        <button
-          type="button"
-          className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer"
-        >
-          3
-        </button>
-        <button
-          type="button"
-          className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 cursor-pointer"
-        >
-          Next
-        </button>
+      {/* 5. BOTTOM PAGINATION FOR TABLE 1 (Exact screenshot layout) */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+        <span>
+          Showing {filteredTasks.length > 0 ? (t1ValidPage - 1) * t1PageSize + 1 : 0}-
+          {Math.min(t1ValidPage * t1PageSize, filteredTasks.length)} of {filteredTasks.length > 0 ? filteredTasks.length : 24} customers
+        </span>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            disabled={t1ValidPage <= 1}
+            onClick={() => setT1Page(prev => Math.max(1, prev - 1))}
+            className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+          >
+            Previous
+          </button>
+          {Array.from({ length: t1TotalPages }).map((_, i) => (
+            <button
+              key={i + 1}
+              type="button"
+              onClick={() => setT1Page(i + 1)}
+              className={`px-3 py-1.5 rounded-lg font-bold cursor-pointer ${
+                t1ValidPage === i + 1
+                  ? 'bg-[#2563eb] text-white'
+                  : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+          <button
+            type="button"
+            disabled={t1ValidPage >= t1TotalPages}
+            onClick={() => setT1Page(prev => Math.min(t1TotalPages, prev + 1))}
+            className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+          >
+            Next
+          </button>
+        </div>
       </div>
+
+
 
       {/* ========================================================================= */}
       {/* MODAL: HANDLING NOTES & ISSUE HISTORY MODAL (Exact User Screenshot)        */}
@@ -3185,6 +3634,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
           </div>
         </div>
       )}
+
     </div>
   );
 }
