@@ -447,6 +447,21 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         if (createFileInputRef.current) createFileInputRef.current.value = '';
         return;
       }
+
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      if (channelSelection === 'WhatsApp') {
+        if (ext !== 'txt' && file.type !== 'text/plain') {
+          setCreateFormError(`Untuk channel WhatsApp, berkas "${file.name}" harus berformat .txt (export chat).`);
+          if (createFileInputRef.current) createFileInputRef.current.value = '';
+          return;
+        }
+      } else if (channelSelection === 'Meeting') {
+        if (ext !== 'pdf' && !file.type.includes('pdf')) {
+          setCreateFormError(`Untuk channel Meeting, berkas "${file.name}" harus berformat PDF (.pdf).`);
+          if (createFileInputRef.current) createFileInputRef.current.value = '';
+          return;
+        }
+      }
     }
 
     setIsUploadingFile(true);
@@ -460,7 +475,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
             ...prev,
             {
               file_name: file.name,
-              file_type: file.type || 'application/pdf',
+              file_type: file.type || (channelSelection === 'WhatsApp' ? 'text/plain' : 'application/pdf'),
               file_url: URL.createObjectURL(file),
               file_size_kb: Math.round(file.size / 1024)
             }
@@ -486,7 +501,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     const hasSummary = Boolean(recordSummary.trim());
 
     if (!hasAccount && !hasDate && !hasChannel && !hasSummary) {
-      setCreateFormError('Data wajib Record Conversation tidak diisi. Harap lengkapi Customer/Company, Tanggal/Waktu, Channel, dan Isi/Ringkasan.');
+      setCreateFormError('Data wajib Record Conversation tidak diisi. Harap lengkapi Customer/Company, Tanggal/Waktu, Channel, Isi/Ringkasan, dan Berkas Lampiran.');
       return;
     }
 
@@ -507,6 +522,16 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
     if (!hasSummary) {
       setCreateFormError('Isi/Ringkasan harus diisi.');
+      return;
+    }
+
+    // MANDATORY FILE UPLOAD CHECK (Wajib diisi, bukan optional)
+    if (newUploadedFiles.length === 0) {
+      setCreateFormError(
+        channelSelection === 'WhatsApp'
+          ? 'Berkas export chat berformat .txt wajib diunggah untuk channel WhatsApp.'
+          : 'Berkas notula meeting berformat .pdf wajib diunggah untuk channel Meeting.'
+      );
       return;
     }
 
@@ -611,12 +636,26 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       {saveSuccessNotif && (
         <div
           onClick={() => setSaveSuccessNotif(false)}
-          className="fixed top-16 right-8 z-[100] animate-in fade-in slide-in-from-top-2 duration-200 cursor-pointer select-none shadow-md rounded-lg"
-          title="Tutup notifikasi"
+          className="fixed bottom-6 right-6 z-[100] bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-3 duration-200 cursor-pointer select-none border border-slate-700/60"
+          title="Klik untuk menutup"
         >
-          <div className="h-[31px] w-[210px] bg-[#ecfdf5] border-[1.5px] border-[#059669] rounded-lg px-3.5 flex items-center">
-            <span className="text-xs font-bold text-[#006838] leading-none">Success</span>
+          <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+            <Check size={14} className="text-emerald-400 stroke-[3]" />
           </div>
+          <div className="flex flex-col">
+            <span className="font-bold text-white text-xs">Record Conversation Tersimpan</span>
+            <span className="text-[11px] text-slate-300 font-normal">Data percakapan berhasil diperbarui ke database</span>
+          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSaveSuccessNotif(false);
+            }}
+            className="ml-2 text-slate-400 hover:text-white p-1 transition-colors"
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
 
@@ -1291,7 +1330,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <div
-                    onClick={() => setChannelSelection('WhatsApp')}
+                    onClick={() => {
+                      setChannelSelection('WhatsApp');
+                      setNewUploadedFiles(prev => prev.filter(f => (f.file_name.split('.').pop()?.toLowerCase() || '') === 'txt'));
+                    }}
                     className={`rounded-xl py-2.5 px-4 flex items-center justify-between cursor-pointer transition-all ${
                       channelSelection === 'WhatsApp'
                         ? 'border-2 border-[#2563eb] bg-white shadow-2xs'
@@ -1309,7 +1351,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   </div>
 
                   <div
-                    onClick={() => setChannelSelection('Meeting')}
+                    onClick={() => {
+                      setChannelSelection('Meeting');
+                      setNewUploadedFiles(prev => prev.filter(f => (f.file_name.split('.').pop()?.toLowerCase() || '') === 'pdf'));
+                    }}
                     className={`rounded-xl py-2.5 px-4 flex items-center justify-between cursor-pointer transition-all ${
                       channelSelection === 'Meeting'
                         ? 'border-2 border-[#2563eb] bg-white shadow-2xs'
@@ -1319,7 +1364,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     <div className="flex items-center gap-2">
                       <FileText size={15} className={channelSelection === 'Meeting' ? 'text-[#2563eb]' : 'text-slate-400'} />
                       <span className={`text-xs ${channelSelection === 'Meeting' ? 'font-bold text-[#2563eb]' : 'font-medium text-slate-600'}`}>
-                        Meeting Document
+                        Meeting Document (.pdf)
                       </span>
                     </div>
                     <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
@@ -1355,10 +1400,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 />
               </div>
 
-              {/* File Upload */}
+              {/* File Upload (Mandatory) */}
               <div>
                 <label className="block text-xs font-semibold text-slate-800 mb-1.5">
-                  File Attachment (Optional)
+                  File Attachment <span className="text-red-500">*</span>
                 </label>
                 <div
                   onClick={() => createFileInputRef.current?.click()}
@@ -1377,20 +1422,24 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     <UploadCloud size={20} className="text-[#2563eb]" />
                   </div>
                   <p className="text-xs font-bold text-slate-800">
-                    Upload chat export .txt file or meeting notes PDF
+                    {channelSelection === 'WhatsApp'
+                      ? 'Upload WhatsApp chat export file (.txt)'
+                      : 'Upload meeting notes or document (.pdf)'}
                   </p>
                   <p className="text-[11px] text-slate-500 mt-1">
                     Drag and drop your file here, or <span className="text-[#2563eb] font-semibold underline">Browse files</span>
                   </p>
-                  <div className="mt-2.5 px-3 py-1 rounded-lg border border-slate-200 bg-white text-[10px] text-slate-400 font-medium">
-                    Max file size: 10MB
+                  <div className="mt-2.5 px-3 py-1 rounded-lg border border-slate-200 bg-white text-[10px] text-slate-500 font-medium">
+                    {channelSelection === 'WhatsApp'
+                      ? 'Wajib diisi • Khusus berkas berformat .txt (Maks 10MB)'
+                      : 'Wajib diisi • Khusus berkas berformat .pdf (Maks 10MB)'}
                   </div>
                 </div>
                 <input
                   ref={createFileInputRef}
                   type="file"
                   multiple
-                  accept=".txt,.pdf,.doc,.docx,.png,.jpg,.jpeg"
+                  accept={channelSelection === 'WhatsApp' ? '.txt,text/plain' : '.pdf,application/pdf'}
                   onChange={(e) => handleCreateFileUpload(e.target.files)}
                   className="hidden"
                 />
