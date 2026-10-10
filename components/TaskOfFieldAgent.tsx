@@ -682,12 +682,196 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     value: string,
     setter: (val: string) => void
   ) => {
-    const words = value.trim() ? value.trim().split(/\s+/).filter(Boolean) : [];
+    const trimmed = value.trim();
+    if (!trimmed) {
+      setter(value);
+      return;
+    }
+    const words = trimmed.split(/\s+/).filter(Boolean);
     if (words.length > 50) {
       const truncated = words.slice(0, 50).join(' ');
       setter(truncated);
+    } else if (words.length === 50 && (value.endsWith(' ') || value.endsWith('\n') || value.endsWith('\t'))) {
+      const clamped = words.join(' ');
+      setter(clamped);
     } else {
       setter(value);
+    }
+  };
+
+  const handleKeyDownMaxWords = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>,
+    currentVal: string,
+    maxWords: number = 50
+  ) => {
+    if (
+      e.key === 'Backspace' ||
+      e.key === 'Delete' ||
+      e.key.startsWith('Arrow') ||
+      e.key === 'Tab' ||
+      e.key === 'Home' ||
+      e.key === 'End' ||
+      e.ctrlKey ||
+      e.metaKey ||
+      e.altKey
+    ) {
+      return;
+    }
+
+    const trimmed = currentVal.trim();
+    const words = trimmed ? trimmed.split(/\s+/).filter(Boolean) : [];
+
+    if (words.length >= maxWords) {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        return;
+      }
+
+      const target = e.currentTarget;
+      const selectionStart = target.selectionStart;
+      const selectionEnd = target.selectionEnd;
+
+      if (selectionStart !== null && selectionEnd !== null && selectionStart !== selectionEnd) {
+        return;
+      }
+
+      if (selectionStart !== null && selectionStart > 0) {
+        const charBefore = currentVal.charAt(selectionStart - 1);
+        if (/\s/.test(charBefore)) {
+          e.preventDefault();
+          return;
+        }
+      }
+    }
+  };
+
+  const handleDownloadResultPdf = (task: FieldTaskItem) => {
+    try {
+      const jobNumber = task.job_number || '#JOB';
+      const fileName = `Task_Report_${jobNumber.replace(/[^a-zA-Z0-9._-]/g, '_')}.pdf`;
+      const statusText = task.has_issue || task.issue_status === 'Issue' ? 'Issue' : 'Completed';
+
+      const pdfEscape = (str: string) =>
+        str.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+
+      const lines: string[] = [
+        `==================================================`,
+        `FIELD AGENT INSPECTION REPORT & WORKSHEET`,
+        `==================================================`,
+        ``,
+        `JOB INFORMATION`,
+        `--------------------------------------------------`,
+        `Job Number       : ${task.job_number}`,
+        `Customer         : ${task.customer_name}`,
+        `Field Agent      : ${task.field_agent_name || 'Marsel'}`,
+        `Status           : ${statusText}`,
+        `Handover Location: ${task.handover_location || 'Gate 3 Priok'}`,
+        `Handover Date    : ${formatTaskDateDisplay(task.handover_datetime)}`,
+        ``,
+        `SHIPMENT & PHYSICAL CARGO DATA`,
+        `--------------------------------------------------`,
+        `Shipper          : ${task.shipper || 'PT Example Shipper'}`,
+        `Consignee        : ${task.consignee || 'PT Example Consignee'}`,
+        `MAWB             : ${task.mawb || '123-45678901'}`,
+        `HAWB             : ${task.hawb || 'HAWB-00123'}`,
+        `Actual Pieces    : ${task.cargo_pieces || '12 Pcs'}`,
+        `Gross Weight     : ${task.gross_weight || '2,450 Kg'}`,
+        ``,
+        `FIELD INSPECTION CHECKLIST & PHOTOS`,
+        `--------------------------------------------------`,
+        `1. Foto Keseluruhan   : Verified (OK)`,
+        `2. Marking / Label    : Verified (Match)`,
+        `3. Foto Seal          : Verified (Intact)`,
+        `4. Area Kerusakan     : ${task.has_issue ? 'Issue Detected' : 'No Damage Reported'}`,
+        `5. Quantity & Weight  : Verified`,
+        `6. Visual Condition   : Verified`,
+        `7. Safe For Flight    : Verified`,
+        ``,
+        `ISSUE & OPERATIONAL NOTES`,
+        `--------------------------------------------------`,
+        `Status               : ${statusText}`,
+        `Issue Details        : ${task.has_issue ? (task.issue_note || 'Physical discrepancy detected during inspection.') : 'No operational issue detected. All parameters verified normal.'}`,
+        `Notes                : ${task.notes || 'Inspection completed according to operational standards.'}`,
+        ``,
+        `==================================================`,
+        `Report Generated: ${new Date().toLocaleString('id-ID')}`,
+        `PT. ANDIMA TRANSPORTINDO CRM`,
+        `==================================================`
+      ];
+
+      const wrappedLines: string[] = [];
+      for (const line of lines) {
+        if (line.length <= 65) {
+          wrappedLines.push(line);
+        } else {
+          const words = line.split(' ');
+          let current = '';
+          for (const w of words) {
+            if ((current + ' ' + w).length <= 65) {
+              current = current ? current + ' ' + w : w;
+            } else {
+              if (current) wrappedLines.push(current);
+              current = w;
+            }
+          }
+          if (current) wrappedLines.push(current);
+        }
+      }
+
+      let streamText = `BT\n/F1 14 Tf\n0 0 0 rg\n50 780 Td\n(${pdfEscape(`FIELD AGENT REPORT - ${jobNumber}`)}) Tj\nET\n`;
+      streamText += `BT\n/F1 10 Tf\n0.1 0.1 0.1 rg\n50 750 Td\n14 TL\n`;
+
+      for (let i = 0; i < wrappedLines.length; i++) {
+        const escaped = pdfEscape(wrappedLines[i]);
+        streamText += `(${escaped}) Tj\n`;
+        if (i < wrappedLines.length - 1) {
+          streamText += `T*\n`;
+        }
+      }
+      streamText += `ET\n`;
+
+      const encoder = new TextEncoder();
+      const streamBytes = encoder.encode(streamText);
+      const streamLen = streamBytes.length;
+
+      const header = `%PDF-1.4\n`;
+      const obj1 = `1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`;
+      const obj2 = `2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n`;
+      const obj3 = `3 0 obj\n<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 595.28 841.89] /Contents 5 0 R >>\nendobj\n`;
+      const obj4 = `4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n`;
+      const obj5Header = `5 0 obj\n<< /Length ${streamLen} >>\nstream\n`;
+      const obj5Footer = `\nendstream\nendobj\n`;
+
+      const part1 = encoder.encode(header + obj1 + obj2 + obj3 + obj4 + obj5Header);
+      const part2 = streamBytes;
+      const part3 = encoder.encode(obj5Footer);
+
+      const offset1 = encoder.encode(header).length;
+      const offset2 = offset1 + encoder.encode(obj1).length;
+      const offset3 = offset2 + encoder.encode(obj2).length;
+      const offset4 = offset3 + encoder.encode(obj3).length;
+      const offset5 = offset4 + encoder.encode(obj4).length;
+      const xrefOffset = offset5 + encoder.encode(obj5Header).length + streamLen + encoder.encode(obj5Footer).length;
+
+      const pad = (n: number) => String(n).padStart(10, '0');
+      const xref = `xref\n0 6\n0000000000 65535 f \n${pad(offset1)} 00000 n \n${pad(offset2)} 00000 n \n${pad(offset3)} 00000 n \n${pad(offset4)} 00000 n \n${pad(offset5)} 00000 n \n`;
+      const trailer = `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+      const part4 = encoder.encode(xref + trailer);
+
+      const blob = new Blob([part1, part2, part3, part4], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast(`Laporan PDF ${jobNumber} berhasil diunduh.`);
+    } catch (err) {
+      console.error('Download result PDF error:', err);
+      showToast('Gagal mengunduh laporan PDF.');
     }
   };
 
@@ -1810,6 +1994,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               <textarea
                 rows={3}
                 value={editingNoteText}
+                onKeyDown={(e) => handleKeyDownMaxWords(e, editingNoteText, 50)}
                 onChange={(e) => handleMax50WordsChange(e.target.value, setEditingNoteText)}
                 placeholder="Ketik catatan tambahan di sini jika ada update baru..."
                 className={`w-full bg-white border rounded-2xl p-3.5 sm:p-4 text-xs sm:text-sm text-slate-800 placeholder-slate-400 outline-none min-h-[90px] resize-none shadow-2xs leading-relaxed ${
@@ -2122,6 +2307,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 </div>
                 <textarea
                   value={instructionNote}
+                  onKeyDown={(e) => handleKeyDownMaxWords(e, instructionNote, 50)}
                   onChange={(e) => handleMax50WordsChange(e.target.value, setInstructionNote)}
                   rows={3}
                   placeholder="Please verify cargo packaging condition before loading..."
@@ -2297,6 +2483,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 </div>
                 <textarea
                   value={reassignReason}
+                  onKeyDown={(e) => handleKeyDownMaxWords(e, reassignReason, 50)}
                   onChange={(e) => handleMax50WordsChange(e.target.value, setReassignReason)}
                   rows={2}
                   placeholder="Previous agent is unavailable / on leave at Cikarang site..."
@@ -2326,6 +2513,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 </div>
                 <textarea
                   value={reassignNotes}
+                  onKeyDown={(e) => handleKeyDownMaxWords(e, reassignNotes, 50)}
                   onChange={(e) => handleMax50WordsChange(e.target.value, setReassignNotes)}
                   rows={2}
                   placeholder="Please continue cargo inspection from the previous agent..."
@@ -2502,6 +2690,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <textarea
                     rows={3}
                     value={issueModalNoteText}
+                    onKeyDown={(e) => handleKeyDownMaxWords(e, issueModalNoteText, 50)}
                     onChange={(e) => handleMax50WordsChange(e.target.value, setIssueModalNoteText)}
                     placeholder="Ketik catatan tambahan di sini jika ada update baru..."
                     className={`w-full bg-white border rounded-xl p-3.5 text-xs text-slate-800 placeholder-slate-400 outline-none resize-none leading-relaxed shadow-2xs ${
@@ -2984,9 +3173,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  window.print();
-                }}
+                onClick={() => handleDownloadResultPdf(resultModalTask)}
                 className="flex-1 py-2.5 px-4 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white text-xs font-bold shadow-xs cursor-pointer flex items-center justify-center gap-2 transition-colors"
               >
                 <Download size={14} />
@@ -3159,6 +3346,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     <textarea
                       rows={2}
                       value={editNotes}
+                      onKeyDown={(e) => handleKeyDownMaxWords(e, editNotes, 50)}
                       onChange={(e) => handleMax50WordsChange(e.target.value, setEditNotes)}
                       placeholder="Tambahkan catatan revisi transaksi..."
                       className={`w-full bg-white border rounded-lg px-2.5 py-1.5 text-xs text-slate-800 outline-none resize-none ${

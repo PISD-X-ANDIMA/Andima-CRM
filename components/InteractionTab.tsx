@@ -273,6 +273,52 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     return str.trim() ? str.trim().split(/\s+/).filter(Boolean).length : 0;
   };
 
+  const handleKeyDownMaxWords = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>,
+    currentVal: string,
+    maxWords: number
+  ) => {
+    if (
+      e.key === 'Backspace' ||
+      e.key === 'Delete' ||
+      e.key.startsWith('Arrow') ||
+      e.key === 'Tab' ||
+      e.key === 'Home' ||
+      e.key === 'End' ||
+      e.ctrlKey ||
+      e.metaKey ||
+      e.altKey
+    ) {
+      return;
+    }
+
+    const trimmed = currentVal.trim();
+    const words = trimmed ? trimmed.split(/\s+/).filter(Boolean) : [];
+
+    if (words.length >= maxWords) {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        return;
+      }
+
+      const target = e.currentTarget;
+      const selectionStart = target.selectionStart;
+      const selectionEnd = target.selectionEnd;
+
+      if (selectionStart !== null && selectionEnd !== null && selectionStart !== selectionEnd) {
+        return;
+      }
+
+      if (selectionStart !== null && selectionStart > 0) {
+        const charBefore = currentVal.charAt(selectionStart - 1);
+        if (/\s/.test(charBefore)) {
+          e.preventDefault();
+          return;
+        }
+      }
+    }
+  };
+
   const accountDropdownRef = useRef<HTMLDivElement | null>(null);
   const jobNumberDropdownRef = useRef<HTMLDivElement | null>(null);
   const createFileInputRef = useRef<HTMLInputElement | null>(null);
@@ -1796,12 +1842,16 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 <textarea
                   rows={3}
                   value={recordSummary}
+                  onKeyDown={(e) => handleKeyDownMaxWords(e, recordSummary, 100)}
                   onChange={(e) => {
                     const rawVal = e.target.value;
-                    const words = rawVal.trim() ? rawVal.trim().split(/\s+/).filter(Boolean) : [];
+                    const trimmed = rawVal.trim();
+                    const words = trimmed ? trimmed.split(/\s+/).filter(Boolean) : [];
                     let finalVal = rawVal;
                     if (words.length > 100) {
                       finalVal = words.slice(0, 100).join(' ');
+                    } else if (words.length === 100 && (rawVal.endsWith(' ') || rawVal.endsWith('\n') || rawVal.endsWith('\t'))) {
+                      finalVal = words.join(' ');
                     }
                     setRecordSummary(finalVal);
                     const count = getWordCount(finalVal);
