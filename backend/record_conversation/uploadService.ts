@@ -10,13 +10,9 @@ export interface UploadedFileMetadata {
 const BUCKET_NAME = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || 'a2-record-documents';
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB per FR-02.2
 
-const ALLOWED_EXTENSIONS = ['pdf', 'docx', 'jpg', 'jpeg', 'png', 'txt'];
+const ALLOWED_EXTENSIONS = ['pdf', 'txt'];
 const ALLOWED_MIME_TYPES = [
   'application/pdf',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
   'text/plain',
 ];
 
@@ -38,7 +34,7 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
   if (!isExtAllowed && !isMimeAllowed) {
     return {
       valid: false,
-      error: `Format file "${file.name}" tidak didukung. Harap unggah berkas PDF, DOCX, JPG, PNG, atau TXT.`,
+      error: `Format file "${file.name}" tidak didukung. Hanya berkas berformat .txt (WhatsApp) atau .pdf (Meeting) yang diizinkan.`,
     };
   }
 

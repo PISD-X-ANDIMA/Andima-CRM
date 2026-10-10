@@ -77,6 +77,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const hasFiles = (body.uploaded_files && body.uploaded_files.length > 0) || Boolean(body.uploaded_file?.file_url);
+    if (!hasFiles) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Berkas bukti percakapan (.txt untuk WhatsApp atau .pdf untuk Meeting) wajib diunggah',
+        },
+        { status: 400 }
+      );
+    }
+
     const result = await createConversation(body);
 
     if (!result.success) {
