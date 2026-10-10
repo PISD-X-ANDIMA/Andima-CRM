@@ -236,7 +236,7 @@ function WorksheetPanel({ worksheetId, onClose }: { worksheetId: number; onClose
                 </span>
               ) : (
                 <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Normal
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> {(data as any)?.status || 'Completed'}
                 </span>
               )}
             </div>
@@ -512,17 +512,29 @@ function WorksheetsSubTab() {
             Showing {wsTotal === 0 ? 0 : (wsPage - 1) * PER_PAGE + 1}-{Math.min(wsPage * PER_PAGE, wsTotal)} of <span className="font-bold text-slate-700">{wsTotal}</span>
           </div>
           <div className="flex gap-1.5 items-center">
-            <button disabled={wsPage <= 1} onClick={() => setWsPage(p => Math.max(1, p - 1))}
+            <button disabled={wsPage <= 1} onClick={() => setWsPage(Math.max(1, wsPage - 1))}
               className="p-1.5 border border-slate-200 rounded-lg bg-white hover:bg-slate-100 disabled:opacity-40 transition-colors cursor-pointer disabled:cursor-not-allowed">
               <ChevronRight size={14} className="rotate-180 text-slate-600" />
             </button>
-            {Array.from({ length: wsTotalPages }, (_, i) => i + 1).map(p => (
-              <button key={p} onClick={() => setWsPage(p)}
-                className={`w-7 h-7 rounded-lg text-xs font-bold flex items-center justify-center transition-colors cursor-pointer ${p === wsPage ? 'bg-blue-600 text-white shadow-sm' : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
-                {p}
-              </button>
-            ))}
-            <button disabled={wsPage >= wsTotalPages} onClick={() => setWsPage(p => Math.min(wsTotalPages, p + 1))}
+            {Array.from({ length: Math.min(wsTotalPages, 5) }, (_, index) => {
+              const pageNumber = wsTotalPages <= 5
+                ? index + 1
+                : Math.max(1, Math.min(wsPage - 2, wsTotalPages - 4)) + index;
+              return (
+                <button
+                  key={pageNumber}
+                  onClick={() => setWsPage(pageNumber)}
+                  className={`w-7 h-7 rounded-lg text-xs font-bold flex items-center justify-center transition-colors cursor-pointer ${
+                    wsPage === pageNumber
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+            <button disabled={wsPage >= wsTotalPages} onClick={() => setWsPage(Math.min(wsTotalPages, wsPage + 1))}
               className="p-1.5 border border-slate-200 rounded-lg bg-white hover:bg-slate-100 disabled:opacity-40 transition-colors cursor-pointer disabled:cursor-not-allowed">
               <ChevronRight size={14} className="text-slate-600" />
             </button>

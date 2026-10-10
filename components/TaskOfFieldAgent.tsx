@@ -684,7 +684,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
   ) => {
     const words = value.trim() ? value.trim().split(/\s+/).filter(Boolean) : [];
     if (words.length > 50) {
-      const truncated = value.split(/\s+/).slice(0, 50).join(' ');
+      const truncated = words.slice(0, 50).join(' ');
       setter(truncated);
     } else {
       setter(value);
@@ -1403,7 +1403,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
   });
 
   const t1PageSize = 5;
-  const t1TotalPages = Math.min(5, Math.max(1, Math.ceil(filteredTasks.length / t1PageSize)));
+  const t1TotalPages = Math.max(1, Math.ceil(filteredTasks.length / t1PageSize));
   const t1ValidPage = Math.min(t1Page, t1TotalPages);
   const pagedTasks = filteredTasks.slice((t1ValidPage - 1) * t1PageSize, t1ValidPage * t1PageSize);
 
@@ -1416,7 +1416,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     <div className="w-full pb-20 animate-in fade-in duration-200">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 animate-in slide-in-from-bottom-2">
+        <div className="fixed bottom-6 right-6 z-[100] bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 animate-in slide-in-from-bottom-2 border border-slate-700/60">
           <CheckCircle size={16} className="text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
@@ -1633,36 +1633,41 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
         <span>
           Showing {filteredTasks.length > 0 ? (t1ValidPage - 1) * t1PageSize + 1 : 0}-
-          {Math.min(t1ValidPage * t1PageSize, filteredTasks.length)} of {filteredTasks.length > 0 ? filteredTasks.length : 24} customers
+          {Math.min(t1ValidPage * t1PageSize, filteredTasks.length)} of {filteredTasks.length} customers
         </span>
         <div className="flex items-center gap-1.5">
           <button
             type="button"
             disabled={t1ValidPage <= 1}
-            onClick={() => setT1Page(prev => Math.max(1, prev - 1))}
-            className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+            onClick={() => setT1Page(Math.max(1, t1ValidPage - 1))}
+            className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
           >
             Previous
           </button>
-          {Array.from({ length: t1TotalPages }).map((_, i) => (
-            <button
-              key={i + 1}
-              type="button"
-              onClick={() => setT1Page(i + 1)}
-              className={`px-3 py-1.5 rounded-lg font-bold cursor-pointer ${
-                t1ValidPage === i + 1
-                  ? 'bg-[#2563eb] text-white'
-                  : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
+          {Array.from({ length: Math.min(t1TotalPages, 5) }, (_, index) => {
+            const pageNumber = t1TotalPages <= 5
+              ? index + 1
+              : Math.max(1, Math.min(t1ValidPage - 2, t1TotalPages - 4)) + index;
+            return (
+              <button
+                key={pageNumber}
+                type="button"
+                onClick={() => setT1Page(pageNumber)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                  t1ValidPage === pageNumber
+                    ? 'bg-[#2563eb] text-white shadow-2xs'
+                    : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                {pageNumber}
+              </button>
+            );
+          })}
           <button
             type="button"
             disabled={t1ValidPage >= t1TotalPages}
-            onClick={() => setT1Page(prev => Math.min(t1TotalPages, prev + 1))}
-            className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+            onClick={() => setT1Page(Math.min(t1TotalPages, t1ValidPage + 1))}
+            className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
           >
             Next
           </button>
@@ -1807,8 +1812,18 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 value={editingNoteText}
                 onChange={(e) => handleMax50WordsChange(e.target.value, setEditingNoteText)}
                 placeholder="Ketik catatan tambahan di sini jika ada update baru..."
-                className="w-full bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-4 text-xs sm:text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 min-h-[90px] resize-none shadow-2xs leading-relaxed"
+                className={`w-full bg-white border rounded-2xl p-3.5 sm:p-4 text-xs sm:text-sm text-slate-800 placeholder-slate-400 outline-none min-h-[90px] resize-none shadow-2xs leading-relaxed ${
+                  countWords(editingNoteText) >= 50
+                    ? 'border-red-500 focus:border-red-600 focus:ring-1 focus:ring-red-500'
+                    : 'border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
+                }`}
               />
+              {countWords(editingNoteText) >= 50 && (
+                <p className="mt-1 text-xs text-red-600 font-semibold flex items-center gap-1">
+                  <AlertTriangle size={13} className="shrink-0 text-red-500" />
+                  <span>Telah mencapai batas maksimal 50 kata. Tidak dapat menambahkan kata lagi.</span>
+                </p>
+              )}
               <p className="text-xs text-slate-400 font-normal">
                 Catatan ini akan langsung terbit pada modul job list mobile A3 Field Agent &amp; tersimpan dalam audit trail.
               </p>
@@ -2097,16 +2112,31 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
               {/* Field: INSTRUCTION NOTES FOR AGENT (OPTIONAL) */}
               <div>
-                <label className="text-[11px] font-bold text-slate-700 tracking-wider block mb-1.5">
-                  INSTRUCTION NOTES FOR AGENT (OPTIONAL)
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[11px] font-bold text-slate-700 tracking-wider block">
+                    INSTRUCTION NOTES FOR AGENT (OPTIONAL)
+                  </label>
+                  <span className={`text-xs font-semibold ${countWords(instructionNote) >= 50 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
+                    {countWords(instructionNote)}/50 kata
+                  </span>
+                </div>
                 <textarea
                   value={instructionNote}
-                  onChange={(e) => setInstructionNote(e.target.value)}
+                  onChange={(e) => handleMax50WordsChange(e.target.value, setInstructionNote)}
                   rows={3}
                   placeholder="Please verify cargo packaging condition before loading..."
-                  className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 resize-none leading-relaxed"
+                  className={`w-full bg-white border rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 outline-none resize-none leading-relaxed ${
+                    countWords(instructionNote) >= 50
+                      ? 'border-red-500 focus:border-red-600 focus:ring-1 focus:ring-red-500'
+                      : 'border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-100'
+                  }`}
                 />
+                {countWords(instructionNote) >= 50 && (
+                  <p className="mt-1 text-[11px] text-red-600 font-semibold flex items-center gap-1">
+                    <AlertTriangle size={12} className="shrink-0 text-red-500" />
+                    <span>Telah mencapai batas maksimal 50 kata. Tidak dapat menambahkan kata lagi.</span>
+                  </p>
+                )}
                 <p className="text-[10px] text-slate-400 mt-1">
                   These notes will immediately appear in the A3 Field Agent mobile job list.
                 </p>
@@ -2261,15 +2291,27 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <label className="text-[11px] font-bold text-slate-700 tracking-wider">
                     REASSIGNMENT REASON <span className="text-red-500">*</span>
                   </label>
-                  <span className="text-[10px] text-slate-400 font-medium">Required</span>
+                  <span className={`text-xs font-semibold ${countWords(reassignReason) >= 50 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
+                    {countWords(reassignReason)}/50 kata
+                  </span>
                 </div>
                 <textarea
                   value={reassignReason}
-                  onChange={(e) => setReassignReason(e.target.value)}
+                  onChange={(e) => handleMax50WordsChange(e.target.value, setReassignReason)}
                   rows={2}
                   placeholder="Previous agent is unavailable / on leave at Cikarang site..."
-                  className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 resize-none leading-relaxed"
+                  className={`w-full bg-white border rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 outline-none resize-none leading-relaxed ${
+                    countWords(reassignReason) >= 50
+                      ? 'border-red-500 focus:border-red-600 focus:ring-1 focus:ring-red-500'
+                      : 'border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-100'
+                  }`}
                 />
+                {countWords(reassignReason) >= 50 && (
+                  <p className="mt-1 text-[11px] text-red-600 font-semibold flex items-center gap-1">
+                    <AlertTriangle size={12} className="shrink-0 text-red-500" />
+                    <span>Telah mencapai batas maksimal 50 kata. Tidak dapat menambahkan kata lagi.</span>
+                  </p>
+                )}
               </div>
 
               {/* Field: ADDITIONAL INSTRUCTION NOTES (OPTIONAL) */}
@@ -2278,15 +2320,27 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <label className="text-[11px] font-bold text-slate-700 tracking-wider">
                     ADDITIONAL INSTRUCTION NOTES (OPTIONAL)
                   </label>
-                  <span className="text-[10px] text-slate-400 font-medium">Optional</span>
+                  <span className={`text-xs font-semibold ${countWords(reassignNotes) >= 50 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
+                    {countWords(reassignNotes)}/50 kata
+                  </span>
                 </div>
                 <textarea
                   value={reassignNotes}
-                  onChange={(e) => setReassignNotes(e.target.value)}
+                  onChange={(e) => handleMax50WordsChange(e.target.value, setReassignNotes)}
                   rows={2}
                   placeholder="Please continue cargo inspection from the previous agent..."
-                  className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 resize-none leading-relaxed"
+                  className={`w-full bg-white border rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 outline-none resize-none leading-relaxed ${
+                    countWords(reassignNotes) >= 50
+                      ? 'border-red-500 focus:border-red-600 focus:ring-1 focus:ring-red-500'
+                      : 'border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-100'
+                  }`}
                 />
+                {countWords(reassignNotes) >= 50 && (
+                  <p className="mt-1 text-[11px] text-red-600 font-semibold flex items-center gap-1">
+                    <AlertTriangle size={12} className="shrink-0 text-red-500" />
+                    <span>Telah mencapai batas maksimal 50 kata. Tidak dapat menambahkan kata lagi.</span>
+                  </p>
+                )}
               </div>
 
               {/* Footer Button: Save Reassignment */}
@@ -2450,7 +2504,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     value={issueModalNoteText}
                     onChange={(e) => handleMax50WordsChange(e.target.value, setIssueModalNoteText)}
                     placeholder="Ketik catatan tambahan di sini jika ada update baru..."
-                    className="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 resize-none leading-relaxed shadow-2xs"
+                    className={`w-full bg-white border rounded-xl p-3.5 text-xs text-slate-800 placeholder-slate-400 outline-none resize-none leading-relaxed shadow-2xs ${
+                      countWords(issueModalNoteText) >= 50
+                        ? 'border-red-500 focus:border-red-600 focus:ring-1 focus:ring-red-500'
+                        : 'border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-100'
+                    }`}
                   />
 
                   <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400">
@@ -2459,6 +2517,12 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       {countWords(issueModalNoteText)}/50 kata
                     </span>
                   </div>
+                  {countWords(issueModalNoteText) >= 50 && (
+                    <p className="mt-1 text-[11px] text-red-600 font-semibold flex items-center gap-1">
+                      <AlertTriangle size={12} className="shrink-0 text-red-500" />
+                      <span>Telah mencapai batas maksimal 50 kata. Tidak dapat menambahkan kata lagi.</span>
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -2501,12 +2565,12 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   {resultModalTask.has_issue ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-950/80 border border-rose-500/40 text-rose-400 text-[10px] font-semibold">
                       <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
-                      <span>Issue Detected</span>
+                      <span>{resultModalTask.issue_status || 'Issue Detected'}</span>
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-[10px] font-semibold">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      <span>Normal</span>
+                      <span>{resultModalTask.status || 'Completed'}</span>
                     </span>
                   )}
                 </div>
@@ -2766,8 +2830,17 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     </div>
                     <button
                       type="button"
-                      onClick={() => showToast('Downloading Packing List.pdf...')}
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = 'data:application/pdf;base64,JVBERi0xLjQKJSDl4uXw...';
+                        link.download = 'Packing_List.pdf';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        showToast('Berkas Packing_List.pdf berhasil diunduh');
+                      }}
                       className="p-1.5 text-slate-400 hover:text-[#2563eb] rounded-lg transition-colors cursor-pointer"
+                      title="Unduh Berkas"
                     >
                       <Download size={14} />
                     </button>
@@ -2785,8 +2858,17 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     </div>
                     <button
                       type="button"
-                      onClick={() => showToast('Downloading MSDS.pdf...')}
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = 'data:application/pdf;base64,JVBERi0xLjQKJSDl4uXw...';
+                        link.download = 'MSDS.pdf';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        showToast('Berkas MSDS.pdf berhasil diunduh');
+                      }}
                       className="p-1.5 text-slate-400 hover:text-[#2563eb] rounded-lg transition-colors cursor-pointer"
+                      title="Unduh Berkas"
                     >
                       <Download size={14} />
                     </button>
@@ -3068,14 +3150,29 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-600 block mb-1">Operational Notes</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] font-bold text-slate-600 block">Operational Notes</label>
+                      <span className={`text-[10px] font-semibold ${countWords(editNotes) >= 50 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
+                        {countWords(editNotes)}/50 kata
+                      </span>
+                    </div>
                     <textarea
                       rows={2}
                       value={editNotes}
-                      onChange={(e) => setEditNotes(e.target.value)}
+                      onChange={(e) => handleMax50WordsChange(e.target.value, setEditNotes)}
                       placeholder="Tambahkan catatan revisi transaksi..."
-                      className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-500 resize-none"
+                      className={`w-full bg-white border rounded-lg px-2.5 py-1.5 text-xs text-slate-800 outline-none resize-none ${
+                        countWords(editNotes) >= 50
+                          ? 'border-red-500 focus:border-red-600'
+                          : 'border-slate-300 focus:border-blue-500'
+                      }`}
                     />
+                    {countWords(editNotes) >= 50 && (
+                      <p className="mt-1 text-[10px] text-red-600 font-semibold flex items-center gap-1">
+                        <AlertTriangle size={11} className="shrink-0 text-red-500" />
+                        <span>Telah mencapai batas maksimal 50 kata. Tidak dapat menambahkan kata lagi.</span>
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center justify-end pt-1">
                     <button

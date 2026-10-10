@@ -464,6 +464,99 @@ Exported on: ${new Date().toLocaleString('id-ID')}
     }
   };
 
+  // Export Direct PDF Summary Helper Function (Only Summary, No Customer Info, Direct Download)
+  const handleDownloadSummaryPdf = (item: ConversationDisplayItem) => {
+    try {
+      const summaryText = item.summary || 'Discussed recent shipment delays. Customer requested schedule adjustment for container #2 and re-verification of documentation at Tanjung Priok Port.';
+      const convId = item.conversation_id || 'CONV';
+      const fileName = `Summary_${convId}.pdf`;
+
+      // Format summaryText into wrapped lines of max 65 chars
+      const rawLines = summaryText.split(/\r?\n/);
+      const wrappedLines: string[] = [];
+      for (const line of rawLines) {
+        if (!line) {
+          wrappedLines.push('');
+          continue;
+        }
+        if (line.length <= 65) {
+          wrappedLines.push(line);
+        } else {
+          const words = line.split(' ');
+          let current = '';
+          for (const w of words) {
+            if ((current + ' ' + w).length <= 65) {
+              current = current ? current + ' ' + w : w;
+            } else {
+              if (current) wrappedLines.push(current);
+              current = w;
+            }
+          }
+          if (current) wrappedLines.push(current);
+        }
+      }
+
+      const pdfEscape = (str: string) =>
+        str.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+
+      // Build PDF Stream (Only Summary)
+      let streamText = `BT\n/F1 16 Tf\n50 780 Td\n0 0 0 rg\n(${pdfEscape(`CONVERSATION SUMMARY - ${convId}`)}) Tj\nET\n`;
+      streamText += `BT\n/F1 12 Tf\n0.2 0.2 0.2 rg\n50 740 Td\n18 TL\n`;
+      streamText += `(SUMMARY) Tj\nT*\nT*\n`;
+
+      for (let i = 0; i < wrappedLines.length; i++) {
+        const line = pdfEscape(wrappedLines[i]);
+        streamText += `(${line}) Tj\n`;
+        if (i < wrappedLines.length - 1) {
+          streamText += `T*\n`;
+        }
+      }
+      streamText += `ET\n`;
+
+      const encoder = new TextEncoder();
+      const streamBytes = encoder.encode(streamText);
+      const streamLen = streamBytes.length;
+
+      const header = `%PDF-1.4\n`;
+      const obj1 = `1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`;
+      const obj2 = `2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n`;
+      const obj3 = `3 0 obj\n<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 595.28 841.89] /Contents 5 0 R >>\nendobj\n`;
+      const obj4 = `4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n`;
+      const obj5Header = `5 0 obj\n<< /Length ${streamLen} >>\nstream\n`;
+      const obj5Footer = `\nendstream\nendobj\n`;
+
+      const part1 = encoder.encode(header + obj1 + obj2 + obj3 + obj4 + obj5Header);
+      const part2 = streamBytes;
+      const part3 = encoder.encode(obj5Footer);
+
+      const offset1 = encoder.encode(header).length;
+      const offset2 = offset1 + encoder.encode(obj1).length;
+      const offset3 = offset2 + encoder.encode(obj2).length;
+      const offset4 = offset3 + encoder.encode(obj3).length;
+      const offset5 = offset4 + encoder.encode(obj4).length;
+      const xrefOffset = offset5 + encoder.encode(obj5Header).length + streamLen + encoder.encode(obj5Footer).length;
+
+      const pad = (n: number) => String(n).padStart(10, '0');
+      const xref = `xref\n0 6\n0000000000 65535 f \n${pad(offset1)} 00000 n \n${pad(offset2)} 00000 n \n${pad(offset3)} 00000 n \n${pad(offset4)} 00000 n \n${pad(offset5)} 00000 n \n`;
+      const trailer = `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+      const part4 = encoder.encode(xref + trailer);
+
+      const blob = new Blob([part1, part2, part3, part4], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      console.error('Download summary PDF error:', err);
+      handleExportTextSummary(item);
+    }
+  };
+
   // Footer Need Assistance Handler
   const handleAssistanceChoice = (needHelp: boolean) => {
     setAssistanceChoice(needHelp);
@@ -1146,37 +1239,43 @@ Exported on: ${new Date().toLocaleString('id-ID')}
         {/* 4. DYNAMIC PAGINATION FOOTER */}
         <div className="py-4 px-6 bg-white border-t border-slate-100 flex items-center justify-between text-xs">
           <div className="text-slate-500 font-medium">
-            Showing <strong className="text-slate-800">{filteredRows.length === 0 ? '0' : `${(validCurrentPage - 1) * pageSize + 1}-${Math.min(validCurrentPage * pageSize, filteredRows.length)}`}</strong> of <strong className="text-slate-800">{filteredRows.length > 5 ? 24 : filteredRows.length}</strong> customers
+            Showing <strong className="text-slate-800">{filteredRows.length === 0 ? '0' : `${(validCurrentPage - 1) * pageSize + 1}-${Math.min(validCurrentPage * pageSize, filteredRows.length)}`}</strong> of <strong className="text-slate-800">{filteredRows.length}</strong> customers
           </div>
 
           <div className="flex items-center gap-1.5">
             <button
               type="button"
               disabled={validCurrentPage <= 1}
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              onClick={() => setCurrentPage(Math.max(1, validCurrentPage - 1))}
               className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
               Previous
             </button>
 
-            {[1, 2, 3].map(p => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setCurrentPage(p)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${validCurrentPage === p
-                    ? 'bg-[#2563eb] text-white shadow-2xs'
-                    : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+              const pageNumber = totalPages <= 5
+                ? index + 1
+                : Math.max(1, Math.min(validCurrentPage - 2, totalPages - 4)) + index;
+              return (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  onClick={() => setCurrentPage(pageNumber)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                    validCurrentPage === pageNumber
+                      ? 'bg-[#2563eb] text-white shadow-2xs'
+                      : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
-              >
-                {p}
-              </button>
-            ))}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
 
             <button
               type="button"
               disabled={validCurrentPage >= totalPages}
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              onClick={() => setCurrentPage(Math.min(totalPages, validCurrentPage + 1))}
               className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
               Next
@@ -1281,21 +1380,31 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 </div>
               </div>
 
-              {/* 3. FULL RESUME / CONCLUSION */}
+              {/* 2. SUMMARY */}
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
-                  FULL RESUME / CONCLUSION
-                </span>
-                <div className="bg-[#f8fafc] border border-slate-200 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed font-medium">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    SUMMARY
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadSummaryPdf(selectedConversation)}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Download size={13} className="text-blue-600" />
+                    <span>Download Summary (.pdf)</span>
+                  </button>
+                </div>
+                <div className="bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed font-medium">
                   {selectedConversation.summary || 'Discussed recent shipment delays. Customer requested schedule adjustment for container #2 and re-verification of documentation at Tanjung Priok Port.'}
                 </div>
               </div>
 
-              {/* 4. EVIDENCE ATTACHMENTS */}
+              {/* 3. EVIDENCE ATTACHMENTS */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    EVIDENCE ATTACHMENTS ({(selectedConversation.evidence_attachments || []).length || 2})
+                    EVIDENCE ATTACHMENTS ({(selectedConversation.evidence_attachments || []).length})
                   </span>
                 </div>
 
@@ -1303,7 +1412,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                   selectedConversation.evidence_attachments.map((file) => (
                     <div
                       key={file.id}
-                      className="bg-white border border-slate-200 rounded-2xl p-3 flex items-center justify-between shadow-2xs hover:border-slate-300 transition-colors mb-2"
+                      className="bg-white border border-slate-200/90 rounded-2xl p-3 flex items-center justify-between shadow-2xs hover:border-slate-300 transition-colors mb-2"
                     >
                       <div className="flex items-center gap-3 truncate pr-2">
                         <div className="w-9 h-9 rounded-xl bg-red-50 border border-red-100 text-red-500 flex items-center justify-center shrink-0">
@@ -1314,7 +1423,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                             {file.name}
                           </p>
                           <p className="text-[10px] text-slate-400 mt-0.5">
-                            {file.size} • PDF Document
+                            {file.size} • Dokumen Lampiran
                           </p>
                         </div>
                       </div>
@@ -1325,7 +1434,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                           download={file.name}
                           target="_blank"
                           rel="noreferrer"
-                          className="p-1 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                          className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
                           title="Download"
                         >
                           <Download size={16} />
@@ -1333,7 +1442,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                         <button
                           type="button"
                           onClick={() => setPreviewModal({ isOpen: true, url: file.url, title: file.name })}
-                          className="p-1 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                          className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
                           title="View"
                         >
                           <ExternalLink size={16} />
@@ -1342,55 +1451,25 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     </div>
                   ))
                 ) : (
-                  <div className="bg-white border border-slate-200 rounded-2xl p-3 flex items-center justify-between shadow-2xs">
-                    <div className="flex items-center gap-3 truncate pr-2">
-                      <div className="w-9 h-9 rounded-xl bg-red-50 border border-red-100 text-red-500 flex items-center justify-center shrink-0">
-                        <FileText size={18} />
-                      </div>
-                      <div className="truncate">
-                        <p className="text-xs font-bold text-slate-800 truncate">
-                          Notula_Meeting_03032026.pdf
-                        </p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">
-                          1.2 MB • PDF Document
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        type="button"
-                        className="p-1 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                        title="Download"
-                      >
-                        <Download size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="p-1 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                        title="View"
-                      >
-                        <ExternalLink size={16} />
-                      </button>
-                    </div>
+                  <div className="bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 text-center">
+                    <p className="text-xs font-medium text-slate-500">Tidak ada berkas lampiran</p>
                   </div>
                 )}
               </div>
 
-              {/* 5. HISTORI NEED ASSIST */}
+              {/* 4. HISTORI NEED ASSISTANCE */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    HISTORI NEED ASSIST
+                    HISTORI NEED ASSISTANCE
                   </span>
-                  <span className="text-[10px] font-normal text-slate-400">
-                    1 catatan ditemukan
+                  <span className="text-[10px] font-medium text-slate-400">
+                    {selectedConversation.need_assistance ? '1 catatan ditemukan' : '0 catatan ditemukan'}
                   </span>
                 </div>
 
-                <div className="border border-slate-200 rounded-2xl divide-y divide-slate-100 bg-white overflow-hidden shadow-2xs">
+                <div className="border border-slate-200/90 rounded-2xl divide-y divide-slate-100 bg-white overflow-hidden shadow-2xs">
                   {selectedConversation.need_assistance ? (
-                    /* Item Yes: Need Assistance (CLICKABLE) */
                     <div
                       onClick={() => setIsManagerFeedbackModalOpen(true)}
                       className="p-3.5 flex items-center justify-between bg-blue-50/20 hover:bg-blue-50/60 border-l-4 border-blue-600 transition-all cursor-pointer group"
@@ -1404,9 +1483,6 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                             <h5 className="text-xs font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
                               Issue Alamat Pengiriman
                             </h5>
-                            <span className="text-[10px] text-blue-600 font-bold bg-blue-100/80 px-1.5 py-0.5 rounded">
-                              Klik detail ↗
-                            </span>
                           </div>
                           <p className="text-[10px] text-slate-400 mt-0.5">
                             {selectedConversation.company} · {selectedConversation.date || '10 Okt 2026'}
@@ -1415,8 +1491,8 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                             <span className="bg-amber-50 text-amber-700 border border-amber-200/90 rounded-md px-2 py-0.5 text-[10px] font-bold">
                               Need Assistance
                             </span>
-                            <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/90 rounded-md px-2 py-0.5 text-[10px] font-bold">
-                              Responded / Answered
+                            <span className="bg-slate-100 text-slate-600 border border-slate-200 rounded-md px-2 py-0.5 text-[10px] font-medium">
+                              Menunggu respons Manager
                             </span>
                           </div>
                         </div>
@@ -1424,7 +1500,6 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                       <ChevronRight size={16} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
                     </div>
                   ) : (
-                    /* Item No: Tidak membutuhkan bantuan (NOT CLICKABLE) */
                     <div className="p-3.5 flex items-center justify-between bg-slate-50/50 opacity-70 cursor-not-allowed select-none">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
@@ -1723,21 +1798,26 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                   <label className="block text-xs font-bold text-slate-800">
                     Text Summary<span className="text-red-500">*</span>
                   </label>
-                  <span className={`text-[11px] font-bold ${getWordCount(recordSummary) > 100 ? 'text-red-600 animate-pulse' : 'text-slate-400'}`}>
-                    {getWordCount(recordSummary)} / 100 words {getWordCount(recordSummary) > 100 ? '(Batas Maksimal Terlampaui!)' : ''}
+                  <span className={`text-[11px] font-bold ${getWordCount(recordSummary) >= 100 ? 'text-red-600 font-bold' : 'text-slate-400'}`}>
+                    {getWordCount(recordSummary)} / 100 kata
                   </span>
                 </div>
                 <textarea
                   rows={3}
                   value={recordSummary}
                   onChange={(e) => {
-                    const val = e.target.value;
-                    setRecordSummary(val);
-                    const count = getWordCount(val);
-                    if (!val.trim()) {
-                      setSummaryError('Text Summary belum diisi. Menolak penyimpanan dan menampilkan validasi pada field.');
-                    } else if (count > 100) {
-                      setSummaryError(`Text Summary melebihi 100 words (saat ini ${count} kata). Menolak penyimpanan dan menampilkan informasi batas maksimal.`);
+                    const rawVal = e.target.value;
+                    const words = rawVal.trim() ? rawVal.trim().split(/\s+/).filter(Boolean) : [];
+                    let finalVal = rawVal;
+                    if (words.length > 100) {
+                      finalVal = words.slice(0, 100).join(' ');
+                    }
+                    setRecordSummary(finalVal);
+                    const count = getWordCount(finalVal);
+                    if (!finalVal.trim()) {
+                      setSummaryError('Text Summary belum diisi.');
+                    } else if (count >= 100) {
+                      setSummaryError('Telah mencapai batas maksimal 100 kata. Tidak dapat menambahkan kata lagi.');
                     } else {
                       setSummaryError(null);
                     }

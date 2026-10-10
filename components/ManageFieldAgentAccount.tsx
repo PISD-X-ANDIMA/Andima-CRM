@@ -195,7 +195,7 @@ export default function ManageFieldAgentAccount() {
   });
 
   const pageSize = 5;
-  const totalPages = Math.min(5, Math.max(1, Math.ceil(filteredAgents.length / pageSize)));
+  const totalPages = Math.max(1, Math.ceil(filteredAgents.length / pageSize));
   const validPage = Math.min(page, totalPages);
   const pagedAgents = filteredAgents.slice((validPage - 1) * pageSize, validPage * pageSize);
 
@@ -363,36 +363,41 @@ export default function ManageFieldAgentAccount() {
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
           <span>
             Showing {filteredAgents.length > 0 ? (validPage - 1) * pageSize + 1 : 0}-
-            {Math.min(validPage * pageSize, filteredAgents.length)} of {filteredAgents.length > 0 ? filteredAgents.length : 24} customers
+            {Math.min(validPage * pageSize, filteredAgents.length)} of {filteredAgents.length} customers
           </span>
           <div className="flex items-center gap-1.5">
             <button
               type="button"
               disabled={validPage <= 1}
-              onClick={() => setPage(prev => Math.max(1, prev - 1))}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+              onClick={() => setPage(Math.max(1, validPage - 1))}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
             >
               Previous
             </button>
-            {Array.from({ length: totalPages }).map((_, i) => (
-              <button
-                key={i + 1}
-                type="button"
-                onClick={() => setPage(i + 1)}
-                className={`px-3 py-1.5 rounded-lg font-bold cursor-pointer ${
-                  validPage === i + 1
-                    ? 'bg-[#2563eb] text-white'
-                    : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+              const pageNumber = totalPages <= 5
+                ? index + 1
+                : Math.max(1, Math.min(validPage - 2, totalPages - 4)) + index;
+              return (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  onClick={() => setPage(pageNumber)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                    validPage === pageNumber
+                      ? 'bg-[#2563eb] text-white shadow-2xs'
+                      : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
             <button
               type="button"
               disabled={validPage >= totalPages}
-              onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+              onClick={() => setPage(Math.min(totalPages, validPage + 1))}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
             >
               Next
             </button>

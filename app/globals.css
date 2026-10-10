@@ -89,6 +89,15 @@ body {
     margin: 6mm 8mm 6mm 8mm;
   }
 
+  /* Disable all blur filters, backdrops, and shadows globally during print */
+  *, ::before, ::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
   html, body {
     background: #ffffff !important;
     color: #0f172a !important;
@@ -106,6 +115,27 @@ body {
     visibility: hidden !important;
   }
 
+  /* Hide floating toasts, notifications, backdrop overlays, and non-print elements */
+  div[class*="toast"],
+  div[class*="slide-in-from-bottom"],
+  .toast-notification,
+  .no-print,
+  .printable-footer,
+  .printable-footer * {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+
+  /* Make modal container backdrop completely transparent without dark overlay */
+  div[class*="fixed"],
+  div[class*="backdrop"] {
+    background: transparent !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
   /* Display ONLY the active printable worksheet modal */
   .printable-modal-card,
   .printable-modal-card * {
@@ -120,6 +150,7 @@ body {
     max-width: 100% !important;
     max-height: none !important;
     height: auto !important;
+    background: #ffffff !important;
     border: 1px solid #cbd5e1 !important;
     box-shadow: none !important;
     border-radius: 8px !important;
@@ -145,6 +176,7 @@ body {
     gap: 5px !important;
     overflow: visible !important;
     max-height: none !important;
+    background: #ffffff !important;
   }
 
   .printable-body > * + * {
@@ -163,17 +195,9 @@ body {
     max-height: 48px !important;
   }
 
-  /* Hide footer buttons during print */
-  .printable-footer,
-  .printable-footer * {
-    display: none !important;
-    visibility: hidden !important;
-  }
-
   * {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    box-shadow: none !important;
   }
 }
 
