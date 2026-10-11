@@ -25,6 +25,9 @@ interface VwFieldTaskRecord {
   create_date: string | null
   open_issues_count?: number | null
   latest_issue_category?: string | null
+  sales_executive?: string | null
+  origin?: string | null
+  destination?: string | null
 }
 
 export async function GET(): Promise<NextResponse> {
@@ -55,20 +58,30 @@ export async function GET(): Promise<NextResponse> {
 
     const taskRows = (tasks as unknown as VwFieldTaskRecord[]) ?? []
     const mappedTasks = taskRows.map((w) => {
-      let status = 'DRAFT'
-      if (w.has_issue) {
+      const record = w as unknown as Record<string, unknown>
+      const salesExecutive =
+        'sales_executive' in record && record.sales_executive != null
+          ? String(record.sales_executive)
+          : null
+      const origin =
+        'origin' in record && record.origin != null
+          ? String(record.origin)
+          : null
+      const destination =
+        'destination' in record && record.destination != null
+          ? String(record.destination)
+          : null
+
+      let status: 'HAS_ISSUE' | 'COMPLETED' | 'PENDING' = 'PENDING'
+      if (w.field_status === 'Has Issue' || w.has_issue || w.status_kendala === 'kendala_terdeteksi') {
         status = 'HAS_ISSUE'
       } else if (w.field_stage === 'Completed') {
         status = 'COMPLETED'
-      } else if (w.field_stage === 'In Progress' || w.field_stage === 'Assigned') {
-        status = 'IN_PROGRESS'
-      } else if (w.field_stage === 'Draft') {
-        status = 'DRAFT'
       } else {
-        status = 'DRAFT'
+        status = 'PENDING'
       }
 
-      const isIssue = Boolean(w.has_issue || w.status_kendala === 'kendala_terdeteksi')
+      const isIssue = Boolean(w.field_status === 'Has Issue' || w.has_issue || w.status_kendala === 'kendala_terdeteksi')
       const mawbHawb = [w.mawb, w.hawb].filter(Boolean).join(' / ') || '-'
 
       return {
@@ -76,21 +89,27 @@ export async function GET(): Promise<NextResponse> {
         job_number: w.job_no || `#JOB-${w.worksheet_id}`,
         transaction_number: w.transaction_no || `TRX-${w.worksheet_id}`,
         task_title: `Physical Cargo Inspection - ${w.job_no || 'Job #' + w.worksheet_id}`,
-        customer: w.customer_name || 'PT DSV TRANSPORT INDONESIA',
-        shipper: w.shipper || 'PT Astra Component Logistics',
-        consignee: w.consignee || 'Toyota Tsusho Asia',
+        customer: w.customer_name || null,
+        sales_executive: salesExecutive,
+        shipper: w.shipper || null,
+        consignee: w.consignee || null,
+        origin,
+        destination,
         mawb_hawb: mawbHawb,
-        location: w.handover_location || 'Area Cargo MM2100, Cikarang Barat',
+        location: w.handover_location || null,
         status,
+        field_status: w.field_status || null,
+        field_stage: w.field_stage || null,
         pihak_penyerah: w.pihak_penyerah || null,
         pihak_penerima: w.pihak_penerima || null,
         handover_location: w.handover_location || null,
         handover_status: w.pihak_penyerah ? 'Completed' : 'Pending',
-        actual_cargo: 'Standard Pallet Cargo',
-        documentation_status: 'Verified',
-        supporting_documents_status: 'Attached',
-        verification_status: isIssue ? 'Issue Found' : 'Verified',
-        assigned_to: w.field_agent_name || 'Rizky Pratama',
+        actual_cargo: null,
+        documentation_status: w.field_stage === 'Completed' ? 'Completed' : 'Pending',
+        supporting_documents_status: null,
+        verification_status: isIssue ? 'Issue Found' : null,
+        assigned_to: w.field_agent_name || null,
+        has_issue: isIssue,
         created_at: w.create_date || new Date().toISOString(),
         updated_at: w.handover_datetime || new Date().toISOString(),
       }

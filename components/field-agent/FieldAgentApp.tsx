@@ -14,6 +14,7 @@ import {
   FileText,
   LayoutDashboard,
   MapPin,
+  Plus,
   RefreshCw,
   Search,
   Send,
@@ -27,12 +28,7 @@ import {
    TYPES
 ========================================================= */
 
-type Status =
-  | "Assigned"
-  | "In Progress"
-  | "Completed"
-  | "Has Issue"
-  | "Draft";
+type Status = "Completed" | "Has Issue";
 
 type Screen =
   | "dashboard"
@@ -42,7 +38,6 @@ type Screen =
   | "detail"
   | "handover"
   | "documentation"
-  | "verification"
   | "history";
 
 type Job = {
@@ -51,34 +46,47 @@ type Job = {
   transaction_number?: string;
   task_title?: string;
   customer?: string;
+  sales_executive?: string;
   shipper?: string;
   consignee?: string;
+  origin?: string;
+  destination?: string;
   mawb?: string;
   mawb_hawb?: string;
   location?: string;
   date?: string;
   status?: Status;
+  has_issue?: boolean;
   handover_status?: string;
   actual_cargo?: string;
   documentation_status?: string;
   supporting_documents_status?: string;
   verification_status?: string;
   assigned_to?: string;
+  field_stage?: string;
+  field_status?: string;
   created_at?: string;
   updated_at?: string;
 };
 
 type ApiTask = {
-  id: string;
+  id: string | number;
   job_number?: string;
   transaction_number?: string;
   task_title?: string;
   customer?: string;
+  sales_executive?: string;
+  sales_pic?: string;
   shipper?: string;
   consignee?: string;
+  origin?: string;
+  destination?: string;
   mawb_hawb?: string;
   location?: string;
   status?: string;
+  field_status?: string;
+  field_stage?: string;
+  has_issue?: boolean;
   handover_status?: string;
   actual_cargo?: string;
   documentation_status?: string;
@@ -90,66 +98,19 @@ type ApiTask = {
 };
 
 /* =========================================================
-   SAMPLE DATA
-   Dipakai sebagai fallback sementara API belum berhasil.
-========================================================= */
-
-const sampleJobs: Job[] = [
-  {
-    id: "DSVEXP/2605/2551",
-    job_number: "DSVEXP/2605/2551",
-    transaction_number: "TRX-001",
-    task_title: "Pickup Cargo PT DSV",
-    customer: "PT DSV Transport Indonesia",
-    mawb_hawb: "123-45678901",
-    location: "Kantor PT DSV, Jakarta",
-    date: "7 Oct 2026 09:00",
-    status: "Assigned",
-  },
-  {
-    id: "GEOSEAXP/2605/2551",
-    job_number: "GEOSEAXP/2605/2551",
-    transaction_number: "TRX-002",
-    task_title: "Delivery Cargo Geodis",
-    customer: "PT Geodis Freight Forwarding",
-    mawb_hawb: "DSV-2506-001",
-    location: "Kantor Geodis, Jakarta",
-    date: "7 Oct 2026 08:30",
-    status: "In Progress",
-  },
-  {
-    id: "MBL/2605/1042",
-    job_number: "MBL/2605/1042",
-    transaction_number: "TRX-003",
-    task_title: "Pickup Cargo Maju Bersama",
-    customer: "PT Maju Bersama Logistics",
-    mawb_hawb: "789-456321",
-    location: "Jakarta",
-    date: "6 Oct 2026 10:00",
-    status: "Assigned",
-  },
-];
-
-/* =========================================================
    HELPERS
 ========================================================= */
 
-const statusClass: Record<string, string> = {
-  Assigned:
-    "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/60",
-
-  "In Progress":
-    "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/60",
-
+const statusClass: Record<Status, string> = {
   Completed:
     "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60",
 
   "Has Issue":
     "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/60",
-
-  Draft:
-    "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700",
 };
+
+const pendingBadgeClass =
+  "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700";
 
 const no = (job: Job | null) =>
   job?.job_number || job?.id || "-";
@@ -158,51 +119,84 @@ const mawb = (job: Job | null) =>
   job?.mawb || job?.mawb_hawb || "-";
 
 /**
- * Convert status dari database ke status UI.
- *
- * Database:
- * DRAFT
- * IN_PROGRESS
- * COMPLETED
- * HAS_ISSUE
+ * Convert status dari database ke status UI Field Agent.
  */
-function mapDatabaseStatus(status?: string): Status {
-  switch (status) {
-    case "DRAFT":
-      return "Assigned";
-
-    case "IN_PROGRESS":
-      return "In Progress";
-
-    case "COMPLETED":
-      return "Completed";
-
-    case "HAS_ISSUE":
-      return "Has Issue";
-
-    default:
-      if (status && status !== "Assigned") {
-        console.warn(`[FieldAgentApp] Unrecognized database status token: "${status}"`);
-      }
-      return "Assigned";
+function mapDatabaseStatus(
+  status?: string,
+  verificationStatus?: string,
+  hasIssue?: boolean,
+  documentationStatus?: string,
+  fieldStage?: string
+): Status | undefined {
+  if (
+    hasIssue ||
+    status === "HAS_ISSUE" ||
+    verificationStatus === "Issue Found"
+  ) {
+    return "Has Issue";
   }
+  if (
+    status === "COMPLETED" ||
+    documentationStatus === "Completed" ||
+    documentationStatus === "COMPLETED" ||
+    fieldStage === "Completed"
+  ) {
+    return "Completed";
+  }
+  return undefined;
 }
 
 /**
  * Convert response API menjadi object Job
  */
 function mapApiJob(task: ApiTask): Job {
+  const isIssue = Boolean(
+    task.has_issue ||
+    task.status === "HAS_ISSUE" ||
+    task.verification_status === "Issue Found"
+  );
+  let currentStatus: Status | undefined = undefined;
+  if (isIssue) {
+    currentStatus = "Has Issue";
+  } else if (
+    task.status === "COMPLETED" ||
+    task.documentation_status === "Completed" ||
+    task.documentation_status === "COMPLETED" ||
+    task.field_stage === "Completed"
+  ) {
+    currentStatus = "Completed";
+  } else {
+    currentStatus = undefined;
+  }
+
+  const originVal =
+    task.origin && task.origin !== "[BELUM ADA]" ? task.origin : "-";
+  const destinationVal =
+    task.destination && task.destination !== "[BELUM ADA]"
+      ? task.destination
+      : "-";
+  const salesVal =
+    task.sales_executive && task.sales_executive !== "[BELUM ADA]"
+      ? task.sales_executive
+      : task.sales_pic && task.sales_pic !== "[BELUM ADA]"
+        ? task.sales_pic
+        : "-";
+
   return {
-    id: task.id,
+    id: String(task.id),
     job_number: task.job_number,
     transaction_number: task.transaction_number,
     task_title: task.task_title,
     customer: task.customer,
+    sales_executive: salesVal,
     shipper: task.shipper,
     consignee: task.consignee,
+    origin: originVal,
+    destination: destinationVal,
     mawb_hawb: task.mawb_hawb,
     location: task.location,
-    status: mapDatabaseStatus(task.status),
+    status: currentStatus,
+    has_issue: isIssue,
     handover_status: task.handover_status,
     actual_cargo: task.actual_cargo,
     documentation_status: task.documentation_status,
@@ -210,6 +204,8 @@ function mapApiJob(task: ApiTask): Job {
       task.supporting_documents_status,
     verification_status: task.verification_status,
     assigned_to: task.assigned_to,
+    field_stage: task.field_stage,
+    field_status: task.field_status,
     created_at: task.created_at,
     updated_at: task.updated_at,
 
@@ -236,7 +232,8 @@ function StatusBadge({
   status?: Status;
   onClick?: () => void;
 }) {
-  const currentStatus = status || "Assigned";
+  const label = status || "Belum Selesai";
+  const badgeClass = status ? statusClass[status] : pendingBadgeClass;
 
   const className = `
     inline-flex
@@ -248,7 +245,7 @@ function StatusBadge({
     py-0.5
     text-[11px]
     font-semibold
-    ${statusClass[currentStatus] || statusClass.Draft}
+    ${badgeClass}
   `;
 
   if (onClick) {
@@ -259,24 +256,37 @@ function StatusBadge({
         title="Buka detail job"
         className={`${className} cursor-pointer transition hover:brightness-95`}
       >
-        {currentStatus}
+        {label}
       </button>
     );
   }
 
   return (
     <span className={className}>
-      {currentStatus}
+      {label}
     </span>
   );
 }
+
+/* =========================================================
+   AGENT IDENTITIES (Batasan Sementara Tahap 3)
+========================================================= */
+
+const AVAILABLE_AGENT_IDENTITIES = [
+  { id: "9c274330-44f1-474d-91c0-523aac3ea9cf", name: "Andima WebDev", role: "Field Inspector" },
+  { id: "a1111111-1111-4111-a111-111111111111", name: "Andi Pratama", role: "Field Inspector" },
+  { id: "a2222222-2222-4222-a222-222222222222", name: "Marsel", role: "Field Inspector" },
+  { id: "a3333333-3333-4333-a333-333333333333", name: "Choirul", role: "Field Inspector" },
+  { id: "a4444444-4444-4444-a444-444444444444", name: "Rizky Pratama", role: "Field Inspector" },
+];
 
 /* =========================================================
    MAIN PAGE
 ========================================================= */
 
 export default function FieldAgentApp() {
-  const [jobs, setJobs] = useState<Job[]>(sampleJobs);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -292,7 +302,7 @@ export default function FieldAgentApp() {
   }, [urlTab]);
 
   const [selected, setSelected] =
-    useState<Job | null>(sampleJobs[0]);
+    useState<Job | null>(null);
 
   const [filter, setFilter] = useState("All");
 
@@ -301,20 +311,11 @@ export default function FieldAgentApp() {
   const [issueOpen, setIssueOpen] =
     useState(false);
 
-  const [confirmReportOpen, setConfirmReportOpen] =
-    useState(false);
-
-  const [processingOpen, setProcessingOpen] =
-    useState(false);
-
   const [completionOpen, setCompletionOpen] =
     useState(false);
 
   const [reportIssueCount, setReportIssueCount] =
     useState(0);
-
-  const [category, setCategory] =
-    useState("Damaged Package");
 
   const [description, setDescription] =
     useState("");
@@ -325,81 +326,151 @@ export default function FieldAgentApp() {
   const [notice, setNotice] =
     useState("");
 
+  // Identitas agen aktif ("Saya sebagai") - batasan sementara Tahap 3
+  const [currentAgent, setCurrentAgent] = useState(() => {
+    if (typeof window !== "undefined") {
+      const savedId = localStorage.getItem("andima_active_agent_id");
+      const found = AVAILABLE_AGENT_IDENTITIES.find(a => a.id === savedId);
+      if (found) return found;
+    }
+    return AVAILABLE_AGENT_IDENTITIES[0];
+  });
+
+  const handleSelectAgent = (agentId: string) => {
+    const found = AVAILABLE_AGENT_IDENTITIES.find(a => a.id === agentId);
+    if (found) {
+      setCurrentAgent(found);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("andima_active_agent_id", found.id);
+        localStorage.setItem("andima_active_agent_name", found.name);
+      }
+      setNotice(`Identitas aktif: ${found.name}`);
+      setTimeout(() => setNotice(""), 2500);
+    }
+  };
+
+  // State Add Task & Claiming
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+  const [isClaimingJob, setIsClaimingJob] = useState(false);
+
   /* =======================================================
      LOAD DATA FROM SUPABASE THROUGH API
   ======================================================= */
 
-  useEffect(() => {
-    const loadA3Tasks = async () => {
-      try {
-        setNotice("Memuat data task...");
+  const loadA3Tasks = async () => {
+    try {
+      setApiError(null);
+      setNotice("Memuat data task...");
 
-        const response = await fetch(
-          "/api/feature/A3-tasks",
-          {
-            method: "GET",
-            cache: "no-store",
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(
-            `HTTP ${response.status}`
-          );
+      const response = await fetch(
+        "/api/feature/A3-tasks",
+        {
+          method: "GET",
+          cache: "no-store",
         }
+      );
 
-        const result = await response.json();
-
-        console.log(
-          "A3 TASK API RESPONSE:",
-          result
+      if (!response.ok) {
+        throw new Error(
+          `Gagal mengambil data task dari server (HTTP ${response.status})`
         );
-
-        if (
-          !result.success ||
-          !Array.isArray(result.data)
-        ) {
-          throw new Error(
-            "Format response API A3 tidak valid."
-          );
-        }
-
-        const mappedJobs: Job[] =
-          result.data.map(mapApiJob);
-
-        setJobs(mappedJobs);
-
-        if (mappedJobs.length > 0) {
-          setSelected(mappedJobs[0]);
-        } else {
-          setSelected(null);
-        }
-
-        setNotice(
-          `${mappedJobs.length} task berhasil dimuat.`
-        );
-
-        setTimeout(() => {
-          setNotice("");
-        }, 2500);
-      } catch (error) {
-        console.error(
-          "Failed to load A3 tasks:",
-          error
-        );
-
-        setNotice(
-          "Data dari API gagal dimuat. Menampilkan data sementara."
-        );
-
-        setTimeout(() => {
-          setNotice("");
-        }, 3500);
       }
-    };
 
+      const result = await response.json();
+
+      if (
+        !result.success ||
+        !Array.isArray(result.data)
+      ) {
+        throw new Error(
+          result.error || "Format response API A3 tidak valid."
+        );
+      }
+
+      const mappedJobs: Job[] =
+        result.data.map(mapApiJob);
+
+      setJobs(mappedJobs);
+
+      if (mappedJobs.length > 0) {
+        setSelected(mappedJobs[0]);
+      } else {
+        setSelected(null);
+      }
+
+      setNotice(
+        `${mappedJobs.length} task berhasil dimuat.`
+      );
+
+      setTimeout(() => {
+        setNotice("");
+      }, 2500);
+    } catch (error) {
+      console.error(
+        "Failed to load A3 tasks:",
+        error
+      );
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Data dari API gagal dimuat.";
+
+      setApiError(errorMessage);
+      setNotice(
+        "Data task gagal dimuat dari database."
+      );
+    }
+  };
+
+  useEffect(() => {
     loadA3Tasks();
   }, []);
+
+  const handleSelectAvailableJob = (newJob: Job) => {
+    setSelected(newJob);
+    setIsClaimingJob(true);
+    setIsAddTaskOpen(false);
+    setScreen("handover");
+  };
+
+  const handleReleaseJob = async (jobToRelease: Job) => {
+    if (!jobToRelease) return;
+    const jobNumberStr = no(jobToRelease);
+    const confirmed = window.confirm(`Apakah Anda yakin ingin melepas pekerjaan ${jobNumberStr}?`);
+    if (!confirmed) return;
+
+    setSaving(true);
+    setNotice("Memproses pelepasan job...");
+
+    try {
+      const res = await fetch("/api/feature/A3-release-job", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobNumber: jobNumberStr,
+          fieldAgentId: currentAgent.id,
+          performedBy: currentAgent.name,
+        }),
+      });
+
+      const resJson = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        const errorMsg = resJson?.error || "Gagal melepas job.";
+        throw new Error(errorMsg);
+      }
+
+      setNotice("Job berhasil dilepas.");
+      await loadA3Tasks();
+      setScreen("tasks");
+    } catch (err) {
+      console.error("Error releasing job:", err);
+      setNotice(err instanceof Error ? err.message : "Gagal melepas job.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   /* =======================================================
      BACK NAVIGATION
@@ -414,7 +485,6 @@ export default function FieldAgentApp() {
       detail: "tasks",
       handover: "detail",
       documentation: "handover",
-      verification: "documentation",
       history: "tasks",
     };
 
@@ -448,25 +518,12 @@ export default function FieldAgentApp() {
     () => ({
       All: jobs.length,
 
-      Assigned: jobs.filter(
-        (j) =>
-          j.status === "Assigned" ||
-          j.status === "Draft"
-      ).length,
-
-      "In Progress": jobs.filter(
-        (j) =>
-          j.status === "In Progress"
-      ).length,
-
       Completed: jobs.filter(
-        (j) =>
-          j.status === "Completed"
+        (j) => j.status === "Completed"
       ).length,
 
       "Has Issue": jobs.filter(
-        (j) =>
-          j.status === "Has Issue"
+        (j) => j.status === "Has Issue"
       ).length,
     }),
     [jobs]
@@ -479,13 +536,7 @@ export default function FieldAgentApp() {
   const shown = useMemo(() => {
     return jobs.filter((job) => {
       const matchesFilter =
-        filter === "All" ||
-        (
-          filter === "Assigned"
-            ? job.status === "Assigned" ||
-              job.status === "Draft"
-            : job.status === filter
-        );
+        filter === "All" || job.status === filter;
 
       const searchText = `
         ${no(job)}
@@ -493,6 +544,10 @@ export default function FieldAgentApp() {
         ${mawb(job)}
         ${job.task_title || ""}
         ${job.transaction_number || ""}
+        ${job.assigned_to || ""}
+        ${job.sales_executive || ""}
+        ${job.origin || ""}
+        ${job.destination || ""}
       `.toLowerCase();
 
       const matchesSearch =
@@ -526,6 +581,11 @@ export default function FieldAgentApp() {
       return;
     }
 
+    if (!description.trim()) {
+      setNotice("Deskripsi issue wajib diisi.");
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -539,10 +599,8 @@ export default function FieldAgentApp() {
           },
           body: JSON.stringify({
             jobNumber: no(selected),
-            category,
-            description:
-              description ||
-              "Issue reported by field agent",
+            category: "Others/Lainnya",
+            description: description.trim(),
           }),
         }
       );
@@ -621,9 +679,14 @@ export default function FieldAgentApp() {
       );
 
       if (!response.ok) {
-        throw new Error(
-          "Workflow gagal disimpan."
-        );
+        const errJson = await response.json().catch(() => null);
+        const errMsg = errJson?.error || "Workflow gagal disimpan.";
+        throw new Error(errMsg);
+      }
+
+      if (endpoint === "A3-handover" && isClaimingJob) {
+        setIsClaimingJob(false);
+        await loadA3Tasks();
       }
 
       setScreen(next);
@@ -635,89 +698,80 @@ export default function FieldAgentApp() {
       console.error(error);
 
       setNotice(
-        "Workflow gagal disimpan. Silakan coba lagi."
+        error instanceof Error ? error.message : "Workflow gagal disimpan. Silakan coba lagi."
       );
     } finally {
       setSaving(false);
     }
   };
 
-  /* =======================================================
-     REPORT
-  ======================================================= */
-
-  const openReportConfirm = (
-    issueCount: number
-  ) => {
-    setReportIssueCount(issueCount);
-    setConfirmReportOpen(true);
-    setNotice("");
-  };
-
-  const completeTask = async () => {
+  const handleDocumentationDone = async (data: {
+    photos: string[];
+    documents: string[];
+    hasIssue: boolean;
+    issueDescription?: string;
+  }) => {
     if (!selected) {
       return;
     }
 
-    setConfirmReportOpen(false);
-    setProcessingOpen(true);
     setSaving(true);
-
-    const hasIssue =
-      reportIssueCount > 0;
+    setNotice("");
 
     try {
-      const response = hasIssue
-        ? await fetch(
-            "/api/feature/A3-issues",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type":
-                  "application/json",
-              },
-              body: JSON.stringify({
-                jobNumber: no(selected),
-                category:
-                  "Final Verification Finding",
-                classification: "Urgent",
-                description: `${reportIssueCount} checklist item bertanda issue pada verifikasi akhir.`,
-              }),
-            }
-          )
-        : await fetch(
-            "/api/feature/A3-verification",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type":
-                  "application/json",
-              },
-              body: JSON.stringify({
-                jobNumber: no(selected),
-                documentVerification:
-                  "Sesuai",
-                packageCondition:
-                  "Baik",
-                airlineStandard:
-                  "Sesuai",
-                dangerousGoods:
-                  false,
-                specialHandling: [],
-              }),
-            }
-          );
+      const docResponse = await fetch(
+        "/api/feature/A3-documentation",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            jobNumber: no(selected),
+            photos: data.photos,
+            documents: data.documents,
+          }),
+        }
+      );
 
-      if (!response.ok) {
+      if (!docResponse.ok) {
         throw new Error(
-          "Report gagal dikirim."
+          "Dokumentasi gagal disimpan."
         );
       }
 
-      const newStatus: Status =
-        hasIssue
-          ? "Has Issue"
-          : "Completed";
+      if (data.hasIssue) {
+        const issueResponse = await fetch(
+          "/api/feature/A3-issues",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              jobNumber: no(selected),
+              category: "Others/Lainnya",
+              description:
+                data.issueDescription?.trim() ||
+                "Issue dilaporkan saat dokumentasi",
+            }),
+          }
+        );
+
+        if (!issueResponse.ok) {
+          throw new Error(
+            "Issue gagal disimpan."
+          );
+        }
+      }
+
+      const newStatus: Status = data.hasIssue
+        ? "Has Issue"
+        : "Completed";
+
+      setReportIssueCount(data.hasIssue ? 1 : 0);
 
       setJobs((current) =>
         current.map((job) =>
@@ -725,6 +779,9 @@ export default function FieldAgentApp() {
             ? {
                 ...job,
                 status: newStatus,
+                has_issue: data.hasIssue,
+                documentation_status:
+                  "COMPLETED",
               }
             : job
         )
@@ -735,20 +792,26 @@ export default function FieldAgentApp() {
           ? {
               ...current,
               status: newStatus,
+              has_issue: data.hasIssue,
+              documentation_status:
+                "COMPLETED",
             }
           : current
       );
 
       setCompletionOpen(true);
+      setNotice(
+        data.hasIssue
+          ? "Dokumentasi dan kendala berhasil disimpan."
+          : "Dokumentasi berhasil disimpan. Tugas selesai."
+      );
     } catch (error) {
       console.error(error);
-
       setNotice(
-        "Laporan belum berhasil disimpan ke database."
+        "Gagal menyimpan data ke database. Silakan coba lagi."
       );
     } finally {
       setSaving(false);
-      setProcessingOpen(false);
     }
   };
 
@@ -760,6 +823,38 @@ export default function FieldAgentApp() {
     <div className="w-full bg-white dark:bg-[#090f1d] text-[#15213a] dark:text-slate-100 transition-colors">
       <main className="min-h-screen bg-white dark:bg-[#090f1d] transition-colors">
         <div className="mx-auto max-w-[1280px] px-5 pb-10 pt-2 md:px-9">
+          {/* Selector Identitas Agen (Batasan Sementara Tahap 3) */}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 px-4 py-2.5 text-xs">
+            <div className="flex items-center gap-2">
+              <Users size={14} className="text-blue-600 dark:text-blue-400" />
+              <span className="font-semibold text-slate-700 dark:text-slate-200">Saya sebagai:</span>
+              <select
+                value={currentAgent.id}
+                onChange={(e) => handleSelectAgent(e.target.value)}
+                className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+              >
+                {AVAILABLE_AGENT_IDENTITIES.map((agent) => (
+                  <option key={agent.id} value={agent.id}>
+                    {agent.name} ({agent.role})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              ID: <code className="font-mono text-slate-600 dark:text-slate-300">{currentAgent.id}</code> (Tahap 3 Client-side Identity)
+            </span>
+          </div>
+
+          {apiError && (
+            <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/40 p-4 text-sm text-red-700 dark:text-red-300">
+              <AlertTriangle className="h-5 w-5 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-sm">Gagal Memuat Data Task dari API</h3>
+                <p className="mt-0.5 text-xs text-red-600 dark:text-red-400">{apiError}</p>
+              </div>
+            </div>
+          )}
+
           {screen !== "dashboard" &&
             screen !== "field-agent" &&
             screen !== "tasks" &&
@@ -810,6 +905,7 @@ export default function FieldAgentApp() {
               setFilter={setFilter}
               setQuery={setQuery}
               openJob={openJob}
+              onAddTask={() => setIsAddTaskOpen(true)}
             />
           )}
 
@@ -819,6 +915,8 @@ export default function FieldAgentApp() {
               onHandover={() =>
                 setScreen("handover")
               }
+              onRelease={() => selected && handleReleaseJob(selected)}
+              releasing={saving}
             />
           )}
 
@@ -826,21 +924,16 @@ export default function FieldAgentApp() {
             <Handover
               job={selected}
               back={() =>
-                setScreen("detail")
+                setScreen(isClaimingJob ? "tasks" : "detail")
               }
-              next={() =>
+              next={(payload) =>
                 saveWorkflow(
                   "A3-handover",
                   {
-                    deliveringParty:
-                      "Budi Santoso",
-                    receivingParty:
-                      "Andi Pratama",
-                    actualPieces: 10,
-                    actualGrossWeight: 250,
-                    location:
-                      selected?.location ||
-                      "Jakarta",
+                    ...payload,
+                    claimJob: isClaimingJob,
+                    fieldAgentId: currentAgent.id,
+                    performedBy: currentAgent.name,
                   },
                   "documentation"
                 )
@@ -853,36 +946,8 @@ export default function FieldAgentApp() {
               back={() =>
                 setScreen("handover")
               }
-              next={() =>
-                saveWorkflow(
-                  "A3-documentation",
-                  {
-                    photos: [
-                      "Box 1",
-                      "Pallet Side",
-                      "Loading Area",
-                      "Seal & Wrap",
-                    ],
-                    documents: [
-                      "PackingList_DSV.pdf",
-                      "Invoice_DSV.pdf",
-                    ],
-                  },
-                  "verification"
-                )
-              }
-            />
-          )}
-
-          {screen === "verification" && (
-            <Verification
-              back={() =>
-                setScreen("documentation")
-              }
-              next={openReportConfirm}
-              onIssue={() =>
-                setIssueOpen(true)
-              }
+              onDone={handleDocumentationDone}
+              saving={saving}
             />
           )}
 
@@ -901,9 +966,7 @@ export default function FieldAgentApp() {
 
       {issueOpen && (
         <IssueModal
-          category={category}
           description={description}
-          setCategory={setCategory}
           setDescription={setDescription}
           close={() =>
             setIssueOpen(false)
@@ -913,25 +976,7 @@ export default function FieldAgentApp() {
         />
       )}
 
-      {confirmReportOpen && (
-        <ReportConfirmModal
-          job={selected}
-          issueCount={reportIssueCount}
-          close={() =>
-            setConfirmReportOpen(false)
-          }
-          confirm={completeTask}
-          saving={saving}
-        />
-      )}
 
-      {processingOpen && (
-        <ReportProcessingModal
-          issueCount={
-            reportIssueCount
-          }
-        />
-      )}
 
       {completionOpen && (
         <CompleteTaskModal
@@ -943,6 +988,13 @@ export default function FieldAgentApp() {
             setCompletionOpen(false);
             router.push("/dashboard/field-agent?tab=history");
           }}
+        />
+      )}
+
+      {isAddTaskOpen && (
+        <AddTaskModal
+          onClose={() => setIsAddTaskOpen(false)}
+          onSelectJob={handleSelectAvailableJob}
         />
       )}
 
@@ -965,7 +1017,7 @@ function NotificationsPage({
   openJob: (j: Job) => void;
 }) {
   const activeAlerts = jobs.filter(
-    (j) => j.status === "Has Issue" || j.status === "Assigned"
+    (j) => j.status === "Has Issue"
   );
 
   return (
@@ -1023,11 +1075,6 @@ function Dashboard({
   openJob: (j: Job) => void;
   showTasks: () => void;
 }) {
-  const inProgress =
-    jobs.filter(
-      (j) => j.status === "In Progress"
-    ).length;
-
   const complete =
     jobs.filter(
       (j) => j.status === "Completed"
@@ -1038,54 +1085,28 @@ function Dashboard({
       (j) => j.status === "Has Issue"
     ).length;
 
-  const assigned =
-    jobs.filter(
-      (j) =>
-        j.status === "Assigned" ||
-        j.status === "Draft"
-    ).length;
-
   const cards = [
     {
       title: "Total Task",
       value: jobs.length,
-      sub: "+2 dari minggu lalu",
-      color: "text-emerald-600",
-    },
-    {
-      title: "In Progress",
-      value: inProgress,
-      sub: `${Math.min(
-        inProgress,
-        2
-      )} sedang dikerjakan`,
-      color: "text-cyan-600",
+      sub: "Total tugas di lapangan",
+      color: "text-blue-600",
     },
     {
       title: "Completed",
       value: complete,
-      sub: "+3 dari minggu lalu",
+      sub: "Tugas selesai (Done)",
       color: "text-emerald-600",
     },
     {
       title: "Has Issue",
       value: issues,
-      sub: "+1 dari minggu lalu",
+      sub: "Tugas memiliki kendala",
       color: "text-red-500",
     },
   ];
 
   const statusBreakdown = [
-    {
-      label: "Assigned",
-      value: assigned,
-      color: "#3b82f6",
-    },
-    {
-      label: "In Progress",
-      value: inProgress,
-      color: "#0284c7",
-    },
     {
       label: "Completed",
       value: complete,
@@ -1099,7 +1120,7 @@ function Dashboard({
   ];
 
   const statusGradient =
-    jobs.length > 0
+    jobs.length > 0 && (complete > 0 || issues > 0)
       ? statusBreakdown
           .reduce(
             (
@@ -1131,7 +1152,12 @@ function Dashboard({
               stops: [] as string[],
             }
           )
-          .stops.join(", ")
+          .stops.concat(
+            complete + issues < jobs.length
+              ? [`#e2e8f0 ${(complete + issues) / jobs.length * 100}% 100%`]
+              : []
+          )
+          .join(", ")
       : "#e2e8f0 0% 100%";
 
   if (jobs.length === 0) {
@@ -1182,7 +1208,7 @@ function Dashboard({
         </p>
       </section>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {cards.map(
           ({
             title,
@@ -1386,8 +1412,6 @@ function Tabs({
     <div className="mb-4 flex flex-wrap gap-2">
       {[
         "All",
-        "Assigned",
-        "In Progress",
         "Completed",
         "Has Issue",
       ].map((tab) => (
@@ -1410,7 +1434,9 @@ function Tabs({
                 ? "bg-white/20 text-white"
                 : tab === "Has Issue"
                   ? "bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400"
-                  : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                  : tab === "Completed"
+                    ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400"
+                    : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
             }`}
           >
             {counts[tab] || 0}
@@ -1457,6 +1483,7 @@ function TaskList({
   setFilter,
   setQuery,
   openJob,
+  onAddTask,
 }: {
   jobs: Job[];
   filter: string;
@@ -1465,17 +1492,31 @@ function TaskList({
   setFilter: (v: string) => void;
   setQuery: (v: string) => void;
   openJob: (j: Job) => void;
+  onAddTask?: () => void;
 }) {
   return (
     <>
-      <section className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-          My Task
-        </h1>
+      <section className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            My Task
+          </h1>
 
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          Daftar task yang ditugaskan kepada Anda.
-        </p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Daftar task yang ditugaskan kepada Anda.
+          </p>
+        </div>
+
+        {onAddTask && (
+          <button
+            type="button"
+            onClick={onAddTask}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer"
+          >
+            <Plus size={15} />
+            <span>Add Task</span>
+          </button>
+        )}
       </section>
 
       <Tabs
@@ -1526,33 +1567,63 @@ function JobsTable({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[800px] text-left text-xs text-slate-600 dark:text-slate-300">
           <thead className="border-b border-slate-200/80 dark:border-slate-700 bg-[#edf4fb] dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200">
-            <tr>
-              <th className="px-4 py-3.5">
-                Job Number
-              </th>
+            {history ? (
+              <tr>
+                <th className="px-4 py-3.5">
+                  Nama Field Agent
+                </th>
 
-              <th className="px-4 py-3.5">
-                Customer
-              </th>
+                <th className="px-4 py-3.5">
+                  Sales Executive
+                </th>
 
-              <th className="px-4 py-3.5">
-                MAWB/HAWB
-              </th>
+                <th className="px-4 py-3.5">
+                  Job Number
+                </th>
 
-              <th className="px-4 py-3.5">
-                {history
-                  ? "Tanggal"
-                  : "Tanggal Penugasan"}
-              </th>
+                <th className="px-4 py-3.5">
+                  Customer
+                </th>
 
-              <th className="px-4 py-3.5">
-                Assigned To
-              </th>
+                <th className="px-4 py-3.5">
+                  Origin
+                </th>
 
-              <th className="px-4 py-3.5">
-                Status
-              </th>
-            </tr>
+                <th className="px-4 py-3.5">
+                  Destination
+                </th>
+
+                <th className="px-4 py-3.5">
+                  Problem/Issue (Yes/No)
+                </th>
+              </tr>
+            ) : (
+              <tr>
+                <th className="px-4 py-3.5">
+                  Job Number
+                </th>
+
+                <th className="px-4 py-3.5">
+                  Customer
+                </th>
+
+                <th className="px-4 py-3.5">
+                  MAWB/HAWB
+                </th>
+
+                <th className="px-4 py-3.5">
+                  Tanggal Penugasan
+                </th>
+
+                <th className="px-4 py-3.5">
+                  Assigned To
+                </th>
+
+                <th className="px-4 py-3.5">
+                  Status
+                </th>
+              </tr>
+            )}
           </thead>
 
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -1561,48 +1632,102 @@ function JobsTable({
                 key={job.id}
                 className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
               >
-                <td className="px-4 py-3.5 font-semibold text-blue-600 dark:text-blue-400">
-                  {action ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        action(job)
-                      }
-                      className="cursor-pointer hover:underline text-left font-semibold text-blue-600 dark:text-blue-400"
-                    >
-                      {no(job)}
-                    </button>
-                  ) : (
-                    no(job)
-                  )}
-                </td>
+                {history ? (
+                  <>
+                    <td className="px-4 py-3.5 text-xs text-slate-700 dark:text-slate-300 font-medium">
+                      {job.assigned_to || "-"}
+                    </td>
 
-                <td className="px-4 py-3.5 text-xs text-slate-700 dark:text-slate-300 font-medium">
-                  {job.customer || "-"}
-                </td>
+                    <td className="px-4 py-3.5 text-xs text-slate-600 dark:text-slate-400">
+                      {job.sales_executive || "-"}
+                    </td>
 
-                <td className="px-4 py-3.5 text-xs text-slate-500 dark:text-slate-400">
-                  {mawb(job)}
-                </td>
+                    <td className="px-4 py-3.5 font-semibold text-blue-600 dark:text-blue-400">
+                      {action ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            action(job)
+                          }
+                          className="cursor-pointer hover:underline text-left font-semibold text-blue-600 dark:text-blue-400"
+                        >
+                          {no(job)}
+                        </button>
+                      ) : (
+                        no(job)
+                      )}
+                    </td>
 
-                <td className="px-4 py-3.5 text-xs text-slate-600 dark:text-slate-400">
-                  {job.date || "-"}
-                </td>
+                    <td className="px-4 py-3.5 text-xs text-slate-700 dark:text-slate-300 font-medium">
+                      {job.customer || "-"}
+                    </td>
 
-                <td className="px-4 py-3.5 text-xs text-slate-600 dark:text-slate-400">
-                  {job.assigned_to || "-"}
-                </td>
+                    <td className="px-4 py-3.5 text-xs text-slate-600 dark:text-slate-400">
+                      {job.origin && job.origin !== "[BELUM ADA]" ? job.origin : "-"}
+                    </td>
 
-                <td className="px-4 py-3.5">
-                  <StatusBadge
-                    status={job.status}
-                    onClick={
-                      action
-                        ? () => action(job)
-                        : undefined
-                    }
-                  />
-                </td>
+                    <td className="px-4 py-3.5 text-xs text-slate-600 dark:text-slate-400">
+                      {job.destination && job.destination !== "[BELUM ADA]" ? job.destination : "-"}
+                    </td>
+
+                    <td className="px-4 py-3.5">
+                      {job.has_issue || job.status === "Has Issue" ? (
+                        <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/40 px-2.5 py-0.5 text-[11px] font-semibold text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/60">
+                          Yes
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
+                          No
+                        </span>
+                      )}
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td className="px-4 py-3.5 font-semibold text-blue-600 dark:text-blue-400">
+                      {action ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            action(job)
+                          }
+                          className="cursor-pointer hover:underline text-left font-semibold text-blue-600 dark:text-blue-400"
+                        >
+                          {no(job)}
+                        </button>
+                      ) : (
+                        no(job)
+                      )}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-xs text-slate-700 dark:text-slate-300 font-medium">
+                      {job.customer || "-"}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-xs text-slate-500 dark:text-slate-400">
+                      {mawb(job)}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-xs text-slate-600 dark:text-slate-400">
+                      {job.date || "-"}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-xs text-slate-600 dark:text-slate-400">
+                      {job.assigned_to || "-"}
+                    </td>
+
+                    <td className="px-4 py-3.5">
+                      <StatusBadge
+                        status={job.status}
+                        onClick={
+                          action
+                            ? () => action(job)
+                            : undefined
+                        }
+                      />
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>
@@ -1680,9 +1805,13 @@ function JobsTable({
 function JobDetail({
   job,
   onHandover,
+  onRelease,
+  releasing,
 }: {
   job: Job | null;
   onHandover: () => void;
+  onRelease?: () => void;
+  releasing?: boolean;
 }) {
   if (!job) {
     return (
@@ -1691,6 +1820,10 @@ function JobDetail({
       </div>
     );
   }
+
+  const canRelease = Boolean(
+    job.field_stage === "Assigned" || job.field_stage === "Draft"
+  );
 
   const info = [
     [
@@ -1747,11 +1880,6 @@ function JobDetail({
       job.supporting_documents_status ||
         "PENDING",
     ],
-    [
-      "Verification",
-      job.verification_status ||
-        "PENDING",
-    ],
   ];
 
   const steps = [
@@ -1778,16 +1906,8 @@ function JobDetail({
     ],
     [
       "4",
-      "Verifikasi",
-      job.verification_status ===
-      "COMPLETED"
-        ? "Selesai"
-        : "Belum dikerjakan",
-    ],
-    [
-      "5",
       "Complete",
-      job.status === "Completed"
+      job.status === "Completed" || job.status === "Has Issue"
         ? "Selesai"
         : "Belum dikerjakan",
     ],
@@ -1847,7 +1967,7 @@ function JobDetail({
           </span>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-5">
+        <div className="grid gap-4 lg:grid-cols-4">
           {steps.map(
             ([number, title, caption], index) => (
               <button
@@ -1900,7 +2020,21 @@ function JobDetail({
           )}
         </div>
 
-        <div className="mt-7 flex justify-end">
+        <div className="mt-7 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            {canRelease && onRelease && (
+              <button
+                type="button"
+                onClick={onRelease}
+                disabled={releasing}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/30 px-3.5 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition cursor-pointer disabled:opacity-50"
+              >
+                <Trash2 size={14} />
+                <span>{releasing ? "Melepas Job..." : "Lepas Job"}</span>
+              </button>
+            )}
+          </div>
+
           <button
             onClick={onHandover}
             className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer"
@@ -1927,8 +2061,25 @@ function Handover({
 }: {
   job: Job | null;
   back: () => void;
-  next: () => void;
+  next: (payload: {
+    deliveringParty: string;
+    receivingParty: string;
+    actualPieces: number;
+    actualGrossWeight: number;
+    location: string;
+  }) => void;
 }) {
+  const [deliveringParty, setDeliveringParty] = useState("");
+  const [receivingParty, setReceivingParty] = useState("");
+  const [location, setLocation] = useState(job?.location || "");
+  const [actualPieces, setActualPieces] = useState<string>("");
+  const [actualGrossWeight, setActualGrossWeight] = useState<string>("");
+
+  const currentTimeDisplay = new Date().toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
   const [gps, setGps] =
     useState<{
       latitude: number;
@@ -2010,6 +2161,16 @@ function Handover({
       )
     : "-";
 
+  const canSubmit = Boolean(
+    deliveringParty.trim() &&
+    receivingParty.trim() &&
+    location.trim() &&
+    actualPieces.trim() &&
+    Number(actualPieces) > 0 &&
+    actualGrossWeight.trim() &&
+    Number(actualGrossWeight) > 0
+  );
+
   return (
     <div className="max-w-[1050px] pb-6">
       <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
@@ -2024,13 +2185,17 @@ function Handover({
         <PersonCard
           title="Data Penyerah"
           dot="bg-blue-600"
-          name="Budi Santoso"
+          name={deliveringParty}
+          company={job?.customer}
+          onChangeName={setDeliveringParty}
         />
 
         <PersonCard
           title="Data Penerima"
           dot="bg-emerald-500"
-          name="Andi Pratama"
+          name={receivingParty}
+          company={job?.customer}
+          onChangeName={setReceivingParty}
         />
       </div>
 
@@ -2041,8 +2206,9 @@ function Handover({
 
         <div className="grid grid-cols-2 gap-4">
           <Field
-            label="Waktu Serah Terima *"
-            value=""
+            label="Waktu Serah Terima"
+            value={currentTimeDisplay}
+            readOnly
           />
 
           <div>
@@ -2052,10 +2218,9 @@ function Handover({
 
             <div className="flex gap-2">
               <input
-                defaultValue={
-                  job?.location ||
-                  "Jakarta"
-                }
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Masukkan lokasi serah terima..."
                 className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
 
@@ -2080,12 +2245,18 @@ function Handover({
         <div className="grid grid-cols-2 gap-4">
           <Field
             label="Jumlah Koli (Pieces) *"
-            value="10"
+            value={actualPieces}
+            onChange={setActualPieces}
+            type="number"
+            placeholder="Contoh: 10"
           />
 
           <Field
             label="Berat Aktual (kg) *"
-            value="250"
+            value={actualGrossWeight}
+            onChange={setActualGrossWeight}
+            type="number"
+            placeholder="Contoh: 250"
           />
         </div>
       </section>
@@ -2165,7 +2336,7 @@ function Handover({
             className={`text-xs font-semibold ${
               gps
                 ? "text-emerald-600 dark:text-emerald-400"
-                : "text-red-500 dark:text-red-400"
+                : "text-slate-500 dark:text-slate-400"
             }`}
           >
             <AlertTriangle
@@ -2175,12 +2346,21 @@ function Handover({
 
             {gps
               ? "GPS berhasil direkam."
-              : "Rekam GPS sebelum melanjutkan."}
+              : "Perekaman GPS opsional. Lokasi teks wajib diisi."}
           </p>
 
           <button
-            onClick={next}
-            disabled={!gps}
+            onClick={() => {
+              if (!canSubmit) return;
+              next({
+                deliveringParty: deliveringParty.trim(),
+                receivingParty: receivingParty.trim(),
+                actualPieces: Number(actualPieces),
+                actualGrossWeight: Number(actualGrossWeight),
+                location: location.trim(),
+              });
+            }}
+            disabled={!canSubmit}
             className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:shadow-none"
           >
             Simpan & Lanjut
@@ -2207,10 +2387,17 @@ function Handover({
 
 function Documentation({
   back,
-  next,
+  onDone,
+  saving,
 }: {
   back: () => void;
-  next: () => void;
+  onDone: (data: {
+    photos: string[];
+    documents: string[];
+    hasIssue: boolean;
+    issueDescription?: string;
+  }) => void;
+  saving?: boolean;
 }) {
   const photoLabels = [
     "Keseluruhan Barang",
@@ -2228,10 +2415,19 @@ function Documentation({
     ]);
 
   const [docs, setDocs] =
-    useState({
-      packing: null as string | null,
-      invoice: null as string | null,
+    useState<{
+      main: string | null;
+      supporting: string | null;
+    }>({
+      main: null,
+      supporting: null,
     });
+
+  const [hasProblem, setHasProblem] =
+    useState<"no" | "yes">("no");
+
+  const [problemDescription, setProblemDescription] =
+    useState("");
 
   const [uploadError, setUploadError] =
     useState("");
@@ -2239,19 +2435,31 @@ function Documentation({
   const filledPhotos =
     photos.filter(Boolean).length;
 
+  const docsReady =
+    Boolean(docs.main) &&
+    Boolean(docs.supporting);
+
+  const problemReady =
+    hasProblem === "no" ||
+    (hasProblem === "yes" &&
+      problemDescription.trim().length > 0);
+
   const ready =
     filledPhotos === 4 &&
-    Boolean(docs.packing) &&
-    Boolean(docs.invoice);
+    docsReady &&
+    problemReady;
 
   const setPhoto = (
     index: number,
     file?: File
   ) => {
+    if (!file) {
+      return;
+    }
+
     if (
-      file &&
       file.size >
-        2 * 1024 * 1024
+      2 * 1024 * 1024
     ) {
       setUploadError(
         "Ukuran foto maksimal 2 MB."
@@ -2262,24 +2470,25 @@ function Documentation({
     setUploadError("");
 
     setPhotos((current) =>
-      current.map(
-        (item, i) =>
-          i === index
-            ? file?.name ||
-              `Foto ${index + 1}.jpg`
-            : item
+      current.map((item, i) =>
+        i === index
+          ? file.name
+          : item
       )
     );
   };
 
   const setDoc = (
-    key: "packing" | "invoice",
+    key: "main" | "supporting",
     file?: File
   ) => {
+    if (!file) {
+      return;
+    }
+
     if (
-      file &&
       file.size >
-        10 * 1024 * 1024
+      10 * 1024 * 1024
     ) {
       setUploadError(
         "Ukuran dokumen maksimal 10 MB."
@@ -2291,11 +2500,7 @@ function Documentation({
 
     setDocs((current) => ({
       ...current,
-      [key]:
-        file?.name ||
-        (key === "packing"
-          ? "PackingList.pdf"
-          : "Invoice.pdf"),
+      [key]: file.name,
     }));
   };
 
@@ -2436,44 +2641,98 @@ function Documentation({
         </h2>
 
         <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-          Packing List dan Commercial Invoice.
+          Upload Dokumen Utama dan Dokumen Pendukung (keduanya wajib).
         </p>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <DocumentUpload
-            title="Packing List"
-            value={docs.packing}
+            title="Dokumen Utama"
+            value={docs.main}
             onChange={(file) =>
               setDoc(
-                "packing",
+                "main",
                 file
               )
             }
             onClear={() =>
               setDocs((current) => ({
                 ...current,
-                packing: null,
+                main: null,
               }))
             }
           />
 
           <DocumentUpload
-            title="Commercial Invoice"
-            value={docs.invoice}
+            title="Dokumen Pendukung"
+            value={docs.supporting}
             onChange={(file) =>
               setDoc(
-                "invoice",
+                "supporting",
                 file
               )
             }
             onClear={() =>
               setDocs((current) => ({
                 ...current,
-                invoice: null,
+                supporting: null,
               }))
             }
           />
         </div>
+      </section>
+
+      <section className="mt-5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-xs">
+        <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+          Problem / Kendala Lapangan
+        </h2>
+
+        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+          Apakah ada temuan kendala atau kerusakan barang di lapangan?
+        </p>
+
+        <div className="mt-4 flex items-center gap-6">
+          <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-200">
+            <input
+              type="radio"
+              name="hasProblem"
+              value="no"
+              checked={hasProblem === "no"}
+              onChange={() => setHasProblem("no")}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+            />
+            No (Tidak Ada Kendala)
+          </label>
+
+          <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-200">
+            <input
+              type="radio"
+              name="hasProblem"
+              value="yes"
+              checked={hasProblem === "yes"}
+              onChange={() => setHasProblem("yes")}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+            />
+            Yes (Ada Kendala)
+          </label>
+        </div>
+
+        {hasProblem === "yes" && (
+          <div className="mt-4">
+            <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-slate-300">
+              Deskripsi Singkat Kendala *
+            </label>
+
+            <textarea
+              value={problemDescription}
+              onChange={(e) =>
+                setProblemDescription(e.target.value)
+              }
+              rows={3}
+              placeholder="Jelaskan kendala/issue yang ditemukan di lapangan..."
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+        )}
       </section>
 
       <div className="mt-6 flex items-center justify-between">
@@ -2486,245 +2745,28 @@ function Documentation({
         </button>
 
         <button
-          onClick={next}
-          disabled={!ready}
+          onClick={() => {
+            if (!ready) return;
+            const validPhotos = photos.filter(
+              (p): p is string => Boolean(p)
+            );
+            onDone({
+              photos: validPhotos,
+              documents: [
+                docs.main!,
+                docs.supporting!,
+              ],
+              hasIssue: hasProblem === "yes",
+              issueDescription:
+                problemDescription.trim(),
+            });
+          }}
+          disabled={!ready || saving}
           className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600"
         >
-          Simpan & Lanjut ke Verifikasi
-          <ChevronRight size={14} />
+          {saving ? "Menyimpan..." : "Done"}
+          <Check size={14} />
         </button>
-      </div>
-    </div>
-  );
-}
-
-/* =========================================================
-   VERIFICATION
-========================================================= */
-
-function Verification({
-  back,
-  next,
-  onIssue,
-}: {
-  back: () => void;
-  next: (issueCount: number) => void;
-  onIssue: () => void;
-}) {
-  const items = [
-    [
-      "Kesesuaian Dokumen",
-      "Packing list, invoice, dan dokumen sesuai.",
-    ],
-    [
-      "Kondisi Visual Barang",
-      "Tidak ada kerusakan pada kemasan.",
-    ],
-    [
-      "Standar Maskapai",
-      "Sesuai ketentuan maskapai.",
-    ],
-    [
-      "Dangerous Goods",
-      "Label dan dokumen DG sesuai.",
-    ],
-    [
-      "Special Handling",
-      "Penanganan khusus sesuai.",
-    ],
-  ];
-
-  const [checked, setChecked] =
-    useState<
-      ("unset" | "ok" | "issue")[]
-    >(
-      items.map(() => "unset")
-    );
-
-  const checkedCount =
-    checked.filter(
-      (value) =>
-        value !== "unset"
-    ).length;
-
-  const issueCount =
-    checked.filter(
-      (value) =>
-        value === "issue"
-    ).length;
-
-  const ready =
-    checkedCount ===
-    items.length;
-
-  const setVerification = (
-    index: number,
-    value: "ok" | "issue"
-  ) => {
-    setChecked((current) =>
-      current.map(
-        (item, i) =>
-          i === index
-            ? value
-            : item
-      )
-    );
-
-    if (value === "issue") {
-      onIssue();
-    }
-  };
-
-  return (
-    <div className="w-full pb-7">
-      <div className="mb-5">
-        <p className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-          Tahap 3
-        </p>
-
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Verifikasi
-        </h1>
-
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          Pastikan seluruh checklist sesuai standar pengiriman.
-        </p>
-      </div>
-
-      <section className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-xs">
-        <div className="mb-5 flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
-              Final Checklist
-            </h2>
-
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-              {checkedCount}/{items.length} item dicek
-            </p>
-          </div>
-
-          <span
-            className={`rounded-full border px-3 py-1 text-xs font-bold ${
-              issueCount
-                ? "border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400"
-                : ready
-                  ? "border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400"
-                  : "border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400"
-            }`}
-          >
-            {issueCount
-              ? `${issueCount} Issue`
-              : `${checkedCount}/${items.length}`}
-          </span>
-        </div>
-
-        <div className="grid gap-4">
-          {items.map(
-            ([title, description], index) => (
-              <div
-                key={title}
-                className={`rounded-xl border p-4 transition-colors ${
-                  checked[index] === "ok"
-                    ? "border-emerald-400 dark:border-emerald-700 bg-emerald-50/30 dark:bg-emerald-950/30"
-                    : checked[index] === "issue"
-                      ? "border-red-300 dark:border-red-800 bg-red-50/50 dark:bg-red-950/30"
-                      : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80"
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  <span
-                    className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
-                      checked[index] === "ok"
-                        ? "bg-emerald-500 text-white"
-                        : checked[index] === "issue"
-                          ? "bg-red-500 text-white"
-                          : "bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-300"
-                    }`}
-                  >
-                    {checked[index] === "issue" ? (
-                      <AlertTriangle
-                        size={18}
-                      />
-                    ) : (
-                      <Check size={18} />
-                    )}
-                  </span>
-
-                  <div className="flex-1">
-                    <b className="block text-xs font-bold text-slate-800 dark:text-slate-100">
-                      {title}
-                    </b>
-
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                      {description}
-                    </p>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() =>
-                        setVerification(
-                          index,
-                          "ok"
-                        )
-                      }
-                      className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition cursor-pointer"
-                    >
-                      Sesuai
-                    </button>
-
-                    <button
-                      onClick={() =>
-                        setVerification(
-                          index,
-                          "issue"
-                        )
-                      }
-                      className="rounded-xl border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition cursor-pointer"
-                    >
-                      Ada Issue
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )
-          )}
-        </div>
-      </section>
-
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <button
-          onClick={onIssue}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 px-4 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition cursor-pointer"
-        >
-          <AlertTriangle
-            size={14}
-          />
-          Laporkan Finding / Issue
-        </button>
-
-        <div className="flex gap-3">
-          <button
-            onClick={back}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer"
-          >
-            <ArrowLeft size={14} />
-            Kembali
-          </button>
-
-          <button
-            onClick={() =>
-              next(issueCount)
-            }
-            disabled={!ready}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600"
-          >
-            <Send size={14} />
-            {issueCount
-              ? "Kirim Laporan Has Issue"
-              : "Kirim Laporan"}
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -2754,12 +2796,6 @@ function HistoryList({
     number
   > = {
     All: jobs.length,
-    Assigned: jobs.filter(
-      (j) => j.status === "Assigned"
-    ).length,
-    "In Progress": jobs.filter(
-      (j) => j.status === "In Progress"
-    ).length,
     Completed: jobs.filter(
       (j) => j.status === "Completed"
     ).length,
@@ -2805,17 +2841,13 @@ function HistoryList({
 ========================================================= */
 
 function IssueModal({
-  category,
   description,
-  setCategory,
   setDescription,
   close,
   save,
   saving,
 }: {
-  category: string;
   description: string;
-  setCategory: (v: string) => void;
   setDescription: (v: string) => void;
   close: () => void;
   save: () => void;
@@ -2846,43 +2878,7 @@ function IssueModal({
         <div className="space-y-4 p-6">
           <div>
             <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-slate-300">
-              Kategori
-            </label>
-
-            <select
-              value={category}
-              onChange={(e) =>
-                setCategory(
-                  e.target.value
-                )
-              }
-              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            >
-              <option className="dark:bg-slate-900">
-                Damaged Package
-              </option>
-
-              <option className="dark:bg-slate-900">
-                Quantity Mismatch
-              </option>
-
-              <option className="dark:bg-slate-900">
-                Document Missing
-              </option>
-
-              <option className="dark:bg-slate-900">
-                Vehicle Breakdown
-              </option>
-
-              <option className="dark:bg-slate-900">
-                Location Issue
-              </option>
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-slate-300">
-              Deskripsi
+              Deskripsi Kendala / Issue *
             </label>
 
             <textarea
@@ -2909,7 +2905,7 @@ function IssueModal({
 
           <button
             onClick={save}
-            disabled={saving}
+            disabled={saving || !description.trim()}
             className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed"
           >
             {saving
@@ -3183,6 +3179,192 @@ function CompleteTaskModal({
 }
 
 /* =========================================================
+   ADD TASK MODAL (KLAIM JOB BARU)
+========================================================= */
+
+type AvailableJobApiItem = {
+  job_no: string;
+  customer?: string;
+  shipper?: string;
+  consignee?: string;
+};
+
+function AddTaskModal({
+  onClose,
+  onSelectJob,
+}: {
+  onClose: () => void;
+  onSelectJob: (job: Job) => void;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [availableJobs, setAvailableJobs] = useState<AvailableJobApiItem[]>([]);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchAvailable() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/feature/A3-available-jobs");
+        const json = await res.json();
+        if (!res.ok) {
+          throw new Error(json.error || "Gagal memuat daftar job.");
+        }
+        if (isMounted) {
+          setAvailableJobs(Array.isArray(json.data) ? json.data : []);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Terjadi kesalahan.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+    fetchAvailable();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const filtered = useMemo(() => {
+    return availableJobs.filter((j) => {
+      const q = search.toLowerCase();
+      return (
+        j.job_no.toLowerCase().includes(q) ||
+        (j.customer || "").toLowerCase().includes(q) ||
+        (j.shipper || "").toLowerCase().includes(q) ||
+        (j.consignee || "").toLowerCase().includes(q)
+      );
+    });
+  }, [availableJobs, search]);
+
+  const handlePick = (item: AvailableJobApiItem) => {
+    const jobObject: Job = {
+      id: item.job_no,
+      job_number: item.job_no,
+      customer: item.customer || "-",
+      shipper: item.shipper || "-",
+      consignee: item.consignee || "-",
+      sales_executive: "-",
+      origin: "-",
+      destination: "-",
+      field_stage: "Draft",
+      field_status: "Belum Selesai",
+    };
+    onSelectJob(jobObject);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-4 sm:p-6 overflow-y-auto">
+      <div className="w-full max-w-[680px] rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 p-6 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+              Klaim Task Pekerjaan
+            </h2>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              Pilih pekerjaan yang belum memiliki field agent untuk dikerjakan.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="mt-4">
+          <div className="relative mb-3">
+            <Search size={15} className="absolute left-3 top-2.5 text-slate-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari nomor job, customer, shipper, atau consignee..."
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 py-2 pl-9 pr-3 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+
+          {loading ? (
+            <div className="py-12 text-center text-xs text-slate-500 dark:text-slate-400">
+              <RefreshCw size={20} className="mx-auto mb-2 animate-spin text-blue-500" />
+              Memuat daftar pekerjaan yang tersedia...
+            </div>
+          ) : error ? (
+            <div className="rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/40 p-4 text-xs text-red-600 dark:text-red-400">
+              <div className="flex items-center gap-2 font-semibold">
+                <AlertTriangle size={15} />
+                <span>Gagal Memuat Data</span>
+              </div>
+              <p className="mt-1">{error}</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="py-10 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+              {availableJobs.length === 0
+                ? "Tidak ada task yang tersedia untuk diklaim."
+                : "Tidak ada task yang cocok dengan pencarian Anda."}
+            </div>
+          ) : (
+            <div className="max-h-[360px] overflow-y-auto space-y-2 pr-1">
+              {filtered.map((item) => (
+                <div
+                  key={item.job_no}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 p-3.5 hover:border-blue-300 dark:hover:border-blue-700/60 transition"
+                >
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs text-slate-900 dark:text-white font-mono">
+                        {item.job_no}
+                      </span>
+                      <span className="rounded bg-blue-100 dark:bg-blue-950/60 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-300">
+                        Tersedia
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-600 dark:text-slate-300">
+                      <span className="font-medium text-slate-500 dark:text-slate-400">Customer:</span>{" "}
+                      {item.customer || "-"}
+                    </div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                      Shipper: {item.shipper || "-"} &bull; Consignee: {item.consignee || "-"}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handlePick(item)}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer"
+                  >
+                    <span>Klaim & Mulai</span>
+                    <ChevronRight size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 flex justify-end border-t border-slate-100 dark:border-slate-800 pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer"
+          >
+            Batal
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
    SMALL COMPONENTS
 ========================================================= */
 
@@ -3190,10 +3372,14 @@ function PersonCard({
   title,
   dot,
   name,
+  company,
+  onChangeName,
 }: {
   title: string;
   dot: string;
   name: string;
+  company?: string;
+  onChangeName?: (v: string) => void;
 }) {
   return (
     <section className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-4 shadow-xs">
@@ -3207,12 +3393,17 @@ function PersonCard({
       <Field
         label="Nama *"
         value={name}
+        onChange={onChangeName}
+        placeholder="Masukkan nama..."
       />
 
-      <Field
-        label="Perusahaan *"
-        value="PT DSV Transport Indonesia"
-      />
+      {company ? (
+        <Field
+          label="Perusahaan"
+          value={company}
+          readOnly
+        />
+      ) : null}
     </section>
   );
 }
@@ -3220,17 +3411,31 @@ function PersonCard({
 function Field({
   label,
   value,
+  onChange,
+  type = "text",
+  placeholder,
+  readOnly = false,
 }: {
   label: string;
   value: string;
+  onChange?: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+  readOnly?: boolean;
 }) {
   return (
     <div className="mb-3">
       <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-slate-300">{label}</label>
 
       <input
-        defaultValue={value}
-        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        type={type}
+        value={value}
+        onChange={readOnly ? undefined : (e) => onChange?.(e.target.value)}
+        readOnly={readOnly}
+        placeholder={placeholder}
+        className={`w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+          readOnly ? "bg-slate-50 dark:bg-slate-800/50 text-slate-500 cursor-not-allowed" : ""
+        }`}
       />
     </div>
   );

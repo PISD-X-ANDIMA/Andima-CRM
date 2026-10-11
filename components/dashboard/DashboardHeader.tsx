@@ -117,6 +117,7 @@ export function DashboardHeader() {
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS)
   const [isOpenNotifications, setIsOpenNotifications] = useState(false)
   const [activeNotifTab, setActiveNotifTab] = useState<'all' | 'unread'>('all')
+  const [needAssistanceCount, setNeedAssistanceCount] = useState<number>(0)
   const notificationsRef = useRef<HTMLDivElement>(null)
 
   // Help Modal States
@@ -262,6 +263,25 @@ export function DashboardHeader() {
     readPrefs()
     window.addEventListener('andima_preferences_updated', readPrefs)
     return () => window.removeEventListener('andima_preferences_updated', readPrefs)
+  }, [])
+
+  // Fetch count of Need Assistance conversations once on mount
+  useEffect(() => {
+    let active = true
+    const fetchNeedAssistanceCount = async () => {
+      try {
+        const res = await fetch('/api/record-conversation/conversations?need_assistance=Yes&limit=1')
+        if (!res.ok) return
+        const data = await res.json()
+        if (active && data.success && typeof data.total === 'number') {
+          setNeedAssistanceCount(data.total)
+        }
+      } catch {
+        // Jangan error di UI jika panggilan gagal
+      }
+    }
+    void fetchNeedAssistanceCount()
+    return () => { active = false }
   }, [])
 
   // Initialize Dark Mode on mount
@@ -528,6 +548,18 @@ export function DashboardHeader() {
 
       {/* Right: Actions and User Profile */}
       <div className="flex shrink-0 items-center gap-1 sm:gap-2.5 text-slate-600 dark:text-slate-300">
+        {/* Need Assistance Notification Badge */}
+        {needAssistanceCount > 0 && (
+          <Link
+            href="/dashboard/record-conversation"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-900/60 transition-colors"
+            title={`${needAssistanceCount} percakapan memerlukan bantuan`}
+          >
+            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
+            <span>Need Assistance ({needAssistanceCount})</span>
+          </Link>
+        )}
+
         {/* Notification Bell */}
         <div ref={notificationsRef} className="relative">
           <button
