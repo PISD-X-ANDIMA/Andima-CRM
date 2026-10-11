@@ -1343,12 +1343,12 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 </div>
               )}
 
-              {/* 1. Customer / Company Card */}
+              {/* 1. Company Card */}
               <div className="bg-[#f8fafc] border border-slate-200 rounded-2xl p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                      CUSTOMER / COMPANY
+                      COMPANY
                     </span>
                     <h4 className="text-base font-bold text-[#0f172a] mt-1">
                       {selectedConversation.company}
@@ -1372,13 +1372,13 @@ Exported on: ${new Date().toLocaleString('id-ID')}
 
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
-                    <span className="text-xs text-slate-400 font-normal block">Dibuat Oleh:</span>
+                    <span className="text-xs text-slate-400 font-normal block">Created by:</span>
                     <span className="font-bold text-slate-800 text-xs block mt-0.5">
                       {selectedConversation.pic} (Sales Executive)
                     </span>
                   </div>
                   <div>
-                    <span className="text-xs text-slate-400 font-normal block">Tanggal:</span>
+                    <span className="text-xs text-slate-400 font-normal block">Date of Conversation:</span>
                     <span className="font-bold text-slate-800 text-xs block mt-0.5">
                       {formatDateDisplay(selectedConversation.date) || '03/03/2026'}
                     </span>
@@ -1494,11 +1494,11 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 )}
               </div>
 
-              {/* 4. HISTORI NEED ASSISTANCE */}
+              {/* 4. HISTORY NEED ASSISTANCE */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    HISTORI NEED ASSISTANCE
+                    HISTORY NEED ASSISTANCE
                   </span>
                   <span className="text-[10px] font-medium text-slate-400">
                     {selectedConversation.need_assistance ? '1 catatan ditemukan' : '0 catatan ditemukan'}
@@ -1616,7 +1616,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-400 text-xs block font-normal">Tanggal:</span>
+                    <span className="text-slate-400 text-xs block font-normal">Date of Conversation:</span>
                     <span className="font-bold text-[#0f172a] text-xs block mt-0.5">
                       {formatDateDisplay(selectedConversation.date) || '03/03/2026'}
                     </span>
@@ -1751,10 +1751,10 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 )}
               </div>
 
-              {/* Date & Time * */}
+              {/* Date * */}
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                  Date &amp; Time <span className="text-red-500">*</span>
+                  Date <span className="text-red-500">*</span>
                 </label>
                 <div className="relative flex items-center">
                   <input
