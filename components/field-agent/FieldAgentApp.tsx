@@ -181,6 +181,9 @@ function mapDatabaseStatus(status?: string): Status {
       return "Has Issue";
 
     default:
+      if (status && status !== "Assigned") {
+        console.warn(`[FieldAgentApp] Unrecognized database status token: "${status}"`);
+      }
       return "Assigned";
   }
 }
@@ -631,10 +634,8 @@ export default function FieldAgentApp() {
     } catch (error) {
       console.error(error);
 
-      setScreen(next);
-
       setNotice(
-        "Halaman berikutnya tetap dibuka, tetapi data belum berhasil disimpan."
+        "Workflow gagal disimpan. Silakan coba lagi."
       );
     } finally {
       setSaving(false);
@@ -737,6 +738,8 @@ export default function FieldAgentApp() {
             }
           : current
       );
+
+      setCompletionOpen(true);
     } catch (error) {
       console.error(error);
 
@@ -746,7 +749,6 @@ export default function FieldAgentApp() {
     } finally {
       setSaving(false);
       setProcessingOpen(false);
-      setCompletionOpen(true);
     }
   };
 

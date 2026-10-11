@@ -1,49 +1,85 @@
 import { NextResponse } from "next/server";
-import { apiError, getA3Client, requireText, writeHistory } from "@/lib/a3";
+import { apiError, getA3ReadClient, getA3WriteClient, requireText, writeHistory } from "@/lib/a3";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
     const jobNumber = new URL(request.url).searchParams.get("jobNumber");
-    const client = getA3Client();
-    let query = client.from("job_verifications").select("*").order("created_at", { ascending: false }).limit(1);
-    if (jobNumber) query = query.eq("job_number", jobNumber);
+    const client = getA3ReadClient();
+    let query = client.from("a3_verifications").select("*").order("created_at", { ascending: false }).limit(1);
+    if (jobNumber) query = query.eq("job_number", jobNumber.trim().replace(/^#/, ""));
     const { data, error } = await query;
-    if (error) throw new Error("Unable to load verification.");
+    if (error) {
+      console.error("[GET A3-verification] Error fetching verification:", error);
+      throw new Error("Unable to load verification.");
+    }
     return NextResponse.json({ success: true, data: data?.[0] ?? null });
-  } catch (error) { return apiError(error); }
+  } catch (error) {
+    console.error("[GET A3-verification] Catch error:", error);
+    return apiError(error);
+  }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const jobNumber = requireText(body.jobNumber, "jobNumber", 100);
+    const rawJobNumber = requireText(body.jobNumber, "jobNumber", 100);
+    const jobNumber = rawJobNumber.trim().replace(/^#/, "");
     const documentVerification = requireText(body.documentVerification, "documentVerification", 100);
     const packageCondition = requireText(body.packageCondition, "packageCondition", 100);
     const airlineStandard = requireText(body.airlineStandard, "airlineStandard", 100);
-    const specialHandling = Array.isArray(body.specialHandling) ? body.specialHandling.filter((item: unknown): item is string => typeof item === "string").slice(0, 10) : [];
-    const client = getA3Client();
-    const { data, error } = await client.from("job_verifications").insert({ job_number: jobNumber, document_verification: documentVerification, package_condition: packageCondition, airline_standard: airlineStandard, dangerous_goods: body.dangerousGoods === true, special_handling: specialHandling }).select().single();
-    if (error) throw new Error("Unable to save verification.");
 
-    // Sinkronisasi status verifikasi & kelayakan kargo ke a2_worksheets
-    try {
-      const cleanJobNo = jobNumber.replace(/^#/, '');
-      await client
-        .from("a2_worksheets")
-        .update({
-          is_dangerous_goods: body.dangerousGoods === true,
-          special_handling: specialHandling.join(', '),
-          progress_status: 'COMPLETED',
-          updated_at: new Date().toISOString(),
-        })
-        .or(`job_no.eq.${jobNumber},job_no.eq.${cleanJobNo}`);
-    } catch (syncErr) {
-      console.warn("Sinkronisasi verifikasi ke a2_worksheets dilewati:", syncErr);
+    const client = getA3WriteClient();
+
+    // Validasi keberadaan job di a2_worksheets
+    const { data: wsData, error: wsError } = await client
+      .from("a2_worksheets")
+      .select("worksheet_id, job_no")
+      .eq("job_no", jobNumber)
+      .limit(1);
+
+    if (wsError) {
+      console.error(`[POST A3-verification] Error validating job_no "${jobNumber}":`, wsError);
+      return apiError(new Error("Database error validating job."), 500);
+    }
+
+    if (!wsData || wsData.length === 0) {
+      return apiError(new Error(`Job ${jobNumber} tidak ditemukan.`), 404);
+    }
+
+    const insertPayload: Record<string, unknown> = {
+      job_number: jobNumber,
+      document_verification: documentVerification,
+      package_condition: packageCondition,
+      airline_standard: airlineStandard,
+    };
+
+    if (body.dangerousGoods !== undefined) {
+      insertPayload.dangerous_goods = body.dangerousGoods === true;
+    }
+
+    if (body.specialHandling !== undefined) {
+      insertPayload.special_handling = Array.isArray(body.specialHandling)
+        ? body.specialHandling.filter((item: unknown): item is string => typeof item === "string").slice(0, 10)
+        : [];
+    }
+
+    const { data, error } = await client
+      .from("a3_verifications")
+      .insert(insertPayload)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("[POST A3-verification] Error inserting a3_verifications:", error);
+      throw new Error("Unable to save verification.");
     }
 
     await writeHistory({ jobNumber, activity: "Verification Completed", notes: "All checklist valid" });
     return NextResponse.json({ success: true, data }, { status: 201 });
-  } catch (error) { return apiError(error, 400); }
+  } catch (error) {
+    console.error("[POST A3-verification] Catch error:", error);
+    return apiError(error, 400);
+  }
 }

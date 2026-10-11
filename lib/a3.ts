@@ -3,14 +3,23 @@ import { NextResponse } from "next/server";
 
 export type A3Payload = Record<string, unknown>;
 
-export function getA3Client() {
+export function getA3ReadClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ??
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   if (!url || !key) throw new Error("Database configuration is unavailable.");
+  return createClient(url, key, { auth: { persistSession: false } });
+}
+
+export function getA3WriteClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) {
+    throw new Error("service key belum dikonfigurasi");
+  }
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
@@ -32,12 +41,15 @@ export async function writeHistory(input: {
   notes?: string;
   performedBy?: string;
 }) {
-  const client = getA3Client();
-  const { error } = await client.from("job_history").insert({
+  const client = getA3WriteClient();
+  const { error } = await client.from("a3_history").insert({
     job_number: input.jobNumber,
     activity: input.activity,
     notes: input.notes ?? "-",
     performed_by: input.performedBy ?? "Rizky Pratama",
   });
-  if (error) throw new Error("Unable to save job history.");
+  if (error) {
+    console.error("[writeHistory] Failed to insert a3_history:", error);
+    throw new Error("Unable to save job history.");
+  }
 }
