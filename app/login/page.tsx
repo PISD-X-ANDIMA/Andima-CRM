@@ -255,17 +255,6 @@ export default function LoginPage() {
             {/* Top Liquid Highlight Specular Glow */}
             <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-gradient-to-b from-white/80 to-transparent blur-md pointer-events-none rounded-full" />
 
-            {/* Logo in Login Card */}
-            <div className="mb-5 relative z-10">
-              <img
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo-ANDIMA-wzx4gpZx20EFE5IYcH3jqabixELIo3.png"
-                alt="Logo ANDIMA"
-                width="400"
-                height="246"
-                className="h-12 w-auto object-contain drop-shadow-sm"
-              />
-            </div>
-
             {/* Greeting */}
             <div className="mb-7 text-left relative z-10">
               <h2 className="font-[family-name:var(--font-syne)] text-xl sm:text-2xl font-bold text-[#0D1B2A] tracking-tight">
