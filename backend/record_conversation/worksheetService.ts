@@ -228,7 +228,8 @@ export async function getFieldAgentTasks(): Promise<FieldTaskItem[] | null> {
           handover_datetime,
           handover_location,
           pihak_penyerah,
-          pihak_penerima
+          pihak_penerima,
+          handover_done
         `);
 
       if (viewError) {
@@ -240,8 +241,38 @@ export async function getFieldAgentTasks(): Promise<FieldTaskItem[] | null> {
       console.warn('Exception saat memuat vw_field_tasks di getFieldAgentTasks:', viewCatchErr);
     }
 
+    // Pembacaan a3_documentation untuk photo_count dan doc_count
+    let docMap = new Map<string, { photo_count: number; doc_count: number }>();
+    try {
+      const { data: docData, error: docError } = await supabase
+        .from('a3_documentation')
+        .select('job_number, photos, documents, created_at')
+        .order('created_at', { ascending: false });
+
+      if (docError) {
+        console.warn('Gagal memuat a3_documentation di getFieldAgentTasks, melanjutkan dengan data lama:', docError);
+      } else if (docData) {
+        docData.forEach((d: any) => {
+          if (!d.job_number) return;
+          const cleanJob = String(d.job_number).trim().replace(/^#/, '');
+          if (!docMap.has(cleanJob)) {
+            const photoArr = Array.isArray(d.photos) ? d.photos : [];
+            const docArr = Array.isArray(d.documents) ? d.documents : [];
+            docMap.set(cleanJob, {
+              photo_count: photoArr.length,
+              doc_count: docArr.length,
+            });
+          }
+        });
+      }
+    } catch (docCatchErr) {
+      console.warn('Exception saat memuat a3_documentation di getFieldAgentTasks:', docCatchErr);
+    }
+
     return wsData.map((w: any) => {
       const field = viewMap.get(w.worksheet_id);
+      const cleanJobNo = w.job_no ? String(w.job_no).trim().replace(/^#/, '') : '';
+      const docRecord = cleanJobNo ? docMap.get(cleanJobNo) : undefined;
       const photos = w.a2_worksheet_photos || [];
       const docs = w.a2_worksheet_documents || [];
       const checklists = w.a2_worksheet_checklists || [];
@@ -313,8 +344,8 @@ export async function getFieldAgentTasks(): Promise<FieldTaskItem[] | null> {
         issue_note: issueNote,
         issue_document_status: w.issue_document_status || (hasIssue ? `Manifest Mismatch (B/L ${jobFormatted.replace('#', '')})` : undefined),
         variance_tolerance: w.variance_tolerance || '0%',
-        photo_count: photos.length,
-        doc_count: docs.length,
+        photo_count: docRecord !== undefined ? docRecord.photo_count : photos.length,
+        doc_count: docRecord !== undefined ? docRecord.doc_count : docs.length,
         issue_photos: photos.map((p: any) => p.photo_url).filter(Boolean),
         issue_files: photos.map((p: any, idx: number) => ({
           name: p.file_name || `Foto_Bukti_${idx + 1}.jpg`,
@@ -331,6 +362,8 @@ export async function getFieldAgentTasks(): Promise<FieldTaskItem[] | null> {
         })),
         handover_datetime: field !== undefined ? field.handover_datetime : w.handover_datetime,
         handover_location: (field !== undefined ? field.handover_location : w.handover_location) || 'Area Cargo MM2100, Cikarang Barat',
+        handover_done: field !== undefined ? Boolean(field.handover_done) : false,
+        field_stage: field !== undefined ? field.field_stage : undefined,
         shipper: w.shipper || 'PT. Astra Component Logistics',
         consignee: w.consignee || 'Toyota Tsusho Asia',
         mawb: w.mawb,

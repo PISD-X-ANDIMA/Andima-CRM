@@ -39,6 +39,8 @@ export interface FieldTaskItem {
   handover_location: string;
   field_agent_name?: string;
   status: TaskStatus;
+  field_stage?: string;
+  handover_done?: boolean;
   has_issue: boolean;
   issue_type?: string;
   issue_category?: string;
@@ -807,7 +809,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       {/* TITLE & SUBTITLE */}
       <div className="mb-6">
         <h1 className="text-[28px] font-bold text-[#0f172a] dark:text-white tracking-tight leading-tight">
-          Field Agent Tasks
+          Monitoring Task of Field Agent
         </h1>
         <p className="text-xs text-slate-500 dark:text-slate-400 font-normal mt-1">
           Monitor task progress and review inspection results dispatched from A3.
@@ -916,17 +918,40 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
                   {/* Status Progress */}
                   <td className="py-4.5 px-6 text-center whitespace-nowrap">
-                    {task.status === 'Assigned' ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold text-[#0d6efd] bg-[#edf4fb] border border-[#bfdbfe] dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#0d6efd]" />
-                        <span>Assigned</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-medium text-slate-500 bg-slate-100 border border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                        <span>Unassigned</span>
-                      </span>
-                    )}
+                    <div className="flex flex-col items-center gap-1.5">
+                      {task.status === 'Completed' ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-400">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          <span>Completed</span>
+                        </span>
+                      ) : task.status === 'In Progress' ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold text-[#0d6efd] bg-[#edf4fb] border border-[#bfdbfe] dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-400">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#0d6efd]" />
+                          <span>In Progress</span>
+                        </span>
+                      ) : task.status === 'Assigned' ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold text-[#0d6efd] bg-[#edf4fb] border border-[#bfdbfe] dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-400">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#0d6efd]" />
+                          <span>Assigned</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-medium text-slate-500 bg-slate-100 border border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400">
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                          <span>Unassigned</span>
+                        </span>
+                      )}
+
+                      {/* Indikator Progres Tahap: Handover & Dokumen */}
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400">
+                        <span className={task.handover_done ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-slate-400 dark:text-slate-500"}>
+                          {task.handover_done ? "✓ Handover" : "○ Handover"}
+                        </span>
+                        <span className="text-slate-300 dark:text-slate-600">&bull;</span>
+                        <span className={task.field_stage === 'Completed' ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-slate-400 dark:text-slate-500"}>
+                          {task.field_stage === 'Completed' ? "✓ Dokumen" : "○ Dokumen"}
+                        </span>
+                      </div>
+                    </div>
                   </td>
 
                   {/* Issue / Obstacle */}
