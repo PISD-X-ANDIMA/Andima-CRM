@@ -228,12 +228,16 @@ export default function LoginPage() {
       <div className="absolute -top-20 -left-20 w-96 h-96 bg-[#18C7C0]/30 rounded-full blur-3xl pointer-events-none z-0" />
       <div className="absolute -bottom-20 left-1/3 w-96 h-96 bg-[#3B6FF5]/30 rounded-full blur-3xl pointer-events-none z-0" />
 
-      {/* 2. BRAND TEXT (TITLE) MENGGUNAKAN FONT SYNE */}
+      {/* 2. BRAND TEXT & LOGO */}
       <div className="hidden md:flex absolute top-1/2 -translate-y-1/2 right-8 lg:right-16 xl:right-24 z-20 pointer-events-none flex-col items-end text-right max-w-lg">
-        <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl flex items-center justify-center text-white font-bold shadow-xl shadow-[#3B6FF5]/30 bg-[#3B6FF5] shrink-0 mb-4">
-          <svg className="w-8 h-8 lg:w-9 lg:h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457-.39-2.823-1.07-4" />
-          </svg>
+        <div className="mb-4">
+          <img
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo-ANDIMA-wzx4gpZx20EFE5IYcH3jqabixELIo3.png"
+            alt="Logo ANDIMA"
+            width="400"
+            height="246"
+            className="h-20 w-auto object-contain drop-shadow-[0_4px_20px_rgba(0,0,0,0.6)]"
+          />
         </div>
         <h1 className="font-[family-name:var(--font-syne)] text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-wider text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)] leading-tight">
           PT. ANDIMA<br />
@@ -250,6 +254,17 @@ export default function LoginPage() {
 
             {/* Top Liquid Highlight Specular Glow */}
             <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-gradient-to-b from-white/80 to-transparent blur-md pointer-events-none rounded-full" />
+
+            {/* Logo in Login Card */}
+            <div className="mb-5 relative z-10">
+              <img
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo-ANDIMA-wzx4gpZx20EFE5IYcH3jqabixELIo3.png"
+                alt="Logo ANDIMA"
+                width="400"
+                height="246"
+                className="h-12 w-auto object-contain drop-shadow-sm"
+              />
+            </div>
 
             {/* Greeting */}
             <div className="mb-7 text-left relative z-10">
