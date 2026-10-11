@@ -211,7 +211,37 @@ export async function getFieldAgentTasks(): Promise<FieldTaskItem[] | null> {
       return null;
     }
 
+    // Pembacaan kedua dari vw_field_tasks
+    let viewMap = new Map<number, any>();
+    try {
+      const { data: viewData, error: viewError } = await supabase
+        .from('vw_field_tasks')
+        .select(`
+          worksheet_id,
+          field_stage,
+          field_status,
+          has_issue,
+          status_kendala,
+          issue_note,
+          issue_category,
+          open_issues_count,
+          handover_datetime,
+          handover_location,
+          pihak_penyerah,
+          pihak_penerima
+        `);
+
+      if (viewError) {
+        console.warn('Gagal memuat vw_field_tasks di getFieldAgentTasks, melanjutkan dengan data worksheet:', viewError);
+      } else if (viewData) {
+        viewMap = new Map(viewData.map((v: any) => [v.worksheet_id, v]));
+      }
+    } catch (viewCatchErr) {
+      console.warn('Exception saat memuat vw_field_tasks di getFieldAgentTasks:', viewCatchErr);
+    }
+
     return wsData.map((w: any) => {
+      const field = viewMap.get(w.worksheet_id);
       const photos = w.a2_worksheet_photos || [];
       const docs = w.a2_worksheet_documents || [];
       const checklists = w.a2_worksheet_checklists || [];
@@ -228,8 +258,46 @@ export async function getFieldAgentTasks(): Promise<FieldTaskItem[] | null> {
         ? (w.job_no.startsWith('#') ? w.job_no : `#${w.job_no}`) 
         : `#JOB-${w.worksheet_id}`;
         
-      const isIssue = Boolean(w.has_issue || w.status_kendala === 'kendala_terdeteksi');
-      const issueCategory = w.issue_category || (isIssue ? 'Physical Load Difference' : undefined);
+      // Nilai kendala: ambil dari view jika ada baris view (termasuk null), tanpa operator ||
+      const hasIssue = field !== undefined
+        ? Boolean(field.has_issue)
+        : Boolean(w.has_issue || w.status_kendala === 'kendala_terdeteksi');
+
+      const statusKendala = field !== undefined
+        ? field.status_kendala
+        : w.status_kendala;
+
+      const issueCategory = field !== undefined
+        ? field.issue_category
+        : (w.issue_category || (hasIssue ? 'Physical Load Difference' : undefined));
+
+      const issueNote = field !== undefined
+        ? field.issue_note
+        : (w.issue_note || (hasIssue ? 'Pemeriksaan fisik menemukan ketidaksesuaian manifest kargo.' : undefined));
+
+      // Status A2 dari field_stage
+      let taskStatus: 'Assigned' | 'Unassigned' | 'In Progress' | 'Completed';
+      if (field !== undefined && field.field_stage) {
+        switch (field.field_stage) {
+          case 'Draft':
+            taskStatus = 'Unassigned';
+            break;
+          case 'Assigned':
+            taskStatus = 'Assigned';
+            break;
+          case 'In Progress':
+            taskStatus = 'In Progress';
+            break;
+          case 'Completed':
+            taskStatus = 'Completed';
+            break;
+          default:
+            taskStatus = w.field_agent_id ? 'Assigned' : 'Unassigned';
+            break;
+        }
+      } else {
+        taskStatus = w.field_agent_id ? 'Assigned' : 'Unassigned';
+      }
 
       return {
         id: `ws-${w.worksheet_id}`,
@@ -237,12 +305,13 @@ export async function getFieldAgentTasks(): Promise<FieldTaskItem[] | null> {
         job_number: jobFormatted,
         customer_name: w.a1_company_list?.company_name || 'PT. YOSSAVA TRANS LOGISTIK',
         field_agent_name: w.field_agent?.full_name || undefined,
-        status: (w.progress_status as any) || (w.field_agent_id ? 'Assigned' : 'Unassigned'),
-        has_issue: isIssue,
+        status: taskStatus,
+        has_issue: hasIssue,
+        status_kendala: statusKendala,
         issue_type: issueCategory,
         issue_category: issueCategory,
-        issue_note: w.issue_note || (isIssue ? 'Pemeriksaan fisik menemukan ketidaksesuaian manifest kargo.' : undefined),
-        issue_document_status: w.issue_document_status || (isIssue ? `Manifest Mismatch (B/L ${jobFormatted.replace('#', '')})` : undefined),
+        issue_note: issueNote,
+        issue_document_status: w.issue_document_status || (hasIssue ? `Manifest Mismatch (B/L ${jobFormatted.replace('#', '')})` : undefined),
         variance_tolerance: w.variance_tolerance || '0%',
         photo_count: photos.length,
         doc_count: docs.length,
@@ -260,8 +329,8 @@ export async function getFieldAgentTasks(): Promise<FieldTaskItem[] | null> {
           size: d.file_size_kb ? `${(d.file_size_kb / 1024).toFixed(1)} MB` : '1.2 MB',
           url: d.doc_url
         })),
-        handover_datetime: w.handover_datetime,
-        handover_location: w.handover_location || 'Area Cargo MM2100, Cikarang Barat',
+        handover_datetime: field !== undefined ? field.handover_datetime : w.handover_datetime,
+        handover_location: (field !== undefined ? field.handover_location : w.handover_location) || 'Area Cargo MM2100, Cikarang Barat',
         shipper: w.shipper || 'PT. Astra Component Logistics',
         consignee: w.consignee || 'Toyota Tsusho Asia',
         mawb: w.mawb,
@@ -273,8 +342,8 @@ export async function getFieldAgentTasks(): Promise<FieldTaskItem[] | null> {
           label: c.check_label,
           is_verified: c.is_verified
         })) : [
-          { label: 'Quantity & Gross Weight verification', is_verified: !isIssue },
-          { label: 'Visual packaging condition sound', is_verified: !isIssue },
+          { label: 'Quantity & Gross Weight verification', is_verified: !hasIssue },
+          { label: 'Visual packaging condition sound', is_verified: !hasIssue },
           { label: 'Container seal number matches manifest', is_verified: true },
           { label: 'Customs & port documentation match', is_verified: true },
           { label: 'Safe for flight airfreight protocol', is_verified: true }
