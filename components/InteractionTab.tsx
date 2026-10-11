@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { exportConversationsToXLSX, exportConversationsToPDF } from '@/lib/conversationExport';
 import { 
   Search, ChevronDown, Plus, Download, Video, MessageCircle, 
   X, UploadCloud, FileText, Check, Loader2, Calendar, 
@@ -148,6 +149,15 @@ function formatDateDisplay(dateStr?: string | null): string {
   }
 }
 
+function normalizeChannel(channel?: string | null): string {
+  if (!channel) return '-';
+  const trimmed = channel.trim();
+  const lower = trimmed.toLowerCase();
+  if (lower === 'whatsapp') return 'WhatsApp';
+  if (lower === 'meeting') return 'Meeting';
+  return trimmed;
+}
+
 interface InteractionTabProps {
   currentUser?: {
     name: string;
@@ -235,10 +245,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState('PT DSV Transport Indonesia (CUST-JKT-0941)');
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
-  const [jobNumberInput, setJobNumberInput] = useState('');
   const [recordDate, setRecordDate] = useState('2026-03-03');
   const [channelSelection, setChannelSelection] = useState<'WhatsApp' | 'Meeting'>('WhatsApp');
   const [recordSummary, setRecordSummary] = useState('');
+  const [needAssistance, setNeedAssistance] = useState(false);
   const [newUploadedFiles, setNewUploadedFiles] = useState<UploadedFileMetadata[]>([]);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [isSubmittingNew, setIsSubmittingNew] = useState(false);
@@ -247,6 +257,126 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   const [createFormError, setCreateFormError] = useState<string | null>(null);
   const accountDropdownRef = useRef<HTMLDivElement | null>(null);
   const createFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Director Monitoring States
+  const [activeMode, setActiveMode] = useState<'sales' | 'director'>('sales');
+  const [directorRecords, setDirectorRecords] = useState<ConversationDisplayItem[]>([]);
+  const [loadingDirector, setLoadingDirector] = useState(false);
+  const [directorError, setDirectorError] = useState<string | null>(null);
+  const [directorAssistanceFilter, setDirectorAssistanceFilter] = useState<'All' | 'Yes' | 'No'>('All');
+  const [directorPicFilter, setDirectorPicFilter] = useState<string>('All PIC');
+  const [directorSearchQuery, setDirectorSearchQuery] = useState('');
+
+  // Fetch all records for Director Monitoring with safeguards
+  const fetchAllDirectorRecords = useCallback(async () => {
+    setLoadingDirector(true);
+    setDirectorError(null);
+    try {
+      const MAX_PAGES = 100;
+      const LIMIT = 50;
+      let attempts = 0;
+      const MAX_RETRY_ATTEMPTS = 2;
+      let successfullyFetched = false;
+
+      while (attempts < MAX_RETRY_ATTEMPTS) {
+        attempts++;
+        let allFetched: RecordConversationItem[] = [];
+        let page = 1;
+        let initialTotal: number | null = null;
+        let totalChanged = false;
+
+        while (page <= MAX_PAGES) {
+          const res = await fetchApiConversations({ page, limit: LIMIT });
+
+          if (!res.data || res.data.length === 0) {
+            break;
+          }
+
+          if (initialTotal === null) {
+            initialTotal = res.total;
+          } else if (res.total !== initialTotal) {
+            totalChanged = true;
+            break;
+          }
+
+          allFetched = [...allFetched, ...res.data];
+
+          const effectiveTotalPages =
+            typeof res.totalPages === 'number'
+              ? res.totalPages
+              : Math.ceil(res.total / LIMIT);
+
+          if (allFetched.length >= res.total || page >= effectiveTotalPages) {
+            break;
+          }
+
+          page++;
+        }
+
+        if (!totalChanged) {
+          const mapped: ConversationDisplayItem[] = allFetched.map((c) => ({
+            id: c.id,
+            conversation_id: c.id || '-',
+            job_number: c.job_number ? (c.job_number.startsWith('#') ? c.job_number : `#${c.job_number}`) : '-',
+            company: c.company_name?.trim() ? c.company_name.trim() : '-',
+            source: normalizeChannel(c.channel_type),
+            date: formatDateDisplay(c.conversation_date),
+            pic: c.sales_pic_name?.trim() ? c.sales_pic_name.trim() : '-',
+            summary: c.summary || '',
+            status: c.status || 'active',
+            urgency_level: c.urgency_level || 'standard',
+            need_assistance: c.need_assistance,
+            document_urls: c.document_urls || [],
+            customer_id: c.customer_id,
+            created_at: c.created_at,
+          }));
+          setDirectorRecords(mapped);
+          successfullyFetched = true;
+          break;
+        }
+      }
+
+      if (!successfullyFetched) {
+        setDirectorError('Data berubah saat dimuat. Silakan klik muat ulang.');
+      }
+    } catch (err) {
+      console.error('Error fetching director records:', err);
+      setDirectorError('Gagal memuat seluruh data percakapan.');
+    } finally {
+      setLoadingDirector(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeMode === 'director') {
+      fetchAllDirectorRecords();
+    }
+  }, [activeMode, fetchAllDirectorRecords]);
+
+  // Unique PIC options for Director Monitoring
+  const directorPicOptions = useMemo(() => {
+    const pics = directorRecords
+      .map((r) => r.pic?.trim())
+      .filter((p): p is string => Boolean(p && p !== '-'));
+    return ['All PIC', ...Array.from(new Set(pics)).sort()];
+  }, [directorRecords]);
+
+  // Filtered rows for Director Monitoring
+  const filteredDirectorRows = useMemo(() => {
+    return directorRecords.filter((r) => {
+      if (directorSearchQuery.trim()) {
+        const q = directorSearchQuery.toLowerCase().trim();
+        const matchCompany = r.company.toLowerCase().includes(q);
+        const matchPic = r.pic.toLowerCase().includes(q);
+        const matchSummary = (r.summary || '').toLowerCase().includes(q);
+        if (!matchCompany && !matchPic && !matchSummary) return false;
+      }
+      if (directorAssistanceFilter === 'Yes' && !r.need_assistance) return false;
+      if (directorAssistanceFilter === 'No' && r.need_assistance) return false;
+      if (directorPicFilter !== 'All PIC' && r.pic !== directorPicFilter) return false;
+      return true;
+    });
+  }, [directorRecords, directorAssistanceFilter, directorPicFilter, directorSearchQuery]);
 
   // Auto-dismiss save success notification after 4 seconds
   useEffect(() => {
@@ -423,34 +553,13 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   const firstRow = totalItems === 0 ? 0 : startIndex + 1;
   const lastRow = Math.min(startIndex + pageSize, totalItems);
 
-  // Handle Export to CSV
-  const handleExportCSV = () => {
-    try {
-      const headers = ['Conversation ID', 'Job Number', 'Company', 'Source', 'Date', 'PIC', 'Summary', 'Status'];
-      const rows = filteredRows.map(r => [
-        `"${r.conversation_id}"`,
-        `"${r.job_number}"`,
-        `"${r.company.replace(/"/g, '""')}"`,
-        `"${r.source}"`,
-        `"${r.date}"`,
-        `"${r.pic}"`,
-        `"${(r.summary || '').replace(/"/g, '""')}"`,
-        `"${r.status || 'active'}"`
-      ]);
+  // Handle Export to XLSX and PDF using shared utility
+  const handleExportXLSX = () => {
+    exportConversationsToXLSX(filteredRows);
+  };
 
-      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `Record_Customer_Conversation_${new Date().toISOString().slice(0, 10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      console.error('Export failed:', err);
-      alert('Gagal mengekspor data.');
-    }
+  const handleExportPDF = () => {
+    exportConversationsToPDF(filteredRows);
   };
 
   // Open "See more.." Detail Modal (Matching User Screenshot Exactly)
@@ -636,10 +745,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   const handleOpenCreateModal = () => {
     setCreateFormError(null);
     setSelectedAccount('PT DSV Transport Indonesia (CUST-JKT-0941)');
-    setJobNumberInput('');
     setRecordDate('2026-03-03');
     setChannelSelection('WhatsApp');
     setRecordSummary('');
+    setNeedAssistance(false);
     setNewUploadedFiles([]);
     setIsCreateModalOpen(true);
   };
@@ -723,13 +832,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       return;
     }
 
-    // TC-008: Job Number tidak ditemukan jika diisi dengan nomor fiktif (misal JOB-2026-999)
-    const rawJob = jobNumberInput.trim();
-    if (rawJob && (rawJob.includes('999') || rawJob.toLowerCase() === 'invalid')) {
-      setCreateFormError('Job Number tidak ditemukan dalam sistem.');
-      return;
-    }
-
     setIsSubmittingNew(true);
     try {
       const docUrls = newUploadedFiles.map(f => f.file_url).filter(Boolean);
@@ -756,22 +858,9 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         throw new Error("Customer tidak valid atau tidak ditemukan di database.");
       }
 
-      // TC-005 (Job Number opsional) & TC-006 (Lebih dari satu Job Number)
-      let finalJobNumber = '-';
-      let connectedJobNumbers: string[] = [];
-
-      if (rawJob) {
-        const splitJobs = rawJob
-          .split(/[,;\n]+/)
-          .map(j => j.trim())
-          .filter(Boolean)
-          .map(j => (j.startsWith('#') ? j : `#${j}`));
-
-        if (splitJobs.length > 0) {
-          finalJobNumber = splitJobs[0];
-          connectedJobNumbers = splitJobs;
-        }
-      }
+      // Record baru tidak menyimpan job number dari form customer conversation
+      const finalJobNumber = '-';
+      const connectedJobNumbers: string[] = [];
 
       const displayDate = formatDateDisplay(recordDate);
 
@@ -780,11 +869,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       const res = await createApiConversation({
         customer_id: matchedCustomerId,
         customer_code: custCode,
-        job_number: finalJobNumber !== '-' ? finalJobNumber.replace(/^#/, '') : undefined,
         channel_type: channelSelection,
         conversation_date: recordDate.includes('-') && recordDate.length === 10 ? recordDate : new Date().toISOString().split('T')[0],
         summary: recordSummary.trim(),
-        need_assistance: false,
+        need_assistance: needAssistance,
         urgency_level: 'standard',
         sales_pic_name: activeUserName,
         uploaded_files: newUploadedFiles
@@ -818,7 +906,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         summary: recordSummary.trim(),
         status: 'active',
         urgency_level: 'standard',
-        need_assistance: false,
+        need_assistance: needAssistance,
         document_urls: docUrls,
         connected_job_numbers: connectedJobNumbers.length > 0 ? connectedJobNumbers : undefined,
         evidence_attachments: createdAttachments,
@@ -839,8 +927,8 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       });
 
       setRecordSummary('');
+      setNeedAssistance(false);
       setNewUploadedFiles([]);
-      setJobNumberInput('');
       setIsCreateModalOpen(false);
       setSaveSuccessNotif(true);
     } catch (err: any) {
@@ -852,7 +940,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   };
 
   return (
-    <div className="w-full pb-10">
+    <div className={`w-full ${activeMode === 'director' ? 'h-[calc(100vh-140px)] min-h-[500px] flex flex-col overflow-hidden pb-1' : 'pb-10'}`}>
       {/* Save Record Success Notification Toast (Exact Match to User Screenshot) */}
       {saveSuccessNotif && (
         <div
@@ -866,6 +954,34 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         </div>
       )}
 
+      {/* MODE TABS: Sales Record vs Director Monitoring */}
+      <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl w-fit mb-4 flex-shrink-0">
+        <button
+          type="button"
+          onClick={() => setActiveMode('sales')}
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            activeMode === 'sales'
+              ? 'bg-white text-blue-700 shadow-2xs dark:bg-slate-900 dark:text-blue-400'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+          }`}
+        >
+          Sales Record
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveMode('director')}
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            activeMode === 'director'
+              ? 'bg-white text-blue-700 shadow-2xs dark:bg-slate-900 dark:text-blue-400'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+          }`}
+        >
+          Director Monitoring
+        </button>
+      </div>
+
+      {activeMode === 'sales' ? (
+        <>
       {/* 1. TOP CONTROLS AND ACTION BAR */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Left: Search input */}
@@ -991,6 +1107,30 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
               </div>
             )}
           </div>
+
+          {/* Export XLSX Button */}
+          <button
+            type="button"
+            onClick={handleExportXLSX}
+            disabled={filteredRows.length === 0}
+            className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-700 flex items-center gap-1.5 shadow-2xs cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:hover:border-slate-700 dark:text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Export record yang tampil ke format XLSX"
+          >
+            <Download size={13} className="text-emerald-600 dark:text-emerald-400" />
+            <span>Export XLSX</span>
+          </button>
+
+          {/* Export PDF Button */}
+          <button
+            type="button"
+            onClick={handleExportPDF}
+            disabled={filteredRows.length === 0}
+            className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-700 flex items-center gap-1.5 shadow-2xs cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:hover:border-slate-700 dark:text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Export record yang tampil ke format PDF"
+          >
+            <FileText size={13} className="text-rose-600 dark:text-rose-400" />
+            <span>Export PDF</span>
+          </button>
 
           {/* + Record Conversation Button */}
           <button
@@ -1194,6 +1334,215 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           </nav>
         </div>
       </div>
+      </>
+      ) : (
+        /* DIRECTOR MONITORING MODE */
+        <div className="flex-1 min-h-0 flex flex-col">
+          {/* Header & Refresh */}
+          <div className="flex flex-wrap items-center justify-between gap-4 mt-1 mb-4 flex-shrink-0">
+            <div>
+              <h1 className="text-2xl font-bold text-[#0f172a] dark:text-white tracking-tight">
+                Director Monitoring
+              </h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Daftar seluruh record Customer Conversation dari semua sales eksekutif
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={fetchAllDirectorRecords}
+                disabled={loadingDirector}
+                className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300 shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                title="Muat ulang seluruh data dari server"
+              >
+                <Loader2 size={13} className={loadingDirector ? 'animate-spin text-blue-600' : 'text-slate-400'} />
+                <span>Refresh Data</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Error Alert */}
+          {directorError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 dark:bg-red-950/40 dark:border-red-900/60 dark:text-red-300 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={15} className="text-red-500 shrink-0" />
+                <span>{directorError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={fetchAllDirectorRecords}
+                className="px-3 py-1 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 cursor-pointer"
+              >
+                Muat Ulang
+              </button>
+            </div>
+          )}
+
+          {/* Action & Filter Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4 flex-shrink-0">
+            {/* Search input */}
+            <div className="flex-1 min-w-[260px] max-w-md">
+              <input
+                type="text"
+                value={directorSearchQuery}
+                onChange={(e) => setDirectorSearchQuery(e.target.value)}
+                placeholder="Cari Customer, Sales PIC, atau Summary..."
+                className="w-full bg-white border border-slate-200/90 rounded-xl px-4 py-2 text-xs text-slate-700 placeholder:text-slate-400 outline-none shadow-2xs focus:border-blue-400 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 transition-colors"
+              />
+            </div>
+
+            {/* Filters & Export */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              {/* Need Assistance Filter */}
+              <div className="flex items-center gap-1 bg-white border border-slate-200/90 rounded-xl p-1 shadow-2xs dark:bg-slate-900 dark:border-slate-800 text-xs">
+                <span className="text-slate-400 font-medium px-2 text-[11px]">Need Assistance:</span>
+                {(['All', 'Yes', 'No'] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setDirectorAssistanceFilter(opt)}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                      directorAssistanceFilter === opt
+                        ? 'bg-blue-600 text-white shadow-2xs'
+                        : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    {opt === 'All' ? 'Semua' : opt}
+                  </button>
+                ))}
+              </div>
+
+              {/* Sales PIC Filter Dropdown */}
+              <div>
+                <select
+                  value={directorPicFilter}
+                  onChange={(e) => setDirectorPicFilter(e.target.value)}
+                  className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 outline-none transition-colors"
+                >
+                  {directorPicOptions.map((pic) => (
+                    <option key={pic} value={pic}>
+                      {pic === 'All PIC' ? 'Semua Sales PIC' : pic}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Export XLSX Button */}
+              <button
+                type="button"
+                onClick={() => exportConversationsToXLSX(filteredDirectorRows)}
+                disabled={filteredDirectorRows.length === 0}
+                className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-700 flex items-center gap-1.5 shadow-2xs cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:hover:border-slate-700 dark:text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Export record monitoring ke format XLSX"
+              >
+                <Download size={13} className="text-emerald-600 dark:text-emerald-400" />
+                <span>Export XLSX</span>
+              </button>
+
+              {/* Export PDF Button */}
+              <button
+                type="button"
+                onClick={() => exportConversationsToPDF(filteredDirectorRows)}
+                disabled={filteredDirectorRows.length === 0}
+                className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-700 flex items-center gap-1.5 shadow-2xs cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:hover:border-slate-700 dark:text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Export record monitoring ke format PDF"
+              >
+                <FileText size={13} className="text-rose-600 dark:text-rose-400" />
+                <span>Export PDF</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Table Card (6 Kolom: Tanggal, Customer, Channel, Sales PIC, Summary, Need Assistance) */}
+          <div className="flex-1 min-h-0 bg-white rounded-2xl border border-slate-200/70 shadow-xs flex flex-col overflow-hidden dark:bg-[#0f172a] dark:border-slate-800">
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto relative">
+              <table className="w-full text-left border-collapse min-w-[760px]">
+                <thead className="bg-[#edf4fb] border-b border-slate-200/70 dark:bg-slate-900 dark:border-slate-800 sticky top-0 z-10">
+                  <tr className="bg-[#edf4fb] dark:bg-slate-900">
+                    <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center tracking-normal w-[120px] bg-[#edf4fb] dark:bg-slate-900 sticky top-0">
+                      Tanggal
+                    </th>
+                    <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-left tracking-normal w-[220px] bg-[#edf4fb] dark:bg-slate-900 sticky top-0">
+                      Customer
+                    </th>
+                    <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center tracking-normal w-[110px] bg-[#edf4fb] dark:bg-slate-900 sticky top-0">
+                      Channel
+                    </th>
+                    <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center tracking-normal w-[130px] bg-[#edf4fb] dark:bg-slate-900 sticky top-0">
+                      Sales PIC
+                    </th>
+                    <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-left tracking-normal bg-[#edf4fb] dark:bg-slate-900 sticky top-0">
+                      Summary
+                    </th>
+                    <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center tracking-normal w-[140px] bg-[#edf4fb] dark:bg-slate-900 sticky top-0">
+                      Need Assistance
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                  {loadingDirector ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-xs text-slate-400">
+                        <Loader2 size={18} className="animate-spin inline mr-2 text-blue-500" />
+                        Memuat seluruh data percakapan monitoring...
+                      </td>
+                    </tr>
+                  ) : filteredDirectorRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-xs text-slate-400">
+                        Tidak ada record yang sesuai dengan filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredDirectorRows.map((row, idx) => (
+                      <tr
+                        key={`${row.id || 'dir-row'}-${idx}`}
+                        className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
+                      >
+                        <td className="py-4 px-6 text-center text-xs text-slate-700 dark:text-slate-400 whitespace-nowrap">
+                          {row.date}
+                        </td>
+                        <td className="py-4 px-6 text-left text-xs font-bold text-slate-800 dark:text-slate-200">
+                          {row.company}
+                        </td>
+                        <td className="py-4 px-6 text-center whitespace-nowrap text-xs">
+                          {row.source}
+                        </td>
+                        <td className="py-4 px-6 text-center text-xs font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                          {row.pic}
+                        </td>
+                        <td className="py-4 px-6 text-left text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                          {row.summary && row.summary.length > 120
+                            ? `${row.summary.slice(0, 120)}...`
+                            : (row.summary || '-')}
+                        </td>
+                        <td className="py-4 px-6 text-center whitespace-nowrap text-xs">
+                          {row.need_assistance ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-900/60">
+                              <AlertCircle size={11} className="shrink-0" />
+                              Yes
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 text-xs">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Monitoring Footer Summary */}
+            <div className="flex-shrink-0 py-3 px-6 bg-white border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 dark:bg-[#0f172a] dark:border-slate-800 dark:text-slate-400">
+              <span>
+                Menampilkan <strong className="font-semibold text-slate-700 dark:text-slate-200">{filteredDirectorRows.length}</strong> dari <strong className="font-semibold text-slate-700 dark:text-slate-200">{directorRecords.length}</strong> total record
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 5. "SEE MORE.." DETAIL MODAL */}
       {isDetailModalOpen && selectedConversation && (
@@ -1645,20 +1994,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 )}
               </div>
 
-              {/* Job Number (Optional) */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Job Number <span className="text-slate-400 dark:text-slate-500 font-normal text-[11px]">(Optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={jobNumberInput}
-                  onChange={(e) => setJobNumberInput(e.target.value)}
-                  placeholder="e.g. #AENAT/2609/0308"
-                  className="w-full bg-[#f8fafc] focus:bg-white border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-2 text-xs font-medium text-slate-800 outline-none shadow-2xs transition-colors placeholder:text-slate-400 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
-                />
-              </div>
-
               {/* Date * */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -1735,6 +2070,23 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   placeholder="Tulis ringkasan percakapan di sini..."
                   className="w-full bg-[#f8fafc] focus:bg-white border border-slate-200 focus:border-blue-500 rounded-xl p-2.5 text-xs font-normal text-slate-800 leading-relaxed outline-none shadow-2xs transition-colors resize-none placeholder:text-slate-400 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
                 />
+              </div>
+
+              {/* Need Assistance Checkbox */}
+              <div className="flex items-center gap-2 pt-1 pb-0.5">
+                <input
+                  type="checkbox"
+                  id="needAssistanceCheckbox"
+                  checked={needAssistance}
+                  onChange={(e) => setNeedAssistance(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                />
+                <label
+                  htmlFor="needAssistanceCheckbox"
+                  className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none"
+                >
+                  Need Assistance
+                </label>
               </div>
 
               {/* File Attachment */}
