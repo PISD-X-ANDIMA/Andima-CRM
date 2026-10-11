@@ -2751,15 +2751,15 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     C-TRACK FIELD APP
                   </span>
                   <span className="text-slate-600">•</span>
-                  {resultModalTask.has_issue ? (
+                  {(resultModalTask.has_issue || resultModalTask.issue_status === 'Issue') ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-950/80 border border-rose-500/40 text-rose-400 text-[10px] font-semibold">
                       <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
-                      <span>{resultModalTask.issue_status || 'Issue Detected'}</span>
+                      <span>Issue</span>
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-[10px] font-semibold">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      <span>{resultModalTask.status || 'Completed'}</span>
+                      <span>Completed</span>
                     </span>
                   )}
                 </div>
@@ -3134,7 +3134,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <AlertCircle size={13} className="text-[#2563eb]" />
                   <span>ISSUE</span>
                 </div>
-                {resultModalTask.has_issue ? (
+                {(resultModalTask.has_issue || resultModalTask.issue_status === 'Issue') ? (
                   <div className="bg-[#fef2f2] border border-[#fecaca] rounded-xl p-3 flex items-start gap-3">
                     <div className="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0 mt-0.5">
                       <AlertOctagon size={14} />
@@ -3167,17 +3167,9 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               <button
                 type="button"
                 onClick={() => setResultModalTask(null)}
-                className="px-5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer text-center"
               >
                 Close
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDownloadResultPdf(resultModalTask)}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white text-xs font-bold shadow-xs cursor-pointer flex items-center justify-center gap-2 transition-colors"
-              >
-                <Download size={14} />
-                <span>Export PDF</span>
               </button>
             </div>
           </div>

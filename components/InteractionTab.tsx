@@ -1378,9 +1378,9 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     </span>
                   </div>
                   <div>
-                    <span className="text-xs text-slate-400 font-normal block">Tanggal &amp; Waktu:</span>
+                    <span className="text-xs text-slate-400 font-normal block">Tanggal:</span>
                     <span className="font-bold text-slate-800 text-xs block mt-0.5">
-                      {selectedConversation.date || '03/03/2026'}, 14:00 WIB
+                      {formatDateDisplay(selectedConversation.date) || '03/03/2026'}
                     </span>
                   </div>
                 </div>
@@ -1429,7 +1429,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
                   >
                     <Download size={13} className="text-blue-600" />
-                    <span>Download Summary (.pdf)</span>
+                    <span>Export Summary (.pdf)</span>
                   </button>
                 </div>
                 <div className="bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed font-medium">
@@ -1616,9 +1616,9 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-400 text-xs block font-normal">Tanggal &amp; Waktu:</span>
+                    <span className="text-slate-400 text-xs block font-normal">Tanggal:</span>
                     <span className="font-bold text-[#0f172a] text-xs block mt-0.5">
-                      {selectedConversation.date || '03/03/2026'}, 14:00 WIB
+                      {formatDateDisplay(selectedConversation.date) || '03/03/2026'}
                     </span>
                   </div>
                 </div>

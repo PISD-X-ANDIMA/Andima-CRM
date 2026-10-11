@@ -221,7 +221,7 @@ function WorksheetPanel({ worksheetId, onClose }: { worksheetId: number; onClose
       .finally(() => setLoading(false));
   }, [worksheetId]);
 
-  const isIssue = data?.status_kendala === 'kendala_terdeteksi' || data?.has_issue;
+  const isIssue = data?.status_kendala === 'kendala_terdeteksi' || data?.has_issue || (data as any)?.issue_status === 'Issue';
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-end">
@@ -232,11 +232,11 @@ function WorksheetPanel({ worksheetId, onClose }: { worksheetId: number; onClose
               C-TRACK FIELD APP <span className="w-1 h-1 rounded-full bg-slate-600" />
               {isIssue ? (
                 <span className="bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-400" /> Kendala Terdeteksi
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-400" /> Issue
                 </span>
               ) : (
                 <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> {(data as any)?.status || 'Completed'}
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Completed
                 </span>
               )}
             </div>
@@ -410,14 +410,8 @@ function WorksheetPanel({ worksheetId, onClose }: { worksheetId: number; onClose
         </div>
 
         <div className="printable-footer px-5 py-4 bg-white border-t border-slate-200 flex gap-3 shrink-0">
-          <button className="w-1/3 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg font-bold text-xs transition-colors" onClick={onClose}>
+          <button className="w-full py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg font-bold text-xs transition-colors cursor-pointer" onClick={onClose}>
             Close Panel
-          </button>
-          <button
-            onClick={() => window.print()}
-            className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <Download size={13} /> Export PDF
           </button>
         </div>
       </div>
