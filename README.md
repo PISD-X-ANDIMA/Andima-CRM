@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Andima CRM — Sistem Terpadu Pengelolaan Pelanggan & Operasional
 
-## Getting Started
+Sistem CRM berbasis **Next.js (App Router)** dan **Supabase** untuk PT Andima Transportindo, yang dikembangkan secara kolaboratif antarsquad (Squad A1, A2, dan A3).
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 📌 Pembagian Modul & Arsitektur Direktori
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Untuk menghindari konflik kode (*merge conflict*) antar squad, struktur modul telah dipisahkan secara ketat:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Modul | Pemilik | Lokasi File & Komponen | Keterangan & Batasan |
+|---|---|---|---|
+| **Sales Executive** | **Squad A1** | `app/dashboard/sales-executive/`<br>`components/dashboard/SalesExecutiveDashboard.tsx`<br>`app/dashboard/company-list/`<br>`app/dashboard/meeting-schedule/` | **Stabil & Siap Pakai.** Terbuka untuk integrasi tombol Squad A2. |
+| **Manager Customer Success** | **Squad A1** | `app/dashboard/manager-customer-success/`<br>`components/dashboard/ManagerCustomerSuccessDashboard.tsx`<br>`app/api/v1/manager/` | ⚠️ **ISOLATED / DILARANG DIUBAH SQUAD LAIN.** Fitur role management & dashboard analitik manajer sedang dikembangkan oleh A1. |
+| **Record Conversation** | **Squad A2** | `app/dashboard/record-conversation/page.tsx` | Disiapkan kosong untuk diisi modul formulir & riwayat percakapan oleh Squad A2. |
+| **Task of Field Agent** | **Squad A2** | `app/dashboard/task-of-field-agent/page.tsx` | Disiapkan kosong untuk diisi modul worksheet lapangan oleh Squad A2. |
+| **Need Backup** | **Squad A2** | `app/dashboard/need-backup/page.tsx` | Disiapkan kosong untuk diisi modul eskalasi bantuan oleh Squad A2. |
+| **Field Agent Management** | **Squad A2** | `app/dashboard/field-agent-management/page.tsx` | Disiapkan kosong untuk diisi modul manajemen agent oleh Squad A2. |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🤖 Panduan Khusus untuk Antigravity / AI Agent (Squad A2)
 
-To learn more about Next.js, take a look at the following resources:
+Jika Anda atau AI Coding Assistant Anda (seperti Google Antigravity / Claude / Cursor) bekerja di repositori ini untuk mengimplementasikan fitur **Squad A2**:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Titik Masuk Integrasi Sales Executive:**
+   * Tombol **`+ Record Conversation`** di modal detail meeting (`app/dashboard/meeting-schedule/page.tsx`) akan mengirimkan query param: `customer_id`, `customer_name`, `meeting_id`, `source_meeting_id` ke rute `/dashboard/record-conversation`.
+   * Tombol **`View Task`** di tabel Company List (`components/customer/CustomerTable.tsx`) akan mengirimkan query param `company_id` ke rute `/dashboard/task-of-field-agent`.
+   * Metrik Task pada dashboard membaca baris dari tabel Supabase `a2_worksheets`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+2. **Batasan Mutlak (Boundary Rule):**
+   * **JANGAN PERNAH MENGUBAH** file di dalam `app/dashboard/manager-customer-success/` dan `components/dashboard/ManagerCustomerSuccessDashboard.tsx`.
+   * Bagian Manager CS diisolasi secara fisik sehingga ketika Anda melakukan push/merge integrasi Sales Executive, tim A1 dapat melakukan `git pull` tanpa khawatir fitur Manager CS tertimpa atau rusak.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🚀 Memulai Pengembangan Lokal
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Salin konfigurasi environment ke `.env.local`:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL="https://ufjbbwqaztgkqmpdmcyv.supabase.co"
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="sb_publishable_0GFbshHOM6k80Wxde_iZVQ_v6DpVj1D"
+   NEXT_PUBLIC_SUPABASE_ANON_KEY="sb_publishable_0GFbshHOM6k80Wxde_iZVQ_v6DpVj1D"
+   ```
+
+2. Jalankan server pengembangan:
+   ```bash
+   npm run dev
+   ```
+
+3. Buka di browser:
+   * **Dashboard Sales Executive:** `http://localhost:3000/dashboard/sales-executive`
+   * **Dashboard Manager CS:** `http://localhost:3000/dashboard/manager-customer-success`
+   * **Record Conversation (A2):** `http://localhost:3000/dashboard/record-conversation`
+   * **Task Field Agent (A2):** `http://localhost:3000/dashboard/task-of-field-agent`

@@ -13,11 +13,18 @@ export async function GET(request: NextRequest) {
     }
     return createSuccessResponse({
       total_customers: stats.totalCustomers,
+      customer_percentage: stats.customerPercentage ?? 0,
       upcoming_meetings: stats.upcomingMeetings,
+      meeting_percentage: stats.meetingPercentage ?? 0,
       task_count: stats.tasks,
-      changes: null,
+      task_percentage: stats.taskPercentage ?? 0,
+      changes: stats.changes ?? {
+        customer: stats.customerPercentage ?? 0,
+        meeting: stats.meetingPercentage ?? 0,
+        task: stats.taskPercentage ?? 0,
+      },
     });
   } catch {
-    return createErrorResponse("STAT_001", "Dashboard statistics are temporarily unavailable", undefined, 500);
+    return createErrorResponse("STAT_001", "Gagal memuat data statistik, coba lagi nanti", undefined, 500);
   }
 }

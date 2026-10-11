@@ -8,9 +8,27 @@ export interface SalesExecutiveMetrics {
   upcomingMeetings: number | null;
   meetingsThisWeek: number | null;
   tasks: number | null;
+  customerPercentage?: number | null;
+  meetingPercentage?: number | null;
+  taskPercentage?: number | null;
+  changes?: {
+    customer: number | null;
+    meeting: number | null;
+    task: number | null;
+  } | null;
 }
 
-const EMPTY_METRICS: SalesExecutiveMetrics = { totalCustomers: null, activeCustomers: null, upcomingMeetings: null, meetingsThisWeek: null, tasks: null };
+const EMPTY_METRICS: SalesExecutiveMetrics = {
+  totalCustomers: null,
+  activeCustomers: null,
+  upcomingMeetings: null,
+  meetingsThisWeek: null,
+  tasks: null,
+  customerPercentage: null,
+  meetingPercentage: null,
+  taskPercentage: null,
+  changes: null,
+};
 const DAY_NUMBERS: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
 
 function nextOccurrence(meeting: any, now: Date): Date | null {
@@ -69,13 +87,28 @@ export async function getSalesExecutiveMetrics(executiveId?: string): Promise<Sa
       meetQuery = meetQuery.in("company_id", userCompanyIds.length ? userCompanyIds : ["00000000-0000-0000-0000-000000000000"]);
     }
 
-    const [customersResult, meetingsResult, tasksResult] = await Promise.all([
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    let recentCustQuery = (supabase as any)
+      .from("a1_company_list")
+      .select("company_list_id", { count: "exact", head: true })
+      .is("deleted_at", null)
+      .gte("created_at", thirtyDaysAgo);
+
+    if (executiveId) {
+      recentCustQuery = recentCustQuery.eq("created_by", executiveId);
+    } else if (userScope && !userScope.isManager) {
+      recentCustQuery = recentCustQuery.in("created_by", userScope.identifiers);
+    }
+
+    const [customersResult, meetingsResult, tasksResult, recentCustResult] = await Promise.all([
       custCountQuery,
       meetQuery,
       (supabase as any).from("a2_worksheets").select("*", { count: "exact", head: true }),
+      recentCustQuery,
     ]);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
     let upcomingMeetings = 0;
     let meetingsThisWeek = 0;
     const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -89,13 +122,32 @@ export async function getSalesExecutiveMetrics(executiveId?: string): Promise<Sa
       const thisWeekDate = nextOccurrence(meeting, new Date(weekStart));
       if (thisWeekDate && thisWeekDate >= weekStart && thisWeekDate < weekEnd) meetingsThisWeek++;
     }
+
+    const totalCust = customersResult.error ? null : customersResult.count || 0;
+    const recentCust = recentCustResult.error ? 0 : recentCustResult.count || 0;
+    const previousCust = totalCust !== null ? Math.max(0, totalCust - recentCust) : 0;
+    const customerPercentage = totalCust !== null
+      ? (previousCust > 0 ? Math.round(((totalCust - previousCust) / previousCust) * 100) : (totalCust > 0 ? 100 : 0))
+      : null;
+
+    const meetingPercentage = upcomingMeetings > 0 ? Math.round((meetingsThisWeek / upcomingMeetings) * 100) : 0;
+    const totalTasks = tasksResult.error ? null : tasksResult.count || 0;
+    const taskPercentage = totalTasks !== null ? (totalCust && totalCust > 0 ? Math.min(100, Math.round((totalTasks / totalCust) * 100)) : 0) : null;
+
     return {
-      totalCustomers: customersResult.error ? null : customersResult.count || 0,
-      // No customer status column exists in the shared Company List schema.
+      totalCustomers: totalCust,
       activeCustomers: null,
       upcomingMeetings: meetingsResult.error ? null : upcomingMeetings,
       meetingsThisWeek: meetingsResult.error ? null : meetingsThisWeek,
-      tasks: tasksResult.error ? null : tasksResult.count || 0,
+      tasks: totalTasks,
+      customerPercentage,
+      meetingPercentage,
+      taskPercentage,
+      changes: {
+        customer: customerPercentage,
+        meeting: meetingPercentage,
+        task: taskPercentage,
+      },
     };
   } catch {
     return EMPTY_METRICS;

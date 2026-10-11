@@ -23,7 +23,7 @@ const defaultSalesExecutiveMenus: SubMenuItem[] = [
   { name: "Record Conversation", href: "/dashboard/record-conversation" },
   { name: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
   { name: "Need Backup", href: "/dashboard/need-backup" },
-  { name: "Field Agent Access", href: "/dashboard/field-agent-access" },
+  { name: "Field Agent Management", href: "/dashboard/field-agent-management" },
 ];
 
 const defaultManagerMenus: SubMenuItem[] = [
@@ -89,6 +89,7 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
     pathname.startsWith("/dashboard/record-conversation") ||
     pathname.startsWith("/dashboard/task-of-field-agent") ||
     pathname.startsWith("/dashboard/need-backup") ||
+    pathname.startsWith("/dashboard/field-agent-management") ||
     pathname.startsWith("/dashboard/field-agent-access");
 
   return (

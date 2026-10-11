@@ -11,6 +11,8 @@ const routeLabels: Record<string, string> = {
   "record-conversation": "Record Conversation",
   "task-of-field-agent": "Task of Field Agent",
   "need-backup": "Need Backup",
+  "field-agent-management": "Field Agent Management",
+  "field-agent-access": "Field Agent Management",
   jobs: "Jobs",
 };
 

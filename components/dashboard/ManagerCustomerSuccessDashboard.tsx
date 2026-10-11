@@ -281,12 +281,23 @@ export function ManagerCustomerSuccessDashboard({
       {/* KPI Cards */}
       <section aria-label="Key performance indicators" className="mb-3 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {[
-          { label: "Total Customer", value: metrics.totalCustomers, hint: "Company records", icon: UsersRound, color: "bg-blue-50 text-blue-500" },
-          { label: "Upcoming Meeting", value: metrics.upcomingMeetings, hint: "Scheduled meetings", icon: CalendarDays, color: "bg-rose-100 text-rose-500" },
-          { label: "Task", value: metrics.tasks, hint: "Worksheet rows", icon: BriefcaseBusiness, color: "bg-sky-50 text-sky-500" },
-        ].map(({ label, value, hint, icon: Icon, color }) => (
-          <article key={label} className="min-h-[112px] rounded-xl border border-[#aaa] bg-white px-4 py-2">
-            <h2 className="text-lg font-semibold text-[#505050] sm:text-xl">{label}</h2>
+          { label: "Total Customer", value: metrics.totalCustomers, percentage: metrics.customerPercentage, hint: "Company records", icon: UsersRound, color: "bg-blue-50 text-blue-500" },
+          { label: "Upcoming Meeting", value: metrics.upcomingMeetings, percentage: metrics.meetingPercentage, hint: "Scheduled meetings", icon: CalendarDays, color: "bg-rose-100 text-rose-500" },
+          { label: "Task", value: metrics.tasks, percentage: metrics.taskPercentage, hint: "Worksheet rows", icon: BriefcaseBusiness, color: "bg-sky-50 text-sky-500" },
+        ].map(({ label, value, percentage, hint, icon: Icon, color }) => (
+          <article key={label} className="flex min-h-[112px] flex-col justify-between rounded-xl border border-[#aaa] bg-white px-4 py-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-[#505050] sm:text-xl">{label}</h2>
+              {percentage !== undefined && percentage !== null && (
+                <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                  percentage > 0 ? "border border-emerald-200 bg-emerald-50 text-emerald-700" :
+                  percentage < 0 ? "border border-rose-200 bg-rose-50 text-rose-700" :
+                  "border border-slate-200 bg-slate-100 text-slate-600"
+                }`}>
+                  {percentage > 0 ? `+${percentage}%` : `${percentage}%`}
+                </span>
+              )}
+            </div>
             <div className="mt-2 flex items-center gap-3">
               <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${color}`}>
                 <Icon className="h-5 w-5" />
@@ -330,7 +341,7 @@ export function ManagerCustomerSuccessDashboard({
         <div className="space-y-2.5">
           {scheduleLoadError ? (
             <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">
-              {scheduleLoadError}
+              {scheduleLoadError || "Gagal memuat jadwal mingguan"}
               <button type="button" onClick={() => void refreshSchedule()} className="ml-2 underline">
                 Retry
               </button>
@@ -372,7 +383,7 @@ export function ManagerCustomerSuccessDashboard({
             })
           ) : (
             <div className="rounded-2xl border border-dashed border-slate-300 px-5 py-6 text-sm text-slate-500">
-              No upcoming meetings scheduled this week.
+              Tidak ada jadwal meeting
             </div>
           )}
         </div>
@@ -463,7 +474,7 @@ export function ManagerCustomerSuccessDashboard({
                     onClick={() => void openCustomerDetail(customer.id)}
                     className="text-base text-blue-600 underline underline-offset-2 hover:text-blue-800 sm:text-lg"
                   >
-                    See more...
+                    See more
                   </button>
                 </td>
               </tr>
@@ -482,7 +493,7 @@ export function ManagerCustomerSuccessDashboard({
         ) : customers.length === 0 && !initialDataError ? (
           <div className="border-t border-slate-200 p-8 text-center text-slate-500">
             <FileText className="mx-auto mb-2 h-5 w-5" />
-            {search ? "No customer or transaction found." : "No transaction data available."}
+            {search ? "No customer or PIC found" : "Belum terdapat data transaksi"}
           </div>
         ) : null}
         {isSearching && <p className="sr-only" role="status">Searching customers</p>}
@@ -694,11 +705,19 @@ export function ManagerCustomerSuccessDashboard({
                 </div>
               </>
             )}
-            <div className="mt-7 flex justify-end">
+            <div className="mt-7 flex flex-wrap items-center justify-end gap-3">
+              {detailCustomer && (
+                <Link
+                  href={`/dashboard/company-list/${detailCustomer.id}`}
+                  className="inline-flex h-12 items-center gap-2 rounded-lg border border-blue-600 px-6 text-sm font-semibold text-blue-600 hover:bg-blue-50"
+                >
+                  Open External Detail
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={() => setDetailOpen(false)}
-                className="h-14 w-full rounded-lg bg-[#3e6df5] text-lg font-semibold text-white hover:bg-blue-700 sm:w-[300px]"
+                className="h-12 rounded-lg bg-[#3e6df5] px-8 text-base font-semibold text-white hover:bg-blue-700"
               >
                 Close
               </button>
