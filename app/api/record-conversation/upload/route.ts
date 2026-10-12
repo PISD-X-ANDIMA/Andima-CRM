@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: result.error || 'Failed to process file upload',
         },
-        { status: 500 }
+        { status: 400 }
       );
     }
 

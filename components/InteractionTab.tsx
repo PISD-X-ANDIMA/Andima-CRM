@@ -19,6 +19,7 @@ import {
   RecordConversationItem,
   UploadedFileMetadata
 } from '../backend/record_conversation';
+import { MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB } from '@/lib/uploadLimits';
 
 interface AuditLogItem {
   id: string;
@@ -494,6 +495,14 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     const fileList = Array.from(files);
     if (fileList.length === 0) return;
 
+    // Client-side file size validation (SSOT 5 MB)
+    const oversized = fileList.filter(f => f.size > MAX_FILE_SIZE_BYTES);
+    if (oversized.length > 0) {
+      alert(`Ukuran berkas melebihi batas maksimal ${MAX_FILE_SIZE_MB} MB: ${oversized.map(f => f.name).join(', ')}.`);
+      if (detailFileInputRef.current) detailFileInputRef.current.value = '';
+      return;
+    }
+
     for (const file of fileList) {
       try {
         const res = await uploadApiFile(file);
@@ -511,16 +520,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
             }
           ]);
         } else {
-          setEditAttachments(prev => [
-            ...prev,
-            {
-              id: `att-${Date.now()}-${Math.random()}`,
-              name: file.name,
-              size: `${Math.round(file.size / 1024)} KB`,
-              type: isPdf ? 'pdf' : isImg ? 'image' : 'document',
-              url: URL.createObjectURL(file)
-            }
-          ]);
+          alert(res.error || `Gagal mengunggah file "${file.name}".`);
         }
       } catch (e) {
         console.error('Detail file upload error:', e);
@@ -635,6 +635,15 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       return;
     }
 
+    // Client-side file size validation (SSOT 5 MB)
+    const oversizedFiles = fileList.filter(f => f.size > MAX_FILE_SIZE_BYTES);
+    if (oversizedFiles.length > 0) {
+      const names = oversizedFiles.map(f => `"${f.name}" (${(f.size / (1024 * 1024)).toFixed(1)} MB)`).join(', ');
+      alert(`Ukuran berkas melebihi batas maksimal ${MAX_FILE_SIZE_MB} MB: ${names}. Harap unggah berkas maksimal ${MAX_FILE_SIZE_MB} MB.`);
+      if (createFileInputRef.current) createFileInputRef.current.value = '';
+      return;
+    }
+
     setIsUploadingFile(true);
     try {
       for (const file of fileList) {
@@ -642,20 +651,12 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         if (res.success && res.data) {
           setNewUploadedFiles(prev => [...prev, res.data!]);
         } else {
-          // Fallback local attachment
-          setNewUploadedFiles(prev => [
-            ...prev,
-            {
-              file_name: file.name,
-              file_type: file.type || (file.name.endsWith('.txt') ? 'text/plain' : 'application/pdf'),
-              file_url: URL.createObjectURL(file),
-              file_size_kb: Math.round(file.size / 1024)
-            }
-          ]);
+          alert(res.error || `Gagal mengunggah berkas "${file.name}".`);
         }
       }
     } catch (err: any) {
       console.error('File upload error:', err);
+      alert(err?.message || 'Terjadi kesalahan saat mengunggah berkas.');
     } finally {
       setIsUploadingFile(false);
       if (createFileInputRef.current) createFileInputRef.current.value = '';
@@ -1437,7 +1438,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                       ref={detailFileInputRef}
                       type="file"
                       multiple
-                      accept=".txt,.pdf,.doc,.docx,.png,.jpg,.jpeg"
                       onChange={(e) => handleDetailFileUpload(e.target.files)}
                       className="hidden"
                     />
@@ -1751,14 +1751,13 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     Drag and drop your file here, or <span className="text-[#2563eb] dark:text-blue-400 font-semibold underline">Browse files</span>
                   </p>
                   <div className="mt-2 px-2.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[10px] text-slate-400 dark:text-slate-400 font-medium">
-                    Max file size: 15MB • UTF-8 format supported
+                    Max 5MB, semua format
                   </div>
                 </div>
                 <input
                   ref={createFileInputRef}
                   type="file"
                   multiple
-                  accept=".txt,.pdf,.doc,.docx,.png,.jpg,.jpeg"
                   onChange={(e) => handleCreateFileUpload(e.target.files)}
                   className="hidden"
                 />

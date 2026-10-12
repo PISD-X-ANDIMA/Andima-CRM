@@ -1,4 +1,7 @@
 import { supabase } from './supabaseClient';
+import { MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB } from '@/lib/uploadLimits';
+
+export { MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB };
 
 export interface UploadedFileMetadata {
   file_name: string;
@@ -8,37 +11,15 @@ export interface UploadedFileMetadata {
 }
 
 const BUCKET_NAME = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || 'a2-record-documents';
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB per FR-02.2
-
-const ALLOWED_EXTENSIONS = ['pdf', 'docx', 'jpg', 'jpeg', 'png', 'txt'];
-const ALLOWED_MIME_TYPES = [
-  'application/pdf',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'text/plain',
-];
 
 /**
- * Validasi ekstensi dan batas ukuran file 10 MB
+ * Validasi batas ukuran file 5 MB (semua format berkas diterima)
  */
 export function validateFile(file: File): { valid: boolean; error?: string } {
   if (file.size > MAX_FILE_SIZE_BYTES) {
     return {
       valid: false,
-      error: `Ukuran file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimal 10 MB.`,
-    };
-  }
-
-  const ext = file.name.split('.').pop()?.toLowerCase() || '';
-  const isExtAllowed = ALLOWED_EXTENSIONS.includes(ext);
-  const isMimeAllowed = !file.type || ALLOWED_MIME_TYPES.includes(file.type);
-
-  if (!isExtAllowed && !isMimeAllowed) {
-    return {
-      valid: false,
-      error: `Format file "${file.name}" tidak didukung. Harap unggah berkas PDF, DOCX, JPG, PNG, atau TXT.`,
+      error: `Ukuran file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimal ${MAX_FILE_SIZE_MB} MB.`,
     };
   }
 
@@ -59,7 +40,7 @@ export async function uploadConversationFile(file: File): Promise<{
       return { success: false, error: validation.error };
     }
 
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'bin';
+    const ext = (file.name.split('.').pop()?.toLowerCase() || 'bin').slice(0, 10);
     const fileSizeKb = Math.round(file.size / 1024) || 1;
     const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const filePath = `conversations/${Date.now()}_${sanitizedFileName}`;
@@ -77,6 +58,13 @@ export async function uploadConversationFile(file: File): Promise<{
 
     if (uploadError) {
       console.error('Supabase storage upload error:', uploadError);
+      const errMsg = uploadError.message || '';
+      if (/mime\s*type|not\s*supported/i.test(errMsg)) {
+        return {
+          success: false,
+          error: `Format berkas "${file.name}" belum didukung penyimpanan. Hubungi admin untuk menambahkan format ini.`,
+        };
+      }
       return { success: false, error: uploadError.message };
     }
 
