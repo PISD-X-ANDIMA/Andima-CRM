@@ -75,14 +75,14 @@ export default function RegisterPage() {
     async function fetchOptions() {
       try {
         const [posRes, deptRes] = await Promise.all([
-          supabase.from('d3_positions').select('id, title, name'),
+          supabase.from('d3_positions').select('id, title'),
           supabase.from('d3_departments').select('id, name')
         ]);
 
         if (posRes.data && posRes.data.length > 0) {
           setPositions(posRes.data.map((p: any) => ({
             id: p.id,
-            name: p.title || p.name || 'Unknown Position'
+            name: p.title || 'Unknown Position'
           })));
         }
 

@@ -12,8 +12,10 @@ export async function GET(request: NextRequest) {
       return createErrorResponse("STAT_001", "Dashboard statistics are temporarily unavailable", undefined, 503);
     }
     return createSuccessResponse({
+      total_customer: stats.totalCustomers,
       total_customers: stats.totalCustomers,
       customer_percentage: stats.customerPercentage ?? 0,
+      upcoming_meeting: stats.upcomingMeetings,
       upcoming_meetings: stats.upcomingMeetings,
       meeting_percentage: stats.meetingPercentage ?? 0,
       task_count: stats.tasks,

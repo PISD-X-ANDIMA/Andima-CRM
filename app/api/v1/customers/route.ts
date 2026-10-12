@@ -42,6 +42,9 @@ export async function GET(request: NextRequest) {
       | "created_at";
     const sortOrder = (searchParams.get("sortOrder") || "asc") as "asc" | "desc";
 
+    const assignedTo = searchParams.get("assigned_to") || searchParams.get("executiveId") || undefined;
+    const forceAll = searchParams.get("forceAll") === "true";
+
     const result = await getCustomers({
       search,
       page,
@@ -49,6 +52,8 @@ export async function GET(request: NextRequest) {
       sortBy,
       sortOrder,
       requireMeetings: context === "calendar" || context === "weeklySchedule",
+      executiveId: assignedTo,
+      forceAll,
     });
 
     const response = createSuccessResponse(result.customers, {

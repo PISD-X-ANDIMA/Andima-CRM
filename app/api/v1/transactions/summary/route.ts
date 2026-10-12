@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
         executiveId: assignedTo || undefined,
         forceAll: !assignedTo,
       });
-      transactionRows.push(...result.customers.filter((customer) => customer.transactionNo));
+      transactionRows.push(...result.customers);
       totalPages = result.totalPages;
       pageNumber += 1;
     } while (pageNumber <= totalPages);
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     transactionRows.sort(compareLatestTransactions);
 
     if (search && transactionRows.length === 0) {
-      return createErrorResponse("SRCH_001", "No customer or transaction found", undefined, 404);
+      return createErrorResponse("SRCH_001", "No customer or PIC found", undefined, 404);
     }
 
     const offset = (page - 1) * limit;

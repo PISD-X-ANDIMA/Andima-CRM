@@ -8,13 +8,21 @@ export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const format = params.get("format") || "xlsx";
   const search = params.get("search")?.trim() || "";
+  const assignedTo = params.get("assigned_to")?.trim() || undefined;
+  const forceAll = params.get("forceAll") === "true";
   if (!["xlsx", "excel", "pdf"].includes(format.toLowerCase())) return createErrorResponse("EXPORT_001", "format must be xlsx or pdf", undefined, 400);
   try {
     const customers = [] as Awaited<ReturnType<typeof getCustomers>>["customers"];
     let page = 1;
     let totalPages = 1;
     do {
-      const result = await getCustomers({ page, perPage: 100, search });
+      const result = await getCustomers({
+        page,
+        perPage: 100,
+        search,
+        executiveId: assignedTo,
+        forceAll,
+      });
       customers.push(...result.customers);
       totalPages = result.totalPages;
       page += 1;

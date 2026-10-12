@@ -1,4 +1,4 @@
-﻿import { NextRequest } from "next/server";
+import { NextRequest } from "next/server";
 import {
   getMeetingsByCustomerId,
   detectMeetingConflict,
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     const conflict = await detectMeetingConflict(body);
     if (conflict.error) return createErrorResponse("SCH_003", "Could not verify meeting availability", undefined, 503);
-    if (conflict.hasConflict) return createErrorResponse("SCH_CLASH_001", `This time overlaps with a meeting for ${conflict.conflictWith}.`, undefined, 409);
+    if (conflict.hasConflict) return createErrorResponse("MEET_001", `This time overlaps with a meeting for ${conflict.conflictWith}.`, undefined, 409);
 
     const result = await createMeeting(customerId, {
       meeting_day: body.meeting_day,
@@ -190,7 +190,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         representative_name: input.representative_name ?? existing.representative_name,
       }, meetingId);
       if (conflict.error) return createErrorResponse("SCH_003", "Could not verify meeting availability", undefined, 503);
-      if (conflict.hasConflict) return createErrorResponse("SCH_CLASH_001", `This time overlaps with a meeting for ${conflict.conflictWith}.`, undefined, 409);
+      if (conflict.hasConflict) return createErrorResponse("MEET_001", `This time overlaps with a meeting for ${conflict.conflictWith}.`, undefined, 409);
     }
 
     const result = await updateMeeting(customerId, meetingId, input);

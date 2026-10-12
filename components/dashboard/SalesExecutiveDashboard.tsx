@@ -45,7 +45,7 @@ function DetailInfoCard({ title, rows }: { title: string; rows: [string, string 
 
 export function SalesExecutiveDashboard({ initialCustomers, metrics, initialDataError }: Props) {
   const router = useRouter();
-  const initialTransactions = initialCustomers.filter((customer) => Boolean(customer.transactionNo));
+  const initialTransactions = initialCustomers;
   const [customers, setCustomers] = useState(initialTransactions);
   const [weeklyMeetings, setWeeklyMeetings] = useState<WeeklyMeeting[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(true);

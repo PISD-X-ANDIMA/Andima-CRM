@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     const conflict = await detectMeetingConflict(input);
     if (conflict.error) return createErrorResponse("SCH_003", "Could not verify meeting availability", undefined, 503);
-    if (conflict.hasConflict) return createErrorResponse("SCH_CLASH_001", `This time overlaps with a meeting for ${conflict.conflictWith}.`, undefined, 409);
+    if (conflict.hasConflict) return createErrorResponse("MEET_001", `This time overlaps with a meeting for ${conflict.conflictWith}.`, undefined, 409);
 
     const result = await createMeeting(companyId, input);
     if (!result.success) return createErrorResponse("CREATE_001", result.error || "Failed to create the meeting", undefined, 500);

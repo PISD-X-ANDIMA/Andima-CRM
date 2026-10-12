@@ -48,7 +48,10 @@ export async function GET(request: NextRequest) {
       .is("deleted_at", null)
       .neq("status", "cancelled");
 
-    if (userScope && !userScope.isManager) {
+    const assignedTo = request.nextUrl.searchParams.get("assigned_to");
+    if (assignedTo && assignedTo !== "all") {
+      meetingQuery = meetingQuery.or(`a1_company_list.created_by.eq.${assignedTo},representative_name.ilike.%${assignedTo}%`);
+    } else if (userScope && !userScope.isManager) {
       meetingQuery = meetingQuery.in("a1_company_list.created_by", userScope.identifiers);
     }
 

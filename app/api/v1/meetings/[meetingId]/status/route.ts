@@ -26,3 +26,8 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
   });
   return updateCustomerMeeting(delegatedRequest, { params: Promise.resolve({ customerId: data.company_id }) });
 }
+
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  return PUT(request, context);
+}
+

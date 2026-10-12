@@ -1,13 +1,13 @@
 import { NextRequest } from "next/server";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { getCurrentUserScope } from "@/lib/auth/roles";
+import { getCurrentUserScope, resolveCrmRoleFromPosition } from "@/lib/auth/roles";
 
 export const dynamic = "force-dynamic";
 
 /**
  * GET /api/v1/manager/roles
- * Fetches personnel records (b2_register + d3_positions) and assigned access roles from a1_user_access.
+ * Fetches personnel records directly from b2_register and joins with d3_positions.
  */
 export async function GET(_request: NextRequest) {
   const supabase = await createServerSupabaseClient();
@@ -36,37 +36,19 @@ export async function GET(_request: NextRequest) {
       .from("d3_positions")
       .select("id, code, title");
 
-    const positionMap = new Map<string, { code: string; title: string }>();
+    const positionMap = new Map<string, { id: string; code: string; title: string }>();
     for (const p of positions || []) {
-      positionMap.set(p.id, { code: p.code, title: p.title });
+      positionMap.set(p.id, {
+        id: p.id,
+        code: String(p.code || ""),
+        title: String(p.title || ""),
+      });
     }
 
-    // 3. Fetch explicit roles recorded in a1_user_access
-    const { data: accessList } = await (supabase as any)
-      .from("a1_user_access")
-      .select("id, user_id, crm_role, assigned_by, is_active, notes, updated_at");
-
-    const accessMap = new Map<string, any>();
-    for (const a of accessList || []) {
-      accessMap.set(a.user_id, a);
-    }
-
-    // 4. Combine data
+    // 3. Map personnel directly from b2_register + d3_positions
     const users = (registers || []).map((u: any) => {
       const pos = u.position_id ? positionMap.get(u.position_id) : null;
-      const access = accessMap.get(u.id);
-
-      // Determine effective CRM role
-      let effectiveRole = "sales_executive";
-      if (access?.crm_role) {
-        effectiveRole = access.crm_role;
-      } else if (pos?.code === "COM-CS-MGR" || pos?.title?.toLowerCase().includes("manager of customer success")) {
-        effectiveRole = "manager_customer_success";
-      } else if (pos?.title?.toLowerCase().includes("field agent")) {
-        effectiveRole = "field_agent";
-      } else if (pos?.code === "COM-SLS" || pos?.title?.toLowerCase().includes("sales executive")) {
-        effectiveRole = "sales_executive";
-      }
+      const effectiveRole = resolveCrmRoleFromPosition(pos);
 
       return {
         id: u.id,
@@ -74,13 +56,14 @@ export async function GET(_request: NextRequest) {
         name: u.full_name || "Unnamed User",
         email: u.email,
         phone: u.phone,
+        position_id: u.position_id,
         hrms_position_title: pos?.title || "Staff",
         hrms_position_code: pos?.code || null,
         crm_role: effectiveRole,
-        is_active: access ? access.is_active : (u.is_active ?? true),
-        notes: access?.notes || null,
-        access_id: access?.id || null,
-        updated_at: access?.updated_at || u.created_at,
+        is_active: u.is_active ?? true,
+        notes: null,
+        access_id: u.id,
+        updated_at: u.created_at,
       };
     });
 
@@ -93,7 +76,7 @@ export async function GET(_request: NextRequest) {
 
 /**
  * POST /api/v1/manager/roles
- * Saves or updates user role permissions in a1_user_access.
+ * Updates user position in b2_register linked to d3_positions.
  */
 export async function POST(request: NextRequest) {
   const supabase = await createServerSupabaseClient();
@@ -110,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { user_id, crm_role, is_active, notes } = body;
+    const { user_id, crm_role, is_active } = body;
 
     if (!user_id || !crm_role) {
       return createErrorResponse("VALIDATION_001", "user_id and crm_role are required.", undefined, 400);
@@ -121,23 +104,50 @@ export async function POST(request: NextRequest) {
       return createErrorResponse("VALIDATION_002", "Invalid role specified.", undefined, 400);
     }
 
-    // Upsert into a1_user_access
+    // Find position in d3_positions corresponding to selected role
+    const { data: positions } = await (supabase as any)
+      .from("d3_positions")
+      .select("id, code, title");
+
+    let targetPositionId: string | null = null;
+    if (Array.isArray(positions)) {
+      const match = positions.find((p: any) => {
+        const code = String(p.code || "").toLowerCase();
+        const title = String(p.title || "").toLowerCase();
+        if (crm_role === "manager_customer_success") {
+          return code === "com-cs-mgr" || title.includes("manager of customer success") || title.includes("customer success manager");
+        }
+        if (crm_role === "sales_executive") {
+          return code === "com-sls" || code.startsWith("sls") || title.includes("sales executive") || title.includes("sales");
+        }
+        if (crm_role === "field_agent") {
+          return code === "com-fa" || title.includes("field agent");
+        }
+        return false;
+      });
+
+      if (match) {
+        targetPositionId = match.id;
+      }
+    }
+
+    const updatePayload: Record<string, any> = {
+      is_active: is_active ?? true,
+    };
+    if (targetPositionId) {
+      updatePayload.position_id = targetPositionId;
+    }
+
     const { data, error } = await (supabase as any)
-      .from("a1_user_access")
-      .upsert({
-        user_id,
-        crm_role,
-        is_active: is_active ?? true,
-        notes: notes || null,
-        assigned_by: userScope.user.id,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "user_id" })
+      .from("b2_register")
+      .update(updatePayload)
+      .eq("id", user_id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
 
-    return createSuccessResponse(data);
+    return createSuccessResponse(data || { user_id, crm_role, updated: true });
   } catch (error: any) {
     console.error("[POST /api/v1/manager/roles]", error);
     return createErrorResponse("SAVE_001", error.message || "Failed to update user role", undefined, 500);

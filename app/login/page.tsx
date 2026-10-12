@@ -155,30 +155,63 @@ export default function LoginPage() {
       let displayName = authData?.user?.user_metadata?.full_name || email.split('@')[0];
       let displayRole = 'CRM Staff';
       let positionName = '';
+      let targetDashboard = '/dashboard';
 
       try {
+        let profile: any = null;
         if (authData?.user?.id) {
-          const { data: profile } = await supabase
+          const { data: profileById } = await supabase
             .from('b2_register')
-            .select('full_name, employment_status, position_id, departement_id')
+            .select('id, full_name, employment_status, position_id, departement_id, email')
             .eq('id', authData.user.id)
             .maybeSingle();
+          profile = profileById;
+        }
 
-          if (profile) {
-            if (profile.full_name) {
-              displayName = profile.full_name;
-            }
+        const normalizedEmail = email.toLowerCase().trim();
+        if (!profile && normalizedEmail) {
+          const { data: profileByEmail } = await supabase
+            .from('b2_register')
+            .select('id, full_name, employment_status, position_id, departement_id, email')
+            .ilike('email', normalizedEmail)
+            .maybeSingle();
+          profile = profileByEmail;
+        }
 
-            // Fetch nama posisi dari d3_positions
-            if (profile.position_id) {
-              const { data: posData } = await supabase
-                .from('d3_positions')
-                .select('title, name')
-                .eq('id', profile.position_id)
-                .maybeSingle();
+        if (profile) {
+          if (profile.full_name) {
+            displayName = profile.full_name;
+          }
 
-              if (posData) {
-                positionName = posData.title || posData.name || '';
+          // Fetch nama posisi dari d3_positions
+          if (profile.position_id) {
+            const { data: posData } = await supabase
+              .from('d3_positions')
+              .select('code, title')
+              .eq('id', profile.position_id)
+              .maybeSingle();
+
+            if (posData) {
+              positionName = posData.title || '';
+              const code = String(posData.code || '').toLowerCase();
+              const title = String(posData.title || '').toLowerCase();
+              if (
+                code === 'com-cs-mgr' ||
+                title.includes('manager of customer success') ||
+                title.includes('customer success manager') ||
+                title.includes('cs manager')
+              ) {
+                displayRole = 'Manager of Customer Success';
+                targetDashboard = '/dashboard/manager-customer-success';
+              } else if (
+                code === 'com-sls' ||
+                code.startsWith('sls') ||
+                title.includes('sales executive') ||
+                title.includes('sales')
+              ) {
+                displayRole = 'Sales Executive';
+                targetDashboard = '/dashboard/sales-executive';
+              } else {
                 displayRole = positionName || displayRole;
               }
             }
@@ -201,7 +234,9 @@ export default function LoginPage() {
       }
 
       setSuccessMessage(`Login successful. Welcome, ${displayName}. Redirecting to the dashboard...`);
-      window.setTimeout(() => { router.replace('/dashboard'); }, 1200);
+      window.setTimeout(() => {
+        window.location.href = targetDashboard;
+      }, 1000);
 
     } catch {
       setErrorMessage('Unable to reach the login server. Please try again.');

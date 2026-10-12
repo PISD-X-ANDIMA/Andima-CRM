@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNo
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react";
 import type { ApiResponse, CustomerListItem, MeetingDay, ScheduleType } from "@/types/customer";
+import { ManagerGlobalFilterBar } from "@/components/dashboard/ManagerGlobalFilterBar";
+import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
 
 const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const hours = Array.from({ length: 9 }, (_, index) => 8 + index);
@@ -49,6 +51,8 @@ function newForm(date: string, startTime: string, customer?: CustomerListItem, r
 
 export default function MeetingSchedulePage() {
   const router = useRouter();
+  const { selectedExecutive } = useManagerFilter();
+  const [isManager, setIsManager] = useState(false);
   const [month, setMonth] = useState(() => new Date());
   const [selected, setSelected] = useState(() => jakartaDateKey());
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
@@ -66,10 +70,29 @@ export default function MeetingSchedulePage() {
   const [calendarEvents, setCalendarEvents] = useState<{ date: string; status: string }[]>([]);
   const [slotRefresh, setSlotRefresh] = useState(0);
 
+  useEffect(() => {
+    let active = true;
+    fetch("/api/v1/navigation/sidebar", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((json) => {
+        if (active && json?.success && json.data?.isManager) {
+          setIsManager(true);
+        }
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
       const params = new URLSearchParams({ perPage: "100", page: "1", context: "calendar" });
+      if (isManager) {
+        params.set("forceAll", "true");
+        if (selectedExecutive !== "all") {
+          params.set("assigned_to", selectedExecutive);
+        }
+      }
       const response = await fetch(`/api/v1/customers?${params}`, { cache: "no-store" });
       const result: ApiResponse<CustomerListItem[]> = await response.json();
       if (!response.ok || !result.success) throw new Error(result.success ? "Failed to load the schedule." : result.message);
@@ -84,13 +107,18 @@ export default function MeetingSchedulePage() {
       setCustomers(allCustomers);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Failed to load the schedule."); }
     finally { setLoading(false); }
-  }, [slotRefresh]);
+  }, [slotRefresh, isManager, selectedExecutive]);
   useEffect(() => { void load(); }, [load]);
 
   useEffect(() => {
     let active = true;
     setSlotError("");
-    fetch(`/api/v1/meetings/slots?date=${encodeURIComponent(selected)}`, { cache: "no-store" })
+    const slotUrl = new URL(`/api/v1/meetings/slots`, window.location.origin);
+    slotUrl.searchParams.set("date", selected);
+    if (isManager && selectedExecutive !== "all") {
+      slotUrl.searchParams.set("assigned_to", selectedExecutive);
+    }
+    fetch(slotUrl.toString(), { cache: "no-store" })
       .then(async (response) => {
         const result: ApiResponse<{ date: string; slots: { status: string; meeting: { id: string; company_id: string; company_name: string | null; start_time: string; end_time: string; status: string } | null }[] }> = await response.json();
         if (!response.ok || !result.success) throw new Error(result.success ? "Could not load meeting slots." : result.message);
@@ -98,12 +126,20 @@ export default function MeetingSchedulePage() {
       })
       .catch((cause) => { if (active) { setSlotError(cause instanceof Error ? cause.message : "Could not load meeting slots."); setSelectedDaySlots((current) => ({ ...current, [selected]: [] })); } });
     return () => { active = false; };
-  }, [selected, slotRefresh]);
+  }, [selected, slotRefresh, isManager, selectedExecutive]);
 
   useEffect(() => {
     let active = true;
     const monthKey = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}`;
-    fetch(`/api/v1/meetings/calendar?month=${monthKey}`, { cache: "no-store" })
+    const calUrl = new URL(`/api/v1/meetings/calendar`, window.location.origin);
+    calUrl.searchParams.set("month", monthKey);
+    if (isManager) {
+      calUrl.searchParams.set("forceAll", "true");
+      if (selectedExecutive !== "all") {
+        calUrl.searchParams.set("assigned_to", selectedExecutive);
+      }
+    }
+    fetch(calUrl.toString(), { cache: "no-store" })
       .then(async (response) => {
         const result: ApiResponse<{ meetings: { date: string; status: string }[] }> = await response.json();
         if (!response.ok || !result.success) throw new Error(result.success ? "Could not load the meeting calendar." : result.message);
@@ -111,7 +147,7 @@ export default function MeetingSchedulePage() {
       })
       .catch(() => { if (active) setCalendarEvents([]); });
     return () => { active = false; };
-  }, [month, slotRefresh]);
+  }, [month, slotRefresh, isManager, selectedExecutive]);
 
   const calendarDays = useMemo(() => {
     const start = new Date(month.getFullYear(), month.getMonth(), 1);
@@ -256,7 +292,13 @@ export default function MeetingSchedulePage() {
   const selectedDateIsPast = selected < jakartaDateKey();
   const isSelectedDateSlotPast = (hour: number) => selectedDateIsPast || (selected === jakartaDateKey() && hour * 60 <= jakartaMinutes());
 
-  return <div className="space-y-8">
+  return <div className="space-y-6">
+    {isManager && <ManagerGlobalFilterBar />}
+    {isManager && (
+      <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 text-xs font-medium text-amber-900 leading-relaxed shadow-2xs">
+        Manager sees meetings of the selected Sales Executive plus his or her own. Add, edit, delete, and status change are only for the Manager&apos;s own meetings. A time slot is blocked only by the Manager&apos;s own meetings.
+      </div>
+    )}
     <header className="flex flex-wrap items-end justify-between gap-5"><div><h1 className="text-3xl font-bold tracking-tight text-black">{formatDate(selectedDate)}</h1><p className="mt-1 text-lg text-slate-500">Meeting schedule and availability for this date</p></div><button type="button" disabled={selectedDateIsPast || selectableSlots.length === 0} onClick={() => beginAdd(selectableSlots[0]?.start || "09:00")} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-lg font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"><Plus className="h-5 w-5" />Add Meeting</button></header>
     <div className="grid items-start gap-8 lg:grid-cols-[minmax(350px,0.76fr)_minmax(500px,1.24fr)]">
       <section className="rounded-2xl border border-slate-200 bg-white p-7"><div className="mb-7 flex items-center justify-between"><button aria-label="Previous month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="rounded p-2 text-slate-400 hover:bg-slate-100"><ChevronLeft className="h-7 w-7" /></button><h2 className="text-2xl font-semibold text-slate-950">{month.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h2><button aria-label="Next month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="rounded p-2 text-slate-400 hover:bg-slate-100"><ChevronRight className="h-7 w-7" /></button></div>

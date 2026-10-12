@@ -14,8 +14,19 @@ const dayIndex: Record<MeetingDay, number> = { sunday: 0, monday: 1, tuesday: 2,
 
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
-  const startDate = params.get("start_date") || "";
-  const endDate = params.get("end_date") || "";
+  let startDate = params.get("start_date") || "";
+  let endDate = params.get("end_date") || "";
+
+  if (!startDate && !endDate) {
+    const now = new Date();
+    const day = now.getUTCDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + diffToMonday));
+    const sunday = new Date(Date.UTC(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate() + 6));
+    startDate = monday.toISOString().slice(0, 10);
+    endDate = sunday.toISOString().slice(0, 10);
+  }
+
   const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
   if (!isDate(startDate) || !isDate(endDate) || endDate < startDate) {
     return createErrorResponse("SCH_001", "start_date and end_date must be valid YYYY-MM-DD dates", undefined, 400);
@@ -47,9 +58,13 @@ export async function GET(request: NextRequest) {
         }
       }
       return dates.map((date) => ({
-        company_id: customer.id,
-        company_name: customer.companyName,
+        id: meeting.id,
         meeting_id: meeting.id,
+        customer_id: customer.id,
+        company_id: customer.id,
+        customer_name: customer.companyName,
+        company_name: customer.companyName,
+        meeting_date: date,
         date,
         start_time: meeting.startTime,
         end_time: meeting.endTime,

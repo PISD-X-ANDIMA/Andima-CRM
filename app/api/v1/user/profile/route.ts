@@ -12,11 +12,17 @@ export async function GET(request: NextRequest) {
   let profile: any = null;
   let role = String(user.app_metadata?.role || user.user_metadata?.role || "").trim();
   try {
-    const { data } = await (supabase as any).from("b2_register").select("id, full_name, position_id, departement_id").eq("id", user.id).maybeSingle();
+    let { data } = await (supabase as any).from("b2_register").select("id, full_name, position_id, departement_id").eq("id", user.id).maybeSingle();
+    if (!data && user.email) {
+      const { data: byEmail } = await (supabase as any).from("b2_register").select("id, full_name, position_id, departement_id").ilike("email", user.email.trim()).maybeSingle();
+      data = byEmail;
+    }
     profile = data;
-    if (!role && profile?.position_id) {
-      const { data: position } = await (supabase as any).from("d3_positions").select("title, name").eq("id", profile.position_id).maybeSingle();
-      role = String(position?.title || position?.name || "").trim();
+    if (profile?.position_id) {
+      const { data: position } = await (supabase as any).from("d3_positions").select("code, title").eq("id", profile.position_id).maybeSingle();
+      if (position?.title) {
+        role = String(position.title).trim();
+      }
     }
   } catch {
     // Auth metadata still identifies the authenticated user if HR profile tables are unavailable.

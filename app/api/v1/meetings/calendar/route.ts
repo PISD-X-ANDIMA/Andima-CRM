@@ -7,6 +7,8 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   const month = request.nextUrl.searchParams.get("month") || "";
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return createErrorResponse("CAL_001", "month must use YYYY-MM format", undefined, 400);
+  const assignedTo = request.nextUrl.searchParams.get("assigned_to") || undefined;
+  const forceAll = request.nextUrl.searchParams.get("forceAll") === "true";
   try {
     const meetings = [] as { company_id: string; company_name: string; meeting_id: string; date: string; day: string; start_time: string; end_time: string; status: string }[];
     const firstDay = new Date(`${month}-01T00:00:00Z`);
@@ -14,7 +16,13 @@ export async function GET(request: NextRequest) {
     let page = 1;
     let totalPages = 1;
     do {
-      const result = await getCustomers({ page, perPage: 100, requireMeetings: true });
+      const result = await getCustomers({
+        page,
+        perPage: 100,
+        requireMeetings: true,
+        executiveId: assignedTo && assignedTo !== "all" ? assignedTo : undefined,
+        forceAll,
+      });
       for (const customer of result.customers) {
         for (const meeting of customer.meetings || []) {
           if (meeting.status === "cancelled") continue;

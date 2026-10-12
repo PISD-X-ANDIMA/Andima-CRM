@@ -51,6 +51,6 @@ Halaman-halaman berikut telah disiapkan oleh Squad A1 dalam bentuk *clean templa
 > 2. `components/dashboard/ManagerCustomerSuccessDashboard.tsx`
 > 3. `app/api/v1/manager/` (API role management & endpoint manager)
 > 4. `lib/auth/roles.ts`
-> 5. Tabel database `a1_user_access`
+> 5. Relasi akun kepegawaian `b2_register` dan `d3_positions` (tabel `a1_user_access` telah dihapus)
 
 Pemisahan fisik file ini sengaja dilakukan agar ketika Squad A2 memasukkan integrasi mereka ke Sales Executive, Squad A1 dapat melakukan `git pull` tanpa khawatir logika Manager Customer Success tertimpa atau terjadi konflik (*merge conflict*).

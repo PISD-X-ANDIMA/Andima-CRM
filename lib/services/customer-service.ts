@@ -181,8 +181,8 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
       companyName: item.company_name,
       customerCode: item.customer_code,
       address: item.address,
-      transactionNo: worksheetByTransaction.get(item.customer_code || "")?.transactionNo || null,
-      jobNumber: worksheetByTransaction.get(item.customer_code || "")?.jobNumber || null,
+      transactionNo: worksheetByTransaction.get(item.customer_code || "")?.transactionNo || item.customer_code || null,
+      jobNumber: worksheetByTransaction.get(item.customer_code || "")?.jobNumber || item.job_number || null,
       createdBy: item.created_by,
       createdDate: item.created_at,
       primaryPic: item.name ? {
@@ -338,8 +338,8 @@ export async function getCustomerById(
         .eq("transaction_no", data.customer_code)
         .limit(1)
         .maybeSingle();
-      transactionNo = worksheet?.transaction_no || null;
-      worksheetJobNumber = worksheet?.job_no || null;
+      transactionNo = worksheet?.transaction_no || data.customer_code || null;
+      worksheetJobNumber = worksheet?.job_no || data.job_number || null;
     }
 
     const meetings = (meetingRows || []).map((meeting: any) => ({

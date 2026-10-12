@@ -61,8 +61,8 @@
 - Penanganan sesi login saat memuat Company List dan Meeting Schedule.
 - Penambahan menu Hak Akses Field Agent pada sidebar untuk kesiapan integrasi modul Squad A2, serta penghapusan entri Field Agent kosong.
 - Penerapan isolasi data (Data Scoping) berbasis Sales Executive pada Company List, kartu KPI Dashboard, Schedule This Week, dan slot Meeting Schedule.
-- Penambahan skema tabel `a1_user_access` untuk hak akses dan role CRM.
+- Penentuan hak akses dan role CRM langsung dari integrasi akun kepegawaian `b2_register` yang terhubung ke tabel `d3_positions`.
 - Penambahan halaman dan komponen Executive Oversight khusus Manager of Customer Success.
 - Penambahan halaman Kelola Role Tim (`/dashboard/manager-customer-success/role-management`) untuk memberikan wewenang role Sales Executive dan Field Agent.
-- Penambahan endpoint API kelola role (`/api/v1/manager/roles`) yang terhubung langsung ke `b2_register`, `d3_positions`, dan `a1_user_access`.
+- Penambahan endpoint API kelola role (`/api/v1/manager/roles`) yang terhubung langsung ke `b2_register` dan `d3_positions`.
 - Penerapan pengalihan login otomatis dan menu sidebar dinamis sesuai role pengguna (`sales_executive` vs `manager_customer_success`).
