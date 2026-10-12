@@ -187,6 +187,17 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Helper to count words for 200-word limit
+  const countWords = (text: string): number => {
+    return text.trim() ? text.trim().split(/\s+/).filter(Boolean).length : 0;
+  };
+
+  // Helper to clean and format job number without duplicate #
+  const cleanJobNumber = (raw: string): string => {
+    const stripped = (raw || '').replace(/#+/g, '').trim();
+    return stripped ? `#${stripped}` : '#AENAT/2609/0308';
+  };
+
   // New Comment Form State in Detail Modal
   const [newComment, setNewComment] = useState('');
 
@@ -194,7 +205,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
   const [newJobNumber, setNewJobNumber] = useState('#AENAT/2609/0308');
   const [newCustomer, setNewCustomer] = useState('');
   const [newCategory, setNewCategory] = useState('Selisih Koli');
-  const [newPriority, setNewPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
+  const [newPriority, setNewPriority] = useState<string>('Normal');
   const [newDescription, setNewDescription] = useState('');
 
   const showToast = (msg: string) => {
@@ -294,6 +305,10 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
 
   // Handle status update
   const handleUpdateStatus = async (ticketId: string, newStatus: 'Open' | 'Inprogress' | 'Resolved') => {
+    if (selectedTicket?.status === 'Resolved') {
+      showToast('Tiket sudah berstatus Resolved dan tidak dapat diedit lagi.');
+      return;
+    }
     setIsUpdating(true);
 
     const now = new Date();
@@ -373,6 +388,10 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
   // Handle create new ticket
   const handleCreateTicket = (e: React.FormEvent) => {
     e.preventDefault();
+    if (countWords(newDescription) > 200) {
+      showToast('Deskripsi kendala melebihi batas maksimal 200 kata.');
+      return;
+    }
     const now = new Date();
     const dateStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
     const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
@@ -380,7 +399,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
     const newTicket: NeedBackupTicket = {
       id: `bck-${Date.now()}`,
       ticket_id: 'BCK-2026-001',
-      job_number: newJobNumber.startsWith('#') ? newJobNumber : `#${newJobNumber}`,
+      job_number: cleanJobNumber(newJobNumber),
       customer_name: newCustomer || 'PT. Sinar Baja Nusantara',
       category: newCategory,
       priority: newPriority,
@@ -388,7 +407,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
       time: timeStr,
       status: 'Open',
       connected_job: 'DSVEXP/2605/2552',
-      sla_description: newPriority === 'High' ? 'SLA Tindakan Segera (< 30 Menit)' : 'SLA Respon < 4 Jam',
+      sla_description: newPriority === 'Urgent' || newPriority === 'High' ? 'SLA Tindakan Segera (< 30 Menit)' : 'SLA Respon < 4 Jam',
       description: newDescription || 'Permohonan bantuan operasional dari agen lapangan.',
       requested_by: 'Adelia (Sales Executive)',
       created_at: now.toISOString(),
@@ -411,7 +430,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
   };
 
   return (
-    <div className="w-full max-w-[1280px] mx-auto pb-16 font-sans">
+    <div className="w-full h-full min-h-0 flex flex-col overflow-hidden font-sans">
       {/* Toast Notification */}
       {toastMessage && (
         <div
@@ -423,147 +442,150 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
         </div>
       )}
 
-      {/* PAGE HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl sm:text-[26px] font-bold text-slate-900 dark:text-white tracking-tight">
-            Need Backup Monitoring
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-400 mt-1 font-normal">
-            Pantau dan kelola tiket eskalasi bantuan operasional untuk transaksi terkendala.
-          </p>
-        </div>
-
-        {/* Action Controls */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-          >
-            <Plus size={14} />
-            <span>Buat Tiket Baru</span>
-          </button>
-          <button
-            onClick={loadTickets}
-            title="Refresh Data"
-            className="p-2 bg-white hover:bg-slate-50 text-slate-500 border border-slate-200/80 rounded-xl shadow-2xs transition-colors cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800"
-          >
-            <RefreshCw size={15} />
-          </button>
-        </div>
-      </div>
-
-      {/* 4 SUMMARY METRIC CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-6">
-        {/* Card 1: Total Tiket */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-5 flex items-start justify-between dark:bg-[#0f172a] dark:border-slate-800">
+      {/* TOP SECTION: HEADER, METRIC CARDS, SEARCH BAR (SHRINK-0) */}
+      <div className="shrink-0">
+        {/* PAGE HEADER */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2.5">
           <div>
-            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-400 tracking-tight block">
-              Total Tiket
-            </span>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1.5 tracking-tight">
-              {totalCount} Tiket
-            </div>
-            <div className="text-[11px] font-medium text-blue-600 dark:text-blue-400 mt-3 flex items-center gap-1">
-              <span>→ Semua kanal aktif</span>
-            </div>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+              Need Backup Monitoring
+            </h1>
+            <p className="text-xs text-slate-400 dark:text-slate-400 font-normal">
+              Pantau dan kelola tiket eskalasi bantuan operasional untuk transaksi terkendala.
+            </p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-50/90 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
-            <FileText size={18} />
-          </div>
-        </div>
 
-        {/* Card 2: Menunggu Respons */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-5 flex items-start justify-between dark:bg-[#0f172a] dark:border-slate-800">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-400 tracking-tight block">
-              Menunggu Respons
-            </span>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1.5 tracking-tight">
-              {openCount} Tiket
-            </div>
-            <div className="text-[11px] font-medium text-amber-600 dark:text-amber-400 mt-3 flex items-center gap-1">
-              <span>! Perlu eskalasi segera</span>
-            </div>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-50/90 text-amber-500 dark:bg-amber-950/40 dark:text-amber-400 flex items-center justify-center shrink-0">
-            <Hourglass size={18} />
-          </div>
-        </div>
-
-        {/* Card 3: Dalam Penanganan */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-5 flex items-start justify-between dark:bg-[#0f172a] dark:border-slate-800">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-400 tracking-tight block">
-              Dalam Penanganan
-            </span>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1.5 tracking-tight">
-              {inprogressCount} Tiket
-            </div>
-            <div className="text-[11px] font-medium text-blue-600 dark:text-blue-400 mt-3 flex items-center gap-1">
-              <RefreshCw size={11} className="inline mr-0.5" />
-              <span>Tim lapangan bertugas</span>
-            </div>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-50/90 text-blue-500 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
-            <RefreshCw size={18} />
-          </div>
-        </div>
-
-        {/* Card 4: Selesai */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-5 flex items-start justify-between dark:bg-[#0f172a] dark:border-slate-800">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-400 tracking-tight block">
-              Selesai
-            </span>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1.5 tracking-tight">
-              {resolvedCount} Tiket
-            </div>
-            <div className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 mt-3 flex items-center gap-1">
-              <span>✓ Solved &amp; Verifikasi OK</span>
-            </div>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-50/90 text-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-400 flex items-center justify-center shrink-0">
-            <CheckCircle2 size={18} />
-          </div>
-        </div>
-      </div>
-
-      {/* SEARCH BAR */}
-      <div className="mb-5">
-        <div className="relative w-full bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_4px_rgba(0,0,0,0.02)] px-5 py-3.5 flex items-center dark:bg-slate-900 dark:border-slate-800">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            placeholder="Customer/Job Number..."
-            className="w-full bg-transparent text-sm text-slate-700 placeholder:text-slate-400 dark:text-slate-200 dark:placeholder:text-slate-500 font-normal outline-none"
-          />
-          {searchQuery && (
+          {/* Action Controls */}
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                setSearchQuery('');
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+            >
+              <Plus size={14} />
+              <span>Buat Tiket Baru</span>
+            </button>
+            <button
+              onClick={loadTickets}
+              title="Refresh Data"
+              className="p-1.5 bg-white hover:bg-slate-50 text-slate-500 border border-slate-200/80 rounded-xl shadow-2xs transition-colors cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800"
+            >
+              <RefreshCw size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* 4 SUMMARY METRIC CARDS */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 mb-2.5">
+          {/* Card 1: Total Tiket */}
+          <div className="bg-white rounded-xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-3 flex items-start justify-between dark:bg-[#0f172a] dark:border-slate-800">
+            <div>
+              <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 tracking-tight block">
+                Total Tiket
+              </span>
+              <div className="text-xl font-bold text-slate-900 dark:text-white mt-0.5 tracking-tight">
+                {totalCount} Tiket
+              </div>
+              <div className="text-[10px] font-medium text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1">
+                <span>→ Semua kanal aktif</span>
+              </div>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-blue-50/90 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <FileText size={16} />
+            </div>
+          </div>
+
+          {/* Card 2: Menunggu Respons */}
+          <div className="bg-white rounded-xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-3 flex items-start justify-between dark:bg-[#0f172a] dark:border-slate-800">
+            <div>
+              <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 tracking-tight block">
+                Menunggu Respons
+              </span>
+              <div className="text-xl font-bold text-slate-900 dark:text-white mt-0.5 tracking-tight">
+                {openCount} Tiket
+              </div>
+              <div className="text-[10px] font-medium text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+                <span>! Perlu eskalasi segera</span>
+              </div>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-amber-50/90 text-amber-500 dark:bg-amber-950/40 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <Hourglass size={16} />
+            </div>
+          </div>
+
+          {/* Card 3: Dalam Penanganan */}
+          <div className="bg-white rounded-xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-3 flex items-start justify-between dark:bg-[#0f172a] dark:border-slate-800">
+            <div>
+              <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 tracking-tight block">
+                Dalam Penanganan
+              </span>
+              <div className="text-xl font-bold text-slate-900 dark:text-white mt-0.5 tracking-tight">
+                {inprogressCount} Tiket
+              </div>
+              <div className="text-[10px] font-medium text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1">
+                <RefreshCw size={10} className="inline mr-0.5" />
+                <span>Tim lapangan bertugas</span>
+              </div>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-blue-50/90 text-blue-500 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <RefreshCw size={16} />
+            </div>
+          </div>
+
+          {/* Card 4: Selesai */}
+          <div className="bg-white rounded-xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-3 flex items-start justify-between dark:bg-[#0f172a] dark:border-slate-800">
+            <div>
+              <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 tracking-tight block">
+                Selesai
+              </span>
+              <div className="text-xl font-bold text-slate-900 dark:text-white mt-0.5 tracking-tight">
+                {resolvedCount} Tiket
+              </div>
+              <div className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
+                <span>✓ Solved &amp; Verifikasi OK</span>
+              </div>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50/90 text-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <CheckCircle2 size={16} />
+            </div>
+          </div>
+        </div>
+
+        {/* SEARCH BAR */}
+        <div className="mb-2.5">
+          <div className="relative w-full bg-white rounded-xl border border-slate-200/80 shadow-[0_1px_4px_rgba(0,0,0,0.02)] px-4 py-2 flex items-center dark:bg-slate-900 dark:border-slate-800">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => {
+                setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer"
-            >
-              <X size={15} />
-            </button>
-          )}
+              placeholder="Customer/Job Number..."
+              className="w-full bg-transparent text-xs text-slate-700 placeholder:text-slate-400 dark:text-slate-200 dark:placeholder:text-slate-500 font-normal outline-none"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setCurrentPage(1);
+                }}
+                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* MAIN DATA TABLE */}
-      <div className="bg-white rounded-2xl border border-slate-200/70 shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden dark:bg-[#0f172a] dark:border-slate-800">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#f0f4f9] text-slate-800 text-sm font-bold border-b border-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-800">
-                <th className="py-4.5 px-6 text-left pl-8 w-[160px]">Tiket ID</th>
-                <th className="py-4.5 px-6 text-left w-[240px]">Job Number</th>
+      {/* MAIN DATA TABLE (FLEX-1 MIN-H-0 SCROLLABLE) */}
+      <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200/70 shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden dark:bg-[#0f172a] dark:border-slate-800 flex flex-col">
+        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto relative">
+          <table className="w-full text-left border-collapse min-w-[760px]">
+            <thead className="sticky top-0 z-10 bg-[#f0f4f9] dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 shadow-2xs">
+              <tr className="text-slate-800 text-xs font-bold dark:text-slate-200">
+                <th className="py-3 px-5 text-left pl-6 w-[150px]">Tiket ID</th>
+                <th className="py-3 px-5 text-left w-[220px]">Job Number</th>
                 <th className="py-4.5 px-6 text-center w-[180px]">Kategori Kendala</th>
                 <th className="py-4.5 px-6 text-center w-[140px]">Prioritas</th>
                 <th className="py-4.5 px-6 text-center w-[140px]">Tanggal</th>
@@ -590,7 +612,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                     <td className="py-5 px-6 align-middle">
                       <div>
                         <div className="font-bold text-slate-800 dark:text-white text-sm tracking-tight">
-                          {item.job_number}
+                          {cleanJobNumber(item.job_number)}
                         </div>
                         {item.customer_name ? (
                           <div className="text-xs text-slate-400 dark:text-slate-400 mt-0.5 font-normal">
@@ -609,16 +631,22 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
 
                     {/* Prioritas */}
                     <td className="py-5 px-6 text-center align-middle">
+                      {(item.priority === 'Urgent' || item.priority === 'Origin') && (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fef2f2] text-[#b91c1c] border border-[#fecaca] dark:bg-red-950/60 dark:text-red-300 dark:border-red-900/80">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#b91c1c]" />
+                          Urgent
+                        </span>
+                      )}
                       {item.priority === 'High' && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fef2f2] text-[#dc2626] border border-[#fee2e2] dark:bg-red-950/40 dark:text-red-300 dark:border-red-900/60">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#dc2626]" />
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fff1f2] text-[#e11d48] border border-[#ffe4e6] dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/60">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#e11d48]" />
                           High
                         </span>
                       )}
-                      {item.priority === 'Medium' && (
+                      {(item.priority === 'Normal' || item.priority === 'Medium' || item.priority === 'Standard') && (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fffbeb] text-[#d97706] border border-[#fef3c7] dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/60">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#d97706]" />
-                          Medium
+                          Normal
                         </span>
                       )}
                       {item.priority === 'Low' && (
@@ -682,8 +710,8 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
         </div>
       </div>
 
-      {/* PAGINATION */}
-      <div className="flex flex-wrap items-center justify-between gap-4 px-3 pt-3 text-xs text-slate-500 dark:text-slate-400">
+      {/* PAGINATION (SHRINK-0) */}
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 px-1 pt-2 text-xs text-slate-500 dark:text-slate-400">
         <span>Showing {firstRow}-{lastRow} of {totalTickets} tickets</span>
         <nav className="flex items-center gap-1" aria-label="Tickets pages">
           <button
@@ -832,7 +860,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                     {selectedTicket.customer_name || 'PT. Sinar Baja Nusantara'}
                   </h3>
                   <p className="text-xs font-bold text-[#2563eb] dark:text-blue-400 mt-0.5">
-                    {selectedTicket.job_number}
+                    {cleanJobNumber(selectedTicket.job_number)}
                   </p>
                 </div>
 
@@ -947,42 +975,49 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                   <span className="text-[11px] text-slate-400 dark:text-slate-500">Markdown didukung</span>
                 </div>
 
-                <div className="border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-2xs focus-within:border-blue-400 dark:border-slate-700 dark:bg-slate-900 transition-colors">
-                  <textarea
-                    rows={3}
-                    value={newComment}
-                    onChange={e => setNewComment(e.target.value)}
-                    placeholder="Tulis tanggapan / catatan tambahan..."
-                    className="w-full p-3 text-xs text-slate-700 outline-none resize-none placeholder:text-slate-400 dark:text-slate-200 dark:placeholder:text-slate-500 bg-transparent"
-                  />
-                  <div className="px-3.5 py-2 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between dark:bg-slate-900/90 dark:border-slate-800">
-                    <div className="flex items-center gap-3 text-slate-400 dark:text-slate-500">
-                      <button
-                        type="button"
-                        className="hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
-                        title="Lampirkan Dokumen"
-                      >
-                        <Paperclip size={15} />
-                      </button>
-                      <button
-                        type="button"
-                        className="hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
-                        title="Mention Rekan Kerja"
-                      >
-                        <AtSign size={15} />
-                      </button>
-                    </div>
-                    {newComment.trim() && (
-                      <button
-                        type="button"
-                        onClick={() => handleAddComment()}
-                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-2xs transition-colors cursor-pointer"
-                      >
-                        Kirim Tanggapan
-                      </button>
-                    )}
+                {selectedTicket.status === 'Resolved' ? (
+                  <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/90 rounded-2xl text-emerald-800 text-xs font-semibold flex items-center gap-2.5 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300">
+                    <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>Tiket ini telah diselesaikan (Resolved) dan terkunci. Tindak lanjut dan status tidak dapat diedit lagi.</span>
                   </div>
-                </div>
+                ) : (
+                  <div className="border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-2xs focus-within:border-blue-400 dark:border-slate-700 dark:bg-slate-900 transition-colors">
+                    <textarea
+                      rows={3}
+                      value={newComment}
+                      onChange={e => setNewComment(e.target.value)}
+                      placeholder="Tulis tanggapan / catatan tambahan..."
+                      className="w-full p-3 text-xs text-slate-700 outline-none resize-none placeholder:text-slate-400 dark:text-slate-200 dark:placeholder:text-slate-500 bg-transparent"
+                    />
+                    <div className="px-3.5 py-2 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between dark:bg-slate-900/90 dark:border-slate-800">
+                      <div className="flex items-center gap-3 text-slate-400 dark:text-slate-500">
+                        <button
+                          type="button"
+                          className="hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
+                          title="Lampirkan Dokumen"
+                        >
+                          <Paperclip size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          className="hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
+                          title="Mention Rekan Kerja"
+                        >
+                          <AtSign size={15} />
+                        </button>
+                      </div>
+                      {newComment.trim() && (
+                        <button
+                          type="button"
+                          onClick={() => handleAddComment()}
+                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-2xs transition-colors cursor-pointer"
+                        >
+                          Kirim Tanggapan
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* STATUS TRANSITION BUTTONS */}
@@ -990,46 +1025,58 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-2">
                   Ubah Status Tiket:
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    disabled={isUpdating}
-                    onClick={() => handleUpdateStatus(selectedTicket.id, 'Open')}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                      selectedTicket.status === 'Open'
-                        ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
-                        : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50 dark:bg-slate-800 dark:text-amber-300 dark:border-amber-900/60 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-current" />
-                    Open
-                  </button>
+                {selectedTicket.status === 'Resolved' ? (
+                  <div className="py-2.5 px-4 rounded-xl bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800/60 flex items-center justify-between">
+                    <span className="inline-flex items-center gap-2 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                      <CheckCircle2 size={15} className="text-emerald-600 dark:text-emerald-400" />
+                      Status: Resolved (Terkunci)
+                    </span>
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">
+                      Perubahan status dinonaktifkan
+                    </span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      disabled={isUpdating}
+                      onClick={() => handleUpdateStatus(selectedTicket.id, 'Open')}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        selectedTicket.status === 'Open'
+                          ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
+                          : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50 dark:bg-slate-800 dark:text-amber-300 dark:border-amber-900/60 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-current" />
+                      Open
+                    </button>
 
-                  <button
-                    disabled={isUpdating}
-                    onClick={() => handleUpdateStatus(selectedTicket.id, 'Inprogress')}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                      selectedTicket.status === 'Inprogress'
-                        ? 'bg-blue-600 text-white border-blue-700 shadow-sm'
-                        : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50 dark:bg-slate-800 dark:text-blue-300 dark:border-blue-900/60 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <RefreshCw size={12} className={selectedTicket.status === 'Inprogress' ? 'animate-spin' : ''} />
-                    Inprogress
-                  </button>
+                    <button
+                      disabled={isUpdating}
+                      onClick={() => handleUpdateStatus(selectedTicket.id, 'Inprogress')}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        selectedTicket.status === 'Inprogress'
+                          ? 'bg-blue-600 text-white border-blue-700 shadow-sm'
+                          : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50 dark:bg-slate-800 dark:text-blue-300 dark:border-blue-900/60 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <RefreshCw size={12} className={selectedTicket.status === 'Inprogress' ? 'animate-spin' : ''} />
+                      Inprogress
+                    </button>
 
-                  <button
-                    disabled={isUpdating}
-                    onClick={() => handleUpdateStatus(selectedTicket.id, 'Resolved')}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                      selectedTicket.status === 'Resolved'
-                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
-                        : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-slate-800 dark:text-emerald-300 dark:border-emerald-900/60 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <Check size={14} />
-                    Resolved
-                  </button>
-                </div>
+                    <button
+                      disabled={isUpdating}
+                      onClick={() => handleUpdateStatus(selectedTicket.id, 'Resolved')}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        selectedTicket.status === 'Resolved'
+                          ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
+                          : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-slate-800 dark:text-emerald-300 dark:border-emerald-900/60 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <Check size={14} />
+                      Resolved
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1117,6 +1164,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                     <option value="Kerusakan barang" className="dark:bg-slate-900 dark:text-white">Kerusakan barang</option>
                     <option value="Kendala Surat Jalan" className="dark:bg-slate-900 dark:text-white">Kendala Surat Jalan</option>
                     <option value="Dokumen Tertahan" className="dark:bg-slate-900 dark:text-white">Dokumen Tertahan</option>
+                    <option value="Others/Lainnya" className="dark:bg-slate-900 dark:text-white">Others/Lainnya</option>
                   </select>
                 </div>
 
@@ -1126,28 +1174,43 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                   </label>
                   <select
                     value={newPriority}
-                    onChange={e => setNewPriority(e.target.value as any)}
+                    onChange={e => setNewPriority(e.target.value)}
                     className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 dark:bg-slate-900 outline-none focus:border-blue-500 bg-white"
                   >
-                    <option value="High" className="dark:bg-slate-900 dark:text-white">High / Urgent</option>
-                    <option value="Medium" className="dark:bg-slate-900 dark:text-white">Medium / Normal</option>
-                    <option value="Low" className="dark:bg-slate-900 dark:text-white">Low / Standard</option>
+                    <option value="Urgent" className="dark:bg-slate-900 dark:text-white">Urgent</option>
+                    <option value="High" className="dark:bg-slate-900 dark:text-white">High</option>
+                    <option value="Normal" className="dark:bg-slate-900 dark:text-white">Normal</option>
+                    <option value="Low" className="dark:bg-slate-900 dark:text-white">Low</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                  Deskripsi Kendala &amp; Bantuan yang Dibutuhkan *
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Deskripsi Kendala &amp; Bantuan yang Dibutuhkan *
+                  </label>
+                  <span className={`text-[10px] font-bold ${countWords(newDescription) > 200 ? 'text-red-500' : 'text-slate-400 dark:text-slate-500'}`}>
+                    {countWords(newDescription)} / 200 kata
+                  </span>
+                </div>
                 <textarea
                   required
                   rows={3}
                   value={newDescription}
                   onChange={e => setNewDescription(e.target.value)}
-                  placeholder="Jelaskan kendala di lapangan dan bantuan yang dibutuhkan..."
-                  className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-200 dark:bg-slate-900 outline-none focus:border-blue-500 resize-none"
+                  placeholder="Jelaskan kendala di lapangan dan bantuan yang dibutuhkan (maksimal 200 kata)..."
+                  className={`w-full border rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-200 dark:bg-slate-900 outline-none resize-none transition-colors ${
+                    countWords(newDescription) > 200
+                      ? 'border-red-500 focus:border-red-600 bg-red-50/20'
+                      : 'border-slate-200 dark:border-slate-700 focus:border-blue-500'
+                  }`}
                 />
+                {countWords(newDescription) > 200 && (
+                  <p className="text-[11px] text-red-500 font-medium mt-1">
+                    Deskripsi melebihi batas maksimal 200 kata. Harap ringkas deskripsi kendala Anda.
+                  </p>
+                )}
               </div>
 
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">

@@ -258,7 +258,7 @@ export interface NeedBackupTicket {
   job_number: string;
   customer_name?: string;
   category: string;
-  priority: 'High' | 'Medium' | 'Low';
+  priority: 'Urgent' | 'High' | 'Normal' | 'Low' | 'Medium' | 'Origin' | 'Standard' | string;
   date: string;
   time?: string;
   status: 'Open' | 'Inprogress' | 'Resolved';

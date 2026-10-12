@@ -79,6 +79,21 @@ export interface TaskOfFieldAgentProps {
 
 export type MonitoringIssueTabProps = TaskOfFieldAgentProps;
 
+function formatTaskDate(datetimeStr?: string): string {
+  if (!datetimeStr) return '05-03-2026';
+  const trimmed = datetimeStr.trim();
+  if (/^\d{2}-\d{2}-\d{4}$/.test(trimmed)) {
+    return trimmed;
+  }
+  const datePart = trimmed.split(' ')[0].split('T')[0];
+  const parts = datePart.split('-');
+  if (parts.length === 3 && parts[0].length === 4) {
+    const [year, month, day] = parts;
+    return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
+  }
+  return datePart || '05-03-2026';
+}
+
 // Available Field Inspectors
 const AVAILABLE_FIELD_AGENTS = [
   { name: 'Andi Pratama', role: 'Field Inspector', shift: 'Tanjung Priok - S1' },
@@ -163,8 +178,9 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
       'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop'
     ],
     result_docs: [
-      { name: 'Shipping_Manifest_0306.pdf', size: '1.4 MB', url: '#' },
-      { name: 'Damage_Report_Signed.pdf', size: '890 KB', url: '#' }
+      { name: 'Dokumen_Utama_Reimbursement_AENAT.pdf', size: '3.5 KB', url: '/documents/Dokumen_Utama_Reimbursement_AENAT.pdf' },
+      { name: 'Shipping_Manifest_0306.pdf', size: '1.4 MB', url: '/documents/Dokumen_Utama_Reimbursement_AENAT.pdf' },
+      { name: 'Damage_Report_Signed.pdf', size: '890 KB', url: '/documents/Dokumen_Utama_Reimbursement_AENAT.pdf' }
     ],
     handover_datetime: '2026-09-24 10:30',
     shipper: 'PT. DSV Transport Indonesia',
@@ -194,7 +210,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
     status: 'Assigned',
     has_issue: false,
     photo_count: 5,
-    doc_count: 2,
+    doc_count: 3,
     result_photos: [
       'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop',
@@ -203,8 +219,9 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
       'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop'
     ],
     result_docs: [
-      { name: 'Geodis_Delivery_Order.pdf', size: '1.1 MB', url: '#' },
-      { name: 'Packing_List_Verified.pdf', size: '640 KB', url: '#' }
+      { name: 'Dokumen_Utama_Reimbursement_AENAT.pdf', size: '3.5 KB', url: '/documents/Dokumen_Utama_Reimbursement_AENAT.pdf' },
+      { name: 'Geodis_Delivery_Order.pdf', size: '1.1 MB', url: '/documents/Dokumen_Utama_Reimbursement_AENAT.pdf' },
+      { name: 'Packing_List_Verified.pdf', size: '640 KB', url: '/documents/Dokumen_Utama_Reimbursement_AENAT.pdf' }
     ],
     handover_datetime: '2026-03-05 13:30',
     handover_location: 'Cikarang Dry Port Terminal 2, West Java',
@@ -308,8 +325,11 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
 export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps) {
   const [tasks, setTasks] = useState<FieldTaskItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'All' | 'Issue' | 'Complete'>('All');
+  const [periodFilter, setPeriodFilter] = useState<'All Periods' | 'This Day' | 'This Week' | 'This Month' | 'This Year' | 'Custom Date'>('All Periods');
+  const [customDate, setCustomDate] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
-  const tasksPerPage = 5;
+  const tasksPerPage = 4;
 
   // Active User session (fallback to Adelia)
   const activeUserName = currentUser?.name || 'Adelia';
@@ -445,13 +465,24 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
         localStorage.setItem('andima_field_agent_figma_tasks', JSON.stringify(EXACT_FIGMA_TASKS));
       }
     } else {
-      // Ensure existing cached task-2 gets the upgraded issue fields
+      // Ensure existing cached tasks get Dokumen_Utama_Reimbursement_AENAT.pdf and upgraded issue fields
       let hasChange = false;
       stored = stored.map(t => {
+        let updated = { ...t };
+        const hasMainDoc = updated.result_docs?.some(d => d.name === 'Dokumen_Utama_Reimbursement_AENAT.pdf');
+        if (!hasMainDoc) {
+          hasChange = true;
+          updated.result_docs = [
+            { name: 'Dokumen_Utama_Reimbursement_AENAT.pdf', size: '3.5 KB', url: '/documents/Dokumen_Utama_Reimbursement_AENAT.pdf' },
+            ...(updated.result_docs || [])
+          ];
+          updated.doc_count = updated.result_docs.length;
+        }
+
         if (t.id === 'task-2' || t.job_number === '#AENAT/2609/0306') {
           hasChange = true;
-          return {
-            ...t,
+          updated = {
+            ...updated,
             task_id_code: t.task_id_code || 'TSK-2506-1207',
             issue_type: 'Physical Load Difference',
             issue_category: 'Physical Load Difference',
@@ -460,25 +491,36 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             variance_tolerance: '0%',
             issue_reported_at: '24 Sep 2026, 10:30 WIB',
             handover_location: t.handover_location?.includes('MM2100') ? t.handover_location : 'Area Cargo MM2100, Cikarang Barat',
-            issue_files: t.issue_files && t.issue_files.length > 0 ? t.issue_files : [
+            issue_files: [
               {
-                name: 'Foto_Barang_1.jpg',
-                size: '2.4 MB',
-                type: 'JPEG',
-                badge: 'OPS Stamped',
-                url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop'
+                name: 'Dokumen_Utama_Reimbursement_AENAT.pdf',
+                size: '3.5 KB',
+                type: 'PDF',
+                badge: 'Dokumen Utama',
+                url: '/documents/Dokumen_Utama_Reimbursement_AENAT.pdf'
               },
-              {
-                name: 'Foto_Surat_Jalan.jpg',
-                size: '1.8 MB',
-                type: 'JPEG',
-                badge: 'Digital Sign',
-                url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop'
-              }
+              ...(t.issue_files && t.issue_files.length > 0
+                ? t.issue_files.filter(f => f.name !== 'Dokumen_Utama_Reimbursement_AENAT.pdf')
+                : [
+                    {
+                      name: 'Foto_Barang_1.jpg',
+                      size: '2.4 MB',
+                      type: 'JPEG',
+                      badge: 'OPS Stamped',
+                      url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop'
+                    },
+                    {
+                      name: 'Foto_Surat_Jalan.jpg',
+                      size: '1.8 MB',
+                      type: 'JPEG',
+                      badge: 'Digital Sign',
+                      url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop'
+                    }
+                  ])
             ]
           };
         }
-        return t;
+        return updated;
       });
       if (hasChange && typeof window !== 'undefined') {
         localStorage.setItem('andima_field_agent_figma_tasks', JSON.stringify(stored));
@@ -773,15 +815,102 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     showToast(`Assignment transferred to ${targetAgent}!`);
   };
 
+  // Helper function to check date against selected period
+  const checkDateInPeriod = (dateStr: string, period: string, customD: string) => {
+    if (period === 'All Periods') return true;
+    
+    // Parse task date (formats: 'YYYY-MM-DD HH:mm', 'DD-MM-YYYY', 'DD/MM/YYYY', etc.)
+    const rawDatePart = dateStr.split(' ')[0] || '';
+    let taskDate: Date | null = null;
+    
+    if (rawDatePart.includes('-')) {
+      const parts = rawDatePart.split('-');
+      if (parts[0].length === 4) {
+        taskDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      } else if (parts[2].length === 4) {
+        taskDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+      }
+    } else if (rawDatePart.includes('/')) {
+      const parts = rawDatePart.split('/');
+      if (parts[2].length === 4) {
+        taskDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+      }
+    }
+    
+    if (!taskDate || isNaN(taskDate.getTime())) {
+      taskDate = new Date(rawDatePart);
+    }
+    
+    if (!taskDate || isNaN(taskDate.getTime())) return true;
+
+    if (period === 'Custom Date') {
+      if (!customD) return true;
+      const target = new Date(customD);
+      return (
+        taskDate.getFullYear() === target.getFullYear() &&
+        taskDate.getMonth() === target.getMonth() &&
+        taskDate.getDate() === target.getDate()
+      );
+    }
+
+    const now = new Date(); // Mock or current time
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    if (period === 'This Day') {
+      return (
+        taskDate.getFullYear() === startOfToday.getFullYear() &&
+        taskDate.getMonth() === startOfToday.getMonth() &&
+        taskDate.getDate() === startOfToday.getDate()
+      );
+    }
+
+    if (period === 'This Week') {
+      const day = startOfToday.getDay();
+      const diffToMonday = (day === 0 ? -6 : 1) - day;
+      const startOfWeek = new Date(startOfToday);
+      startOfWeek.setDate(startOfToday.getDate() + diffToMonday);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      return taskDate >= startOfWeek && taskDate <= endOfWeek;
+    }
+
+    if (period === 'This Month') {
+      return (
+        taskDate.getFullYear() === now.getFullYear() &&
+        taskDate.getMonth() === now.getMonth()
+      );
+    }
+
+    if (period === 'This Year') {
+      return taskDate.getFullYear() === now.getFullYear();
+    }
+
+    return true;
+  };
+
   // Filter & paginate tasks
   const filteredTasks = tasks.filter(t => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      t.job_number.toLowerCase().includes(q) ||
-      t.customer_name.toLowerCase().includes(q) ||
-      (t.field_agent_name && t.field_agent_name.toLowerCase().includes(q))
-    );
+    // 1. Search Query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchSearch = (
+        t.job_number.toLowerCase().includes(q) ||
+        t.customer_name.toLowerCase().includes(q) ||
+        (t.field_agent_name && t.field_agent_name.toLowerCase().includes(q))
+      );
+      if (!matchSearch) return false;
+    }
+
+    // 2. Status Filter ('Issue' or 'Complete')
+    if (statusFilter === 'Issue' && !t.has_issue) return false;
+    if (statusFilter === 'Complete' && t.status !== 'Completed') return false;
+
+    // 3. Period / Date Filter
+    if (!checkDateInPeriod(t.handover_datetime || '', periodFilter, customDate)) {
+      return false;
+    }
+
+    return true;
   });
 
   const totalTasks = filteredTasks.length;
@@ -794,7 +923,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
   );
 
   return (
-    <div className="w-full pb-20 animate-in fade-in duration-200">
+    <div className="w-full h-full min-h-0 flex flex-col overflow-hidden animate-in fade-in duration-200 font-sans">
       {/* Toast Notification */}
       {toastMessage && (
         <div
@@ -806,64 +935,114 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
         </div>
       )}
 
-      {/* TITLE & SUBTITLE */}
-      <div className="mb-6">
-        <h1 className="text-[28px] font-bold text-[#0f172a] dark:text-white tracking-tight leading-tight">
-          Monitoring Task of Field Agent
-        </h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-normal mt-1">
-          Monitor task progress and review inspection results dispatched from A3.
-        </p>
-      </div>
-
-      {/* 3. SEARCH BAR & CREATE JOB BUTTON */}
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <div className="flex-1">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            placeholder="Search by job number, customer, or field agent..."
-            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-blue-500 shadow-2xs transition-colors"
-          />
+      {/* TOP SECTION (SHRINK-0): TITLE & SEARCH */}
+      <div className="shrink-0">
+        {/* TITLE & SUBTITLE */}
+        <div className="mb-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#0f172a] dark:text-white tracking-tight leading-tight">
+            Monitoring Task of Field Agent
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-normal">
+            Monitor task progress and review inspection results dispatched from A3.
+          </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleOpenCreateModal}
-          className="bg-[#0d6efd] hover:bg-blue-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-xs transition-colors shrink-0 cursor-pointer flex items-center gap-1.5"
-        >
-          <Plus size={14} />
-          <span>Create Job</span>
-        </button>
+        {/* 3. SEARCH BAR & FILTER BUTTONS */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-2.5">
+          <div className="flex-1 min-w-[220px]">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="Search by job number, customer, or field agent..."
+              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-1.5 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-blue-500 shadow-2xs transition-colors"
+            />
+          </div>
+
+          {/* Filter Pills matching exact reference screenshot */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            {/* Status Dropdown */}
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value as 'All' | 'Issue' | 'Complete');
+                  setCurrentPage(1);
+                }}
+                className="appearance-none bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700/80 rounded-xl px-3.5 py-1.5 pr-8 text-xs font-medium text-slate-700 dark:text-slate-200 shadow-2xs outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+              >
+                <option value="All">Status</option>
+                <option value="Issue">Issue</option>
+                <option value="Complete">Complete</option>
+              </select>
+              <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none" />
+            </div>
+
+            {/* Period Dropdown */}
+            <div className="relative">
+              <select
+                value={periodFilter}
+                onChange={(e) => {
+                  setPeriodFilter(e.target.value as any);
+                  setCurrentPage(1);
+                }}
+                className="appearance-none bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700/80 rounded-xl px-3.5 py-1.5 pr-8 text-xs font-medium text-slate-700 dark:text-slate-200 shadow-2xs outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+              >
+                <option value="All Periods">All Periods</option>
+                <option value="This Day">This Day</option>
+                <option value="This Week">This Week</option>
+                <option value="This Month">This Month</option>
+                <option value="This Year">This Year</option>
+                <option value="Custom Date">Pilih Tanggal...</option>
+              </select>
+              <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none" />
+            </div>
+
+            {/* Custom Date Input (Appears when Custom Date is selected) */}
+            {periodFilter === 'Custom Date' && (
+              <div className="relative flex items-center">
+                <input
+                  type="date"
+                  value={customDate}
+                  onChange={(e) => {
+                    setCustomDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700/80 rounded-xl px-3 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 shadow-2xs outline-none cursor-pointer"
+                />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* 4. MAIN DATA TABLE (Exact Figma Layout) */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
-        <table className="w-full border-collapse">
-          {/* Header */}
-          <thead className="bg-[#edf4fb] dark:bg-slate-800/70 border-b border-slate-200/80 dark:border-slate-800">
+      {/* 4. MAIN DATA TABLE (FLEX-1 MIN-H-0 SCROLLABLE) */}
+      <div className="flex-1 min-h-0 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden flex flex-col">
+        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto relative">
+          <table className="w-full border-collapse min-w-[760px]">
+            {/* Header */}
+            <thead className="sticky top-0 z-10 bg-[#edf4fb] dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 shadow-2xs">
             <tr>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center w-[22%]">
+              <th className="py-3.5 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-left w-[20%]">
                 Job Number
               </th>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center w-[18%]">
+              <th className="py-3.5 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-left w-[22%]">
+                Company Name
+              </th>
+              <th className="py-3.5 px-5 text-sm font-bold text-slate-800 dark:text-slate-200 text-center w-[14%]">
+                Date
+              </th>
+              <th className="py-3.5 px-5 text-sm font-bold text-slate-800 dark:text-slate-200 text-center w-[15%]">
+                Status
+              </th>
+              <th className="py-3.5 px-5 text-sm font-bold text-slate-800 dark:text-slate-200 text-center w-[15%]">
                 Field Agent
               </th>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center w-[16%]">
-                Progress Status
-              </th>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center w-[15%]">
-                Issue / Obstacle
-              </th>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center w-[14%]">
+              <th className="py-3.5 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center w-[14%]">
                 Result
-              </th>
-              <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center w-[15%]">
-                Action
               </th>
             </tr>
           </thead>
@@ -900,26 +1079,45 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               paginatedTasks.map((task) => (
                 <tr key={task.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
                   {/* Job Number */}
-                  <td className="py-4.5 px-6 text-center">
-                    <div className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
+                  <td className="py-4 px-6 text-left whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => setDetailModalTask(task)}
+                      className="text-sm font-bold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 leading-snug cursor-pointer text-left transition-colors"
+                      title="Klik untuk melihat detail transaksi"
+                    >
                       {task.job_number}
-                    </div>
-                    <div className="text-xs text-slate-400 dark:text-slate-400 font-normal mt-0.5">
-                      {task.customer_name}
+                    </button>
+                  </td>
+
+                  {/* Company Name */}
+                  <td className="py-4 px-6 text-left">
+                    <div className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">
+                      {task.customer_name || 'PT. YOSSAVA TRANS LOGISTIK'}
                     </div>
                   </td>
 
-                  {/* Field Agent */}
-                  <td className="py-4.5 px-6 text-center text-sm font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap">
-                    {task.field_agent_name || (
-                      <span className="text-slate-400 dark:text-slate-500 font-normal">Not assigned</span>
-                    )}
+                  {/* Date */}
+                  <td className="py-4 px-5 text-center whitespace-nowrap">
+                    <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                      {formatTaskDate(task.handover_datetime)}
+                    </span>
                   </td>
 
-                  {/* Status Progress */}
-                  <td className="py-4.5 px-6 text-center whitespace-nowrap">
+                  {/* Status */}
+                  <td className="py-4 px-5 text-center whitespace-nowrap">
                     <div className="flex flex-col items-center gap-1.5">
-                      {task.status === 'Completed' ? (
+                      {task.has_issue ? (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenIssueModal(task)}
+                          className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold text-[#ef4444] bg-[#fef2f2] border border-[#fecaca] hover:bg-red-100 dark:bg-red-950/40 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/60 transition-colors cursor-pointer"
+                          title="Click to view issue details"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
+                          <span>Issue</span>
+                        </button>
+                      ) : task.status === 'Completed' ? (
                         <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-400">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                           <span>Completed</span>
@@ -941,7 +1139,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                         </span>
                       )}
 
-                      {/* Indikator Progres Tahap: Handover & Dokumen */}
+                      {/* Indikator Progres Tahap */}
                       <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400">
                         <span className={task.handover_done ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-slate-400 dark:text-slate-500"}>
                           {task.handover_done ? "✓ Handover" : "○ Handover"}
@@ -954,90 +1152,58 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     </div>
                   </td>
 
-                  {/* Issue / Obstacle */}
-                  <td className="py-4.5 px-6 text-center whitespace-nowrap">
-                    {task.has_issue ? (
-                      <button
-                        type="button"
-                        onClick={() => handleOpenIssueModal(task)}
-                        className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold text-[#ef4444] bg-[#fef2f2] border border-[#fecaca] hover:bg-red-100 dark:bg-red-950/40 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/60 transition-colors cursor-pointer"
-                        title="Click to view issue details"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
-                        <span>Issue</span>
-                      </button>
+                  {/* Field Agent */}
+                  <td className="py-4 px-5 text-center text-sm font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                    {task.field_agent_name ? (
+                      <div className="inline-flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0 shadow-2xs">
+                          {task.field_agent_name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <span className="font-semibold text-xs text-slate-800 dark:text-slate-200">
+                          {task.field_agent_name}
+                        </span>
+                      </div>
                     ) : (
-                      <span className="text-slate-400 dark:text-slate-500 text-sm font-medium">-</span>
+                      <span className="text-slate-400 dark:text-slate-500 font-normal text-xs">Not assigned</span>
                     )}
                   </td>
 
-                  {/* Result (UC-CRM-A2-001) */}
-                  <td className="py-4.5 px-6 text-center whitespace-nowrap">
-                    {task.photo_count > 0 || task.doc_count > 0 ? (
-                      <button
-                        type="button"
-                        onClick={() => setResultModalTask(task)}
-                        className="inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
-                        title="View photo and document results"
-                      >
+                  {/* Result */}
+                  <td className="py-4 px-6 text-center whitespace-nowrap">
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      {/* Top line: photo & doc icons with counts */}
+                      <div className="inline-flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 font-medium">
                         <span className="flex items-center gap-1">
                           <Camera size={13} className="text-slate-400 dark:text-slate-500" />
-                          <span>{task.photo_count}</span>
+                          <span>{task.photo_count || 4}</span>
                         </span>
                         <span className="flex items-center gap-1">
                           <FileText size={13} className="text-slate-400 dark:text-slate-500" />
-                          <span>{task.doc_count}</span>
+                          <span>{task.doc_count || 2}</span>
                         </span>
-                        <ChevronRight size={13} className="text-slate-400 dark:text-slate-500" />
-                      </button>
-                    ) : (
+                      </div>
+
+                      {/* Bottom line: See more... clickable button */}
                       <button
                         type="button"
                         onClick={() => setResultModalTask(task)}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 dark:text-slate-500 hover:text-[#0d6efd] dark:hover:text-blue-400 transition-colors cursor-pointer"
-                        title="Lihat status pemeriksaan"
+                        className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline cursor-pointer transition-colors"
+                        title="View photo and document results"
                       >
-                        <span>Cek Hasil</span>
-                        <ChevronRight size={12} className="text-slate-400 dark:text-slate-500" />
+                        See more...
                       </button>
-                    )}
-                  </td>
-
-                  {/* Action */}
-                  <td className="py-4.5 px-6 text-center whitespace-nowrap">
-                    {task.status === 'Unassigned' ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedAgent('');
-                          setInstructionNote('');
-                          setSelectedTemplate('Standard Inspection Form');
-                          setAssignModalTask(task);
-                        }}
-                        className="inline-flex items-center justify-center gap-1 px-4 py-1.5 rounded-lg bg-[#0d6efd] hover:bg-blue-700 text-white text-xs font-bold shadow-2xs transition-colors cursor-pointer"
-                      >
-                        + Assign
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setDetailModalTask(task)}
-                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
-                      >
-                        <Eye size={12} className="text-slate-400 dark:text-slate-400" />
-                        <span>Detail</span>
-                      </button>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* 5. PAGINATION (Exact Match with Sales Executive) */}
-      <div className="flex flex-wrap items-center justify-between gap-4 px-3 pt-3 text-xs text-slate-500 dark:text-slate-400">
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 px-2 pt-2 text-xs text-slate-500 dark:text-slate-400">
         <span>Showing {firstRow}-{lastRow} of {totalTasks} tasks</span>
         <nav className="flex items-center gap-1" aria-label="Tasks pages">
           <button
@@ -1600,8 +1766,24 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
         const varianceTolerance = issueModalTask.variance_tolerance || '0%';
 
         const evidenceFiles = issueModalTask.issue_files && issueModalTask.issue_files.length > 0
-          ? issueModalTask.issue_files
+          ? [
+              {
+                name: 'Dokumen_Utama_Reimbursement_AENAT.pdf',
+                size: '3.5 KB',
+                type: 'PDF',
+                badge: 'Dokumen Utama',
+                url: '/documents/Dokumen_Utama_Reimbursement_AENAT.pdf'
+              },
+              ...issueModalTask.issue_files.filter(f => f.name !== 'Dokumen_Utama_Reimbursement_AENAT.pdf')
+            ]
           : [
+              {
+                name: 'Dokumen_Utama_Reimbursement_AENAT.pdf',
+                size: '3.5 KB',
+                type: 'PDF',
+                badge: 'Dokumen Utama',
+                url: '/documents/Dokumen_Utama_Reimbursement_AENAT.pdf'
+              },
               {
                 name: 'Foto_Barang_1.jpg',
                 size: '2.4 MB',
@@ -1803,59 +1985,92 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {evidenceFiles.map((file, idx) => (
-                      <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700 rounded-xl p-3 shadow-2xs space-y-2">
-                        <div className="flex items-center gap-3">
-                          <div 
-                            onClick={() => setPreviewPhotoUrl(file.url)}
-                            className="w-13 h-13 rounded-lg overflow-hidden bg-slate-900 shrink-0 cursor-pointer group relative border border-slate-200 dark:border-slate-700 shadow-2xs"
-                          >
-                            <img 
-                              src={file.url} 
-                              alt={file.name} 
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" 
-                            />
-                            <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                              <Eye size={14} />
-                            </div>
-                            <div className="absolute bottom-0 inset-x-0 bg-black/60 px-1 py-0.5">
-                              <span className="text-[7px] text-emerald-400 font-mono block leading-none text-center">EXIF OK</span>
+                    {evidenceFiles.map((file, idx) => {
+                      const isPdf = file.type === 'PDF' || file.name.endsWith('.pdf');
+                      return (
+                        <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700 rounded-xl p-3 shadow-2xs space-y-2">
+                          <div className="flex items-center gap-3">
+                            {isPdf ? (
+                              <div 
+                                onClick={() => window.open(file.url, '_blank')}
+                                className="w-13 h-13 rounded-lg overflow-hidden bg-rose-50 dark:bg-rose-950/50 shrink-0 cursor-pointer group relative border border-rose-200 dark:border-rose-900/60 flex items-center justify-center text-rose-500 dark:text-rose-400 shadow-2xs"
+                              >
+                                <FileText size={22} />
+                                <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                                  <Eye size={14} />
+                                </div>
+                                <div className="absolute bottom-0 inset-x-0 bg-rose-900/80 px-1 py-0.5">
+                                  <span className="text-[7px] text-white font-mono block leading-none text-center">PDF DOC</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div 
+                                onClick={() => setPreviewPhotoUrl(file.url)}
+                                className="w-13 h-13 rounded-lg overflow-hidden bg-slate-900 shrink-0 cursor-pointer group relative border border-slate-200 dark:border-slate-700 shadow-2xs"
+                              >
+                                <img 
+                                  src={file.url} 
+                                  alt={file.name} 
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" 
+                                />
+                                <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                                  <Eye size={14} />
+                                </div>
+                                <div className="absolute bottom-0 inset-x-0 bg-black/60 px-1 py-0.5">
+                                  <span className="text-[7px] text-emerald-400 font-mono block leading-none text-center">EXIF OK</span>
+                                </div>
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block truncate" title={file.name}>
+                                {file.name}
+                              </span>
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block mt-0.5">
+                                {file.size} · {file.type}
+                              </span>
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
+                                <CheckCircle size={11} className="text-emerald-500 dark:text-emerald-400" />
+                                <span>{file.badge}</span>
+                              </span>
                             </div>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block truncate" title={file.name}>
-                              {file.name}
-                            </span>
-                            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block mt-0.5">
-                              {file.size} · {file.type}
-                            </span>
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
-                              <CheckCircle size={11} className="text-emerald-500 dark:text-emerald-400" />
-                              <span>{file.badge}</span>
-                            </span>
-                          </div>
-                        </div>
 
-                        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-6 text-xs">
-                          <button
-                            type="button"
-                            onClick={() => setPreviewPhotoUrl(file.url)}
-                            className="inline-flex items-center gap-1.5 text-[#0d6efd] dark:text-blue-400 hover:text-blue-700 font-semibold cursor-pointer transition-colors"
-                          >
-                            <Eye size={13} />
-                            <span>Preview</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => showToast(`Mengunduh ${file.name}...`)}
-                            className="inline-flex items-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition-colors p-1"
-                            title={`Download ${file.name}`}
-                          >
-                            <Download size={13} />
-                          </button>
+                          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-6 text-xs">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (isPdf) {
+                                  window.open(file.url, '_blank');
+                                } else {
+                                  setPreviewPhotoUrl(file.url);
+                                }
+                              }}
+                              className="inline-flex items-center gap-1.5 text-[#0d6efd] dark:text-blue-400 hover:text-blue-700 font-semibold cursor-pointer transition-colors"
+                            >
+                              <Eye size={13} />
+                              <span>Preview</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (isPdf) {
+                                  const link = document.createElement('a');
+                                  link.href = file.url;
+                                  link.download = file.name;
+                                  link.click();
+                                } else {
+                                  showToast(`Mengunduh ${file.name}...`);
+                                }
+                              }}
+                              className="inline-flex items-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition-colors p-1"
+                              title={`Download ${file.name}`}
+                            >
+                              <Download size={13} />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -1915,13 +2130,14 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       })()}
 
       {/* ========================================================================= */}
-      {/* MODAL 5: RESULT MODAL - Field Agent Worksheet (Exact Figma Screenshot)     */}
+      {/* ========================================================================= */}
+      {/* MODAL 5: RESULT MODAL - Field Agent Worksheet (Exact User Mockup Layout)   */}
       {/* ========================================================================= */}
       {resultModalTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200/90 dark:border-slate-800 w-full max-w-[520px] overflow-hidden flex flex-col max-h-[92vh]">
-            {/* Top Dark Navy Header */}
-            <div className="bg-[#0b1329] px-5 sm:px-6 py-4 text-white shrink-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white dark:bg-[#0b1329] rounded-2xl shadow-2xl border border-slate-200/90 dark:border-slate-800 w-full max-w-[490px] overflow-hidden flex flex-col max-h-[86vh]">
+            {/* Top Dark Navy Header (Sticky / Shrink-0) */}
+            <div className="bg-[#0b1329] px-5 sm:px-6 py-3.5 text-white shrink-0 border-b border-slate-800/80">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono tracking-wider text-slate-400 font-bold uppercase">
@@ -1940,58 +2156,17 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     </span>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setResultModalTask(null)}
-                  className="text-slate-400 hover:text-white text-xs font-medium flex items-center gap-1 cursor-pointer transition-colors"
-                >
-                  <X size={14} />
-                  <span>Close</span>
-                </button>
               </div>
-              <div className="mt-2.5">
-                <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">Field Agent Worksheet</h2>
+              <div className="mt-2">
+                <h2 className="text-base font-bold text-white tracking-tight">Field Agent Worksheet</h2>
                 <p className="text-xs text-blue-400 font-mono font-medium mt-0.5">
                   {resultModalTask.job_number || '#DSVEXP/2605/2551'}
                 </p>
               </div>
             </div>
 
-            {/* Scrollable Body Content */}
-            <div className="p-5 sm:p-6 overflow-y-auto space-y-5 text-xs flex-1 bg-white dark:bg-[#0f172a]">
-              {/* E-3: Data Hasil Pemeriksaan Tidak Ditemukan (UC-CRM-A2-001 TC-004) */}
-              {(resultModalTask.job_number.includes('999') || resultModalTask.job_number.toLowerCase().includes('notfound')) && (
-                <div className="p-3.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl flex items-start gap-2.5 text-xs text-red-700 dark:text-red-300 animate-in fade-in">
-                  <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
-                  <div className="leading-snug">
-                    <strong className="block font-bold">Data Hasil Pemeriksaan Tidak Ditemukan</strong>
-                    <span>Data hasil pemeriksaan tidak ditemukan berdasarkan Job Number yang dipilih.</span>
-                  </div>
-                </div>
-              )}
-
-              {/* E-1: Task Belum Selesai (UC-CRM-A2-001 TC-002) */}
-              {resultModalTask.status !== 'Completed' && (
-                <div className="p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300 animate-in fade-in">
-                  <Clock size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                  <div className="leading-snug">
-                    <strong className="block font-bold">Task Belum Selesai</strong>
-                    <span>Pekerjaan pemeriksaan lapangan masih dalam proses pengerjaan oleh Field Agent ({resultModalTask.field_agent_name || 'Field Inspector'}). Menampilkan status task saat ini.</span>
-                  </div>
-                </div>
-              )}
-
-              {/* E-2: Hasil Pemeriksaan Belum Tersedia (UC-CRM-A2-001 TC-003) */}
-              {resultModalTask.status === 'Completed' && resultModalTask.photo_count === 0 && resultModalTask.doc_count === 0 && (
-                <div className="p-3.5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 rounded-xl flex items-start gap-2.5 text-xs text-blue-800 dark:text-blue-300 animate-in fade-in">
-                  <AlertCircle size={16} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                  <div className="leading-snug">
-                    <strong className="block font-bold">Hasil Pemeriksaan Belum Tersedia</strong>
-                    <span>Hasil pemeriksaan belum tersedia. Dokumen dan foto inspeksi belum diunggah oleh Field Agent.</span>
-                  </div>
-                </div>
-              )}
-
+            {/* Scrollable Body Content (Internal Scroll to avoid long page stretching) */}
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs flex-1 min-h-0 bg-white dark:bg-[#0b1329]">
               {/* 1. JOB INFORMATION */}
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -1999,28 +2174,28 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     <Building2 size={13} className="text-[#2563eb] dark:text-blue-400" />
                     <span>JOB INFORMATION</span>
                   </div>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                    ID : {resultModalTask.job_number.replace(/^#/, '') || 'DSVEXP/2605/2551'}
+                  <span className="text-[10px] text-slate-400 dark:text-slate-400 font-mono">
+                    ID: {resultModalTask.job_number.replace(/^#/, '') || 'DSVEXP/2605/2551'}
                   </span>
                 </div>
-                <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3.5">
+                <div className="bg-[#f8fafd] dark:bg-slate-800/50 border border-[#e2eaf5] dark:border-slate-700/80 rounded-xl p-3.5">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block">Job Number</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-400 font-medium block">Job Number</span>
                       <span className="text-xs font-bold text-slate-900 dark:text-white block mt-0.5 font-mono">
                         {resultModalTask.job_number || '#DSVEXP/2605/2551'}
                       </span>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block mt-2.5">Sales</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-400 font-medium block mt-2.5">Sales</span>
                       <span className="text-xs font-bold text-slate-900 dark:text-white block mt-0.5">
                         Adelia
                       </span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block">Transaction ID</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-400 font-medium block">Transaction ID</span>
                       <span className="text-xs font-bold text-slate-900 dark:text-white block mt-0.5 font-mono">
-                        TRX-0526-03362
+                        TRX-0526-03202
                       </span>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block mt-2.5">Created By</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-400 font-medium block mt-2.5">Created By</span>
                       <span className="text-xs font-bold text-slate-900 dark:text-white block mt-0.5">
                         {resultModalTask.field_agent_name || 'Marsel'}
                       </span>
@@ -2035,7 +2210,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <Truck size={13} className="text-[#2563eb] dark:text-blue-400" />
                   <span>SHIPMENT INFORMATION</span>
                 </div>
-                <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3.5 space-y-2">
+                <div className="bg-[#f8fafd] dark:bg-slate-800/50 border border-[#e2eaf5] dark:border-slate-700/80 rounded-xl p-3.5 space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-500 dark:text-slate-400">Customer:</span>
                     <span className="font-bold text-slate-900 dark:text-white text-right">{resultModalTask.customer_name || 'PT DSV Transport Indonesia'}</span>
@@ -2054,7 +2229,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-500 dark:text-slate-400">HAWB:</span>
-                    <span className="font-bold text-[#2563eb] dark:text-blue-400 font-mono text-right">{resultModalTask.hawb || 'AWB-00123'}</span>
+                    <span className="font-bold text-[#2563eb] dark:text-blue-400 font-mono text-right hover:underline cursor-pointer">{resultModalTask.hawb || 'HAWB-00123'}</span>
                   </div>
                 </div>
               </div>
@@ -2065,7 +2240,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <Clock size={13} className="text-[#2563eb] dark:text-blue-400" />
                   <span>WAKTU SERAH TERIMA</span>
                 </div>
-                <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3.5 space-y-2">
+                <div className="bg-[#f8fafd] dark:bg-slate-800/50 border border-[#e2eaf5] dark:border-slate-700/80 rounded-xl p-3.5 space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                       <Calendar size={13} className="text-slate-400 dark:text-slate-500" />
@@ -2094,18 +2269,18 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <span>DATA FISIK BARANG</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2.5">
-                  <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3 text-center">
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">JUMLAH COIL</span>
+                  <div className="bg-[#f8fafd] dark:bg-slate-800/50 border border-[#e2eaf5] dark:border-slate-700/80 rounded-xl p-3 text-center">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block">JUMLAH COIL</span>
                     <span className="text-base font-extrabold text-slate-900 dark:text-white mt-0.5 block">12</span>
                   </div>
-                  <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3 text-center">
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">ACTUAL PIECES</span>
+                  <div className="bg-[#f8fafd] dark:bg-slate-800/50 border border-[#e2eaf5] dark:border-slate-700/80 rounded-xl p-3 text-center">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block">ACTUAL PIECES</span>
                     <span className="text-base font-extrabold text-slate-900 dark:text-white mt-0.5 block">
                       {resultModalTask.cargo_pieces || '12 Pcs'}
                     </span>
                   </div>
-                  <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3 text-center">
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">GROSS WEIGHT</span>
+                  <div className="bg-[#f8fafd] dark:bg-slate-800/50 border border-[#e2eaf5] dark:border-slate-700/80 rounded-xl p-3 text-center">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block">GROSS WEIGHT</span>
                     <span className="text-base font-extrabold text-[#2563eb] dark:text-blue-400 mt-0.5 block">
                       {resultModalTask.gross_weight || '2,450 Kg'}
                     </span>
@@ -2120,75 +2295,75 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     <Camera size={13} className="text-[#2563eb] dark:text-blue-400" />
                     <span>FOTO BUKTI LAPANGAN</span>
                   </div>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold">
                     <Check size={11} className="text-emerald-600 dark:text-emerald-400" />
                     <span>4/4 Verified</span>
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2.5">
-                  {/* Card 1: 1. Foto Keseluruhan */}
-                  <div className="border border-[#e2eaf5] dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xs">
+                  {/* Card 1 */}
+                  <div className="border border-[#e2eaf5] dark:border-slate-700/80 rounded-xl overflow-hidden bg-white dark:bg-slate-800/40 shadow-2xs">
                     <div 
-                      className="bg-[#edf2f9] dark:bg-slate-800 h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] dark:hover:bg-slate-700 transition-colors"
+                      className="bg-[#edf2f9] dark:bg-slate-800/80 h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] dark:hover:bg-slate-700/80 transition-colors"
                       onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[0] || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800')}
                     >
-                      <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/50 text-[#2563eb] dark:text-blue-300 flex items-center justify-center shadow-xs">
+                      <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#2563eb] dark:text-blue-300 flex items-center justify-center shadow-xs">
                         <Camera size={14} />
                       </div>
-                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono mt-1">IMG_8411.JPG • 10:12</span>
+                      <span className="text-[9px] text-slate-400 dark:text-slate-400 font-mono mt-1">DSC_0411.JPG • 10:32</span>
                     </div>
-                    <div className="px-2.5 py-1.5 bg-white dark:bg-slate-900 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+                    <div className="px-2.5 py-1.5 bg-white dark:bg-slate-800/60 flex items-center justify-between border-t border-slate-100 dark:border-slate-700/80">
                       <span className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">1. Foto Keseluruhan</span>
                       <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">OK</span>
                     </div>
                   </div>
 
-                  {/* Card 2: 2. Marking / Label */}
-                  <div className="border border-[#e2eaf5] dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xs">
+                  {/* Card 2 */}
+                  <div className="border border-[#e2eaf5] dark:border-slate-700/80 rounded-xl overflow-hidden bg-white dark:bg-slate-800/40 shadow-2xs">
                     <div 
-                      className="bg-[#edf2f9] dark:bg-slate-800 h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] dark:hover:bg-slate-700 transition-colors"
+                      className="bg-[#edf2f9] dark:bg-slate-800/80 h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] dark:hover:bg-slate-700/80 transition-colors"
                       onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[1] || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800')}
                     >
-                      <div className="w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 flex items-center justify-center shadow-xs">
+                      <div className="w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 flex items-center justify-center shadow-xs">
                         <Tag size={14} />
                       </div>
-                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono mt-1">IMG_8412.JPG • 10:14</span>
+                      <span className="text-[9px] text-slate-400 dark:text-slate-400 font-mono mt-1">DSC_0412.JPG • 10:34</span>
                     </div>
-                    <div className="px-2.5 py-1.5 bg-white dark:bg-slate-900 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+                    <div className="px-2.5 py-1.5 bg-white dark:bg-slate-800/60 flex items-center justify-between border-t border-slate-100 dark:border-slate-700/80">
                       <span className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">2. Marking / Label</span>
                       <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Match</span>
                     </div>
                   </div>
 
-                  {/* Card 3: 3. Foto Seal */}
-                  <div className="border border-[#e2eaf5] dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xs">
+                  {/* Card 3 */}
+                  <div className="border border-[#e2eaf5] dark:border-slate-700/80 rounded-xl overflow-hidden bg-white dark:bg-slate-800/40 shadow-2xs">
                     <div 
-                      className="bg-[#edf2f9] dark:bg-slate-800 h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] dark:hover:bg-slate-700 transition-colors"
+                      className="bg-[#edf2f9] dark:bg-slate-800/80 h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] dark:hover:bg-slate-700/80 transition-colors"
                       onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[2] || 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?w=800')}
                     >
-                      <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-300 flex items-center justify-center shadow-xs">
+                      <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-300 flex items-center justify-center shadow-xs">
                         <Lock size={14} />
                       </div>
-                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono mt-1">IMG_8413.JPG • 10:15</span>
+                      <span className="text-[9px] text-slate-400 dark:text-slate-400 font-mono mt-1">DSC_0413.JPG • 10:35</span>
                     </div>
-                    <div className="px-2.5 py-1.5 bg-white dark:bg-slate-900 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+                    <div className="px-2.5 py-1.5 bg-white dark:bg-slate-800/60 flex items-center justify-between border-t border-slate-100 dark:border-slate-700/80">
                       <span className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">3. Foto Seal</span>
                       <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Intact</span>
                     </div>
                   </div>
 
-                  {/* Card 4: 4. Area Kerusakan */}
-                  <div className="border border-[#e2eaf5] dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xs">
+                  {/* Card 4 */}
+                  <div className="border border-[#e2eaf5] dark:border-slate-700/80 rounded-xl overflow-hidden bg-white dark:bg-slate-800/40 shadow-2xs">
                     <div 
-                      className="bg-[#edf2f9] dark:bg-slate-800 h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] dark:hover:bg-slate-700 transition-colors"
+                      className="bg-[#edf2f9] dark:bg-slate-800/80 h-22 flex flex-col items-center justify-center p-2 relative group cursor-pointer hover:bg-[#e4ecf7] dark:hover:bg-slate-700/80 transition-colors"
                       onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[3] || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800')}
                     >
-                      <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shadow-xs">
+                      <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shadow-xs">
                         <Shield size={14} />
                       </div>
-                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono mt-1">Inspected • 10:20</span>
+                      <span className="text-[9px] text-slate-400 dark:text-slate-400 font-mono mt-1">Inspected • 10:38</span>
                     </div>
-                    <div className="px-2.5 py-1.5 bg-white dark:bg-slate-900 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+                    <div className="px-2.5 py-1.5 bg-white dark:bg-slate-800/60 flex items-center justify-between border-t border-slate-100 dark:border-slate-700/80">
                       <span className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">4. Area Kerusakan</span>
                       <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">No damage reported</span>
                     </div>
@@ -2203,55 +2378,57 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <span>DOKUMEN PENDUKUNG &amp; NAMA PETUGAS</span>
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 border border-[#e2eaf5] dark:border-slate-700 rounded-xl shadow-2xs">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/50 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0">
-                        <FileText size={16} />
+                  {(resultModalTask.result_docs && resultModalTask.result_docs.length > 0 ? resultModalTask.result_docs : [
+                    { name: 'Dokumen_Utama_Reimbursement_AENAT.pdf', size: '3.5 KB', url: '/documents/Dokumen_Utama_Reimbursement_AENAT.pdf' },
+                    { name: 'Packing List.pdf', size: '1.1 MB', url: '/documents/Dokumen_Utama_Reimbursement_AENAT.pdf' }
+                  ]).map((doc, dIdx) => (
+                    <div key={dIdx} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800/50 border border-[#e2eaf5] dark:border-slate-700/80 rounded-xl shadow-2xs">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-100 dark:border-rose-900/50 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0">
+                          <FileText size={16} />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block truncate max-w-[280px]">{doc.name}</span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-400">{doc.name.endsWith('.pdf') ? 'PDF' : 'Berkas'} • {doc.size || '3.5 KB'} • Berkas Resmi Terunggah</span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Packing List.pdf</span>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500">PDF • 1.4 MB • Verified</span>
+                      <div className="flex items-center gap-1">
+                        <button 
+                          type="button"
+                          onClick={() => window.open(doc.url, '_blank')}
+                          className="p-1.5 text-slate-400 hover:text-[#2563eb] dark:hover:text-blue-400 rounded-lg transition-colors cursor-pointer"
+                          title="Buka / Preview PDF"
+                        >
+                          <Eye size={14} />
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = doc.url;
+                            link.download = doc.name;
+                            link.click();
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-[#2563eb] dark:hover:text-blue-400 rounded-lg transition-colors cursor-pointer"
+                          title="Download Dokumen"
+                        >
+                          <Download size={14} />
+                        </button>
                       </div>
                     </div>
-                    <button 
-                      type="button"
-                      onClick={() => showToast('Downloading Packing List.pdf...')}
-                      className="p-1.5 text-slate-400 hover:text-[#2563eb] dark:hover:text-blue-400 rounded-lg transition-colors cursor-pointer"
-                    >
-                      <Download size={14} />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 border border-[#e2eaf5] dark:border-slate-700 rounded-xl shadow-2xs">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/50 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0">
-                        <FileText size={16} />
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">MSDS.pdf</span>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500">PDF • 860 KB • Material Safety Sheet</span>
-                      </div>
-                    </div>
-                    <button 
-                      type="button"
-                      onClick={() => showToast('Downloading MSDS.pdf...')}
-                      className="p-1.5 text-slate-400 hover:text-[#2563eb] dark:hover:text-blue-400 rounded-lg transition-colors cursor-pointer"
-                    >
-                      <Download size={14} />
-                    </button>
-                  </div>
+                  ))}
 
                   {/* Pihak Penyerah & Pihak Penerima Box */}
-                  <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3 grid grid-cols-2 gap-3 mt-1">
+                  <div className="bg-[#f8fafd] dark:bg-slate-800/60 border border-[#e2eaf5] dark:border-slate-700/80 rounded-xl p-3 grid grid-cols-2 gap-3 mt-1">
                     <div>
-                      <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">PIHAK PENYERAH</span>
+                      <span className="text-[9px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block">PIHAK PENYERAH</span>
                       <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 mt-0.5">
                         <User size={12} className="text-slate-500 dark:text-slate-400" />
                         <span>Budi Santoso</span>
                       </span>
                     </div>
                     <div>
-                      <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">PIHAK PENERIMA</span>
+                      <span className="text-[9px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block">PIHAK PENERIMA</span>
                       <span className="text-xs font-bold text-[#2563eb] dark:text-blue-400 flex items-center gap-1.5 mt-0.5">
                         <User size={12} className="text-[#2563eb] dark:text-blue-400" />
                         <span>{resultModalTask.field_agent_name || 'Marsel'}</span>
@@ -2267,7 +2444,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <CheckCircle size={13} className="text-[#2563eb] dark:text-blue-400" />
                   <span>CHECKLIST CENTANG &amp; STATUS MASALAH</span>
                 </div>
-                <div className="bg-white dark:bg-slate-900 border border-[#e2eaf5] dark:border-slate-700 rounded-xl p-3.5 space-y-2.5">
+                <div className="bg-white dark:bg-slate-800/50 border border-[#e2eaf5] dark:border-slate-700/80 rounded-xl p-3.5 space-y-2.5">
                   <div className="space-y-2">
                     {[
                       'Quantity & weight match',
@@ -2278,28 +2455,28 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     ].map((item, idx) => (
                       <div key={idx} className="flex items-center justify-between text-xs">
                         <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                          <Check size={13} className="text-emerald-500 stroke-[2.5]" />
+                          <Check size={13} className="text-emerald-500 dark:text-emerald-400 stroke-[2.5]" />
                           <span>{item}</span>
                         </span>
-                        <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold">
+                        <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold">
                           Verified
                         </span>
                       </div>
                     ))}
                   </div>
 
-                  <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                  <div className="pt-2.5 border-t border-slate-100 dark:border-slate-700/80 flex items-center justify-between text-xs">
                     <div className="flex items-center gap-1.5">
                       <span className="text-slate-500 dark:text-slate-400 text-[11px]">Dangerous Goods:</span>
-                      <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-[10px]">
+                      <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[10px]">
                         NO
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-slate-500 dark:text-slate-400 text-[11px]">Special Handling:</span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#fffbeb] dark:bg-amber-950/40 border border-[#fef3c7] dark:border-amber-900/50 text-[#b45309] dark:text-amber-400 text-[10px] font-bold">
-                        <RefreshCw size={10} className="text-[#b45309] dark:text-amber-400" />
-                        <span>YES (Kooler / Priority Cargo)</span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#fffbeb] dark:bg-amber-950/40 border border-[#fef3c7] dark:border-amber-800 text-[#b45309] dark:text-amber-300 text-[10px] font-bold">
+                        <RefreshCw size={10} className="text-[#b45309] dark:text-amber-300" />
+                        <span>YES (Reefer / Priority Cargo)</span>
                       </span>
                     </div>
                   </div>
@@ -2313,8 +2490,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <span>ISSUE</span>
                 </div>
                 {resultModalTask.has_issue ? (
-                  <div className="bg-[#fef2f2] dark:bg-red-950/30 border border-[#fecaca] dark:border-red-900/50 rounded-xl p-3.5 flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="bg-[#fef2f2] dark:bg-red-950/40 border border-[#fecaca] dark:border-red-900/60 rounded-xl p-3.5 flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/60 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 mt-0.5">
                       <AlertOctagon size={14} />
                     </div>
                     <div>
@@ -2325,8 +2502,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-[#ecfdf5] dark:bg-emerald-950/30 border border-[#a7f3d0] dark:border-emerald-900/50 rounded-xl p-3.5 flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="bg-[#ecfdf5] dark:bg-emerald-950/40 border border-[#a7f3d0] dark:border-emerald-900/60 rounded-xl p-3.5 flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
                       <Check size={14} />
                     </div>
                     <div>
@@ -2340,8 +2517,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               </div>
             </div>
 
-            {/* Bottom Actions Footer */}
-            <div className="px-5 sm:px-6 py-3.5 bg-white dark:bg-[#0f172a] border-t border-slate-200 dark:border-slate-800 flex items-center gap-3 shrink-0">
+            {/* Bottom Actions Footer (Sticky / Shrink-0) */}
+            <div className="px-5 sm:px-6 py-3.5 bg-white dark:bg-[#0b1329] border-t border-slate-200 dark:border-slate-800 flex items-center gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setResultModalTask(null)}
@@ -2613,6 +2790,46 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 </div>
 
                 <div className="space-y-2">
+                  {(detailModalTask.result_docs && detailModalTask.result_docs.length > 0 ? detailModalTask.result_docs : [
+                    { name: 'Dokumen_Utama_Reimbursement_AENAT.pdf', size: '3.5 KB', url: '/documents/Dokumen_Utama_Reimbursement_AENAT.pdf' },
+                    { name: 'Surat_Jalan.pdf', size: '1.2 MB', url: '/documents/Dokumen_Utama_Reimbursement_AENAT.pdf' },
+                  ]).map((docItem, dIdx) => (
+                    <div key={dIdx} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800/80 border border-[#e2eaf5] dark:border-slate-700 rounded-xl shadow-2xs">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-100 dark:border-rose-800/60 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0">
+                          <FileText size={16} />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block truncate max-w-[280px]">{docItem.name}</span>
+                          <span className="text-[10px] text-slate-400">{docItem.name.endsWith('.pdf') ? 'PDF' : 'Dokumen'} • {docItem.size || '3.5 KB'} • Berkas Terverifikasi</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => window.open(docItem.url, '_blank')}
+                          className="p-1.5 text-slate-400 hover:text-[#2563eb] dark:hover:text-blue-400 rounded-lg transition-colors cursor-pointer"
+                          title="Buka / Preview PDF"
+                        >
+                          <Eye size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = docItem.url;
+                            link.download = docItem.name;
+                            link.click();
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-[#2563eb] dark:hover:text-blue-400 rounded-lg transition-colors cursor-pointer"
+                          title="Download Dokumen"
+                        >
+                          <Download size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
                   <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800/80 border border-[#e2eaf5] dark:border-slate-700 rounded-xl shadow-2xs">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-800/60 text-[#2563eb] dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -2637,36 +2854,6 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                         onClick={() => setPreviewPhotoUrl(detailModalTask.result_photos?.[0] || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800')}
                         className="p-1.5 text-slate-400 hover:text-[#2563eb] dark:hover:text-blue-400 rounded-lg transition-colors cursor-pointer"
                         title="Preview"
-                      >
-                        <ExternalLink size={14} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800/80 border border-[#e2eaf5] dark:border-slate-700 rounded-xl shadow-2xs">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-100 dark:border-rose-800/60 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0">
-                        <FileText size={16} />
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Surat_Jalan.pdf</span>
-                        <span className="text-[10px] text-slate-400">1.2 MB • PDF Document</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => showToast('Downloading Surat_Jalan.pdf...')}
-                        className="p-1.5 text-slate-400 hover:text-[#2563eb] dark:hover:text-blue-400 rounded-lg transition-colors cursor-pointer"
-                        title="Download"
-                      >
-                        <Download size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => showToast('Opening Surat_Jalan.pdf preview...')}
-                        className="p-1.5 text-slate-400 hover:text-[#2563eb] dark:hover:text-blue-400 rounded-lg transition-colors cursor-pointer"
-                        title="Open"
                       >
                         <ExternalLink size={14} />
                       </button>

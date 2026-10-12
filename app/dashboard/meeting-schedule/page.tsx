@@ -180,8 +180,8 @@ export default function MeetingSchedulePage() {
   });
   const updateForm = (field: keyof MeetingFormState, value: string) => setForm((current) => ({ ...current, [field]: value }));
 
-  return <div className="space-y-6">
-    <header className="flex flex-wrap items-center justify-between gap-4">
+  return <div className="h-full min-h-0 flex flex-col overflow-y-auto pr-1 space-y-4 font-sans">
+    <header className="shrink-0 flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{formatDate(selectedDate)}</h1>
         <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Meeting schedule and availability for this date</p>

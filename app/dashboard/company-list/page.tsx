@@ -202,10 +202,10 @@ export default function CompanyListPage() {
   const firstRow = total === 0 ? 0 : (page - 1) * perPage + 1;
   const lastRow = Math.min(page * perPage, total);
 
-  return <div className="space-y-6">
-    <div>
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Company List</h1>
-      <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">Manage and view all customer data</p>
+  return <div className="h-full min-h-0 flex flex-col overflow-y-auto pr-1 space-y-4">
+    <div className="shrink-0">
+      <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">Company List</h1>
+      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Manage and view all customer data</p>
     </div>
 
     {successMessage && <p role="status" className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 px-4 py-2.5 text-xs font-medium text-emerald-800 dark:text-emerald-300">{successMessage}</p>}

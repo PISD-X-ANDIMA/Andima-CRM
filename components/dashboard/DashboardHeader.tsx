@@ -44,7 +44,8 @@ const routeLabels: Record<string, string> = {
   'company-list': 'Company List',
   'meeting-schedule': 'Meeting Schedule',
   'record-conversation': 'Record Conversation',
-  'task-of-field-agent': 'Task Field Agent',
+  'task-of-field-agent': 'Monitoring Task of Field Agent',
+  'manage-field-agent': 'Manage Field Agent Account',
   'need-backup': 'Need Backup',
   'field-agent': 'Field Agent',
   profile: 'User Profile',
@@ -389,7 +390,7 @@ export function DashboardHeader() {
   )
 
   return (
-    <header className="relative z-30 mb-6 flex min-h-12 items-center justify-between gap-2 sm:gap-3 border-b border-slate-100/80 dark:border-slate-800 pb-4">
+    <header className="relative z-30 mb-2 flex min-h-11 items-center justify-between gap-2 sm:gap-3 border-b border-slate-100/80 dark:border-slate-800 pb-2.5">
       {/* Left: Mobile Hamburger & Breadcrumbs */}
       <div className='flex items-center gap-2 text-xs'>
         <button
@@ -406,7 +407,7 @@ export function DashboardHeader() {
           <span className='font-semibold text-slate-400 dark:text-slate-500'>CRM</span>
           <span className='text-slate-300 dark:text-slate-600'>/</span>
           <span className='font-semibold text-slate-400 dark:text-slate-500 hidden sm:inline'>
-            {pathname?.includes('field-agent') ? 'FIELD AGENT' : 'SALES EXECUTIVE'}
+            {pathname?.startsWith('/dashboard/field-agent') ? 'FIELD AGENT' : 'SALES EXECUTIVE'}
           </span>
           <span className='text-slate-300 dark:text-slate-600 hidden sm:inline'>/</span>
           <span className='font-bold text-blue-600 dark:text-blue-400 truncate'>{currentLabel}</span>
@@ -548,17 +549,7 @@ export function DashboardHeader() {
 
       {/* Right: Actions and User Profile */}
       <div className="flex shrink-0 items-center gap-1 sm:gap-2.5 text-slate-600 dark:text-slate-300">
-        {/* Need Assistance Notification Badge */}
-        {needAssistanceCount > 0 && (
-          <Link
-            href="/dashboard/record-conversation"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-900/60 transition-colors"
-            title={`${needAssistanceCount} percakapan memerlukan bantuan`}
-          >
-            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
-            <span>Need Assistance ({needAssistanceCount})</span>
-          </Link>
-        )}
+
 
         {/* Notification Bell */}
         <div ref={notificationsRef} className="relative">

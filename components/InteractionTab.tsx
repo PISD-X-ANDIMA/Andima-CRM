@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { exportConversationsToXLSX, exportConversationsToPDF } from '@/lib/conversationExport';
 import { 
-  Search, ChevronDown, Plus, Download, Video, MessageCircle, 
+  Search, ChevronDown, ChevronRight, Plus, Download, Video, MessageCircle, 
   X, UploadCloud, FileText, Check, Loader2, Calendar, 
   Eye, Trash2, ExternalLink, AlertCircle, Save, Tag, Pencil, Image as ImageIcon,
   Paperclip
@@ -15,6 +15,7 @@ import {
   createApiConversation,
   updateApiConversation,
   uploadApiFile,
+  submitNeedBackup,
   CompanyItem,
   RecordConversationItem,
   UploadedFileMetadata
@@ -222,6 +223,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   // Detail Modal States (Matching User Screenshot Exactly)
   const [selectedConversation, setSelectedConversation] = useState<ConversationDisplayItem | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isManagerFeedbackModalOpen, setIsManagerFeedbackModalOpen] = useState(false);
   const [isEditDetailMode, setIsEditDetailMode] = useState(false);
   const [editSummary, setEditSummary] = useState('');
   const [editStatus, setEditStatus] = useState('active');
@@ -269,7 +271,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 8;
+  const pageSize = 5;
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -804,6 +806,78 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         return [newItem, ...filteredPrev];
       });
 
+      // =========================================================================
+      // AUTO-INTEGRATION: If Need Assistance is checked, auto-generate Need Backup ticket!
+      // =========================================================================
+      if (needAssistance) {
+        try {
+          const generatedJobNo = finalJobNumber !== '-' ? finalJobNumber : `#AENAT/${new Date().getFullYear() % 100}${String(new Date().getMonth() + 1).padStart(2, '0')}/${Math.floor(1000 + Math.random() * 9000)}`;
+          const backupTicketPayload = {
+            taskId: `ws-${Date.now()}`,
+            jobNumber: generatedJobNo,
+            customerName: companyName,
+            category: 'Bantuan Operasional / Rekomendasi Sales',
+            priority: 'Normal' as const,
+            description: recordSummary.trim(),
+            requestedBy: `${activeUserName} (Sales Executive)`
+          };
+
+          // 1. Send to Supabase a2_need_backups
+          await submitNeedBackup(backupTicketPayload);
+
+          // 2. Also save to localStorage fallback for immediate reactive update in NeedBackupTab
+          if (typeof window !== 'undefined') {
+            const LOCAL_KEY = 'andima_need_backup_tickets';
+            let currentLocal: any[] = [];
+            try {
+              const raw = localStorage.getItem(LOCAL_KEY);
+              if (raw) currentLocal = JSON.parse(raw);
+            } catch {}
+
+            const d = new Date();
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} WIB`;
+
+            const newTicketObj = {
+              id: `bck-auto-${Date.now()}`,
+              ticket_id: `BCK-${year}-${String(currentLocal.length + 1).padStart(3, '0')}`,
+              job_number: generatedJobNo,
+              customer_name: companyName,
+              category: 'Bantuan Operasional / Rekomendasi Sales',
+              priority: 'Medium',
+              date: `${day}-${month}-${year}`,
+              time: timeStr,
+              status: 'Open',
+              connected_job: `DSVEXP/${year % 100}05/${Math.floor(2000 + Math.random() * 8000)}`,
+              sla_description: 'SLA Respon < 4 Jam',
+              description: recordSummary.trim(),
+              requested_by: `${activeUserName} (Sales Executive)`,
+              created_at: new Date().toISOString(),
+              logs: [
+                {
+                  id: `log-auto-${Date.now()}`,
+                  author: `${activeUserName} (Sales Executive)`,
+                  timestamp: `${day}-${month}-${year} ${timeStr}`,
+                  message: `Tiket eskalasi bantuan otomatis dibuat dari Record Conversation (${randomConvId}).`,
+                  is_active: true
+                }
+              ]
+            };
+
+            const updatedTickets = [newTicketObj, ...currentLocal];
+            localStorage.setItem(LOCAL_KEY, JSON.stringify(updatedTickets));
+
+            // Notify Sidebar and open tabs
+            window.dispatchEvent(new Event('need-backup-updated'));
+            window.dispatchEvent(new Event('storage'));
+          }
+        } catch (backupErr) {
+          console.warn('Auto-generation to Need Backup encountered warning:', backupErr);
+        }
+      }
+
       setRecordSummary('');
       setNeedAssistance(false);
       setNewUploadedFiles([]);
@@ -818,7 +892,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   };
 
   return (
-    <div className="w-full pb-10">
+    <div className="w-full h-full min-h-0 flex flex-col overflow-hidden font-sans">
       {/* Save Record Success Notification Toast (Exact Match to User Screenshot) */}
       {saveSuccessNotif && (
         <div
@@ -832,197 +906,134 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         </div>
       )}
 
-      {/* 1. TOP CONTROLS AND ACTION BAR */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {/* Left: Search input */}
-        <div className="flex-1 min-w-[280px] max-w-md">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Customer/Job Number..."
-            className="w-full bg-white border border-slate-200/90 rounded-xl px-4 py-2 text-xs text-slate-700 placeholder:text-slate-400 outline-none shadow-2xs focus:border-blue-400 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 transition-colors"
-          />
-        </div>
-
-        {/* Right: Filters, Export, + Record Conversation */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Channel Type Dropdown */}
-          <div className="relative" ref={channelDropdownRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsChannelDropdownOpen(!isChannelDropdownOpen);
-                setIsDateDropdownOpen(false);
-                setIsStatusDropdownOpen(false);
-              }}
-              className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:hover:border-slate-700 dark:text-slate-300 transition-colors"
-            >
-              <span>Channel Type: <strong className="font-semibold text-slate-800 dark:text-slate-200">{channelFilter}</strong></span>
-              <ChevronDown size={14} className={`text-slate-400 transition-transform ${isChannelDropdownOpen ? 'rotate-180 text-blue-600 dark:text-blue-400' : ''}`} />
-            </button>
-
-            {isChannelDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1 dark:bg-slate-900 dark:border-slate-800">
-                {['All Channel', 'Meeting', 'WhatsApp'].map(opt => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => {
-                      setChannelFilter(opt);
-                      setIsChannelDropdownOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-                      channelFilter === opt ? 'bg-blue-50 text-blue-600 font-bold dark:bg-blue-950/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <span>{opt}</span>
-                    {channelFilter === opt && <Check size={13} className="text-blue-600 dark:text-blue-400" />}
-                  </button>
-                ))}
-              </div>
-            )}
+      {/* 1. TOP CONTROLS AND ACTION BAR (SHRINK-0) */}
+      <div className="shrink-0 mb-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          {/* Left: Search input */}
+          <div className="flex-1 min-w-[260px] max-w-md">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari Customer / Perusahaan..."
+              className="w-full bg-white border border-slate-200/90 rounded-xl px-3.5 py-1.5 text-xs text-slate-700 placeholder:text-slate-400 outline-none shadow-2xs focus:border-blue-400 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 transition-colors"
+            />
           </div>
 
-          {/* Today Date Dropdown */}
-          <div className="relative" ref={dateDropdownRef}>
+          {/* Right: Filters, Export, + Record Conversation */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Channel Type Dropdown */}
+            <div className="relative" ref={channelDropdownRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsChannelDropdownOpen(!isChannelDropdownOpen);
+                  setIsDateDropdownOpen(false);
+                  setIsStatusDropdownOpen(false);
+                }}
+                className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:hover:border-slate-700 dark:text-slate-300 transition-colors"
+              >
+                <span>Channel Type: <strong className="font-semibold text-slate-800 dark:text-slate-200">{channelFilter}</strong></span>
+                <ChevronDown size={13} className={`text-slate-400 transition-transform ${isChannelDropdownOpen ? 'rotate-180 text-blue-600 dark:text-blue-400' : ''}`} />
+              </button>
+
+              {isChannelDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1 dark:bg-slate-900 dark:border-slate-800">
+                  {['All Channel', 'Meeting', 'WhatsApp'].map(opt => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        setChannelFilter(opt);
+                        setIsChannelDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
+                        channelFilter === opt ? 'bg-blue-50 text-blue-600 font-bold dark:bg-blue-950/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/60'
+                      }`}
+                    >
+                      <span>{opt}</span>
+                      {channelFilter === opt && <Check size={13} className="text-blue-600 dark:text-blue-400" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Today Date Dropdown */}
+            <div className="relative" ref={dateDropdownRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDateDropdownOpen(!isDateDropdownOpen);
+                  setIsChannelDropdownOpen(false);
+                  setIsStatusDropdownOpen(false);
+                }}
+                className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:hover:border-slate-700 dark:text-slate-300 transition-colors"
+              >
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{dateFilter}</span>
+                <ChevronDown size={13} className={`text-slate-400 transition-transform ${isDateDropdownOpen ? 'rotate-180 text-blue-600 dark:text-blue-400' : ''}`} />
+              </button>
+
+              {isDateDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1.5 w-52 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1 dark:bg-slate-900 dark:border-slate-800">
+                  {['Today (14 Sep 2026)', '03-03-2026', '04-03-2026', 'All Dates'].map(d => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => {
+                        setDateFilter(d);
+                        setIsDateDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
+                        dateFilter === d ? 'bg-blue-50 text-blue-600 font-bold dark:bg-blue-950/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/60'
+                      }`}
+                    >
+                      <span>{d}</span>
+                      {dateFilter === d && <Check size={13} className="text-blue-600 dark:text-blue-400" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+
+
+            {/* + Record Conversation Button */}
             <button
               type="button"
-              onClick={() => {
-                setIsDateDropdownOpen(!isDateDropdownOpen);
-                setIsChannelDropdownOpen(false);
-                setIsStatusDropdownOpen(false);
-              }}
-              className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:hover:border-slate-700 dark:text-slate-300 transition-colors"
+              onClick={handleOpenCreateModal}
+              className="bg-[#1d4ed8] hover:bg-blue-700 text-white rounded-xl px-3.5 py-1.5 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
             >
-              <span className="font-semibold text-slate-800 dark:text-slate-200">{dateFilter}</span>
-              <ChevronDown size={14} className={`text-slate-400 transition-transform ${isDateDropdownOpen ? 'rotate-180 text-blue-600 dark:text-blue-400' : ''}`} />
+              <Plus size={14} />
+              <span>Record Conversation</span>
             </button>
-
-            {isDateDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1.5 w-52 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1 dark:bg-slate-900 dark:border-slate-800">
-                {['Today (14 Sep 2026)', '03-03-2026', '04-03-2026', 'All Dates'].map(d => (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => {
-                      setDateFilter(d);
-                      setIsDateDropdownOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-                      dateFilter === d ? 'bg-blue-50 text-blue-600 font-bold dark:bg-blue-950/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <span>{d}</span>
-                    {dateFilter === d && <Check size={13} className="text-blue-600 dark:text-blue-400" />}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
-
-          {/* Status Dropdown */}
-          <div className="relative" ref={statusDropdownRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsStatusDropdownOpen(!isStatusDropdownOpen);
-                setIsChannelDropdownOpen(false);
-                setIsDateDropdownOpen(false);
-              }}
-              className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:hover:border-slate-700 dark:text-slate-300 transition-colors"
-            >
-              <span>Status: <strong className="font-semibold text-slate-800 dark:text-slate-200">{statusFilter}</strong></span>
-              <ChevronDown size={14} className={`text-slate-400 transition-transform ${isStatusDropdownOpen ? 'rotate-180 text-blue-600 dark:text-blue-400' : ''}`} />
-            </button>
-
-            {isStatusDropdownOpen && (
-              <div className="absolute top-full right-0 mt-1.5 w-40 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1 dark:bg-slate-900 dark:border-slate-800">
-                {['All Status', 'Active', 'Archived'].map(st => (
-                  <button
-                    key={st}
-                    type="button"
-                    onClick={() => {
-                      setStatusFilter(st);
-                      setIsStatusDropdownOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-                      statusFilter === st ? 'bg-blue-50 text-blue-600 font-bold dark:bg-blue-950/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <span>{st}</span>
-                    {statusFilter === st && <Check size={13} className="text-blue-600 dark:text-blue-400" />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Export XLSX Button */}
-          <button
-            type="button"
-            onClick={handleExportXLSX}
-            disabled={filteredRows.length === 0}
-            className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-700 flex items-center gap-1.5 shadow-2xs cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:hover:border-slate-700 dark:text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Export record yang tampil ke format XLSX"
-          >
-            <Download size={13} className="text-emerald-600 dark:text-emerald-400" />
-            <span>Export XLSX</span>
-          </button>
-
-          {/* Export PDF Button */}
-          <button
-            type="button"
-            onClick={handleExportPDF}
-            disabled={filteredRows.length === 0}
-            className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-700 flex items-center gap-1.5 shadow-2xs cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:hover:border-slate-700 dark:text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Export record yang tampil ke format PDF"
-          >
-            <FileText size={13} className="text-rose-600 dark:text-rose-400" />
-            <span>Export PDF</span>
-          </button>
-
-          {/* + Record Conversation Button */}
-          <button
-            type="button"
-            onClick={handleOpenCreateModal}
-            className="bg-[#1d4ed8] hover:bg-blue-700 text-white rounded-xl px-4 py-2 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
-          >
-            <Plus size={14} />
-            <span>Record Conversation</span>
-          </button>
         </div>
       </div>
 
-      {/* 2. PAGE HEADING */}
-      <h1 className="text-2xl font-bold text-[#0f172a] dark:text-white mt-7 mb-5 tracking-tight">
+      {/* 2. PAGE HEADING (SHRINK-0) */}
+      <h1 className="shrink-0 text-xl font-bold text-[#0f172a] dark:text-white mb-2 tracking-tight">
         Record Customer Conversation
       </h1>
 
-      {/* 3. TABLE CARD */}
-      <div className="bg-white rounded-2xl border border-slate-200/70 shadow-xs overflow-hidden dark:bg-[#0f172a] dark:border-slate-800">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[780px]">
+      {/* 3. TABLE CARD (FLEX-1 MIN-H-0 SCROLLABLE) */}
+      <div className="flex-1 min-h-0 bg-white rounded-2xl border border-slate-200/70 shadow-xs overflow-hidden dark:bg-[#0f172a] dark:border-slate-800 flex flex-col">
+        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto relative">
+          <table className="w-full text-left border-collapse min-w-[720px]">
             {/* TABLE HEADER */}
-            <thead className="bg-[#edf4fb] border-b border-slate-200/70 dark:bg-slate-900 dark:border-slate-800">
+            <thead className="sticky top-0 z-10 bg-[#edf4fb] border-b border-slate-200/70 dark:bg-slate-900 dark:border-slate-800 shadow-2xs">
               <tr>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center tracking-normal">
                   Conversation ID
-                </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center tracking-normal">
-                  Job Number
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-left tracking-normal">
                   Company
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center tracking-normal">
-                  Source
+                  Channel
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center tracking-normal">
                   Date
-                </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center tracking-normal">
-                  PIC
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 dark:text-slate-200 text-center tracking-normal">
                   Detail
@@ -1034,14 +1045,14 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {loading && conversations.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-xs text-slate-400 dark:text-slate-500">
+                  <td colSpan={5} className="py-12 text-center text-xs text-slate-400 dark:text-slate-500">
                     <Loader2 size={18} className="animate-spin inline mr-2 text-blue-500" />
                     Memuat data percakapan...
                   </td>
                 </tr>
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-14 text-center">
+                  <td colSpan={5} className="py-14 text-center">
                     <div className="flex flex-col items-center justify-center max-w-sm mx-auto text-center">
                       <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-3 dark:bg-slate-800 dark:text-slate-500">
                         <Search size={20} />
@@ -1074,17 +1085,12 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                       {row.conversation_id}
                     </td>
 
-                    {/* Job Number */}
-                    <td className="py-4.5 px-6 text-center text-sm font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                      {row.job_number}
-                    </td>
-
                     {/* Company */}
                     <td className="py-4.5 px-6 text-left text-sm font-semibold text-slate-800 dark:text-slate-200 max-w-[260px] leading-snug">
                       {row.company}
                     </td>
 
-                    {/* Source Badge */}
+                    {/* Channel Badge */}
                     <td className="py-4.5 px-6 text-center whitespace-nowrap">
                       {row.source.toLowerCase() === 'meeting' ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-[#f5eeff] text-[#9333ea] border border-[#e9d5ff] dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/60">
@@ -1102,11 +1108,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     {/* Date */}
                     <td className="py-4.5 px-6 text-center text-sm text-slate-700 dark:text-slate-400 whitespace-nowrap font-normal">
                       {row.date}
-                    </td>
-
-                    {/* PIC */}
-                    <td className="py-4.5 px-6 text-center text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap font-medium">
-                      {row.pic}
                     </td>
 
                     {/* Detail Link ("See more..") */}
@@ -1127,20 +1128,19 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         </div>
 
         {/* 4. PAGINATION FOOTER */}
-        <div className="py-3 px-6 bg-white border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500 dark:bg-[#0f172a] dark:border-slate-800 dark:text-slate-400">
+        <div className="shrink-0 py-2.5 px-5 bg-white border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:bg-[#0f172a] dark:border-slate-800 dark:text-slate-400">
           <div>
             Showing <strong className="font-semibold text-slate-700 dark:text-slate-200">{firstRow}</strong> to <strong className="font-semibold text-slate-700 dark:text-slate-200">{lastRow}</strong> of <strong className="font-semibold text-slate-700 dark:text-slate-200">{totalItems}</strong> entries
           </div>
 
-          <nav className="flex items-center gap-1" aria-label="Conversation pages">
+          <nav className="flex items-center gap-1.5" aria-label="Conversation pages">
             <button
               type="button"
-              aria-label="Previous page"
               disabled={currentPage <= 1}
               onClick={() => setCurrentPage((value) => Math.max(1, value - 1))}
-              className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"
+              className="px-2.5 py-1 text-xs font-medium rounded-md border border-slate-200 dark:border-slate-700 disabled:opacity-40 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer disabled:cursor-not-allowed transition-colors"
             >
-              ‹
+              Previous
             </button>
             {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
               const pageNumber = totalPages <= 5 ? index + 1 : Math.max(1, Math.min(currentPage - 2, totalPages - 4)) + index;
@@ -1150,10 +1150,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   key={pageNumber}
                   aria-current={currentPage === pageNumber ? "page" : undefined}
                   onClick={() => setCurrentPage(pageNumber)}
-                  className={`h-8 min-w-8 rounded-md px-2 cursor-pointer transition-colors ${
+                  className={`h-7 min-w-7 rounded-md px-2 text-xs font-medium cursor-pointer transition-colors ${
                     currentPage === pageNumber
                       ? "bg-blue-600 font-semibold text-white shadow-xs"
-                      : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                      : "border border-slate-200 dark:border-slate-700 text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
                   }`}
                 >
                   {pageNumber}
@@ -1166,7 +1166,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 <button
                   type="button"
                   onClick={() => setCurrentPage(totalPages)}
-                  className="h-8 min-w-8 rounded-md px-2 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                  className="h-7 min-w-7 rounded-md px-2 text-xs border border-slate-200 dark:border-slate-700 text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer transition-colors"
                 >
                   {totalPages}
                 </button>
@@ -1174,12 +1174,11 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
             )}
             <button
               type="button"
-              aria-label="Next page"
               disabled={currentPage >= totalPages}
               onClick={() => setCurrentPage((value) => Math.min(totalPages, value + 1))}
-              className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"
+              className="px-2.5 py-1 text-xs font-medium rounded-md border border-slate-200 dark:border-slate-700 disabled:opacity-40 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer disabled:cursor-not-allowed transition-colors"
             >
-              ›
+              Next
             </button>
           </nav>
         </div>
@@ -1187,43 +1186,21 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
       {/* 5. "SEE MORE.." DETAIL MODAL */}
       {isDetailModalOpen && selectedConversation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-[440px] overflow-hidden flex flex-col max-h-[92vh] dark:bg-[#0f172a] dark:border-slate-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-[460px] overflow-hidden flex flex-col max-h-[90vh] dark:bg-[#0f172a] dark:border-slate-800">
             {/* Header */}
-            <div className="px-6 pt-5 pb-3 flex items-start justify-between border-b border-slate-100 bg-white shrink-0 dark:border-slate-800 dark:bg-[#0f172a]">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#07111e] rounded-xl flex items-center justify-center p-1.5 shrink-0 shadow-xs border border-slate-700/20 select-none">
-                  <img
-                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo-ANDIMA-wzx4gpZx20EFE5IYcH3jqabixELIo3.png"
-                    alt="Logo ANDIMA"
-                    className="w-full h-auto object-contain"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = '/Logo-ANDIMA.png';
-                    }}
-                  />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
-                    Detail Conversation
-                  </h3>
-                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
-                    {selectedConversation.conversation_id}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsDetailModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 cursor-pointer"
-                title="Close"
-              >
-                <X size={18} />
-              </button>
+            <div className="px-6 pt-5 pb-3.5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-[#0f172a] shrink-0">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+                Detail Conversation
+              </h3>
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+                {selectedConversation.conversation_id}
+              </p>
             </div>
 
             {/* Scrollable Body */}
-            <div className="px-6 py-4 overflow-y-auto space-y-4 flex-1 text-xs">
-              {/* 1. Customer / Company Card */}
+            <div className="px-6 py-4 overflow-y-auto space-y-4 flex-1 min-h-0 text-xs">
+              {/* 1. CUSTOMER / COMPANY Card */}
               <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs dark:bg-slate-900/90 dark:border-slate-800">
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -1236,13 +1213,13 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   </div>
 
                   {/* Channel / Source Badge */}
-                  {selectedConversation.source === 'Meeting' ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#faf5ff] text-[#9333ea] border border-[#f3e8ff] dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/60 shrink-0">
+                  {selectedConversation.source.toLowerCase() === 'meeting' ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-[#faf5ff] text-[#9333ea] border border-[#f3e8ff] dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/60 shrink-0">
                       <Video size={13} className="text-[#9333ea] dark:text-purple-300" />
                       <span>Meeting</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7] dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60 shrink-0">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7] dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60 shrink-0">
                       <MessageCircle size={13} className="text-[#16a34a] dark:text-emerald-300" />
                       <span>WhatsApp</span>
                     </span>
@@ -1255,287 +1232,245 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   <div>
                     <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block">Dibuat Oleh:</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200 text-xs block mt-0.5">
-                      {selectedConversation.pic} (Sales Executive)
+                      {selectedConversation.pic || 'Aida'} (Sales Executive)
                     </span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block">Tanggal & Waktu:</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200 text-xs block mt-0.5">
-                      {selectedConversation.date}, 14:00 WIB
+                      {selectedConversation.date}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* 2. Connected Job Numbers */}
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">
-                  CONNECTED JOB NUMBERS
-                </label>
-                <div className="flex flex-wrap items-center gap-2">
-                  {editJobNumbers.map((job, idx) => (
-                    <div
-                      key={idx}
-                      className="inline-flex items-center gap-1.5 bg-[#eff6ff] text-[#2563eb] border border-[#dbeafe] dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60 rounded-full px-3 py-1 text-xs font-semibold shadow-2xs"
-                    >
-                      <Tag size={12} className="text-[#2563eb] dark:text-blue-300" />
-                      <span>{job}</span>
-                      {isEditDetailMode && (
-                        <button
-                          type="button"
-                          onClick={() => setEditJobNumbers(prev => prev.filter((_, i) => i !== idx))}
-                          className="text-blue-400 hover:text-red-500 ml-0.5 cursor-pointer"
-                          title="Hapus Job Number"
-                        >
-                          <X size={12} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-
-                  {isEditDetailMode && (
-                    <div className="flex items-center gap-1 mt-1 w-full">
-                      <input
-                        type="text"
-                        value={newJobNumberInput}
-                        onChange={(e) => setNewJobNumberInput(e.target.value)}
-                        placeholder="Tambah job number... (mis. DSVEXP/2605/2553)"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (newJobNumberInput.trim()) {
-                              setEditJobNumbers(prev => [...prev, newJobNumberInput.trim()]);
-                              setNewJobNumberInput('');
-                            }
-                          }
-                        }}
-                        className="flex-1 bg-[#f8fafc] border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700 outline-none focus:border-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (newJobNumberInput.trim()) {
-                            setEditJobNumbers(prev => [...prev, newJobNumberInput.trim()]);
-                            setNewJobNumberInput('');
-                          }
-                        }}
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold cursor-pointer"
-                      >
-                        + Tambah
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* 3. Full Resume / Conclusion */}
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">
-                  FULL RESUME / CONCLUSION
-                </label>
-                {isEditDetailMode ? (
-                  <textarea
-                    rows={4}
-                    value={editSummary}
-                    onChange={(e) => setEditSummary(e.target.value)}
-                    className="w-full bg-[#f8fafc] focus:bg-white border border-blue-400 focus:border-blue-600 rounded-2xl p-3 text-xs text-slate-800 leading-relaxed outline-none shadow-2xs transition-colors resize-none font-normal dark:bg-slate-900 dark:border-blue-500 dark:text-slate-100"
-                    placeholder="Tulis ringkasan percakapan..."
-                  />
-                ) : (
-                  <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 text-xs text-slate-700 leading-relaxed font-normal shadow-2xs dark:bg-slate-900/90 dark:border-slate-800 dark:text-slate-300">
-                    {editSummary || selectedConversation.summary || 'Tidak ada ringkasan.'}
-                  </div>
-                )}
-              </div>
-
-              {/* 4. Evidence Attachments */}
+              {/* 2. SUMMARY Card */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                    EVIDENCE ATTACHMENTS ({editAttachments.length})
+                    SUMMARY
                   </span>
-                  <span className="text-[9px] text-slate-400 dark:text-slate-500 font-normal">
-                    Max size {MAX_FILE_SIZE_MB}MB
-                  </span>
-                </div>
-
-                {editAttachments.length === 0 ? (
-                  <div className="py-4 px-3 bg-slate-50/70 border border-dashed border-slate-200/90 rounded-xl text-center dark:bg-slate-900/40 dark:border-slate-800">
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium italic">
-                      Tidak ada lampiran berkas bukti.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {editAttachments.map((file) => (
-                      <div
-                        key={file.id}
-                        className="bg-white border border-slate-200/80 rounded-xl p-3 flex items-center justify-between shadow-2xs hover:border-slate-300 dark:bg-slate-900/80 dark:border-slate-800 dark:hover:border-slate-700 transition-colors"
-                      >
-                        <div className="flex items-center gap-3 truncate pr-2">
-                          {file.type === 'pdf' ? (
-                            <div className="w-8 h-8 rounded-lg bg-[#fef2f2] text-[#ef4444] dark:bg-red-950/40 dark:text-red-400 flex items-center justify-center shrink-0">
-                              <FileText size={17} />
-                            </div>
-                          ) : (
-                            <div className="w-8 h-8 rounded-lg bg-[#eff6ff] text-[#3b82f6] dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
-                              <ImageIcon size={17} />
-                            </div>
-                          )}
-                          <div className="truncate">
-                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                              {file.name}
-                            </p>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
-                              {file.size} • {file.type === 'pdf' ? 'PDF Document' : file.type === 'image' ? 'PNG Image' : 'Document'}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1 shrink-0">
-                          {isEditDetailMode ? (
-                            <button
-                              type="button"
-                              onClick={() => setEditAttachments(prev => prev.filter(f => f.id !== file.id))}
-                              className="p-1.5 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
-                              title="Hapus berkas"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          ) : (
-                            <>
-                              <a
-                                href={file.url}
-                                download={file.name}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                                title="Download"
-                              >
-                                <Download size={14} />
-                              </a>
-                              <button
-                                type="button"
-                                onClick={() => setPreviewModal({ isOpen: true, url: file.url, title: file.name })}
-                                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                                title="View"
-                              >
-                                <ExternalLink size={14} />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {isEditDetailMode && (
-                  <div className="mt-2.5">
-                    <button
-                      type="button"
-                      onClick={() => detailFileInputRef.current?.click()}
-                      className="w-full py-2 px-3 border border-dashed border-blue-300 hover:border-blue-500 rounded-xl text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50/40 hover:bg-blue-50 dark:bg-blue-950/30 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <Paperclip size={13} />
-                      <span>+ Tambah Berkas Lampiran</span>
-                    </button>
-                    <input
-                      ref={detailFileInputRef}
-                      type="file"
-                      multiple
-                      onChange={(e) => handleDetailFileUpload(e.target.files)}
-                      className="hidden"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* 5. Audit History & Verification Logs */}
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2.5">
-                  AUDIT HISTORY & VERIFICATION LOGS
-                </label>
-                {editAuditLogs.length === 0 ? (
-                  <div className="py-3 px-3.5 bg-slate-50/70 border border-dashed border-slate-200/90 rounded-xl text-center dark:bg-slate-900/40 dark:border-slate-800">
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium italic">
-                      Belum ada riwayat update. Riwayat audit akan tercatat otomatis saat percakapan diperbarui.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="relative pl-5 space-y-4">
-                    {/* Vertical connector line */}
-                    {editAuditLogs.length > 1 && (
-                      <div className="absolute left-[4px] top-2 bottom-2 w-[1.5px] bg-slate-200 dark:bg-slate-700" />
-                    )}
-
-                    {editAuditLogs.map((log, index) => (
-                      <div key={log.id} className="relative">
-                        {/* Bullet dot */}
-                        <div
-                          className={`absolute -left-5 top-1 w-2.5 h-2.5 rounded-full ${
-                            index === 0
-                              ? 'bg-blue-600 ring-4 ring-blue-50 dark:ring-blue-950'
-                              : 'bg-slate-400 ring-4 ring-slate-100 dark:bg-slate-600 dark:ring-slate-800'
-                          }`}
-                        />
-                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-snug">
-                          Edited by <strong className="font-bold text-slate-800 dark:text-white">{log.user}</strong> at {log.timestamp}
-                        </p>
-                        {log.badge && (
-                          <div className="inline-block bg-[#f8fafc] border border-slate-200/80 text-slate-500 text-[10px] font-medium px-2 py-0.5 rounded-md mt-1 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400">
-                            {log.badge}
-                          </div>
-                        )}
-                        {log.note && (
-                          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{log.note}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 border-t border-slate-100 bg-white shrink-0 dark:border-slate-800 dark:bg-[#0f172a]">
-              {isEditDetailMode ? (
-                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => {
-                      if (selectedConversation) {
-                        setEditSummary(selectedConversation.summary || '');
-                        setEditStatus(selectedConversation.status || 'active');
-                        setEditJobNumbers([...(selectedConversation.connected_job_numbers || [])]);
-                        setEditAttachments([...(selectedConversation.evidence_attachments || [])]);
-                      }
-                      setIsEditDetailMode(false);
+                      exportConversationsToPDF([selectedConversation]);
                     }}
-                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    className="text-[10px] font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 cursor-pointer transition-colors"
                   >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveDetail}
-                    disabled={isSavingDetail}
-                    className="flex-1 bg-[#2563eb] hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl shadow-xs flex items-center justify-center gap-2 text-xs transition-colors cursor-pointer disabled:opacity-60"
-                  >
-                    {isSavingDetail ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                    <span>Save Changes</span>
+                    <Download size={11} />
+                    <span>Download Summary (.pdf)</span>
                   </button>
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsEditDetailMode(true)}
-                  className="w-full bg-[#2563eb] hover:bg-blue-700 active:scale-[0.99] text-white font-bold py-2.5 rounded-xl shadow-xs flex items-center justify-center gap-2 text-xs transition-all cursor-pointer"
+                <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 text-xs text-slate-700 leading-relaxed font-normal shadow-2xs dark:bg-slate-900/90 dark:border-slate-800 dark:text-slate-300">
+                  {selectedConversation.summary || 'Discussed recent shipment delays. Customer requested schedule adjustment for container #2 and re-verification of documentation at Tanjung Priok Port.'}
+                </div>
+              </div>
+
+              {/* 3. EVIDENCE ATTACHMENTS Card */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    EVIDENCE ATTACHMENTS ({editAttachments.length || 2})
+                  </span>
+                  <span className="text-[9px] text-slate-400 dark:text-slate-500 font-normal">
+                    Max size {MAX_FILE_SIZE_MB} MB
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  {(editAttachments.length > 0 ? editAttachments : [
+                    { id: 'att-1', name: 'Notula_Meeting_03032026.pdf', size: '1.2 MB', type: 'pdf', url: '#' }
+                  ]).map((file) => (
+                    <div
+                      key={file.id}
+                      className="bg-white border border-slate-200/80 rounded-2xl p-3 flex items-center justify-between shadow-2xs hover:border-slate-300 dark:bg-slate-900/80 dark:border-slate-800 dark:hover:border-slate-700 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 truncate pr-2">
+                        <div className="w-9 h-9 rounded-xl bg-[#fef2f2] text-[#ef4444] dark:bg-red-950/40 dark:text-red-400 flex items-center justify-center shrink-0">
+                          <FileText size={18} />
+                        </div>
+                        <div className="truncate">
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                            {file.name}
+                          </p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                            {file.size} • PDF Document
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0 text-slate-400 dark:text-slate-500">
+                        <a
+                          href={file.url}
+                          download={file.name}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-1 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                          title="Download"
+                        >
+                          <Download size={15} />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewModal({ isOpen: true, url: file.url, title: file.name })}
+                          className="p-1 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                          title="View"
+                        >
+                          <ExternalLink size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 4. HISTORI NEED ASSISTANCE Card */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    HISTORI NEED ASSISTANCE
+                  </span>
+                  <span className="text-[9px] text-slate-400 dark:text-slate-500 font-normal">
+                    2 catatan ditemukan
+                  </span>
+                </div>
+
+                <div 
+                  onClick={() => setIsManagerFeedbackModalOpen(true)}
+                  className="bg-white border border-slate-200/80 rounded-2xl p-3.5 shadow-2xs hover:border-blue-400 hover:shadow-xs dark:bg-slate-900/80 dark:border-slate-800 dark:hover:border-blue-500 transition-all cursor-pointer flex items-center justify-between gap-3 group"
                 >
-                  <Pencil size={14} />
-                  <span>Edit Record</span>
-                </button>
-              )}
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                      <FileText size={16} />
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        Issue alamat pengiriman
+                      </h5>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                        {selectedConversation.company || 'PT Contoh Customer'} • 10 Okt 2026
+                      </p>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#fffbeb] text-[#b45309] border border-[#fef3c7] dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/60">
+                          Need Assistance
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                          Menunggu respons Manager
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <ChevronRight size={16} className="text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+                </div>
+              </div>
+            </div>
+
+            {/* Footer with full-width blue Close button */}
+            <div className="p-4 border-t border-slate-100 bg-white shrink-0 dark:border-slate-800 dark:bg-[#0f172a]">
+              <button
+                type="button"
+                onClick={() => setIsDetailModalOpen(false)}
+                className="w-full bg-[#2563eb] hover:bg-blue-700 active:scale-[0.99] text-white font-bold py-2.5 rounded-xl shadow-xs flex items-center justify-center gap-2 text-xs transition-all cursor-pointer"
+              >
+                <span>Close</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5B. MANAGER RESPONSE & FEEDBACK MODAL (Matching User Reference Image Exactly) */}
+      {isManagerFeedbackModalOpen && selectedConversation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-[460px] overflow-hidden flex flex-col max-h-[90vh] dark:bg-[#0f172a] dark:border-slate-800 animate-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="px-6 pt-5 pb-3.5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-[#0f172a] shrink-0">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+                Manager Response &amp; Feedback
+              </h3>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-4 overflow-y-auto space-y-4 flex-1 min-h-0 text-xs">
+              {/* 1. TOPIC ISSUE Card */}
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs dark:bg-slate-900/90 dark:border-slate-800">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                  TOPIC ISSUE
+                </span>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                  Issue Alamat Pengiriman
+                </h4>
+
+                <div className="border-t border-slate-100 dark:border-slate-800 my-2.5" />
+
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block">Customer:</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 text-xs block mt-0.5">
+                      {selectedConversation.company || 'PT Contoh Customer'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block">Tanggal &amp; Waktu:</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 text-xs block mt-0.5">
+                      {selectedConversation.date || '03/03/2026'}, 14:00 WIB
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. RESOLUTION STATUS */}
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">
+                  RESOLUTION STATUS
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#059669] dark:bg-emerald-400" />
+                    <span>Responded / Answered</span>
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    <span className="text-slate-400 dark:text-slate-400 mr-1">Previous:</span>
+                    <span>Awaiting Response</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* 3. MANAGER NOTES & INSTRUCTIONS */}
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">
+                  MANAGER NOTES &amp; INSTRUCTIONS
+                </span>
+                <div className="bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed font-normal shadow-2xs dark:bg-slate-900/90 dark:border-slate-800 dark:text-slate-300">
+                  <p>
+                    Discussed recent shipment delays. Customer requested schedule adjustment for container #2 and re-verification of documentation at Tanjung Priok Port.
+                  </p>
+                </div>
+                
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2 px-1">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-4 h-4 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/60 dark:text-blue-300 flex items-center justify-center shrink-0">
+                      <Check size={10} className="stroke-[3]" />
+                    </div>
+                    <span>Responded by: <strong className="font-semibold text-slate-800 dark:text-slate-200">Mr. Bambang</strong> (Sales Manager)</span>
+                  </div>
+                  <span className="text-slate-400 dark:text-slate-500">
+                    10 Oct 2026, 15:00 WIB
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer with full-width blue Close button */}
+            <div className="p-4 border-t border-slate-100 bg-white shrink-0 dark:border-slate-800 dark:bg-[#0f172a]">
+              <button
+                type="button"
+                onClick={() => setIsManagerFeedbackModalOpen(false)}
+                className="w-full bg-[#2563eb] hover:bg-blue-700 active:scale-[0.99] text-white font-bold py-2.5 rounded-xl shadow-xs flex items-center justify-center gap-2 text-xs transition-all cursor-pointer"
+              >
+                <span>Close</span>
+              </button>
             </div>
           </div>
         </div>
@@ -1568,14 +1503,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsCreateModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 cursor-pointer"
-                title="Close"
-              >
-                <X size={18} />
-              </button>
             </div>
 
             {/* Form Body */}

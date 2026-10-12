@@ -20,6 +20,8 @@ import {
 interface SubMenuItem {
   name: string
   href: string
+  badgeType?: 'default' | 'success' | 'danger'
+  key?: 'myTasks' | 'fieldReports' | 'needBackup'
 }
 
 const salesExecutiveSubMenus: SubMenuItem[] = [
@@ -36,12 +38,12 @@ const salesExecutiveSubMenus: SubMenuItem[] = [
     href: '/dashboard/record-conversation',
   },
   {
-    name: 'Task Field Agent',
+    name: 'Monitoring Task of Field Agent',
     href: '/dashboard/task-of-field-agent',
   },
   {
-    name: 'Need Back up',
-    href: '/dashboard/need-backup',
+    name: 'Manage Field Agent Account',
+    href: '/dashboard/manage-field-agent',
   },
 ]
 
@@ -51,12 +53,22 @@ const fieldAgentMenus: SubMenuItem[] = [
     href: '/dashboard/field-agent?tab=field-agent',
   },
   {
-    name: 'My Task',
+    name: 'My Tasks',
     href: '/dashboard/field-agent?tab=tasks',
+    badgeType: 'default',
+    key: 'myTasks',
   },
   {
-    name: 'Job History',
+    name: 'Field Reports',
     href: '/dashboard/field-agent?tab=history',
+    badgeType: 'success',
+    key: 'fieldReports',
+  },
+  {
+    name: 'Need Backup',
+    href: '/dashboard/need-backup',
+    badgeType: 'danger',
+    key: 'needBackup',
   },
 ]
 
@@ -65,11 +77,87 @@ export function Sidebar(): React.ReactElement {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [crmOpen, setCrmOpen] = useState(true)
-  const [fieldAgentOpen, setFieldAgentOpen] = useState(false)
+  const [fieldAgentOpen, setFieldAgentOpen] = useState(true)
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  const isFieldAgentActive = pathname.startsWith('/dashboard/field-agent')
+  // Dynamic badge counts for Field Agent menus
+  const [counts, setCounts] = useState<{
+    myTasks: number
+    fieldReports: number
+    needBackup: number
+  }>({
+    myTasks: 5,
+    fieldReports: 3,
+    needBackup: 2,
+  })
+
+  const isFieldAgentActive = pathname.startsWith('/dashboard/field-agent') || pathname.startsWith('/dashboard/need-backup')
   const currentFieldTab = searchParams?.get('tab') || 'field-agent'
+
+  useEffect(() => {
+    const fetchCounts = async (): Promise<void> => {
+      try {
+        // 1. Fetch from A3-tasks API (same endpoint used by Field Agent App)
+        let myTasksTotal = 5
+        let completedTotal = 3
+
+        try {
+          const a3Res = await fetch('/api/feature/A3-tasks', { cache: 'no-store' })
+          if (a3Res.ok) {
+            const a3Data = await a3Res.json()
+            if (a3Data.success && Array.isArray(a3Data.data)) {
+              myTasksTotal = a3Data.data.length
+              completedTotal = a3Data.data.filter((t: any) => t.status === 'COMPLETED' || t.field_stage === 'Completed').length
+            }
+          }
+        } catch {}
+
+        // 2. Fetch need backup tickets count (open/pending tickets)
+        let backupTotal = 3
+        try {
+          const raw = typeof window !== 'undefined' ? localStorage.getItem('andima_need_backup_tickets') : null
+          if (raw) {
+            const parsed = JSON.parse(raw)
+            const activeTickets = parsed.filter((t: any) => t.status !== 'Resolved').length
+            backupTotal = activeTickets
+          } else {
+            const { count: bckCount, error: bckErr } = await supabase
+              .from('a2_need_backups')
+              .select('*', { count: 'exact', head: true })
+              .in('status', ['Pending', 'Open', 'Inprogress', 'pending', 'open'])
+
+            if (!bckErr && typeof bckCount === 'number' && bckCount > 0) {
+              backupTotal = bckCount
+            }
+          }
+        } catch {}
+
+        setCounts({
+          myTasks: myTasksTotal,
+          fieldReports: completedTotal,
+          needBackup: backupTotal,
+        })
+      } catch (err) {
+        console.error('Error fetching sidebar badge counts:', err)
+      }
+    }
+
+    void fetchCounts()
+
+    // Listen to custom event when new conversation with need assistance or new task is added
+    const handleRefresh = (): void => {
+      void fetchCounts()
+    }
+    window.addEventListener('need-backup-updated', handleRefresh)
+    window.addEventListener('need_backup_updated', handleRefresh)
+    window.addEventListener('storage', handleRefresh)
+
+    return () => {
+      window.removeEventListener('need-backup-updated', handleRefresh)
+      window.removeEventListener('need_backup_updated', handleRefresh)
+      window.removeEventListener('storage', handleRefresh)
+    }
+  }, [pathname, searchParams])
 
   useEffect(() => {
     const handleToggle = (): void => setMobileOpen((prev) => !prev)
@@ -239,25 +327,44 @@ export function Sidebar(): React.ReactElement {
                       const itemTab = item.href.includes('tab=')
                         ? item.href.split('tab=')[1]
                         : 'field-agent'
-                      const isActive =
-                        isFieldAgentActive && currentFieldTab === itemTab
+                      const badgeVal = item.key ? counts[item.key] : undefined
+                      const isNeedBackupRoute = item.href === '/dashboard/need-backup'
+                      const isActive = isNeedBackupRoute
+                        ? pathname === '/dashboard/need-backup'
+                        : pathname.startsWith('/dashboard/field-agent') && currentFieldTab === itemTab
 
                       return (
                         <Link
                           key={item.href}
                           href={item.href}
-                          className={`flex items-center gap-2 rounded-lg px-2.5 py-1 text-xs transition-colors ${
+                          className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition-colors ${
                             isActive
                               ? 'bg-[#9cb8cd] text-slate-800 font-bold shadow-xs'
                               : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
                           }`}
                         >
-                          <span
-                            className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                              isActive ? 'bg-[#06b6d4]' : 'bg-slate-500'
-                            }`}
-                          />
-                          <span>{item.name}</span>
+                          <div className='flex items-center gap-2 min-w-0'>
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                                isActive ? 'bg-[#06b6d4]' : 'bg-slate-500'
+                              }`}
+                            />
+                            <span className='truncate'>{item.name}</span>
+                          </div>
+
+                          {badgeVal !== undefined && (
+                            <span
+                              className={`shrink-0 text-[11px] font-bold ${
+                                item.badgeType === 'success'
+                                  ? 'text-emerald-400 font-extrabold pr-0.5'
+                                  : item.badgeType === 'danger'
+                                  ? 'text-rose-400 font-extrabold pr-0.5'
+                                  : 'px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700/60 text-[10px]'
+                              }`}
+                            >
+                              {badgeVal}
+                            </span>
+                          )}
                         </Link>
                       )
                     })}
