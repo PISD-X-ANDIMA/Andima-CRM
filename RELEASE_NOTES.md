@@ -66,3 +66,31 @@
 - Penambahan halaman Kelola Role Tim (`/dashboard/manager-customer-success/role-management`) untuk memberikan wewenang role Sales Executive dan Field Agent.
 - Penambahan endpoint API kelola role (`/api/v1/manager/roles`) yang terhubung langsung ke `b2_register` dan `d3_positions`.
 - Penerapan pengalihan login otomatis dan menu sidebar dinamis sesuai role pengguna (`sales_executive` vs `manager_customer_success`).
+
+## 11–12 Oktober 2026
+### Dashboard Manager of Customer Success
+- Penambahan halaman Executive Oversight (`/dashboard/manager-customer-success`) dengan 4 kartu metrik agregat tim: Total Customer Tim, Total Sales Executive Aktif, Total Meeting Tim Minggu Ini, dan Total Need Backup.
+- Penambahan tabel kinerja dan jadwal mingguan seluruh Sales Executive dengan status Scheduled, Completed, dan Cancelled.
+- Penambahan endpoint agregat data tim `/api/v1/manager/dashboard/overview` terhubung langsung ke database Supabase tanpa data mock dummy.
+- Penambahan fitur ekspor rekap kinerja tim Manager ke format Excel/CSV dan PDF.
+- Penambahan proteksi rute otomatis: akun Manager of Customer Success yang membuka `/dashboard` atau `/dashboard/sales-executive` dialihkan secara otomatis ke dashboard Manager.
+
+### Global Filter Sales Executive & Mode Baca Company List
+- Penambahan komponen `ManagerGlobalFilterBar` pada dashboard dan halaman Company List khusus pengguna dengan peran Manager.
+- Sinkronisasi status filter viewing Sales Executive: Manager dapat meninjau data per Sales Executive secara spesifik atau melihat data agregat tim secara keseluruhan ("All Sales Executives").
+- Dropdown viewing Sales Executive difilter secara spesifik hanya menampilkan personel dengan role Sales Executive aktif.
+- Penyesuaian halaman Company List (`/dashboard/company-list`) dalam mode baca (read-only) untuk Manager: tombol tambah, edit, dan hapus perusahaan disembunyikan/dinonaktifkan secara kondisional guna menjaga integritas kepemilikan data Sales Executive.
+
+### Arsitektur Role & Hak Akses Berbasis HRMS
+- Penghapusan total ketergantungan pada tabel perantara `a1_user_access` dari seluruh endpoint dan skrip migrasi database (`202610100001_a1_user_access.sql`).
+- Penentuan akun dan hak akses CRM kini diturunkan langsung dari relasi akun kepegawaian `b2_register` yang terhubung ke jabatan `d3_positions` via `position_id`.
+- Standardisasi resolusi peran (`resolveCrmRoleFromPosition`) berdasarkan kode dan judul posisi (`COM-CS-MGR` untuk Manager of Customer Success, `COM-SLS` untuk Sales Executive, dan `COM-FA` untuk Field Agent).
+- Penyesuaian query tabel `d3_positions` dengan kolom skema valid (`code`, `title`) dan penanganan pencarian akun multi-kunci (`user.id`, email case-insensitive `ilike`, serta nama lengkap).
+- Peningkatan alur login (`/login`): deteksi instan jabatan kepegawaian pasca-autentikasi dan pengalihan langsung ke rute dashboard yang sesuai (`/dashboard/manager-customer-success` atau `/dashboard/sales-executive`).
+- Penyesuaian header dan breadcrumbs (`DashboardHeader`) agar dinamis menampilkan navigasi sesuai role aktif pengguna.
+
+### Integrasi Modul Squad A2 & Pembersihan Data
+- Pembersihan data mock/dummy statis pada halaman Squad A2 (`Record Conversation`, `Task of Field Agent`, dan `Need Backup`), disiapkan dalam bentuk *empty-state* terhubung ke database.
+- Pembersihan riwayat data lama pada tabel `a1_company_list` dan `a1_customer_meetings`.
+- Penambahan 5 data aktif perusahaan logistik Indonesia baru dengan PIC, nomor telepon valid, alamat operasional, dan jadwal meeting aktif minggu berjalan (12–16 Oktober 2026) yang terhubung ke akun `Budi Sales Exec`.
+
