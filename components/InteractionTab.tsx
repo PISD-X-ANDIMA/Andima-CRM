@@ -436,7 +436,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
   // Open "See more.." Detail Modal (Matching User Screenshot Exactly)
   const handleOpenDetail = (item: ConversationDisplayItem) => {
-    setSelectedConversation(item);
     setIsEditDetailMode(false);
     setEditSummary(
       item.summary ||
@@ -445,24 +444,26 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     setEditStatus(item.status || 'active');
 
     // Connected Job Numbers
+    let initialJobNumbers: string[] = [];
     if (item.connected_job_numbers && item.connected_job_numbers.length > 0) {
-      setEditJobNumbers([...item.connected_job_numbers]);
+      initialJobNumbers = [...item.connected_job_numbers];
     } else if (item.company.includes('DSV') || item.conversation_id === 'CONV-56757') {
-      setEditJobNumbers(['DSVEXP/2605/2551', 'DSVEXP/2605/2552']);
+      initialJobNumbers = ['DSVEXP/2605/2551', 'DSVEXP/2605/2552'];
     } else {
       const cleanJob = item.job_number.replace(/^#/, '');
-      setEditJobNumbers([cleanJob]);
+      initialJobNumbers = [cleanJob];
     }
+    setEditJobNumbers(initialJobNumbers);
     setNewJobNumberInput('');
 
     // Evidence Attachments: Hanya tampilkan jika PIC memang melampirkan berkas, jika tidak ada dibuat kosong
+    let initialAttachments: EvidenceAttachmentItem[] = [];
     if (item.evidence_attachments && item.evidence_attachments.length > 0) {
-      const realAttachments = item.evidence_attachments.filter(
+      initialAttachments = item.evidence_attachments.filter(
         att => att.name !== 'Notula_Meeting_03032026.pdf' && att.name !== 'SS_WA_Confirmation.png'
       );
-      setEditAttachments(realAttachments);
     } else if (item.document_urls && item.document_urls.length > 0) {
-      const mappedDocs: EvidenceAttachmentItem[] = item.document_urls.map((url, idx) => {
+      initialAttachments = item.document_urls.map((url, idx) => {
         const fileName = url.split('/').pop()?.split('?')[0] || `Attachment_${idx + 1}`;
         const isImage = /\.(png|jpe?g|webp|gif|svg)$/i.test(fileName);
         return {
@@ -473,10 +474,15 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           url
         };
       });
-      setEditAttachments(mappedDocs);
-    } else {
-      setEditAttachments([]);
     }
+
+    setEditAttachments(initialAttachments);
+
+    setSelectedConversation({
+      ...item,
+      connected_job_numbers: initialJobNumbers,
+      evidence_attachments: initialAttachments
+    });
 
     // Audit History Logs (kosong jika belum di-update seseorang)
     if (item.audit_logs && item.audit_logs.length > 0) {
@@ -1349,7 +1355,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                     EVIDENCE ATTACHMENTS ({editAttachments.length})
                   </span>
                   <span className="text-[9px] text-slate-400 dark:text-slate-500 font-normal">
-                    Max size 10MB
+                    Max size {MAX_FILE_SIZE_MB}MB
                   </span>
                 </div>
 
@@ -1497,7 +1503,15 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setIsEditDetailMode(false)}
+                    onClick={() => {
+                      if (selectedConversation) {
+                        setEditSummary(selectedConversation.summary || '');
+                        setEditStatus(selectedConversation.status || 'active');
+                        setEditJobNumbers([...(selectedConversation.connected_job_numbers || [])]);
+                        setEditAttachments([...(selectedConversation.evidence_attachments || [])]);
+                      }
+                      setIsEditDetailMode(false);
+                    }}
                     className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   >
                     Cancel
