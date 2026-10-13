@@ -43,7 +43,7 @@ export function CompanyActionModal({ customer, mode, onClose }: Props) {
   }, [customer, mode]);
 
   if (!customer || !mode) return null;
-  const title = mode === "details" ? "Company Details" : "Task Of Field Agent";
+  const title = mode === "details" ? "Company Details" : "Management Task of Field Agent";
 
   return <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/75 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <section role="dialog" aria-modal="true" aria-labelledby="company-action-modal-title" className="my-auto w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl">

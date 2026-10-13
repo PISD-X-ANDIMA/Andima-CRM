@@ -1673,13 +1673,13 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       <div className="flex items-center gap-2 text-xs font-semibold mb-3">
         <span className="text-slate-900 font-extrabold tracking-wide text-xs">ANDIMA CRM</span>
         <span className="text-slate-400">CRM /</span>
-        <span className="text-[#0d6efd] font-bold">Task Field</span>
+        <span className="text-[#0d6efd] font-bold">Management Task of Field Agent</span>
       </div>
 
       {/* 2. TITLE & SUBTITLE */}
       <div className="mb-5">
         <h1 className="text-[26px] font-bold text-[#1e293b] tracking-tight leading-tight">
-          Monitoring Task Field Agent
+          Management Task of Field Agent
         </h1>
         <p className="text-xs text-slate-500 font-normal mt-1">
           Monitor progres task dan tinjau hasil inspeksi yang dikirim dari A3.

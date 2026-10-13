@@ -21,7 +21,7 @@ const defaultSalesExecutiveMenus: SubMenuItem[] = [
   { name: "Company List", href: "/dashboard/company-list" },
   { name: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { name: "Record Conversation", href: "/dashboard/record-conversation" },
-  { name: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
+  { name: "Management Task of Field Agent", href: "/dashboard/task-of-field-agent" },
   { name: "Manage Field Agent Account", href: "/dashboard/manage-field-agent-account" },
 ];
 
@@ -30,7 +30,7 @@ const defaultManagerMenus: SubMenuItem[] = [
   { name: "Company List", href: "/dashboard/company-list" },
   { name: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { name: "Record Conversation", href: "/dashboard/record-conversation" },
-  { name: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
+  { name: "Management Task of Field Agent", href: "/dashboard/task-of-field-agent" },
   { name: "Manage User Roles", href: "/dashboard/manager-customer-success/role-management" },
 ];
 

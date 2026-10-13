@@ -11,7 +11,7 @@ const routeLabels: Record<string, string> = {
   "company-list": "Company List",
   "meeting-schedule": "Meeting Schedule",
   "record-conversation": "Record Conversation",
-  "task-of-field-agent": "Task of Field Agent",
+  "task-of-field-agent": "Management Task of Field Agent",
   "need-backup": "Need Backup",
   "manage-field-agent-account": "Manage Field Agent Account",
   "field-agent-management": "Field Agent Management",
@@ -64,7 +64,7 @@ export function DashboardHeader() {
     if (!segments.length) return ["Dashboard"];
     const isManager = pathname.includes("manager-customer-success");
     const parentRole = isManager ? "Manager of Customer Success" : "Sales Executive";
-    if (segments[0] === "task-of-field-agent") return ["CRM", parentRole, "Task of Field Agent"];
+    if (segments[0] === "task-of-field-agent") return ["CRM", parentRole, "Management Task of Field Agent"];
     const labels = segments.map((segment) => routeLabels[segment] || (segment.includes("-") ? "Details" : segment));
     if (labels[0] !== parentRole && labels[0] !== "Dashboard") labels.unshift(parentRole);
     return ["CRM", ...labels];
