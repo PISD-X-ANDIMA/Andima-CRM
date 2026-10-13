@@ -118,7 +118,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         )}
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pt-6 pb-4">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto overflow-x-hidden px-3 pt-6 pb-4 [scrollbar-width:thin] [scrollbar-color:#1e3a66_transparent]">
         {topMenuItems.map((item) => {
           const Icon = item.icon;
           const isActive = item.href !== "#" && (
@@ -238,13 +238,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`flex items-center rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150 ${
+                        className={`flex items-center rounded-lg px-3 py-2 text-[13px] font-medium whitespace-nowrap transition-all duration-150 ${
                           isActive
                             ? "bg-blue-600 text-white shadow-sm shadow-blue-600/25"
                             : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
                         }`}
                       >
-                        <span>{item.name}</span>
+                        <span className="whitespace-nowrap">{item.name}</span>
                       </Link>
                     );
                   })}
@@ -309,7 +309,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex sticky top-0 h-screen w-[260px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
+      <aside className="hidden lg:flex sticky top-0 h-screen w-[285px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
         {sidebarContent}
       </aside>
 
@@ -320,7 +320,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             onClick={onClose}
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in cursor-pointer"
           />
-          <aside className="fixed inset-y-0 left-0 z-50 flex h-full w-[270px] flex-col bg-[#102445] shadow-2xl animate-in slide-in-from-left duration-200">
+          <aside className="fixed inset-y-0 left-0 z-50 flex h-full w-[285px] flex-col bg-[#102445] shadow-2xl animate-in slide-in-from-left duration-200">
             {sidebarContent}
           </aside>
         </div>

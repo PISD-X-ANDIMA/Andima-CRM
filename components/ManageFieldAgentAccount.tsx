@@ -42,6 +42,176 @@ const DEFAULT_FIELD_AGENT_ACCOUNTS: FieldAgentAccount[] = [
   { id: 'agent-24', agent_id: 'AGNT-024', name: 'Teguh Santoso', email: 'teguh@andima.co.id', phone_number: '+62 834-7788-9900', field_area: 'Bekasi Industrial Area', status: 'Inactive' }
 ];
 
+/**
+ * Validasi alamat email sesuai standar Field Agent Account:
+ * Email Valid:
+ *  - nama@gmail.com
+ *  - nama@yahoo.com
+ *  - nama@outlook.com
+ *  - nama@company.co.id
+ *  - nama@company.id
+ *  - nama@company.org
+ *  - nama@company.ac.id
+ *
+ * Email Tidak Valid:
+ *  - nama@gmail -> tidak ada akhiran domain
+ *  - nama@gmail.co -> domain gmail.co tidak valid (typo untuk gmail.com)
+ *  - nama@company -> tidak ada akhiran domain
+ *  - @gmail.com -> tidak ada nama pengguna
+ *  - nama.gmail.com -> tidak ada simbol @
+ *  - nama@@gmail.com -> simbol @ ganda
+ *  - nama@.com -> nama domain tidak lengkap (diawali titik)
+ *  - nama@gmail..com -> terdapat titik ganda pada domain
+ *  - nama@gmail.com. -> ada titik berlebih di akhir
+ *  - kolom email kosong -> email tidak diisi (tidak bisa create account)
+ */
+/**
+ * Ekstensi domain resmi yang diizinkan dalam sistem (Whitelist).
+ * Menolak domain asal-asalan seperti .sd, .co, .xx, dll.
+ */
+export const ALLOWED_DOMAIN_EXTENSIONS = [
+  'com',
+  'co.id',
+  'id',
+  'org',
+  'ac.id',
+  'net',
+  'edu',
+  'gov',
+  'go.id',
+  'sch.id',
+  'biz.id',
+  'web.id',
+  'my.id',
+  'org.id',
+  'io',
+];
+
+export function validateEmail(email: string): { isValid: boolean; error: string | null } {
+  const trimmed = (email || '').trim();
+
+  // 1. Cek kosong
+  if (!trimmed) {
+    return { isValid: false, error: 'Kolom email kosong. Email wajib diisi.' };
+  }
+
+  // 2. Cek spasi
+  if (/\s/.test(trimmed)) {
+    return { isValid: false, error: 'Email tidak boleh mengandung spasi.' };
+  }
+
+  // 3. Cek simbol @
+  const atMatches = trimmed.match(/@/g);
+  if (!atMatches) {
+    return { isValid: false, error: "Email tidak valid: tidak ada simbol '@'." };
+  }
+  if (atMatches.length > 1) {
+    return { isValid: false, error: "Email tidak valid: simbol '@' ganda." };
+  }
+
+  const [username, domain] = trimmed.split('@');
+
+  // 4. Cek username (sebelum @)
+  if (!username) {
+    return { isValid: false, error: "Email tidak valid: tidak ada nama pengguna sebelum '@'." };
+  }
+  if (username.startsWith('.') || username.endsWith('.')) {
+    return { isValid: false, error: 'Nama pengguna tidak boleh diawali atau diakhiri titik.' };
+  }
+  if (username.includes('..')) {
+    return { isValid: false, error: 'Nama pengguna tidak boleh mengandung titik ganda (..).' };
+  }
+  const usernameRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+$/;
+  if (!usernameRegex.test(username)) {
+    return { isValid: false, error: 'Karakter pada nama pengguna email tidak valid.' };
+  }
+
+  // 5. Cek domain (setelah @)
+  if (!domain) {
+    return { isValid: false, error: 'Nama domain tidak lengkap.' };
+  }
+  if (domain.startsWith('.')) {
+    return { isValid: false, error: 'Nama domain tidak lengkap (diawali titik).' };
+  }
+  if (domain.endsWith('.')) {
+    return { isValid: false, error: 'Ada titik berlebih di akhir domain.' };
+  }
+  if (domain.includes('..')) {
+    return { isValid: false, error: 'Terdapat titik ganda pada domain.' };
+  }
+  if (!domain.includes('.')) {
+    return { isValid: false, error: 'Tidak ada akhiran domain (contoh: .com, .co.id, .id).' };
+  }
+
+  const domainParts = domain.split('.');
+
+  // Cek format setiap bagian domain (label)
+  const labelRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/;
+  for (const part of domainParts) {
+    if (!part || !labelRegex.test(part)) {
+      return { isValid: false, error: `Bagian domain '${part}' tidak valid.` };
+    }
+  }
+
+  // 6. Validasi ekstensi domain resmi (Whitelist)
+  const lastTwo = domainParts.length >= 2 ? domainParts.slice(-2).join('.').toLowerCase() : '';
+  const lastOne = domainParts[domainParts.length - 1].toLowerCase();
+
+  if (lastTwo && ALLOWED_DOMAIN_EXTENSIONS.includes(lastTwo)) {
+    if (domainParts.length < 3) {
+      return { isValid: false, error: `Nama domain tidak lengkap sebelum '.${lastTwo}' (contoh: company.${lastTwo}).` };
+    }
+    return { isValid: true, error: null };
+  }
+
+  if (ALLOWED_DOMAIN_EXTENSIONS.includes(lastOne)) {
+    if (domainParts.length < 2) {
+      return { isValid: false, error: 'Nama domain tidak lengkap.' };
+    }
+    return { isValid: true, error: null };
+  }
+
+  return {
+    isValid: false,
+    error: `Ekstensi domain '.${lastOne}' tidak valid. Gunakan ekstensi resmi (contoh: .com, .co.id, .id, .org, .ac.id).`
+  };
+}
+
+/**
+ * Format nomor telepon Indonesia otomatis dengan prefix +62 dan strip:
+ * Contoh: +62 812-3456-9023
+ */
+export function formatPhoneNumber(value: string): string {
+  if (!value) return '+62 ';
+
+  // Ekstrak hanya digit angka
+  let digits = value.replace(/\D/g, '');
+
+  // Hilangkan kode negara 62 jika ada di awal
+  if (digits.startsWith('62')) {
+    digits = digits.slice(2);
+  }
+
+  // Hilangkan angka 0 di awal jika user paste 08...
+  if (digits.startsWith('0')) {
+    digits = digits.slice(1);
+  }
+
+  // Batasi maksimal 12 digit setelah +62
+  digits = digits.slice(0, 12);
+
+  if (digits.length === 0) {
+    return '+62 ';
+  }
+  if (digits.length <= 3) {
+    return `+62 ${digits}`;
+  }
+  if (digits.length <= 7) {
+    return `+62 ${digits.slice(0, 3)}-${digits.slice(3)}`;
+  }
+  return `+62 ${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
+
 export default function ManageFieldAgentAccount() {
   const [agentAccounts, setAgentAccounts] = useState<FieldAgentAccount[]>(() => {
     if (typeof window !== 'undefined') {
@@ -68,10 +238,22 @@ export default function ManageFieldAgentAccount() {
   // Form states
   const [formAgentName, setFormAgentName] = useState('');
   const [formAgentEmail, setFormAgentEmail] = useState('');
-  const [formAgentPhone, setFormAgentPhone] = useState('');
+  const [formAgentPhone, setFormAgentPhone] = useState('+62 ');
   const [formAgentArea, setFormAgentArea] = useState('Bekasi Industrial Area');
   const [formAgentStatus, setFormAgentStatus] = useState<'Active' | 'Inactive'>('Active');
   const [agentFormError, setAgentFormError] = useState<string | null>(null);
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (!val || val.length < 4 || val === '+62' || val === '+62 ') {
+      setFormAgentPhone('+62 ');
+      if (agentFormError) setAgentFormError(null);
+      return;
+    }
+    const formatted = formatPhoneNumber(val);
+    setFormAgentPhone(formatted);
+    if (agentFormError) setAgentFormError(null);
+  };
 
   // Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -93,7 +275,7 @@ export default function ManageFieldAgentAccount() {
     setEditingAgent(agent);
     setFormAgentName(agent.name);
     setFormAgentEmail(agent.email.includes('@') ? agent.email : `${agent.name.toLowerCase().replace(/\s+/g, '')}@andima.co.id`);
-    setFormAgentPhone(agent.phone_number || '');
+    setFormAgentPhone(formatPhoneNumber(agent.phone_number || '+62 '));
     setFormAgentArea(agent.field_area || 'Bekasi Industrial Area');
     setFormAgentStatus(agent.status);
     setAgentFormError(null);
@@ -107,8 +289,22 @@ export default function ManageFieldAgentAccount() {
       setAgentFormError('Nama Field Agent wajib diisi.');
       return;
     }
-    if (!formAgentEmail.trim() || !formAgentEmail.includes('@')) {
-      setAgentFormError('Email valid wajib diisi.');
+    if (!formAgentEmail.trim()) {
+      setAgentFormError('Kolom email kosong. Email wajib diisi.');
+      return;
+    }
+    const emailCheck = validateEmail(formAgentEmail);
+    if (!emailCheck.isValid) {
+      setAgentFormError(emailCheck.error || 'Format email tidak valid.');
+      return;
+    }
+    const phoneDigits = formAgentPhone.replace(/\D/g, '').replace(/^62/, '');
+    if (!phoneDigits) {
+      setAgentFormError('Nomor telepon wajib diisi.');
+      return;
+    }
+    if (phoneDigits.length < 9) {
+      setAgentFormError('Nomor telepon tidak lengkap (minimal 9 digit setelah +62).');
       return;
     }
 
@@ -134,7 +330,7 @@ export default function ManageFieldAgentAccount() {
   const handleOpenAddAgent = () => {
     setFormAgentName('');
     setFormAgentEmail(''); // Empty, do not prefill
-    setFormAgentPhone(''); // Empty, do not prefill
+    setFormAgentPhone('+62 '); // Prefill with +62 
     setFormAgentArea('Bekasi Industrial Area');
     setFormAgentStatus('Active');
     setAgentFormError(null);
@@ -143,12 +339,27 @@ export default function ManageFieldAgentAccount() {
 
   const handleSaveAddAgent = (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!formAgentName.trim()) {
       setAgentFormError('Nama Field Agent wajib diisi.');
       return;
     }
-    if (!formAgentEmail.trim() || !formAgentEmail.includes('@')) {
-      setAgentFormError('Email valid wajib diisi.');
+    if (!formAgentEmail.trim()) {
+      setAgentFormError('Kolom email kosong. Email wajib diisi untuk membuat akun.');
+      return;
+    }
+    const emailCheck = validateEmail(formAgentEmail);
+    if (!emailCheck.isValid) {
+      setAgentFormError(emailCheck.error || 'Format email tidak valid.');
+      return;
+    }
+    const phoneDigits = formAgentPhone.replace(/\D/g, '').replace(/^62/, '');
+    if (!phoneDigits) {
+      setAgentFormError('Nomor telepon wajib diisi.');
+      return;
+    }
+    if (phoneDigits.length < 9) {
+      setAgentFormError('Nomor telepon tidak lengkap (minimal 9 digit setelah +62).');
       return;
     }
 
@@ -423,12 +634,13 @@ export default function ManageFieldAgentAccount() {
             </div>
 
             {agentFormError && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
-                {agentFormError}
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2.5 animate-in fade-in">
+                <AlertTriangle size={16} className="shrink-0 text-rose-600" />
+                <span>{agentFormError}</span>
               </div>
             )}
 
-            <form onSubmit={handleSaveEditAgent} className="space-y-4">
+            <form onSubmit={handleSaveEditAgent} noValidate className="space-y-4">
               {/* Field 1: AGENT ID */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
@@ -471,11 +683,14 @@ export default function ManageFieldAgentAccount() {
                     EMAIL ADDRESS <span className="text-rose-500">*</span>
                   </label>
                   <input
-                    type="email"
+                    type="text"
                     value={formAgentEmail}
-                    onChange={(e) => setFormAgentEmail(e.target.value)}
-                    placeholder="agent@andima.co.id"
-                    className="w-full bg-white border border-slate-200/90 rounded-2xl px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 transition-colors"
+                    onChange={(e) => {
+                      setFormAgentEmail(e.target.value);
+                      if (agentFormError) setAgentFormError(null);
+                    }}
+                    placeholder="nama@company.com"
+                    className="w-full bg-white border border-slate-200/90 rounded-2xl px-3.5 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
 
@@ -486,8 +701,8 @@ export default function ManageFieldAgentAccount() {
                   <input
                     type="text"
                     value={formAgentPhone}
-                    onChange={(e) => setFormAgentPhone(e.target.value)}
-                    placeholder="+62 812-9876-5432"
+                    onChange={handlePhoneChange}
+                    placeholder="+62 812-3456-9023"
                     className="w-full bg-white border border-slate-200/90 rounded-2xl px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
@@ -622,12 +837,13 @@ export default function ManageFieldAgentAccount() {
             </div>
 
             {agentFormError && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
-                {agentFormError}
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2.5 animate-in fade-in">
+                <AlertTriangle size={16} className="shrink-0 text-rose-600" />
+                <span>{agentFormError}</span>
               </div>
             )}
 
-            <form onSubmit={handleSaveAddAgent} className="space-y-4">
+            <form onSubmit={handleSaveAddAgent} noValidate className="space-y-4">
               {/* Field 1: AGENT ID */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
@@ -670,10 +886,13 @@ export default function ManageFieldAgentAccount() {
                     EMAIL ADDRESS <span className="text-rose-500">*</span>
                   </label>
                   <input
-                    type="email"
+                    type="text"
                     value={formAgentEmail}
-                    onChange={(e) => setFormAgentEmail(e.target.value)}
-                    placeholder="agent@andima.co.id"
+                    onChange={(e) => {
+                      setFormAgentEmail(e.target.value);
+                      if (agentFormError) setAgentFormError(null);
+                    }}
+                    placeholder="nama@company.com"
                     className="w-full bg-white border border-slate-200/90 rounded-2xl px-3.5 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
@@ -685,8 +904,8 @@ export default function ManageFieldAgentAccount() {
                   <input
                     type="text"
                     value={formAgentPhone}
-                    onChange={(e) => setFormAgentPhone(e.target.value)}
-                    placeholder="+62 812-3456-7890"
+                    onChange={handlePhoneChange}
+                    placeholder="+62 812-3456-9023"
                     className="w-full bg-white border border-slate-200/90 rounded-2xl px-3.5 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
