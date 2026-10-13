@@ -73,9 +73,12 @@ export async function getWorksheets(options?: {
   const salesIds = Array.from(new Set(data.map((w) => w.sales_pic_id).filter(Boolean)));
   const allEmpIds = Array.from(new Set([...agentIds, ...salesIds]));
 
-  const [companyRes, employeeRes] = await Promise.all([
+  const [companyRes, regRes, employeeRes] = await Promise.all([
     customerIds.length > 0
       ? supabase.from('a1_company_list').select('company_list_id, company_name').in('company_list_id', customerIds)
+      : Promise.resolve({ data: [] }),
+    allEmpIds.length > 0
+      ? supabase.from('b2_register').select('id, full_name, email').in('id', allEmpIds)
       : Promise.resolve({ data: [] }),
     allEmpIds.length > 0
       ? supabase.from('d3_employee').select('id, full_name, email').in('id', allEmpIds)
@@ -90,6 +93,9 @@ export async function getWorksheets(options?: {
   const employeeMap = new Map<string, string>();
   (employeeRes.data || []).forEach((e: any) => {
     employeeMap.set(e.id, e.full_name);
+  });
+  (regRes.data || []).forEach((r: any) => {
+    employeeMap.set(r.id, r.full_name);
   });
 
   const mappedData = data.map((item: any) => {
@@ -107,7 +113,7 @@ export async function getWorksheets(options?: {
       field_agent_name: agentName,
       field_agent_role: 'Field Inspector',
       field_agent_initials: initials,
-      sales_pic_name: employeeMap.get(item.sales_pic_id) || 'Adelia',
+      sales_pic_name: employeeMap.get(item.sales_pic_id) || 'Sales Executive',
     } as WorksheetItem;
   });
 
@@ -211,6 +217,13 @@ export async function getFieldAgentTasks(): Promise<FieldTaskItem[] | null> {
       return null;
     }
 
+    const agentIds = Array.from(new Set(wsData.map((w: any) => w.field_agent_id).filter(Boolean)));
+    const { data: regAgents } = agentIds.length > 0
+      ? await supabase.from('b2_register').select('id, full_name, employee_id').in('id', agentIds)
+      : { data: [] };
+    const regAgentMap = new Map<string, string>();
+    (regAgents || []).forEach((r: any) => regAgentMap.set(r.id, r.full_name));
+
     return wsData.map((w: any) => {
       const photos = w.a2_worksheet_photos || [];
       const docs = w.a2_worksheet_documents || [];
@@ -236,7 +249,7 @@ export async function getFieldAgentTasks(): Promise<FieldTaskItem[] | null> {
         task_id_code: w.task_id_code || `TSK-2506-${String(w.worksheet_id).padStart(4, '0')}`,
         job_number: jobFormatted,
         customer_name: w.a1_company_list?.company_name || 'PT. YOSSAVA TRANS LOGISTIK',
-        field_agent_name: w.field_agent?.full_name || undefined,
+        field_agent_name: regAgentMap.get(w.field_agent_id) || w.field_agent?.full_name || undefined,
         status: (w.progress_status as any) || (w.field_agent_id ? 'Assigned' : 'Unassigned'),
         has_issue: isIssue,
         issue_type: issueCategory,

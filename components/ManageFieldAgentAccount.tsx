@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search, ChevronDown, Plus, X, Check, AlertTriangle, CheckCircle, FileText, Pencil, Trash2, Lock
 } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
 export interface FieldAgentAccount {
   id: string;
@@ -225,6 +226,40 @@ export default function ManageFieldAgentAccount() {
     }
     return DEFAULT_FIELD_AGENT_ACCOUNTS;
   });
+
+  useEffect(() => {
+    let isMounted = true;
+    void (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('b2_register')
+          .select('id, employee_id, full_name, email, is_active');
+        if (error || !data || !isMounted) return;
+
+        const registeredAgents: FieldAgentAccount[] = data.map((u: any, idx: number) => ({
+          id: u.id,
+          agent_id: u.employee_id || `AGNT-${String(idx + 1).padStart(3, '0')}`,
+          name: u.full_name || 'Field Agent',
+          email: u.email || '',
+          field_area: 'Operational Area',
+          status: (u.is_active ? 'Active' : 'Inactive') as 'Active' | 'Inactive',
+        }));
+
+        setAgentAccounts((prev) => {
+          const combined = [...prev];
+          registeredAgents.forEach((ra) => {
+            if (!combined.some((c) => c.email.toLowerCase() === ra.email.toLowerCase() || c.id === ra.id)) {
+              combined.unshift(ra);
+            }
+          });
+          return combined;
+        });
+      } catch {}
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const [agentSearchQuery, setAgentSearchQuery] = useState('');
   const [agentStatusFilter, setAgentStatusFilter] = useState('All');

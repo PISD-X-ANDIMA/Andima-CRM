@@ -9,6 +9,7 @@ import {
   ExternalLink, Image as ImageIcon, MessageCircle
 } from 'lucide-react';
 import { getFieldAgentTasks, submitNeedBackup } from '@/backend/record_conversation/worksheetService';
+import { fetchApiCustomers } from '@/backend/record_conversation';
 
 // ==========================================
 // TYPES & INTERFACES
@@ -598,9 +599,20 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
   const [t1Page, setT1Page] = useState(1);
   const [t2Page, setT2Page] = useState(1);
 
-  // Active User session & role
-  const activeUserName = currentUser?.name || 'Adelia';
-  const activeUserInitial = activeUserName.trim().charAt(0).toUpperCase() || 'A';
+  // Active User session & role from b2_register / Supabase Auth
+  const [activeUserName, setActiveUserName] = useState<string>(() => {
+    if (currentUser?.name && currentUser.name.trim()) return currentUser.name.trim();
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('andima_user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed?.name && parsed.name.trim()) return parsed.name.trim();
+        }
+      } catch {}
+    }
+    return 'Sales Executive';
+  });
 
   const [activeUserRole, setActiveUserRole] = useState<string>(() => {
     if (currentUser?.role && currentUser.role.trim()) return currentUser.role.trim();
@@ -615,6 +627,29 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     }
     return 'Sales Executive';
   });
+
+  useEffect(() => {
+    if (currentUser?.name && currentUser.name.trim()) {
+      setActiveUserName(currentUser.name.trim());
+    }
+    if (currentUser?.role && currentUser.role.trim()) {
+      setActiveUserRole(currentUser.role.trim());
+    } else if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('andima_user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed?.name && parsed.name.trim()) setActiveUserName(parsed.name.trim());
+          if (parsed?.role && parsed.role.trim()) setActiveUserRole(parsed.role.trim());
+        }
+      } catch {}
+    }
+  }, [currentUser]);
+
+  const activeUserInitial = activeUserName.trim().charAt(0).toUpperCase() || 'S';
+
+  // Dynamic Company Options fetched from a1_company_list
+  const [companyOptions, setCompanyOptions] = useState<{ id: string; name: string; code?: string }[]>([]);
 
   const isManager = activeUserRole.toLowerCase().includes('manager') ||
                     activeUserRole.toLowerCase().includes('manajemen') ||
@@ -1174,6 +1209,34 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     setTasks(stored);
 
     setLoading(true);
+    // Fetch active companies from a1_company_list
+    fetchApiCustomers().then(customers => {
+      if (customers && customers.length > 0) {
+        setCompanyOptions(customers.map(c => ({
+          id: c.company_list_id,
+          name: c.company_name,
+          code: c.customer_code || undefined
+        })));
+      }
+    }).catch(() => {});
+
+    // Parse URL search parameters for ?company_id=... or ?company_name=... (from Company List "View Task")
+    if (typeof window !== 'undefined') {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const compId = urlParams.get('company_id');
+        const compName = urlParams.get('company_name');
+        if (compName) {
+          setSearchQuery(compName);
+        } else if (compId) {
+          fetchApiCustomers().then(customers => {
+            const found = customers.find(c => c.company_list_id === compId);
+            if (found) setSearchQuery(found.company_name);
+          }).catch(() => {});
+        }
+      } catch {}
+    }
+
     // Attempt to hydrate from Supabase database if connected
     getFieldAgentTasks().then(dbTasks => {
       if (dbTasks && dbTasks.length > 0) {
@@ -2108,13 +2171,22 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   onChange={(e) => setCustomerCompany(e.target.value)}
                   className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-800 outline-none focus:border-blue-500 shadow-2xs transition-colors cursor-pointer"
                 >
-                  <option value="">Select Customer / Company</option>
-                  <option value="PT. JPG TransIndonesia">PT. JPG TransIndonesia</option>
-                  <option value="PT. DSV Transport Indonesia">PT. DSV Transport Indonesia</option>
-                  <option value="PT. Geodis Freight Forwarding">PT. Geodis Freight Forwarding</option>
-                  <option value="PT. Samudera Logistik">PT. Samudera Logistik</option>
-                  <option value="PT Maju Jaya">PT Maju Jaya</option>
-                  <option value="PT Sejahtera">PT Sejahtera</option>
+                  <option value="">Select Customer / Company (Dari a1_company_list)</option>
+                  {companyOptions.length > 0 ? (
+                    companyOptions.map((comp) => (
+                      <option key={comp.id} value={comp.name}>
+                        {comp.name} {comp.code ? `(${comp.code})` : ''}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="PT Borneo Sentosa Cargo">PT Borneo Sentosa Cargo</option>
+                      <option value="PT Cipta Sarana Transindo">PT Cipta Sarana Transindo</option>
+                      <option value="PT DSV TRANSPORT INDONESIA">PT DSV TRANSPORT INDONESIA</option>
+                      <option value="PT CEVA AIR OCEAN INDONESIA">PT CEVA AIR OCEAN INDONESIA</option>
+                      <option value="PT Nusantara Logistik Jaya">PT Nusantara Logistik Jaya</option>
+                    </>
+                  )}
                 </select>
               </div>
 

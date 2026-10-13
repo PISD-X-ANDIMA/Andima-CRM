@@ -9,6 +9,7 @@ export async function getCustomers(): Promise<CompanyItem[]> {
   const { data, error } = await supabase
     .from('a1_company_list')
     .select('company_list_id, job_number, name, company_name, created_by, customer_code')
+    .is('deleted_at', null)
     .order('company_name', { ascending: true });
 
   if (error) {
@@ -21,7 +22,7 @@ export async function getCustomers(): Promise<CompanyItem[]> {
 
 /**
  * Mengambil data percakapan dari a2_record_conversations secara bertahap (server-side pagination)
- * dilengkapi relasi nama perusahaan dari a1_company_list dan sales PIC dari d3_employee
+ * dilengkapi relasi nama perusahaan dari a1_company_list dan sales PIC dari b2_register / d3_employee
  */
 export async function getConversations(options?: {
   channelType?: string;
@@ -99,9 +100,12 @@ export async function getConversations(options?: {
   const customerIds = Array.from(new Set(data.map((c) => c.customer_id).filter(Boolean)));
   const employeeIds = Array.from(new Set(data.map((c) => c.sales_pic_id).filter(Boolean)));
 
-  const [companyRes, employeeRes] = await Promise.all([
+  const [companyRes, regRes, employeeRes] = await Promise.all([
     customerIds.length > 0
       ? supabase.from('a1_company_list').select('company_list_id, company_name, name, customer_code').in('company_list_id', customerIds)
+      : Promise.resolve({ data: [] }),
+    employeeIds.length > 0
+      ? supabase.from('b2_register').select('id, full_name, email').in('id', employeeIds)
       : Promise.resolve({ data: [] }),
     employeeIds.length > 0
       ? supabase.from('d3_employee').select('id, full_name').in('id', employeeIds)
@@ -114,8 +118,13 @@ export async function getConversations(options?: {
   });
 
   const employeeMap = new Map<string, string>();
+  // Masukkan dari d3_employee dahulu sebagai fallback
   (employeeRes.data || []).forEach((e: any) => {
     employeeMap.set(e.id, e.full_name);
+  });
+  // Timpa dengan data resmi dari b2_register jika ada
+  (regRes.data || []).forEach((r: any) => {
+    employeeMap.set(r.id, r.full_name);
   });
 
   const mappedData = data.map((item: any) => {
@@ -125,7 +134,7 @@ export async function getConversations(options?: {
       company_name: comp?.company_name || 'Perusahaan Pelanggan',
       client_contact_name: comp?.name || '',
       customer_code: item.customer_code || comp?.customer_code || 'CUST-001',
-      sales_pic_name: employeeMap.get(item.sales_pic_id) || 'Adelia',
+      sales_pic_name: employeeMap.get(item.sales_pic_id) || item.created_by || 'Sales Executive',
     } as RecordConversationItem;
   });
 
@@ -148,12 +157,43 @@ export async function createConversation(payload: NewConversationPayload): Promi
   error?: string;
 }> {
   try {
-    // Dapatkan ID pegawai dari d3_employee (cocokkan nama jika ada)
+    // 1. Dapatkan ID pegawai aktif dari b2_register (prioritas akun login CRM)
     let activeEmployeeId: string | null = null;
-    if (payload.sales_pic_name) {
+    let creatorName: string = payload.sales_pic_name || 'Sales Executive';
+
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData?.user) {
+        const { data: regUser } = await supabase
+          .from('b2_register')
+          .select('id, full_name, email')
+          .or(`email.eq.${authData.user.email},id.eq.${authData.user.id}`)
+          .maybeSingle();
+        if (regUser) {
+          activeEmployeeId = regUser.id;
+          creatorName = regUser.full_name || creatorName;
+        }
+      }
+    } catch {}
+
+    // 2. Jika belum ketemu dari session, cocokkan nama dengan b2_register
+    if (!activeEmployeeId && payload.sales_pic_name) {
+      const { data: matchedReg } = await supabase
+        .from('b2_register')
+        .select('id, full_name')
+        .ilike('full_name', `%${payload.sales_pic_name.trim()}%`)
+        .limit(1);
+      if (matchedReg && matchedReg.length > 0 && matchedReg[0]?.id) {
+        activeEmployeeId = matchedReg[0].id;
+        creatorName = matchedReg[0].full_name || creatorName;
+      }
+    }
+
+    // 3. Fallback ke d3_employee bila akun legacy berada di d3_employee
+    if (!activeEmployeeId && payload.sales_pic_name) {
       const { data: matchedEmp } = await supabase
         .from('d3_employee')
-        .select('id')
+        .select('id, full_name')
         .ilike('full_name', `%${payload.sales_pic_name.trim()}%`)
         .limit(1);
       if (matchedEmp && matchedEmp.length > 0 && matchedEmp[0]?.id) {
@@ -161,40 +201,21 @@ export async function createConversation(payload: NewConversationPayload): Promi
       }
     }
 
+    // 4. Fallback default jika masih kosong: ambil salah satu akun aktif dari b2_register
     if (!activeEmployeeId) {
-      const { data: empData, error: empError } = await supabase
-        .from('d3_employee')
-        .select('id')
+      const { data: defaultReg } = await supabase
+        .from('b2_register')
+        .select('id, full_name')
+        .eq('is_active', true)
         .limit(1);
-
-      if (empData && empData.length > 0 && empData[0]?.id) {
-        activeEmployeeId = empData[0].id;
-      } else {
-        if (empError) {
-          console.warn('Query ke d3_employee dibatasi RLS/permission:', empError.message);
-        }
-        // Fallback: ambil sales_pic_id valid yang sudah ada di a2_record_conversations (hindari dummy UUID)
-        const { data: convFallback } = await supabase
-          .from('a2_record_conversations')
-          .select('sales_pic_id')
-          .not('sales_pic_id', 'is', null)
-          .neq('sales_pic_id', 'a0000000-0000-0000-0000-000000000001')
-          .limit(1);
-
-        if (convFallback && convFallback.length > 0 && convFallback[0]?.sales_pic_id) {
-          activeEmployeeId = convFallback[0].sales_pic_id;
-        } else {
-          // Fallback default: ID karyawan yang terdaftar di d3_employee
-          activeEmployeeId = '9c274330-44f1-474d-91c0-523aac3ea9cf';
-        }
+      if (defaultReg && defaultReg.length > 0) {
+        activeEmployeeId = defaultReg[0].id;
+        creatorName = defaultReg[0].full_name || creatorName;
       }
     }
 
     if (!activeEmployeeId) {
-      return {
-        success: false,
-        error: 'Gagal mengambil sales_pic_id valid dari tabel d3_employee',
-      };
+      activeEmployeeId = '9c274330-44f1-474d-91c0-523aac3ea9cf';
     }
 
     const conversationDate = payload.conversation_date || new Date().toISOString().split('T')[0];

@@ -462,10 +462,36 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           window.history.replaceState({}, '', newUrl);
         }
       }
+
+      // Handle touchpoint from Meeting Schedule: + Record Conversation
+      const customerIdParam = urlParams.get('customer_id');
+      const customerNameParam = urlParams.get('customer_name');
+      const meetingIdParam = urlParams.get('meeting_id');
+
+      if (customerNameParam || customerIdParam) {
+        if (customerNameParam) {
+          const matchCust = customerList.find(c =>
+            (c.company_name && c.company_name.toLowerCase().includes(customerNameParam.toLowerCase())) ||
+            (c.company_list_id && c.company_list_id === customerIdParam)
+          );
+          if (matchCust) {
+            setSelectedAccount(`${matchCust.company_name} (${matchCust.customer_code || 'CUST-001'})`);
+          } else {
+            setSelectedAccount(customerNameParam);
+          }
+        }
+        if (meetingIdParam) {
+          setChannelSelection('Meeting');
+          setRecordSummary(`Catatan ringkasan percakapan dari agenda meeting (ID Meeting: ${meetingIdParam}).`);
+        }
+        setIsCreateModalOpen(true);
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }
     } catch (e) {
       console.error('Error auto-opening conversation detail from URL:', e);
     }
-  }, [conversations]);
+  }, [conversations, customerList]);
 
   // Role Oversight & Privacy Isolation Check
   const isManager = activeUserRole.toLowerCase().includes('manager') ||
