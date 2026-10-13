@@ -94,3 +94,8 @@
 - Pembersihan riwayat data lama pada tabel `a1_company_list` dan `a1_customer_meetings`.
 - Penambahan 5 data aktif perusahaan logistik Indonesia baru dengan PIC, nomor telepon valid, alamat operasional, dan jadwal meeting aktif minggu berjalan (12–16 Oktober 2026) yang terhubung ke akun `Budi Sales Exec`.
 
+### Penyelarasan Sistem & Audit QA (12 Oktober 2026)
+- Penyesuaian antarmuka Dashboard Sales Executive: tombol ekspor pada tabel ringkasan transaksi diselaraskan menjadi `Export Transaction Records`, judul modal diperbarui menjadi `Export Transaction Records` dengan filter rentang tanggal (From–To) dan opsi format Excel/PDF.
+- Penyesuaian teks ringkasan pagination transaksi menjadi `Showing X-Y of Z transactions`.
+- Penyelarasan menyeluruh 19 butir temuan audit pengujian QA dalam dokumen addendum persyaratan resmi (`docs/requirements/REVISI-DOKUMEN-FR-TR-SQUAD-A1.md`) dan seluruh berkas TR/FR terkait.
+- Pembersihan menyeluruh teks internal pengembang pada empty state: penyelarasan teks `No open issues` (sesuai FR-A1-010-01.10) dan `No Sales Executive yet` (FR-A1-010-01.7) pada Dashboard Manager, serta standardisasi pesan antarmuka user-facing pada seluruh modul CRM.

@@ -39,29 +39,40 @@ export default function TaskOfFieldAgentPage() {
     let active = true;
     async function loadTasks() {
       try {
-        const { data, error } = await (supabase as any)
-          .from("a2_worksheets")
-          .select("*")
-          .order("created_at", { ascending: false });
+        const [{ data, error }, { data: companies }, { data: users }] = await Promise.all([
+          (supabase as any)
+            .from("a2_worksheets")
+            .select("*")
+            .order("create_date", { ascending: false }),
+          (supabase as any)
+            .from("a1_company_list")
+            .select("company_list_id, company_name"),
+          (supabase as any)
+            .from("b2_register")
+            .select("id, full_name"),
+        ]);
 
         if (active && !error && data && data.length > 0) {
+          const compMap = new Map((companies || []).map((c: any) => [c.company_list_id, c.company_name]));
+          const userMap = new Map((users || []).map((u: any) => [u.id, u.full_name]));
+
           setTasks(
             data.map((t: any) => ({
               jobNumber: t.job_no || t.job_number || "#AENAT/0000/0000",
-              company: t.company_name || t.company || "-",
-              salesExecutive: t.sales_executive || t.created_by || "-",
-              fieldAgent: t.field_agent || t.agent_name || "Field Agent",
-              status: t.status || "Assigned",
+              company: compMap.get(t.customer_id) || t.company_name || t.shipper || t.consignee || "-",
+              salesExecutive: userMap.get(t.sales_pic_id) || t.sales_executive || t.created_by || "-",
+              fieldAgent: userMap.get(t.field_agent_id) || t.field_agent || t.agent_name || "Field Agent",
+              status: t.has_issue ? "In Progress" : (t.status || "Completed"),
               hasIssue: Boolean(t.has_issue),
-              issueDetails: t.issue_details,
-              resultSummary: t.result_summary || "-",
-              createdAt: t.created_at || "-",
+              issueDetails: t.issue_note || t.issue_details,
+              resultSummary: t.issue_note || (t.has_issue ? "Kendala terdeteksi" : "Inspeksi normal"),
+              createdAt: t.create_date || t.created_at || "-",
               trxNo: t.transaction_no || t.trx_no || "-",
               mawb: t.mawb || "-",
-              assignedAt: t.assigned_at || "-",
-              taskArea: t.task_area || "-",
-              convId: t.conv_id || "-",
-              taskId: t.task_id || "-",
+              assignedAt: t.handover_datetime || t.create_date || "-",
+              taskArea: t.handover_location || t.task_area || "-",
+              convId: t.conversation_id || "-",
+              taskId: String(t.worksheet_id || "-"),
               pieces: t.pieces || 0,
               grossWeight: t.gross_weight || "0 Kg",
               photoName: t.photo_name || "",
@@ -143,7 +154,7 @@ export default function TaskOfFieldAgentPage() {
             {filteredTasks.length === 0 ? (
               <tr>
                 <td colSpan={7} className="py-8 text-center text-sm text-slate-500">
-                  {isLoading ? "Loading field agent tasks..." : "Belum terdapat data task field agent (Tabel Squad A2)."}
+                  {isLoading ? "Loading field agent tasks..." : "Belum terdapat data task field agent."}
                 </td>
               </tr>
             ) : (

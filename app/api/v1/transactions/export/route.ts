@@ -54,6 +54,6 @@ export async function GET(request: NextRequest) {
     return createSuccessResponse(companies);
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Unknown database error";
-    return createErrorResponse("EXPORT_001", `Failed to load company records: ${detail}`, undefined, 500);
+    return createErrorResponse("EXPORT_001", `Failed to load transaction records: ${detail}`, undefined, 500);
   }
 }

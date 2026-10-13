@@ -33,38 +33,45 @@ export default function NeedBackupPage() {
     let active = true;
     async function loadTickets() {
       try {
-        let rows: any[] = [];
-        const { data: backupData, error: backupErr } = await (supabase as any)
-          .from("a2_need_backup")
-          .select("*");
-
-        if (!backupErr && backupData && backupData.length > 0) {
-          rows = backupData;
-        } else {
-          const { data: convData, error: convErr } = await (supabase as any)
+        const [{ data: convData, error: convErr }, { data: companies }, { data: users }] = await Promise.all([
+          (supabase as any)
             .from("a2_record_conversations")
             .select("*")
-            .eq("need_backup", true);
-          if (!convErr && convData) {
-            rows = convData;
-          }
-        }
+            .eq("need_assistance", true)
+            .order("created_at", { ascending: false }),
+          (supabase as any)
+            .from("a1_company_list")
+            .select("company_list_id, company_name, customer_code"),
+          (supabase as any)
+            .from("b2_register")
+            .select("id, full_name"),
+        ]);
 
-        if (active && rows.length > 0) {
+        if (active && !convErr && convData && convData.length > 0) {
+          const compById = new Map((companies || []).map((c: any) => [c.company_list_id, c.company_name]));
+          const compByCode = new Map((companies || []).map((c: any) => [c.customer_code, c.company_name]));
+          const userMap = new Map((users || []).map((u: any) => [u.id, u.full_name]));
+
           setTickets(
-            rows.map((t: any) => ({
-              ticketId: t.ticket_id || t.id || "BCK-000",
-              jobNumber: t.job_no || t.job_number || "-",
-              company: t.company_name || t.company || "-",
-              salesExecutive: t.sales_executive || t.created_by || "-",
-              category: t.category || "General",
-              priority: t.priority || "Medium",
-              status: t.status || "Open",
-              reporter: t.reporter || t.created_by || "-",
-              dateTime: t.created_at || "-",
-              problemDescription: t.problem_description || t.description || t.need_backup_reason || "-",
-              followUpLog: t.follow_up_log || "-",
-            }))
+            convData.map((t: any) => {
+              const compName = compById.get(t.customer_id) || compByCode.get(t.customer_code) || t.company_name || t.company || "Perusahaan";
+              const salesName = userMap.get(t.sales_pic_id) || userMap.get(t.created_by) || t.sales_executive || t.created_by || "Sales Executive";
+              const priority = t.urgency_level === "high_priority" || t.urgency_level === "High" ? "High" : t.urgency_level === "low_priority" ? "Low" : "Medium";
+
+              return {
+                ticketId: t.ticket_id || (t.id ? `TKT-${String(t.id).slice(0, 8).toUpperCase()}` : "BCK-001"),
+                jobNumber: t.job_number || t.job_no || t.customer_code || "-",
+                company: compName,
+                salesExecutive: salesName,
+                category: t.channel_type || t.category || "Operasional",
+                priority: priority as "High" | "Medium" | "Low",
+                status: (t.status === "active" ? "Open" : t.status || "Open") as "Open" | "In progress" | "Resolved",
+                reporter: salesName,
+                dateTime: t.conversation_date || (t.created_at ? t.created_at.slice(0, 10) : "-"),
+                problemDescription: t.summary || t.problem_description || t.description || "-",
+                followUpLog: t.follow_up_log || "Menunggu penanganan lebih lanjut dari tim terkait.",
+              };
+            })
           );
         } else if (active) {
           setTickets([]);
@@ -175,7 +182,7 @@ export default function NeedBackupPage() {
             {filteredTickets.length === 0 ? (
               <tr>
                 <td colSpan={7} className="py-8 text-center text-sm text-slate-500">
-                  {isLoading ? "Loading backup tickets..." : "Belum terdapat tiket need backup (Tabel Squad A2)."}
+                  {isLoading ? "Loading backup tickets..." : "Belum terdapat tiket need backup."}
                 </td>
               </tr>
             ) : (

@@ -81,11 +81,14 @@ export async function GET(_request: NextRequest) {
       const { data: convs } = await (supabase as any)
         .from("a2_record_conversations")
         .select("*")
-        .eq("need_backup", true);
+        .eq("need_assistance", true);
       if (convs) needBackupConversations = convs;
     } catch {}
 
     const totalNeedBackup = needBackupConversations.length;
+
+    const compNameMap = new Map((companies || []).map((c: any) => [c.company_list_id, c.company_name]));
+    const regNameMap = new Map((registers || []).map((r: any) => [r.id, r.full_name]));
 
     // 6. Build Sales Executive table stats
     const salesExecStats = execArray.map((execName) => {
@@ -100,7 +103,7 @@ export async function GET(_request: NextRequest) {
       }).length;
 
       const execIssues = needBackupConversations.filter((c: any) => {
-        const rep = String(c.created_by || c.sales_executive || "").toLowerCase();
+        const rep = String(regNameMap.get(c.sales_pic_id) || regNameMap.get(c.created_by) || c.created_by || c.sales_executive || "").toLowerCase();
         return rep === execName.toLowerCase();
       }).length;
 
@@ -115,11 +118,11 @@ export async function GET(_request: NextRequest) {
 
     // 7. Build Latest Issues Needing Backup from real a2 data
     const latestIssues = needBackupConversations.slice(0, 5).map((c: any) => ({
-      id: c.id || "ISSUE",
-      company_name: c.company_name || c.customer_name || "Company",
-      executive_name: c.sales_executive || c.created_by || "Sales Executive",
-      meeting_date: c.meeting_date || c.date || "-",
-      meeting_time: c.meeting_time || c.time || "-",
+      id: c.id ? `TKT-${String(c.id).slice(0, 8).toUpperCase()}` : "ISSUE",
+      company_name: compNameMap.get(c.customer_id) || c.company_name || c.customer_name || "Company",
+      executive_name: regNameMap.get(c.sales_pic_id) || regNameMap.get(c.created_by) || c.sales_executive || c.created_by || "Sales Executive",
+      meeting_date: c.conversation_date || c.meeting_date || c.date || "-",
+      meeting_time: c.conversation_time || c.meeting_time || c.time || "-",
       badge: "Need backup",
     }));
 

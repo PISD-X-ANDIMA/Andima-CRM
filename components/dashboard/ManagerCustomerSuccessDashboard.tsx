@@ -142,7 +142,7 @@ export function ManagerCustomerSuccessDashboard() {
                 {data.sales_executives.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-xs text-slate-500">
-                      {loading ? "Memuat data Sales Executive..." : "Belum ada data Sales Executive."}
+                      {loading ? "Loading sales executives..." : "No Sales Executive yet"}
                     </td>
                   </tr>
                 ) : (
@@ -193,7 +193,7 @@ export function ManagerCustomerSuccessDashboard() {
             <div className="space-y-4">
               {data.latest_issues.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-xs text-slate-500">
-                  {loading ? "Memeriksa data issues..." : "Belum ada issue yang membutuhkan backup (Tabel Squad A2)."}
+                  {loading ? "Checking open issues..." : "No open issues"}
                 </div>
               ) : (
                 data.latest_issues.map((issue) => (

@@ -43,24 +43,36 @@ export default function RecordConversationPage() {
     let active = true;
     async function loadConversations() {
       try {
-        const { data, error } = await (supabase as any)
-          .from("a2_record_conversations")
-          .select("*")
-          .order("created_at", { ascending: false });
+        const [{ data, error }, { data: companies }, { data: users }] = await Promise.all([
+          (supabase as any)
+            .from("a2_record_conversations")
+            .select("*")
+            .order("created_at", { ascending: false }),
+          (supabase as any)
+            .from("a1_company_list")
+            .select("company_list_id, company_name, customer_code"),
+          (supabase as any)
+            .from("b2_register")
+            .select("id, full_name"),
+        ]);
 
         if (active && !error && data && data.length > 0) {
+          const compById = new Map((companies || []).map((c: any) => [c.company_list_id, c.company_name]));
+          const compByCode = new Map((companies || []).map((c: any) => [c.customer_code, c.company_name]));
+          const userMap = new Map((users || []).map((u: any) => [u.id, u.full_name]));
+
           setConversations(
             data.map((c: any) => ({
-              id: c.conversation_id || c.id || "CONV-000",
-              company: c.company_name || c.company || "Perusahaan",
-              salesExecutive: c.sales_executive || c.created_by || "Sales Executive",
-              source: c.channel || c.source || "WhatsApp",
-              date: c.conversation_date || c.date || "-",
-              time: c.conversation_time || c.time || "-",
-              needBackup: Boolean(c.need_backup),
-              needBackupReason: c.need_backup_reason || "",
+              id: c.conversation_id || (c.id ? `CONV-${String(c.id).slice(0, 8).toUpperCase()}` : "CONV-000"),
+              company: compById.get(c.customer_id) || compByCode.get(c.customer_code) || c.company_name || c.customer_code || "Perusahaan",
+              salesExecutive: userMap.get(c.sales_pic_id) || userMap.get(c.created_by) || c.sales_executive || c.created_by || "Sales Executive",
+              source: (c.channel_type || c.channel || c.source || "WhatsApp") as "WhatsApp" | "Meeting" | "Phone" | "Email",
+              date: c.conversation_date || (c.created_at ? c.created_at.slice(0, 10) : "-"),
+              time: c.conversation_time || (c.created_at ? c.created_at.slice(11, 16) : "-"),
+              needBackup: Boolean(c.need_assistance ?? c.need_backup),
+              needBackupReason: c.urgency_level || c.need_backup_reason || "",
               summary: c.summary || "-",
-              attachmentName: c.attachment_name,
+              attachmentName: Array.isArray(c.document_urls) && c.document_urls.length > 0 ? c.document_urls[0].split("/").pop() : c.attachment_name,
             }))
           );
         } else if (active) {
@@ -194,7 +206,7 @@ export default function RecordConversationPage() {
             {filteredRecords.length === 0 ? (
               <tr>
                 <td colSpan={7} className="py-8 text-center text-sm text-slate-500">
-                  {isLoading ? "Loading conversation records..." : "Belum terdapat data record conversation (Tabel Squad A2)."}
+                  {isLoading ? "Loading conversation records..." : "Belum terdapat data record conversation."}
                 </td>
               </tr>
             ) : (
