@@ -260,7 +260,7 @@ function WorksheetPanel({ worksheetId, onClose }: { worksheetId: number; onClose
               <div className="border border-slate-200 rounded-lg p-4 grid grid-cols-2 gap-y-4">
                 <GridItem label="Job Number" value={`#${data.job_no}`} />
                 <GridItem label="Transaction ID" value={data.transaction_no} />
-                <GridItem label="Sales" value={data.sales_pic_name || 'Adelia'} />
+                <GridItem label="Sales" value={data.sales_pic_name || 'Zefanya Christian Sutjahja'} />
                 <GridItem label="Created By" value={data.field_agent_name || 'Marsel'} />
               </div>
 

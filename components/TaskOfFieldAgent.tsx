@@ -2025,7 +2025,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               <div className="pl-3 border-l-2 border-blue-500 space-y-2 relative ml-1">
                 <div className="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-blue-500" />
                 <div className="flex items-center gap-2 text-xs flex-wrap">
-                  <span className="font-bold text-slate-900">Adelia</span>
+                  <span className="font-bold text-slate-900">{activeUserName || 'Zefanya Christian Sutjahja'}</span>
                   <span className="bg-slate-100 text-slate-600 text-[10px] font-semibold px-2 py-0.5 rounded">
                     Sales Executive
                   </span>
@@ -2735,7 +2735,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 {issueModalTask.notes && (
                   <div className="relative pl-4 border-l-2 border-blue-500 space-y-1.5 py-0.5">
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="font-bold text-slate-900">{activeUserName || 'Adelia'}</span>
+                      <span className="font-bold text-slate-900">{activeUserName || 'Zefanya Christian Sutjahja'}</span>
                       <span className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-semibold">
                         Sales Executive
                       </span>
@@ -2888,7 +2888,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       </span>
                       <span className="text-[10px] text-slate-400 font-medium block mt-2">Sales</span>
                       <span className="text-xs font-bold text-slate-900 block mt-0.5">
-                        Adelia
+                        {activeUserName || 'Zefanya Christian Sutjahja'}
                       </span>
                     </div>
                     <div>
@@ -3289,7 +3289,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <div>
                     <span className="text-[10px] text-slate-400 font-medium block">Sales Executive:</span>
                     <span className="text-xs font-bold text-slate-800 block mt-0.5">
-                      {activeUserName || 'Adelia'} <span className="text-slate-400 font-normal text-[11px]">(Logged-In User)</span>
+                      {activeUserName || 'Zefanya Christian Sutjahja'} <span className="text-slate-400 font-normal text-[11px]">(Logged-In User)</span>
                     </span>
                   </div>
                 </div>
@@ -3655,7 +3655,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <div>
                     <span className="text-[10px] text-slate-400 font-medium block">Reporter:</span>
                     <span className="text-xs font-bold text-slate-800 block mt-0.5">
-                      {activeUserName || 'Adelia'} <span className="text-slate-500 font-normal text-[11px]">(Sales Executive)</span>
+                      {activeUserName || 'Zefanya Christian Sutjahja'} <span className="text-slate-500 font-normal text-[11px]">(Sales Executive)</span>
                     </span>
                   </div>
                   <div>
@@ -3689,7 +3689,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                         <span className="text-[10px] text-slate-400 font-mono">06 Oct 2026 • 14:35 WIB</span>
                       </div>
                       <p className="text-[11px] text-slate-500 mt-0.5">
-                        By: <strong className="text-slate-700 font-semibold">{activeUserName || 'Adelia'}</strong> (Sales Executive)
+                        By: <strong className="text-slate-700 font-semibold">{activeUserName || 'Zefanya Christian Sutjahja'}</strong> (Sales Executive)
                       </p>
                       <div className="p-2.5 bg-[#f8fafc] border border-slate-200 rounded-xl text-xs text-slate-700 mt-1.5 leading-relaxed">
                         <p>
@@ -3745,7 +3745,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                         <span className="text-[10px] text-slate-400 font-mono">06 Oct 2026 • 09:00 WIB</span>
                       </div>
                       <p className="text-[11px] text-slate-500 mt-0.5">
-                        By: <strong className="text-slate-700 font-semibold">{activeUserName || 'Adelia'}</strong> (Sales Executive)
+                        By: <strong className="text-slate-700 font-semibold">{activeUserName || 'Zefanya Christian Sutjahja'}</strong> (Sales Executive)
                       </p>
                       <div className="p-2.5 bg-[#f8fafc] border border-slate-200 rounded-xl text-xs text-slate-700 mt-1.5">
                         Assigned to: <strong className="text-slate-900">{timelineModalTask.field_agent_name || 'Andi Pratama'}</strong> <span className="text-slate-500 font-mono text-[11px]">(FA-1092 — HRMS)</span>
@@ -3762,7 +3762,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                         <span className="text-[10px] text-slate-400 font-mono">06 Oct 2026 • 08:30 WIB</span>
                       </div>
                       <p className="text-[11px] text-slate-500 mt-0.5">
-                        By: <strong className="text-slate-700 font-semibold">{activeUserName || 'Adelia'}</strong> (Sales Executive)
+                        By: <strong className="text-slate-700 font-semibold">{activeUserName || 'Zefanya Christian Sutjahja'}</strong> (Sales Executive)
                       </p>
                       <div className="p-2.5 bg-[#f8fafc] border border-slate-200 rounded-xl text-xs text-slate-700 mt-1.5 flex items-center gap-1.5">
                         <Tag size={12} className="text-slate-400" />

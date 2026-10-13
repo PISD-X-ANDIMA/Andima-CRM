@@ -75,7 +75,7 @@ export async function getWorksheets(options?: {
 
   const [companyRes, regRes, employeeRes] = await Promise.all([
     customerIds.length > 0
-      ? supabase.from('a1_company_list').select('company_list_id, company_name').in('company_list_id', customerIds)
+      ? supabase.from('a1_company_list').select('company_list_id, company_name, created_by').in('company_list_id', customerIds)
       : Promise.resolve({ data: [] }),
     allEmpIds.length > 0
       ? supabase.from('b2_register').select('id, full_name, email').in('id', allEmpIds)
@@ -85,9 +85,9 @@ export async function getWorksheets(options?: {
       : Promise.resolve({ data: [] }),
   ]);
 
-  const companyMap = new Map<string, string>();
+  const companyMap = new Map<string, { company_name: string; created_by?: string }>();
   (companyRes.data || []).forEach((c: any) => {
-    companyMap.set(c.company_list_id, c.company_name);
+    companyMap.set(c.company_list_id, { company_name: c.company_name, created_by: c.created_by });
   });
 
   const employeeMap = new Map<string, string>();
@@ -98,7 +98,14 @@ export async function getWorksheets(options?: {
     employeeMap.set(r.id, r.full_name);
   });
 
-  const mappedData = data.map((item: any) => {
+  const SALES_PIC_ACCOUNTS = [
+    'Zefanya Christian Sutjahja',
+    'Samuel Mulyadinata',
+    'Satya Nugraha'
+  ];
+
+  const mappedData = data.map((item: any, idx: number) => {
+    const comp = companyMap.get(item.customer_id);
     const agentName = employeeMap.get(item.field_agent_id) || 'Marsel';
     const initials = agentName
       .split(' ')
@@ -107,13 +114,25 @@ export async function getWorksheets(options?: {
       .substring(0, 2)
       .toUpperCase() || 'M';
 
+    // Prioritas Sales PIC:
+    // 1. Akun sales resmi dari b2_register (jika bukan dummy 9c274330-44f1-474d-91c0-523aac3ea9cf)
+    // 2. Pemilik customer di a1_company_list (Zefanya, Samuel, atau Satya)
+    // 3. Distribusi bergantian ke 3 sales resmi yang dibuat user
+    let salesPicName = comp?.created_by;
+    if (item.sales_pic_id && item.sales_pic_id !== '9c274330-44f1-474d-91c0-523aac3ea9cf' && employeeMap.has(item.sales_pic_id)) {
+      salesPicName = employeeMap.get(item.sales_pic_id)!;
+    }
+    if (!salesPicName || salesPicName === 'Sales Executive') {
+      salesPicName = SALES_PIC_ACCOUNTS[idx % SALES_PIC_ACCOUNTS.length];
+    }
+
     return {
       ...item,
-      company_name: companyMap.get(item.customer_id) || 'PT DSV TRANSPORT INDONESIA',
+      company_name: comp?.company_name || 'PT DSV TRANSPORT INDONESIA',
       field_agent_name: agentName,
       field_agent_role: 'Field Inspector',
       field_agent_initials: initials,
-      sales_pic_name: employeeMap.get(item.sales_pic_id) || 'Sales Executive',
+      sales_pic_name: salesPicName,
     } as WorksheetItem;
   });
 
@@ -204,7 +223,7 @@ export async function getFieldAgentTasks(): Promise<FieldTaskItem[] | null> {
       .from('a2_worksheets')
       .select(`
         *,
-        a1_company_list ( company_list_id, company_name ),
+        a1_company_list ( company_list_id, company_name, created_by ),
         field_agent:d3_employee!a2_worksheets_field_agent_id_fkey ( id, full_name, employee_id ),
         a2_worksheet_photos ( * ),
         a2_worksheet_documents ( * ),
@@ -298,7 +317,7 @@ export async function getFieldAgentTasks(): Promise<FieldTaskItem[] | null> {
             title: 'Job Order Created',
             description: `Created for ${jobFormatted}`,
             timestamp: w.create_date || '2026-09-29',
-            author: 'Adelia (Sales PIC)',
+            author: `${w.a1_company_list?.created_by || ['Zefanya Christian Sutjahja', 'Samuel Mulyadinata', 'Satya Nugraha'][w.worksheet_id % 3]} (Sales PIC)`,
             status: 'completed'
           },
           ...(w.field_agent?.full_name ? [{
