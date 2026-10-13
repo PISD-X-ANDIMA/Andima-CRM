@@ -13,10 +13,22 @@ const routeLabels: Record<string, string> = {
   "record-conversation": "Record Conversation",
   "task-of-field-agent": "Task of Field Agent",
   "need-backup": "Need Backup",
+  "manage-field-agent-account": "Manage Field Agent Account",
   "field-agent-management": "Field Agent Management",
   "field-agent-access": "Field Agent Management",
   jobs: "Jobs",
 };
+
+export interface ManagerNotificationItem {
+  id: string;
+  type: 'need_assistance';
+  title: string;
+  message: string;
+  conversation_id: string;
+  company_name: string;
+  timestamp: string;
+  read: boolean;
+}
 
 export function DashboardHeader() {
   const pathname = usePathname();
