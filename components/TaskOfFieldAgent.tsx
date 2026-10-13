@@ -40,6 +40,8 @@ export interface FieldTaskItem {
   task_id_code?: string;
   job_number: string;
   customer_name: string;
+  customer_id?: string;
+  sales_pic_name?: string;
   customer_code?: string;
   shipper?: string;
   consignee?: string;
@@ -1620,12 +1622,13 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       if (isFieldAgent) {
         return !t.field_agent_name || t.field_agent_name.toLowerCase().includes(activeUserName.toLowerCase());
       }
-      // Sales Executive view: sees tasks under their sales responsibility / created by them / assigned to their field agents
-      const isMine = t.customer_name?.toLowerCase().includes(activeUserName.toLowerCase()) ||
-                     t.timeline?.some(ev => ev.author?.toLowerCase().includes(activeUserName.toLowerCase())) ||
-                     t.notes?.toLowerCase().includes(activeUserName.toLowerCase()) ||
-                     !t.field_agent_name ||
-                     t.field_agent_name === activeUserName;
+      // Sales Executive view: sees tasks under their sales responsibility / assigned companies / created by them
+      const myCompanyNames = new Set(companyOptions.map(c => c.name.toLowerCase()));
+      const isMine =
+        (t.customer_name && myCompanyNames.has(t.customer_name.toLowerCase())) ||
+        (t.sales_pic_name && t.sales_pic_name.toLowerCase().includes(activeUserName.toLowerCase())) ||
+        t.timeline?.some(ev => ev.author?.toLowerCase().includes(activeUserName.toLowerCase())) ||
+        t.notes?.toLowerCase().includes(activeUserName.toLowerCase());
       return isMine;
     })();
 

@@ -128,11 +128,11 @@ export async function getWorksheets(options?: {
 
     return {
       ...item,
-      company_name: comp?.company_name || 'PT DSV TRANSPORT INDONESIA',
+      company_name: comp?.company_name || item.consignee || 'PT Nusantara Logistik Jaya',
       field_agent_name: agentName,
       field_agent_role: 'Field Inspector',
       field_agent_initials: initials,
-      sales_pic_name: salesPicName,
+      sales_pic_name: comp?.created_by || salesPicName,
     } as WorksheetItem;
   });
 
@@ -267,7 +267,9 @@ export async function getFieldAgentTasks(): Promise<FieldTaskItem[] | null> {
         id: `ws-${w.worksheet_id}`,
         task_id_code: w.task_id_code || `TSK-2506-${String(w.worksheet_id).padStart(4, '0')}`,
         job_number: jobFormatted,
-        customer_name: w.a1_company_list?.company_name || 'PT. YOSSAVA TRANS LOGISTIK',
+        customer_name: w.a1_company_list?.company_name || w.consignee || 'PT Nusantara Logistik Jaya',
+        customer_id: w.customer_id,
+        sales_pic_name: w.a1_company_list?.created_by || undefined,
         field_agent_name: regAgentMap.get(w.field_agent_id) || w.field_agent?.full_name || undefined,
         status: (w.progress_status as any) || (w.field_agent_id ? 'Assigned' : 'Unassigned'),
         has_issue: isIssue,

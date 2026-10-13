@@ -206,6 +206,8 @@ export interface FieldTaskItem {
   task_id_code?: string;
   job_number: string;
   customer_name: string;
+  customer_id?: string;
+  sales_pic_name?: string;
   customer_code?: string;
   shipper?: string;
   consignee?: string;

@@ -102,10 +102,21 @@ export async function getSalesExecutiveMetrics(executiveId?: string): Promise<Sa
       recentCustQuery = recentCustQuery.in("created_by", userScope.identifiers);
     }
 
+    let taskCountQuery = (supabase as any)
+      .from("a2_worksheets")
+      .select("worksheet_id", { count: "exact", head: true });
+
+    if (isFiltered) {
+      taskCountQuery = taskCountQuery.in(
+        "customer_id",
+        userCompanyIds.length ? userCompanyIds : ["00000000-0000-0000-0000-000000000000"]
+      );
+    }
+
     const [customersResult, meetingsResult, tasksResult, recentCustResult] = await Promise.all([
       custCountQuery,
       meetQuery,
-      (supabase as any).from("a2_worksheets").select("*", { count: "exact", head: true }),
+      taskCountQuery,
       recentCustQuery,
     ]);
 
