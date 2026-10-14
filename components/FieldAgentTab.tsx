@@ -443,17 +443,17 @@ function WorksheetsSubTab() {
     <div>
       {activeId && <WorksheetPanel worksheetId={activeId} onClose={() => setActiveId(null)} />}
 
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[900px]">
-            <thead className="border-b border-slate-200">
+            <thead className="bg-[#cad8eb] border-b border-slate-200/80">
               <tr>
                 {['NOMOR TRANSAKSI', 'NOMOR PEKERJAAN', 'NAMA PELANGGAN', 'DIBUAT OLEH / PIC', 'STATUS KENDALA', 'AKSI'].map(h => (
-                  <th key={h} className={`px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest ${h === 'STATUS KENDALA' || h === 'AKSI' ? 'text-center' : ''}`}>{h}</th>
+                  <th key={h} className={`px-4 py-3.5 text-xs font-bold text-slate-800 uppercase tracking-wider ${h === 'STATUS KENDALA' || h === 'AKSI' ? 'text-center' : ''}`}>{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-xs text-slate-400">
@@ -468,11 +468,11 @@ function WorksheetsSubTab() {
                 worksheets.map(r => {
                   const isIssue = r.status_kendala === 'kendala_terdeteksi' || r.has_issue;
                   return (
-                    <tr key={r.worksheet_id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 text-xs font-bold text-slate-900">{r.transaction_no}</td>
-                      <td className="px-4 py-3 text-xs font-semibold text-slate-600">#{r.job_no}</td>
-                      <td className="px-4 py-3 text-xs font-bold text-slate-900">{r.company_name}</td>
-                      <td className="px-4 py-3">
+                    <tr key={r.worksheet_id} className="border-l-4 border-l-transparent hover:border-l-blue-600 hover:bg-blue-50/30 transition-all duration-150">
+                      <td className="px-4 py-3.5 text-xs font-bold text-slate-900">{r.transaction_no}</td>
+                      <td className="px-4 py-3.5 text-xs font-semibold text-slate-600">#{r.job_no}</td>
+                      <td className="px-4 py-3.5 text-xs font-bold text-slate-900">{r.company_name}</td>
+                      <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-[10px] flex items-center justify-center shrink-0">
                             {r.field_agent_initials || 'M'}
@@ -482,13 +482,13 @@ function WorksheetsSubTab() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3.5 text-center">
                         <Badge t={isIssue ? 'Kendala Terdeteksi' : 'Normal'} c={isIssue ? 'red' : 'blue'} dot />
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3.5 text-center">
                         <button
                           onClick={() => setActiveId(r.worksheet_id)}
-                          className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-md transition-colors shadow-sm"
+                          className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition-colors shadow-2xs cursor-pointer"
                         >
                           Lihat Detail
                         </button>
@@ -501,14 +501,17 @@ function WorksheetsSubTab() {
           </table>
         </div>
 
-        <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex justify-between items-center rounded-b-xl">
-          <div className="text-xs font-medium text-slate-500">
-            Showing {wsTotal === 0 ? 0 : (wsPage - 1) * PER_PAGE + 1}-{Math.min(wsPage * PER_PAGE, wsTotal)} of <span className="font-bold text-slate-700">{wsTotal}</span>
+        <div className="py-4 px-6 border-t border-slate-100 bg-white flex flex-wrap justify-between items-center gap-3 text-xs">
+          <div className="text-slate-500 font-medium">
+            Showing <strong className="text-slate-800">{wsTotal === 0 ? 0 : (wsPage - 1) * PER_PAGE + 1}-{Math.min(wsPage * PER_PAGE, wsTotal)}</strong> of <strong className="text-slate-800">{wsTotal}</strong> worksheets
           </div>
           <div className="flex gap-1.5 items-center">
-            <button disabled={wsPage <= 1} onClick={() => setWsPage(Math.max(1, wsPage - 1))}
-              className="p-1.5 border border-slate-200 rounded-lg bg-white hover:bg-slate-100 disabled:opacity-40 transition-colors cursor-pointer disabled:cursor-not-allowed">
-              <ChevronRight size={14} className="rotate-180 text-slate-600" />
+            <button
+              disabled={wsPage <= 1}
+              onClick={() => setWsPage(Math.max(1, wsPage - 1))}
+              className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors cursor-pointer disabled:cursor-not-allowed"
+            >
+              Previous
             </button>
             {Array.from({ length: Math.min(wsTotalPages, 5) }, (_, index) => {
               const pageNumber = wsTotalPages <= 5
@@ -518,19 +521,22 @@ function WorksheetsSubTab() {
                 <button
                   key={pageNumber}
                   onClick={() => setWsPage(pageNumber)}
-                  className={`w-7 h-7 rounded-lg text-xs font-bold flex items-center justify-center transition-colors cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                     wsPage === pageNumber
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                      ? 'bg-[#2563eb] text-white shadow-2xs'
+                      : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   {pageNumber}
                 </button>
               );
             })}
-            <button disabled={wsPage >= wsTotalPages} onClick={() => setWsPage(Math.min(wsTotalPages, wsPage + 1))}
-              className="p-1.5 border border-slate-200 rounded-lg bg-white hover:bg-slate-100 disabled:opacity-40 transition-colors cursor-pointer disabled:cursor-not-allowed">
-              <ChevronRight size={14} className="text-slate-600" />
+            <button
+              disabled={wsPage >= wsTotalPages}
+              onClick={() => setWsPage(Math.min(wsTotalPages, wsPage + 1))}
+              className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors cursor-pointer disabled:cursor-not-allowed"
+            >
+              Next
             </button>
           </div>
         </div>

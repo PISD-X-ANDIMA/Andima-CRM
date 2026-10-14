@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Download, Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Download, Plus, Search } from "lucide-react";
 import * as XLSX from "xlsx";
 import type { ApiResponse, CustomerListItem } from "@/types/customer";
 import { CustomerTable } from "@/components/customer/CustomerTable";
@@ -202,26 +202,132 @@ export default function CompanyListPage() {
   const firstRow = total === 0 ? 0 : (page - 1) * perPage + 1;
   const lastRow = Math.min(page * perPage, total);
 
-  return <div className="space-y-7">
-    <div className="flex items-start justify-between gap-4"><div><h1 className="text-4xl font-bold tracking-tight text-black">Company List</h1></div>
-      <button type="button" onClick={() => { setSuccessMessage(""); setModalCustomer(null); setIsModalOpen(true); }} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-base font-semibold text-white hover:bg-blue-700"><Plus className="h-4 w-4" />Add Company</button>
+  return <div className="space-y-6">
+    {/* 1. PAGE HEADING */}
+    <div className="mb-5">
+      <h1 className="text-2xl font-bold text-[#0f172a] tracking-tight">
+        Company List
+      </h1>
+      <p className="text-xs text-slate-400 mt-1">
+        Manage and organize company profiles, PIC details, and meeting schedules.
+      </p>
     </div>
+
     {successMessage && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{successMessage}</p>}
-    <div className="flex items-center justify-between gap-4 pt-1">
-      <label className="relative block w-full max-w-[425px]"><Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" /><input type="search" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} placeholder="Search Company, PIC or Phone Number" className="h-[52px] w-full rounded-full border border-slate-300 bg-white pl-14 pr-5 text-base font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>
-      <button type="button" onClick={() => { setExportError(""); setExportOpen(true); }} disabled={!total || isExporting} className="inline-flex h-[52px] items-center gap-3 rounded-2xl border border-slate-300 bg-white px-5 text-base font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"><Download className="h-5 w-5" />Export</button>
+
+    {/* 2. TOP CONTROLS AND ACTION BAR CARD */}
+    <div className="bg-white border border-slate-200/90 rounded-2xl p-3 px-4 shadow-2xs flex flex-wrap items-center justify-between gap-3 mb-6">
+      {/* Left: Search input in consistent position */}
+      <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
+        <div className="relative min-w-[260px] max-w-sm">
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <input
+            type="search"
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            placeholder="Search Company, PIC or Phone Number"
+            className="w-full bg-[#f4f6fa] border border-slate-200/70 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:bg-white focus:border-blue-400 transition-colors"
+          />
+        </div>
+      </div>
+
+      {/* Right: Export & Add Company Buttons */}
+      <div className="flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => { setExportError(""); setExportOpen(true); }}
+          disabled={!total || isExporting}
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors shadow-2xs cursor-pointer"
+        >
+          <Download size={14} />
+          <span>Export</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => { setSuccessMessage(""); setModalCustomer(null); setIsModalOpen(true); }}
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#0d6efd] hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer shrink-0"
+        >
+          <Plus size={14} />
+          <span>Add Company</span>
+        </button>
+      </div>
     </div>
     {exportError && <p role="alert" className="-mt-4 text-sm text-red-600">{exportError}</p>}
-    <CustomerTable customers={customers} isLoading={isLoading} error={error} onRetry={() => void fetchCustomers()} searchKeyword={debouncedSearch} onResetSearch={() => setSearchKeyword("")} onEdit={(customer) => { setSuccessMessage(""); setModalCustomer(customer); setIsModalOpen(true); }} onDetails={(customer) => { setActionCustomer(customer); setActionMode("details"); }} onViewTasks={(customer) => { setActionCustomer(customer); setActionMode("tasks"); }} onDelete={setDeleteTarget} />
-    <div className="flex flex-wrap items-center justify-between gap-4 px-4 pt-2 text-xs text-slate-500"><span>Showing {firstRow}-{lastRow} of {total} customers</span><nav className="flex items-center gap-1" aria-label="Company list pages">
-      <button type="button" aria-label="Previous page" disabled={page <= 1 || isLoading} onClick={() => setPage((value) => value - 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>
-      {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
-        const pageNumber = totalPages <= 5 ? index + 1 : Math.max(1, Math.min(page - 2, totalPages - 4)) + index;
-        return <button type="button" key={pageNumber} aria-current={page === pageNumber ? "page" : undefined} onClick={() => setPage(pageNumber)} className={`h-8 min-w-8 rounded-md px-2 ${page === pageNumber ? "bg-blue-600 font-semibold text-white" : "text-slate-600 hover:bg-slate-100"}`}>{pageNumber}</button>;
-      })}
-      {totalPages > 5 && <><span className="px-1">...</span><button type="button" onClick={() => setPage(totalPages)} className="h-8 min-w-8 rounded-md px-2 text-slate-600">{totalPages}</button></>}
-      <button type="button" aria-label="Next page" disabled={page >= totalPages || isLoading} onClick={() => setPage((value) => value + 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40"><ChevronRight className="h-4 w-4" /></button>
-    </nav></div>
+    <div className="bg-[#F5F7FF] rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <CustomerTable
+        customers={customers}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void fetchCustomers()}
+        searchKeyword={debouncedSearch}
+        onResetSearch={() => setSearchKeyword("")}
+        onEdit={(customer) => { setSuccessMessage(""); setModalCustomer(customer); setIsModalOpen(true); }}
+        onDetails={(customer) => { setActionCustomer(customer); setActionMode("details"); }}
+        onViewTasks={(customer) => { setActionCustomer(customer); setActionMode("tasks"); }}
+        onDelete={setDeleteTarget}
+      />
+      {!error && (
+        <div className="py-4 px-6 bg-white border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs">
+          <div className="text-slate-500 font-medium">
+            Showing <strong className="text-slate-800">{firstRow}-{lastRow}</strong> of <strong className="text-slate-800">{total}</strong> customers
+          </div>
+          <div className="flex items-center gap-1.5" aria-label="Company list pages">
+            <button
+              type="button"
+              aria-label="Previous page"
+              disabled={page <= 1 || isLoading}
+              onClick={() => setPage((value) => value - 1)}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              Previous
+            </button>
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+              const pageNumber = totalPages <= 5 ? index + 1 : Math.max(1, Math.min(page - 2, totalPages - 4)) + index;
+              return (
+                <button
+                  type="button"
+                  key={pageNumber}
+                  aria-current={page === pageNumber ? "page" : undefined}
+                  onClick={() => setPage(pageNumber)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                    page === pageNumber
+                      ? "bg-[#2563eb] text-white shadow-2xs"
+                      : "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+            {totalPages > 5 && (
+              <>
+                <span className="px-1 text-slate-400">...</span>
+                <button
+                  type="button"
+                  onClick={() => setPage(totalPages)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                    page === totalPages
+                      ? "bg-[#2563eb] text-white shadow-2xs"
+                      : "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {totalPages}
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              aria-label="Next page"
+              disabled={page >= totalPages || isLoading}
+              onClick={() => setPage((value) => value + 1)}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
     <CustomerFormModal isOpen={isModalOpen} customer={modalCustomer} onClose={() => { setIsModalOpen(false); setModalCustomer(null); }} onSuccess={handleSaved} />
     <CompanyActionModal customer={actionCustomer} mode={actionMode} onClose={() => { setActionCustomer(null); setActionMode(null); }} />
     <DeleteConfirmDialog isOpen={Boolean(deleteTarget)} isDeleting={isDeleting} companyName={deleteTarget?.companyName || ""} onConfirm={() => void handleDelete()} onCancel={() => setDeleteTarget(null)} />

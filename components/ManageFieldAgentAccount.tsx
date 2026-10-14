@@ -420,30 +420,23 @@ export default function ManageFieldAgentAccount() {
         </div>
       )}
 
-      {/* TOP BREADCRUMB */}
-      <div className="flex items-center gap-2 text-xs font-semibold mb-3">
-        <span className="text-slate-900 font-extrabold tracking-wide text-xs">ANDIMA CRM</span>
-        <span className="text-slate-400">CRM /</span>
-        <span className="text-[#0d6efd] font-bold">Manage Field Agent Account</span>
-      </div>
-
       {/* TITLE & SUBTITLE */}
       <div className="mb-5">
-        <h1 className="text-[26px] font-bold text-[#1e293b] tracking-tight leading-tight">
-          Manage Field Agent Account
+        <h1 className="text-2xl font-bold text-[#0f172a] tracking-tight leading-tight">
+          Manage Field Agent Accounts
         </h1>
-        <p className="text-xs text-slate-500 font-normal mt-1">
+        <p className="text-xs text-slate-400 font-normal mt-1">
           Manage and organize field worker account credentials for the A3 application.
         </p>
       </div>
 
-      {/* MAIN FRAME CONTAINER FOR TABLE & CONTROLS */}
-      <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-sm mb-8">
-        {/* SEARCH & FILTER BAR */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+      {/* TOP CONTROLS AND ACTION BAR CARD */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-3 px-4 shadow-2xs flex flex-wrap items-center justify-between gap-3 mb-6">
+        {/* Left: Search input & Status dropdown */}
+        <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
           {/* Search Box */}
-          <div className="relative flex-1 min-w-[280px]">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <div className="relative min-w-[260px] max-w-sm">
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               type="text"
               value={agentSearchQuery}
@@ -452,66 +445,66 @@ export default function ManageFieldAgentAccount() {
                 setPage(1);
               }}
               placeholder="Agent ID, Email, dan Field Agent"
-              className="w-full bg-[#f8fafc] border border-slate-200/90 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 transition-colors"
+              className="w-full bg-[#f4f6fa] border border-slate-200/70 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:bg-white focus:border-blue-400 transition-colors"
             />
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Dropdown: Status */}
-            <div className="relative min-w-[120px]">
-              <select
-                value={agentStatusFilter}
-                onChange={(e) => {
-                  setAgentStatusFilter(e.target.value);
-                  setPage(1);
-                }}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
-              >
-                <option value="All">Status</option>
-                <option value="Active">✓ Active</option>
-                <option value="Inactive">● Inactive</option>
-              </select>
-              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
-            </div>
-
-            {/* Create Agent Button */}
-            <button
-              type="button"
-              onClick={handleOpenAddAgent}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0d6efd] hover:bg-blue-700 text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer shrink-0"
+          {/* Dropdown: Status */}
+          <div className="relative min-w-[120px]">
+            <select
+              value={agentStatusFilter}
+              onChange={(e) => {
+                setAgentStatusFilter(e.target.value);
+                setPage(1);
+              }}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
             >
-              <Plus size={14} />
-              <span>Create Agent</span>
-            </button>
+              <option value="All">Status</option>
+              <option value="Active">✓ Active</option>
+              <option value="Inactive">● Inactive</option>
+            </select>
+            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
           </div>
         </div>
 
-        {/* DATA TABLE CONTAINER */}
-        <div className="w-full overflow-x-auto rounded-2xl border border-slate-200 shadow-2xs bg-white">
+        {/* Right: Create Field Agent Accounts Button */}
+        <button
+          type="button"
+          onClick={handleOpenAddAgent}
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#0d6efd] hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer shrink-0"
+        >
+          <Plus size={14} />
+          <span>Create Field Agent Accounts</span>
+        </button>
+      </div>
+
+      {/* DATA TABLE CONTAINER */}
+      <div className="bg-[#F5F7FF] rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="overflow-x-auto">
           <table className="w-full min-w-[800px] border-collapse">
-            <thead className="bg-[#cad8eb] border-b border-slate-200/80">
+            <thead className="bg-[#F5F7FF] border-b border-slate-200/80">
               <tr>
-                <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[20%]">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[20%] first:rounded-tl-2xl">
                   Agent ID
                 </th>
-                <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[20%]">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[20%]">
                   Field Agent
                 </th>
-                <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[25%]">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[25%]">
                   Email
                 </th>
-                <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[15%]">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[15%]">
                   Field Area
                 </th>
-                <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[10%]">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[10%]">
                   Status
                 </th>
-                <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[10%]">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[10%] last:rounded-tr-2xl">
                   Action
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200/80 bg-white">
+            <tbody className="divide-y divide-slate-100 bg-white">
               {pagedAgents.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-xs text-slate-500">
@@ -520,36 +513,36 @@ export default function ManageFieldAgentAccount() {
                 </tr>
               ) : (
                 pagedAgents.map((agent) => (
-                  <tr key={agent.id} className="border-l-4 border-l-transparent hover:border-l-blue-600 hover:bg-blue-50/30 transition-all duration-150">
-                    <td className="py-3.5 px-4 text-center text-xs sm:text-sm font-bold text-slate-900 font-mono tracking-tight">
+                  <tr key={agent.id} className="hover:bg-blue-50/20 transition-colors">
+                    <td className="py-4 px-6 text-center text-sm font-bold text-slate-900 tracking-tight">
                       {agent.agent_id}
                     </td>
-                    <td className="py-3.5 px-4 text-center text-xs sm:text-sm font-semibold text-slate-800">
+                    <td className="py-4 px-6 text-center text-sm font-bold text-slate-800">
                       {agent.name}
                     </td>
-                    <td className="py-3.5 px-4 text-center text-xs sm:text-sm font-normal text-slate-700 font-mono">
+                    <td className="py-4 px-6 text-center text-sm font-normal text-slate-700">
                       {agent.email}
                     </td>
-                    <td className="py-3.5 px-4 text-center text-xs sm:text-sm font-semibold text-slate-800">
+                    <td className="py-4 px-6 text-center text-sm font-semibold text-slate-800">
                       {agent.field_area}
                     </td>
-                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${
+                    <td className="py-4 px-6 text-center whitespace-nowrap">
+                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${
                         agent.status === 'Active'
-                          ? 'text-emerald-700 bg-emerald-50 border border-emerald-200'
+                          ? 'text-[#16a34a] bg-[#eaf8ef] border border-[#bbf7d0]'
                           : 'text-rose-700 bg-rose-50 border border-rose-200'
                       }`}>
-                        <Check size={11} className={agent.status === 'Active' ? 'text-emerald-600 stroke-[3]' : 'hidden'} />
+                        <Check size={12} className={agent.status === 'Active' ? 'text-[#16a34a] stroke-[2.5]' : 'hidden'} />
                         <span>{agent.status}</span>
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                      <div className="flex items-center justify-center gap-1.5">
+                    <td className="py-4 px-6 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleOpenEditAgent(agent)}
                           title="Edit"
-                          className="p-1.5 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors cursor-pointer"
+                          className="p-1 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
                         >
                           <Pencil size={15} />
                         </button>
@@ -557,7 +550,7 @@ export default function ManageFieldAgentAccount() {
                           type="button"
                           onClick={() => setAgentToDelete(agent)}
                           title="Hapus"
-                          className="p-1.5 rounded-lg text-rose-600 hover:text-rose-800 hover:bg-rose-50 transition-colors cursor-pointer"
+                          className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
                         >
                           <Trash2 size={15} />
                         </button>
@@ -570,18 +563,17 @@ export default function ManageFieldAgentAccount() {
           </table>
         </div>
 
-        {/* PAGINATION */}
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-          <span>
-            Showing {filteredAgents.length > 0 ? (validPage - 1) * pageSize + 1 : 0}-
-            {Math.min(validPage * pageSize, filteredAgents.length)} of {filteredAgents.length} customers
-          </span>
+        {/* DYNAMIC PAGINATION FOOTER */}
+        <div className="py-4 px-6 bg-white border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="text-[11px] text-slate-400 font-normal">
+            Showing {filteredAgents.length > 0 ? (validPage - 1) * pageSize + 1 : 0}-{Math.min(validPage * pageSize, filteredAgents.length)} of {filteredAgents.length} agents
+          </div>
           <div className="flex items-center gap-1.5">
             <button
               type="button"
               disabled={validPage <= 1}
               onClick={() => setPage(Math.max(1, validPage - 1))}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              className="px-2 py-1 text-xs text-slate-400 hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
               Previous
             </button>
@@ -594,10 +586,10 @@ export default function ManageFieldAgentAccount() {
                   key={pageNumber}
                   type="button"
                   onClick={() => setPage(pageNumber)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                  className={`w-6 h-6 rounded text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer ${
                     validPage === pageNumber
-                      ? 'bg-[#2563eb] text-white shadow-2xs'
-                      : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
+                      ? 'bg-[#0d6efd] text-white'
+                      : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   {pageNumber}
@@ -608,7 +600,7 @@ export default function ManageFieldAgentAccount() {
               type="button"
               disabled={validPage >= totalPages}
               onClick={() => setPage(Math.min(totalPages, validPage + 1))}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              className="px-2 py-1 text-xs text-slate-400 hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
               Next
             </button>

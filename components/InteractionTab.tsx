@@ -1049,12 +1049,22 @@ Exported on: ${new Date().toLocaleString('id-ID')}
         </div>
       )}
 
-      {/* 1. TOP CONTROLS AND ACTION BAR CARD */}
+      {/* 1. PAGE HEADING */}
+      <div className="mb-5">
+        <h1 className="text-2xl font-bold text-[#0f172a] tracking-tight">
+          Record Customer Conversation
+        </h1>
+        <p className="text-xs text-slate-400 mt-1">
+          Manage and view notes, meeting logs, and WhatsApp conversation history.
+        </p>
+      </div>
+
+      {/* 2. TOP CONTROLS AND ACTION BAR CARD */}
       <div className="bg-white border border-slate-200/90 rounded-2xl p-3 px-4 shadow-2xs flex flex-wrap items-center justify-between gap-3 mb-6">
         {/* Left: Search input & Filters */}
         <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
           {/* Search input */}
-          <div className="relative flex-1 min-w-[220px] max-w-sm">
+          <div className="relative min-w-[260px] max-w-sm">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               type="text"
@@ -1064,7 +1074,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 setCurrentPage(1);
               }}
               placeholder="Search by ID, Company, Summary..."
-              className="w-full bg-[#f4f6fa] border border-slate-200/60 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-700 placeholder:text-slate-400 outline-none focus:bg-white focus:border-blue-400 transition-colors"
+              className="w-full bg-[#f4f6fa] border border-slate-200/70 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:bg-white focus:border-blue-400 transition-colors"
             />
           </div>
 
@@ -1076,7 +1086,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 setIsChannelDropdownOpen(!isChannelDropdownOpen);
                 setIsDateDropdownOpen(false);
               }}
-              className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
+              className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
             >
               <span>{channelFilter === 'All Channel' ? 'Channel Type' : `Channel: ${channelFilter}`}</span>
               <ChevronDown size={14} className={`text-slate-400 transition-transform ${isChannelDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
@@ -1112,7 +1122,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 setIsDateDropdownOpen(!isDateDropdownOpen);
                 setIsChannelDropdownOpen(false);
               }}
-              className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
+              className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
             >
               <span>{dateFilter === 'All Dates' ? 'All Periods' : dateFilter}</span>
               <ChevronDown size={14} className={`text-slate-400 transition-transform ${isDateDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
@@ -1145,28 +1155,21 @@ Exported on: ${new Date().toLocaleString('id-ID')}
         <button
           type="button"
           onClick={handleOpenCreateModal}
-          className="bg-[#2563eb] hover:bg-blue-700 text-white rounded-xl px-5 py-2.5 text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+          className="bg-[#0d6efd] hover:bg-blue-700 text-white rounded-xl px-5 py-2.5 text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer shrink-0"
         >
           <Plus size={14} />
           <span>Record Conversation</span>
         </button>
       </div>
 
-      {/* 2. PAGE HEADING */}
-      <div className="mb-5">
-        <h1 className="text-2xl font-bold text-[#0f172a] tracking-tight">
-          Record Customer Conversation
-        </h1>
-      </div>
-
       {/* 3. TABLE CARD */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div className="bg-[#F5F7FF] rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[720px]">
             {/* TABLE HEADER */}
-            <thead className="bg-[#c8d5e8] border-b border-slate-300/60">
+            <thead className="bg-[#F5F7FF] border-b border-slate-200/80">
               <tr>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal first:rounded-tl-2xl">
                   Conversation ID
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-left tracking-normal">
@@ -1178,14 +1181,14 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
                   Date
                 </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal last:rounded-tr-2xl">
                   Detail
                 </th>
               </tr>
             </thead>
 
             {/* TABLE BODY */}
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 bg-white">
               {loading ? (
                 Array.from({ length: 5 }).map((_, idx) => (
                   <tr key={`conv-skeleton-${idx}`} className="animate-pulse border-b border-slate-100">
@@ -1224,7 +1227,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 pagedRows.map((row, idx) => (
                   <tr
                     key={`${row.id || 'row'}-${idx}`}
-                    className="border-l-4 border-l-transparent hover:border-l-blue-600 hover:bg-blue-50/30 transition-all duration-150"
+                    className="hover:bg-blue-50/20 transition-colors"
                   >
                     {/* Conversation ID */}
                     <td className="py-4.5 px-6 text-center text-sm font-semibold text-slate-800 whitespace-nowrap">

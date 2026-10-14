@@ -1606,29 +1606,22 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
         </div>
       )}
 
-      {/* 1. TOP BREADCRUMB */}
-      <div className="flex items-center gap-2 text-xs font-semibold mb-3">
-        <span className="text-slate-900 font-extrabold tracking-wide text-xs">ANDIMA CRM</span>
-        <span className="text-slate-400">CRM /</span>
-        <span className="text-[#0d6efd] font-bold">Task Field</span>
-      </div>
-
       {/* 2. TITLE & SUBTITLE */}
       <div className="mb-5">
-        <h1 className="text-[26px] font-bold text-[#1e293b] tracking-tight leading-tight">
+        <h1 className="text-2xl font-bold text-[#0f172a] tracking-tight leading-tight">
           Monitoring Task Field Agent
         </h1>
-        <p className="text-xs text-slate-500 font-normal mt-1">
+        <p className="text-xs text-slate-400 font-normal mt-1">
           Monitor progres task dan tinjau hasil inspeksi yang dikirim dari A3.
         </p>
       </div>
 
-      {/* 3. SEARCH & FILTER BAR (Exact Match to Screenshot) */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-3 mb-6 shadow-2xs">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* 3. SEARCH & FILTER BAR (Consistent with Standard Frame) */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-3 px-4 mb-6 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
           {/* Search Box */}
-          <div className="relative flex-1 min-w-[280px]">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <div className="relative min-w-[260px] max-w-sm">
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
@@ -1637,224 +1630,223 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 setT1Page(1);
               }}
               placeholder="Job Number, Company Name, dan Field Agent"
-              className="w-full bg-[#f8fafc] border border-slate-200/90 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 transition-colors"
+              className="w-full bg-[#f4f6fa] border border-slate-200/70 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:bg-white focus:border-blue-400 transition-colors"
             />
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Dropdown 1: Status */}
-            <div className="relative min-w-[130px]">
-              <select
-                value={issueFilter}
-                onChange={(e) => {
-                  setIssueFilter(e.target.value);
-                  setT1Page(1);
-                }}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
-              >
-                <option value="All">Status</option>
-                <option value="Issue">● Issue</option>
-                <option value="Completed">✓ Completed</option>
-              </select>
-              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
-            </div>
+          {/* Dropdown 1: Status */}
+          <div className="relative min-w-[120px]">
+            <select
+              value={issueFilter}
+              onChange={(e) => {
+                setIssueFilter(e.target.value);
+                setT1Page(1);
+              }}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
+            >
+              <option value="All">Status</option>
+              <option value="Issue">● Issue</option>
+              <option value="Completed">✓ Completed</option>
+            </select>
+            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+          </div>
 
-            {/* Dropdown 2: All Periods (Exact 3 period choices: Today, This Week, This Month) */}
-            <div className="relative min-w-[140px]">
-              <select
-                value={periodFilter}
-                onChange={(e) => {
-                  setPeriodFilter(e.target.value);
-                  setT1Page(1);
-                }}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
-              >
-                <option value="All">All Periods</option>
-                <option value="Today">Today</option>
-                <option value="This Week">This Week</option>
-                <option value="This Month">This Month</option>
-              </select>
-              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
-            </div>
+          {/* Dropdown 2: All Periods */}
+          <div className="relative min-w-[130px]">
+            <select
+              value={periodFilter}
+              onChange={(e) => {
+                setPeriodFilter(e.target.value);
+                setT1Page(1);
+              }}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
+            >
+              <option value="All">All Periods</option>
+              <option value="Today">Today</option>
+              <option value="This Week">This Week</option>
+              <option value="This Month">This Month</option>
+            </select>
+            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
           </div>
         </div>
       </div>
 
-      {/* 4. MAIN DATA TABLE (Exact UI & Compact Proportions from Screenshot) */}
-      <div className="w-full overflow-x-auto rounded-2xl border border-slate-200 shadow-2xs bg-white">
-        <table className="w-full min-w-[800px] border-collapse">
-          {/* Header: Soft pastel blue periwinkle background */}
-          <thead className="bg-[#cad8eb] border-b border-slate-200/80">
-            <tr>
-              <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[20%]">
-                Job Number
-              </th>
-              <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[25%]">
-                Company Name
-              </th>
-              <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[15%]">
-                Date
-              </th>
-              <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[13%]">
-                Status
-              </th>
-              <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[15%]">
-                Field Agent
-              </th>
-              <th className="py-3.5 px-4 text-xs sm:text-sm font-bold text-[#1e293b] text-center w-[12%]">
-                Result
-              </th>
-            </tr>
-          </thead>
-
-          {/* Table Rows */}
-          <tbody className="divide-y divide-slate-200/80 bg-white">
-            {loading ? (
-              Array.from({ length: 5 }).map((_, idx) => (
-                <tr key={`task-skeleton-${idx}`} className="animate-pulse border-b border-slate-100">
-                  <td className="py-4 px-4"><div className="h-4 bg-slate-200/70 rounded-md w-28 mx-auto" /></td>
-                  <td className="py-4 px-4"><div className="h-4 bg-slate-200/70 rounded-md w-40 mx-auto" /></td>
-                  <td className="py-4 px-4"><div className="h-4 bg-slate-200/70 rounded-md w-20 mx-auto" /></td>
-                  <td className="py-4 px-4"><div className="h-6 bg-slate-200/70 rounded-full w-24 mx-auto" /></td>
-                  <td className="py-4 px-4"><div className="h-4 bg-slate-200/70 rounded-md w-24 mx-auto" /></td>
-                  <td className="py-4 px-4"><div className="h-7 bg-slate-200/70 rounded-xl w-24 mx-auto" /></td>
-                </tr>
-              ))
-            ) : filteredTasks.length === 0 ? (
+      {/* 4. MAIN DATA TABLE CARD */}
+      <div className="bg-[#F5F7FF] rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[800px] border-collapse">
+            {/* Header: Consistent #F5F7FF matching standard */}
+            <thead className="bg-[#F5F7FF] border-b border-slate-200/80">
               <tr>
-                <td colSpan={6} className="py-14 text-center">
-                  <div className="max-w-md mx-auto flex flex-col items-center">
-                    <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
-                      <FileText size={24} />
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-800">
-                      Tidak Ada Task Field Agent
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1 max-w-xs">
-                      {searchQuery.trim()
-                        ? `Tidak ada task yang cocok dengan pencarian "${searchQuery}".`
-                        : 'Belum ada data task Field Agent tersimpan.'}
-                    </p>
-                  </div>
-                </td>
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[20%] first:rounded-tl-2xl">
+                  Job Number
+                </th>
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[25%]">
+                  Company Name
+                </th>
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[15%]">
+                  Date
+                </th>
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[13%]">
+                  Status
+                </th>
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[15%]">
+                  Field Agent
+                </th>
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[12%] last:rounded-tr-2xl">
+                  Result
+                </th>
               </tr>
-            ) : (
-              pagedTasks.map((task) => (
-                <tr key={task.id} className="border-l-4 border-l-transparent hover:border-l-blue-600 hover:bg-blue-50/30 transition-all duration-150">
-                  {/* Column 1: Job Number */}
-                  <td className="py-3.5 px-4 text-center text-xs sm:text-sm font-bold text-slate-900 font-mono tracking-tight">
-                    {task.job_number}
-                  </td>
+            </thead>
 
-                  {/* Column 2: Company Name */}
-                  <td className="py-3.5 px-4 text-center text-xs sm:text-sm font-semibold text-slate-800">
-                    {task.customer_name}
-                  </td>
-
-                  {/* Column 3: Date */}
-                  <td className="py-4 px-4 text-center text-sm font-semibold text-slate-900 whitespace-nowrap">
-                    {formatTaskDateDisplay(task.handover_datetime)}
-                  </td>
-
-                  {/* Column 4: Status */}
-                  <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                    {task.has_issue || task.issue_status === 'Issue' ? (
-                      <button
-                        type="button"
-                        onClick={() => handleOpenIssueModal(task)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-[#e11d48] bg-[#ffe4e6] border border-[#fecdd3] hover:bg-rose-200 transition-colors cursor-pointer"
-                        title="Klik untuk melihat detail issue"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#e11d48]" />
-                        <span>Issue</span>
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleOpenIssueModal(task)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
-                        title="Klik untuk melihat Detail Status"
-                      >
-                        <Check size={11} className="text-emerald-600 stroke-[3]" />
-                        <span>Completed</span>
-                      </button>
-                    )}
-                  </td>
-
-                  {/* Column 5: Field Agent */}
-                  <td className="py-3.5 px-4 text-center text-xs sm:text-sm font-semibold text-slate-800 whitespace-nowrap">
-                    {task.field_agent_name || (
-                      <span className="text-slate-400 font-normal">-</span>
-                    )}
-                  </td>
-
-                  {/* Column 6: Result */}
-                  <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                        <Camera size={11} className="text-slate-400" />
-                        <span>{task.photo_count === 0 ? 0 : 4}</span>
-                        <FileText size={11} className="text-slate-400 ml-1" />
-                        <span>{task.doc_count || 2}</span>
+            {/* Table Rows */}
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {loading ? (
+                Array.from({ length: 5 }).map((_, idx) => (
+                  <tr key={`task-skeleton-${idx}`} className="animate-pulse border-b border-slate-100">
+                    <td className="py-4 px-4"><div className="h-4 bg-slate-200/70 rounded-md w-28 mx-auto" /></td>
+                    <td className="py-4 px-4"><div className="h-4 bg-slate-200/70 rounded-md w-40 mx-auto" /></td>
+                    <td className="py-4 px-4"><div className="h-4 bg-slate-200/70 rounded-md w-20 mx-auto" /></td>
+                    <td className="py-4 px-4"><div className="h-6 bg-slate-200/70 rounded-full w-24 mx-auto" /></td>
+                    <td className="py-4 px-4"><div className="h-4 bg-slate-200/70 rounded-md w-24 mx-auto" /></td>
+                    <td className="py-4 px-4"><div className="h-7 bg-slate-200/70 rounded-xl w-24 mx-auto" /></td>
+                  </tr>
+                ))
+              ) : filteredTasks.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-14 text-center">
+                    <div className="max-w-md mx-auto flex flex-col items-center">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+                        <FileText size={24} />
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setResultModalTask(task)}
-                        className="text-xs font-semibold text-[#0d6efd] hover:underline cursor-pointer transition-colors mt-0.5"
-                      >
-                        See more...
-                      </button>
+                      <h3 className="text-sm font-bold text-slate-800">
+                        Tidak Ada Task Field Agent
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1 max-w-xs">
+                        {searchQuery.trim()
+                          ? `Tidak ada task yang cocok dengan pencarian "${searchQuery}".`
+                          : 'Belum ada data task Field Agent tersimpan.'}
+                      </p>
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                pagedTasks.map((task) => (
+                  <tr key={task.id} className="hover:bg-blue-50/20 transition-colors">
+                    {/* Column 1: Job Number */}
+                    <td className="py-3.5 px-4 text-center text-xs sm:text-sm font-bold text-slate-900 font-mono tracking-tight">
+                      {task.job_number}
+                    </td>
 
-      {/* 5. BOTTOM PAGINATION FOR TABLE 1 (Exact screenshot layout) */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-        <span>
-          Showing {filteredTasks.length > 0 ? (t1ValidPage - 1) * t1PageSize + 1 : 0}-
-          {Math.min(t1ValidPage * t1PageSize, filteredTasks.length)} of {filteredTasks.length} customers
-        </span>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            disabled={t1ValidPage <= 1}
-            onClick={() => setT1Page(Math.max(1, t1ValidPage - 1))}
-            className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-          >
-            Previous
-          </button>
-          {Array.from({ length: Math.min(t1TotalPages, 5) }, (_, index) => {
-            const pageNumber = t1TotalPages <= 5
-              ? index + 1
-              : Math.max(1, Math.min(t1ValidPage - 2, t1TotalPages - 4)) + index;
-            return (
-              <button
-                key={pageNumber}
-                type="button"
-                onClick={() => setT1Page(pageNumber)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                  t1ValidPage === pageNumber
-                    ? 'bg-[#2563eb] text-white shadow-2xs'
-                    : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
-                }`}
-              >
-                {pageNumber}
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            disabled={t1ValidPage >= t1TotalPages}
-            onClick={() => setT1Page(Math.min(t1TotalPages, t1ValidPage + 1))}
-            className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-          >
-            Next
-          </button>
+                    {/* Column 2: Company Name */}
+                    <td className="py-3.5 px-4 text-center text-xs sm:text-sm font-semibold text-slate-800">
+                      {task.customer_name}
+                    </td>
+
+                    {/* Column 3: Date */}
+                    <td className="py-4 px-4 text-center text-sm font-semibold text-slate-900 whitespace-nowrap">
+                      {formatTaskDateDisplay(task.handover_datetime)}
+                    </td>
+
+                    {/* Column 4: Status */}
+                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                      {task.has_issue || task.issue_status === 'Issue' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenIssueModal(task)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-[#e11d48] bg-[#ffe4e6] border border-[#fecdd3] hover:bg-rose-200 transition-colors cursor-pointer"
+                          title="Klik untuk melihat detail issue"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#e11d48]" />
+                          <span>Issue</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenIssueModal(task)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+                          title="Klik untuk melihat Detail Status"
+                        >
+                          <Check size={11} className="text-emerald-600 stroke-[3]" />
+                          <span>Completed</span>
+                        </button>
+                      )}
+                    </td>
+
+                    {/* Column 5: Field Agent */}
+                    <td className="py-3.5 px-4 text-center text-xs sm:text-sm font-semibold text-slate-800 whitespace-nowrap">
+                      {task.field_agent_name || (
+                        <span className="text-slate-400 font-normal">-</span>
+                      )}
+                    </td>
+
+                    {/* Column 6: Result */}
+                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                          <Camera size={11} className="text-slate-400" />
+                          <span>{task.photo_count === 0 ? 0 : 4}</span>
+                          <FileText size={11} className="text-slate-400 ml-1" />
+                          <span>{task.doc_count || 2}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setResultModalTask(task)}
+                          className="text-xs font-semibold text-[#0d6efd] hover:underline cursor-pointer transition-colors mt-0.5"
+                        >
+                          See more...
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 5. DYNAMIC PAGINATION FOOTER */}
+        <div className="py-4 px-6 bg-white border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="text-slate-500 font-medium">
+            Showing <strong className="text-slate-800">{filteredTasks.length > 0 ? (t1ValidPage - 1) * t1PageSize + 1 : 0}-{Math.min(t1ValidPage * t1PageSize, filteredTasks.length)}</strong> of <strong className="text-slate-800">{filteredTasks.length}</strong> tasks
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={t1ValidPage <= 1}
+              onClick={() => setT1Page(Math.max(1, t1ValidPage - 1))}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              Previous
+            </button>
+            {Array.from({ length: Math.min(t1TotalPages, 5) }, (_, index) => {
+              const pageNumber = t1TotalPages <= 5
+                ? index + 1
+                : Math.max(1, Math.min(t1ValidPage - 2, t1TotalPages - 4)) + index;
+              return (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  onClick={() => setT1Page(pageNumber)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                    t1ValidPage === pageNumber
+                      ? 'bg-[#2563eb] text-white shadow-2xs'
+                      : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              disabled={t1ValidPage >= t1TotalPages}
+              onClick={() => setT1Page(Math.min(t1TotalPages, t1ValidPage + 1))}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
 

@@ -49,19 +49,19 @@ export default function FollowUpTab() {
         </div>
       </div>
 
-      <div className="border border-slate-200 rounded-xl bg-white w-full overflow-hidden shadow-sm">
+      <div className="bg-white border border-slate-200/80 rounded-2xl w-full overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-max">
-            <thead className="bg-slate-50">
+          <table className="w-full text-left min-w-max border-collapse">
+            <thead className="bg-[#cad8eb] border-b border-slate-200/80">
               <tr><Th>CUSTOMER & COMPANY</Th><Th>TASK DESCRIPTION</Th><Th>DEADLINE</Th><Th>ASSIGNED TO</Th><Th align="center">PRIORITY</Th><Th>STATUS</Th><Th align="center" w="w-16">ACTIONS</Th></tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {followUps.map(i => (
-                <tr key={i.id} onClick={() => setSel(sel === i.id ? null : i.id)} className={`cursor-pointer transition-colors ${sel === i.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
+                <tr key={i.id} onClick={() => setSel(sel === i.id ? null : i.id)} className={`cursor-pointer border-l-4 border-l-transparent hover:border-l-blue-600 hover:bg-blue-50/30 transition-all duration-150 ${sel === i.id ? 'bg-blue-50/50 border-l-blue-600' : ''}`}>
                   <td className="py-3.5 px-4"><div className="text-sm font-bold text-slate-900">{i.customerName}</div><div className="text-[11px] text-blue-600 font-semibold mt-0.5">{i.customerId}</div></td>
                   <td className="py-3.5 px-4"><div className="text-xs font-semibold text-slate-700 max-w-xs truncate">{i.task}</div><div className="text-[11px] font-medium text-slate-400 mt-0.5">{i.id}</div></td>
                   <td className="py-3.5 px-4"><div className={`flex items-center gap-1.5 text-xs font-bold ${i.dueDate.includes('Today') ? 'text-red-600' : 'text-slate-600'}`}><Calendar size={13} /> {i.dueDate}</div></td>
-                  <td className="py-3.5 px-4"><div className="flex gap-2 items-center"><div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 text-[10px] font-bold flex items-center justify-center text-slate-600">{i.assignedInitials}</div><span className="text-xs font-semibold text-slate-700">{i.assignedTo}</span></div></td>
+                  <td className="py-3.5 px-4"><div className="flex gap-2 items-center"><div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold flex items-center justify-center">{i.assignedInitials}</div><span className="text-xs font-semibold text-slate-700">{i.assignedTo}</span></div></td>
                   <td className="py-3.5 px-4 text-center"><span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${i.priority === 'High' ? 'text-red-700 bg-red-50 border-red-200' : i.priority === 'Medium' ? 'text-orange-700 bg-orange-50 border-orange-200' : 'text-slate-600 bg-slate-100 border-slate-200'}`}>{i.priority}</span></td>
                   <td className="py-3.5 px-4"><span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${i.status === 'On Progress' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-orange-50 text-orange-700 border-orange-200'}`}><span className={`w-1.5 h-1.5 rounded-full ${i.status === 'On Progress' ? 'bg-blue-500' : 'bg-orange-500'}`} />{i.status}</span></td>
                   <td className="py-3.5 px-4 text-center"><button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400"><MoreVertical size={15} /></button></td>
@@ -70,12 +70,12 @@ export default function FollowUpTab() {
             </tbody>
           </table>
         </div>
-        <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex justify-between items-center">
-          <div className="text-xs font-medium text-slate-500">Showing 1–5 of <span className="font-bold text-slate-700">5</span></div>
-          <div className="flex gap-1.5">
-            <button className="p-1.5 border border-slate-200 rounded-lg bg-white opacity-50"><ChevronRight size={14} className="rotate-180" /></button>
-            <button className="w-7 h-7 rounded-lg bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">1</button>
-            <button className="p-1.5 border border-slate-200 rounded-lg bg-white opacity-50"><ChevronRight size={14} /></button>
+        <div className="py-4 px-6 bg-white border-t border-slate-100 flex flex-wrap justify-between items-center gap-3 text-xs">
+          <div className="text-slate-500 font-medium">Showing <strong className="text-slate-800">1–5</strong> of <strong className="text-slate-800">5</strong> tasks</div>
+          <div className="flex gap-1.5 items-center">
+            <button disabled className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 opacity-40 cursor-not-allowed">Previous</button>
+            <button className="px-3 py-1.5 rounded-lg bg-[#2563eb] text-white text-xs font-bold shadow-2xs">1</button>
+            <button disabled className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 opacity-40 cursor-not-allowed">Next</button>
           </div>
         </div>
       </div>

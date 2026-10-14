@@ -259,19 +259,136 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics }: Props) {
       <div className="space-y-2.5">{scheduleLoadError ? <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">{scheduleLoadError}<button type="button" onClick={() => void refreshSchedule()} className="ml-2 underline">Retry</button></div> : scheduleLoading ? <div role="status" className="rounded-2xl border border-slate-200 px-5 py-6 text-sm text-slate-500">Refreshing this week’s schedule...</div> : weeklyMeetings.length ? weeklyMeetings.map(({ customer, date, time }) => <Link key={`${customer.id}-${date.toISOString()}`} href={`/dashboard/company-list/${customer.id}`} className="flex min-h-[70px] items-center justify-between gap-5 rounded-2xl border border-[#d0d0d0] px-4 py-4 text-[#555] transition-colors hover:border-blue-300 sm:px-5"><span className="truncate text-lg font-semibold sm:text-2xl">{customer.companyName}</span><span className="shrink-0 text-sm sm:text-xl">{date.toLocaleDateString("en-GB", { weekday: "long" })}, {time}</span></Link>) : <div className="rounded-2xl border border-dashed border-slate-300 px-5 py-6 text-sm text-slate-500">No meeting scheduled this week.</div>}</div>
     </section>
 
-    <div className="mb-2 flex items-center justify-between gap-4 px-1 sm:px-2">
-      <label className="relative block w-full max-w-[720px]"><Search aria-hidden="true" className="absolute left-7 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" /><input type="search" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search Company or PIC" aria-label="Search company or PIC" className="h-[70px] w-full rounded-2xl border border-[#bdbdbd] bg-white pl-16 pr-5 text-base font-medium text-slate-700 outline-none placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:text-lg" /></label>
-      <button type="button" onClick={() => { setExportError(""); setExportOpen(true); }} disabled={!customers.length} className="inline-flex h-[52px] shrink-0 items-center gap-3 rounded-2xl border border-slate-300 bg-white px-5 text-base font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"><Download className="h-5 w-5" />Export</button>
+    <div className="bg-white border border-slate-200/90 rounded-2xl p-3 px-4 shadow-2xs flex flex-wrap items-center justify-between gap-3 mb-6">
+      {/* Left: Search input in consistent position */}
+      <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
+        <div className="relative min-w-[260px] max-w-sm">
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => { setSearch(event.target.value); setPage(1); }}
+            placeholder="Search Company or PIC"
+            aria-label="Search company or PIC"
+            className="w-full bg-[#f4f6fa] border border-slate-200/70 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:bg-white focus:border-blue-400 transition-colors"
+          />
+        </div>
+      </div>
+
+      {/* Right: Export Button */}
+      <button
+        type="button"
+        onClick={() => { setExportError(""); setExportOpen(true); }}
+        disabled={!customers.length}
+        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors shadow-2xs cursor-pointer shrink-0"
+      >
+        <Download size={14} />
+        <span>Export</span>
+      </button>
     </div>
 
-    <section aria-label="Company records" className="overflow-x-auto rounded-lg border border-[#d0d0d0]">
-      <table className="w-full min-w-[1100px] table-fixed text-left"><thead className="bg-[#edf4f8] text-[#333]"><tr>
-        <th className="w-[18%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Transaction ID</th><th className="w-[18%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Job Number</th><th className="w-[22%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Company</th><th className="w-[12%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">PIC</th><th className="w-[17%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">PIC Number</th><th className="w-[13%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Detail</th>
-      </tr></thead><tbody className="text-[#383838]">{customers.map((customer) => <tr key={customer.id} className="border-t border-[#d0d0d0] border-l-4 border-l-transparent hover:border-l-blue-600 hover:bg-blue-50/30 transition-all duration-150"><td className="break-words px-4 py-5 text-center text-base sm:text-lg">{customer.transactionNo || "—"}</td><td className="break-words px-4 py-5 text-center text-base sm:text-lg">{customer.jobNumber || "—"}</td><td className="px-4 py-3 text-base leading-tight sm:text-lg">{customer.companyName}</td><td className="px-4 py-5 text-center text-base sm:text-lg">{customer.primaryPic?.fullName || "—"}</td><td className="break-words px-4 py-5 text-center text-base sm:text-lg">{customer.primaryPic?.phoneNumber || "—"}</td><td className="px-4 py-5 text-center"><button type="button" onClick={() => void openCustomerDetail(customer.id)} className="text-base text-blue-600 underline underline-offset-2 hover:text-blue-800 sm:text-lg">See more...</button></td></tr>)}</tbody></table>
-      {searchError ? <div role="alert" className="border-t border-slate-200 p-6 text-center text-sm text-red-700">{searchError}</div> : customers.length === 0 ? <div className="border-t border-slate-200 p-8 text-center text-slate-500"><FileText className="mx-auto mb-2 h-5 w-5" />{search ? "No customer or transaction found." : "No transaction data available."}</div> : null}
+    <section aria-label="Company records" className="bg-[#F5F7FF] rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[1100px] table-fixed text-left border-collapse">
+          <thead className="bg-[#F5F7FF] border-b border-slate-200/80 text-slate-800">
+            <tr>
+              <th className="w-[18%] px-4 py-4 text-center text-sm font-bold text-slate-800 first:rounded-tl-2xl">Transaction ID</th>
+              <th className="w-[18%] px-4 py-4 text-center text-sm font-bold text-slate-800">Job Number</th>
+              <th className="w-[22%] px-4 py-4 text-center text-sm font-bold text-slate-800">Company</th>
+              <th className="w-[12%] px-4 py-4 text-center text-sm font-bold text-slate-800">PIC</th>
+              <th className="w-[17%] px-4 py-4 text-center text-sm font-bold text-slate-800">PIC Number</th>
+              <th className="w-[13%] px-4 py-4 text-center text-sm font-bold text-slate-800 last:rounded-tr-2xl">Detail</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 bg-white text-[#383838]">
+            {customers.map((customer) => (
+              <tr key={customer.id} className="hover:bg-blue-50/20 transition-colors">
+                <td className="break-words px-4 py-4 text-center text-sm font-semibold text-slate-800 font-mono">{customer.transactionNo || "—"}</td>
+                <td className="break-words px-4 py-4 text-center text-sm font-semibold text-slate-800 font-mono">{customer.jobNumber || "—"}</td>
+                <td className="px-4 py-3.5 text-sm font-semibold text-slate-800 leading-snug">{customer.companyName}</td>
+                <td className="px-4 py-4 text-center text-sm font-medium text-slate-700">{customer.primaryPic?.fullName || "—"}</td>
+                <td className="break-words px-4 py-4 text-center text-sm font-normal text-slate-700 font-mono">{customer.primaryPic?.phoneNumber || "—"}</td>
+                <td className="px-4 py-4 text-center">
+                  <button type="button" onClick={() => void openCustomerDetail(customer.id)} className="text-[#2563eb] hover:text-blue-700 hover:underline font-semibold text-xs cursor-pointer transition-colors">
+                    See more...
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {searchError ? (
+        <div role="alert" className="border-t border-slate-200 p-6 text-center text-sm text-red-700">{searchError}</div>
+      ) : customers.length === 0 ? (
+        <div className="border-t border-slate-100 p-8 text-center text-slate-500">
+          <FileText className="mx-auto mb-2 h-5 w-5 text-slate-400" />
+          {search ? "No customer or transaction found." : "No transaction data available."}
+        </div>
+      ) : null}
       {isSearching && <p className="sr-only" role="status">Searching customers</p>}
+
+      {/* DYNAMIC PAGINATION FOOTER */}
+      <div className="py-4 px-6 bg-white border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs">
+        <div className="text-slate-500 font-medium">
+          Showing <strong className="text-slate-800">{firstRow}-{lastRow}</strong> of <strong className="text-slate-800">{total}</strong> customers
+        </div>
+        <div className="flex items-center gap-1.5" aria-label="Dashboard pages">
+          <button
+            type="button"
+            aria-label="Previous page"
+            disabled={page <= 1 || isSearching}
+            onClick={() => setPage((value) => value - 1)}
+            className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          >
+            Previous
+          </button>
+          {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+            const pageNumber = totalPages <= 5 ? index + 1 : Math.max(1, Math.min(page - 2, totalPages - 4)) + index;
+            return (
+              <button
+                type="button"
+                key={pageNumber}
+                aria-current={page === pageNumber ? "page" : undefined}
+                onClick={() => setPage(pageNumber)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                  page === pageNumber
+                    ? "bg-[#2563eb] text-white shadow-2xs"
+                    : "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {pageNumber}
+              </button>
+            );
+          })}
+          {totalPages > 5 && (
+            <>
+              <span className="px-1 text-slate-400">...</span>
+              <button
+                type="button"
+                onClick={() => setPage(totalPages)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                  page === totalPages
+                    ? "bg-[#2563eb] text-white shadow-2xs"
+                    : "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {totalPages}
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            aria-label="Next page"
+            disabled={page >= totalPages || isSearching}
+            onClick={() => setPage((value) => value + 1)}
+            className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          >
+            Next
+          </button>
+        </div>
+      </div>
     </section>
-    <div className="flex flex-wrap items-center justify-between gap-4 px-3 pt-1 text-xs text-slate-500"><span>Showing {firstRow}-{lastRow} of {total} customers</span><nav className="flex items-center gap-1" aria-label="Dashboard pages"><button type="button" aria-label="Previous page" disabled={page <= 1 || isSearching} onClick={() => setPage((value) => value - 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40">‹</button>{Array.from({ length: Math.min(totalPages, 5) }, (_, index) => { const pageNumber = totalPages <= 5 ? index + 1 : Math.max(1, Math.min(page - 2, totalPages - 4)) + index; return <button type="button" key={pageNumber} aria-current={page === pageNumber ? "page" : undefined} onClick={() => setPage(pageNumber)} className={`h-8 min-w-8 rounded-md px-2 ${page === pageNumber ? "bg-blue-600 font-semibold text-white" : "text-slate-600 hover:bg-slate-100"}`}>{pageNumber}</button>; })}{totalPages > 5 && <><span className="px-1">...</span><button type="button" onClick={() => setPage(totalPages)} className="h-8 min-w-8 rounded-md px-2 text-slate-600">{totalPages}</button></>}<button type="button" aria-label="Next page" disabled={page >= totalPages || isSearching} onClick={() => setPage((value) => value + 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40">›</button></nav></div>
 
     {exportOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setExportOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="export-title" className="w-full max-w-5xl rounded-xl bg-white px-6 py-8 shadow-2xl sm:px-11 sm:py-10">
       <h2 id="export-title" className="text-3xl font-bold tracking-tight text-black sm:text-4xl">Export Company Records</h2><p className="mt-1 text-base text-[#747474] sm:text-xl">Select a creation date range to export company records</p>
