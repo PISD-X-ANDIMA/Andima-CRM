@@ -86,17 +86,24 @@ export default function MeetingSchedulePage() {
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
+      const storedUser = (() => {
+        try { return JSON.parse(localStorage.getItem("andima_user") || "{}"); } catch { return {}; }
+      })();
+      const representative = storedUser.name || "";
+
       const params = new URLSearchParams({ perPage: "100", page: "1", context: "calendar" });
       if (isManager) {
         params.set("forceAll", "true");
         if (selectedExecutive !== "all") {
           params.set("assigned_to", selectedExecutive);
         }
+      } else if (representative) {
+        params.set("assigned_to", representative);
       }
       const response = await fetch(`/api/v1/customers?${params}`, { cache: "no-store" });
       const result: ApiResponse<CustomerListItem[]> = await response.json();
       if (!response.ok || !result.success) throw new Error(result.success ? "Failed to load the schedule." : result.message);
-      const allCustomers = [...result.data];
+      let allCustomers = [...result.data];
       for (let page = 2; page <= (result.meta?.totalPages || 1); page += 1) {
         params.set("page", String(page));
         const nextResponse = await fetch(`/api/v1/customers?${params}`, { cache: "no-store" });
@@ -104,6 +111,11 @@ export default function MeetingSchedulePage() {
         if (!nextResponse.ok || !nextResult.success) throw new Error(nextResult.success ? "Failed to load all meeting schedules." : nextResult.message);
         allCustomers.push(...nextResult.data);
       }
+
+      if (!isManager && representative) {
+        allCustomers = allCustomers.filter(c => c.createdBy === representative);
+      }
+
       setCustomers(allCustomers);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Failed to load the schedule."); }
     finally { setLoading(false); }
@@ -113,10 +125,17 @@ export default function MeetingSchedulePage() {
   useEffect(() => {
     let active = true;
     setSlotError("");
+    const storedUser = (() => {
+      try { return JSON.parse(localStorage.getItem("andima_user") || "{}"); } catch { return {}; }
+    })();
+    const representative = storedUser.name || "";
+
     const slotUrl = new URL(`/api/v1/meetings/slots`, window.location.origin);
     slotUrl.searchParams.set("date", selected);
     if (isManager && selectedExecutive !== "all") {
       slotUrl.searchParams.set("assigned_to", selectedExecutive);
+    } else if (!isManager && representative) {
+      slotUrl.searchParams.set("assigned_to", representative);
     }
     fetch(slotUrl.toString(), { cache: "no-store" })
       .then(async (response) => {
@@ -130,6 +149,11 @@ export default function MeetingSchedulePage() {
 
   useEffect(() => {
     let active = true;
+    const storedUser = (() => {
+      try { return JSON.parse(localStorage.getItem("andima_user") || "{}"); } catch { return {}; }
+    })();
+    const representative = storedUser.name || "";
+
     const monthKey = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}`;
     const calUrl = new URL(`/api/v1/meetings/calendar`, window.location.origin);
     calUrl.searchParams.set("month", monthKey);
@@ -138,6 +162,8 @@ export default function MeetingSchedulePage() {
       if (selectedExecutive !== "all") {
         calUrl.searchParams.set("assigned_to", selectedExecutive);
       }
+    } else if (representative) {
+      calUrl.searchParams.set("assigned_to", representative);
     }
     fetch(calUrl.toString(), { cache: "no-store" })
       .then(async (response) => {
@@ -157,9 +183,20 @@ export default function MeetingSchedulePage() {
   const agenda = customers.flatMap((customer) => (customer.meetings || []).flatMap((meeting) => {
     if (meeting.effectiveStartDate && selected < meeting.effectiveStartDate) return [];
     const isScheduled = meeting.scheduleType === "one_day" ? meeting.meetingDate === selected : meeting.meetingDay === dayKeys[selectedDate.getDay()];
-    return isScheduled && meeting.status !== "cancelled" ? [{ customer, meeting }] : [];
+    if (!isScheduled || meeting.status === "cancelled") return [];
+    if (!isManager) {
+      const rep = (() => { try { return JSON.parse(localStorage.getItem("andima_user") || "{}").name || ""; } catch { return ""; } })();
+      if (rep && meeting.representativeName !== rep && customer.createdBy !== rep) return [];
+    }
+    return [{ customer, meeting }];
   })).sort((a, b) => (a.meeting.startTime || "").localeCompare(b.meeting.startTime || ""));
-  const availableCustomers = customers;
+
+  const availableCustomers = useMemo(() => {
+    if (isManager) return customers;
+    const rep = (() => { try { return JSON.parse(localStorage.getItem("andima_user") || "{}").name || ""; } catch { return ""; } })();
+    if (!rep) return customers;
+    return customers.filter(c => c.createdBy === rep);
+  }, [customers, isManager]);
 
   const beginAdd = (time: string) => {
     if (selected < jakartaDateKey() || (selected === jakartaDateKey() && Number(time.slice(0, 2)) * 60 <= jakartaMinutes())) return;

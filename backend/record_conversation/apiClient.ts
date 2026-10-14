@@ -25,9 +25,13 @@ export async function fetchApiStats(): Promise<DashboardStats> {
 
 /**
  * Mengambil daftar akun pelanggan via REST API: GET /api/record-conversation/customers
+ * Mendukung filter scoping per Sales Executive.
  */
-export async function fetchApiCustomers(): Promise<CompanyItem[]> {
-  const res = await fetch(`${BASE_URL}/customers`);
+export async function fetchApiCustomers(assignedTo?: string): Promise<CompanyItem[]> {
+  const url = assignedTo && assignedTo !== 'all'
+    ? `${BASE_URL}/customers?assigned_to=${encodeURIComponent(assignedTo)}`
+    : `${BASE_URL}/customers`;
+  const res = await fetch(url);
   const json = await res.json();
   if (!json.success) {
     throw new Error(json.error || 'Failed to fetch customers');
@@ -37,13 +41,14 @@ export async function fetchApiCustomers(): Promise<CompanyItem[]> {
 
 /**
  * Mengambil riwayat percakapan via REST API: GET /api/record-conversation/conversations
- * Mendukung filter channel, status, serta pagination (page & limit).
+ * Mendukung filter channel, status, assigned_to (Sales Executive), serta pagination (page & limit).
  */
 export async function fetchApiConversations(options?: {
   channelType?: string;
   status?: string;
   date?: string;
   needAssistance?: string;
+  assignedTo?: string;
   page?: number;
   limit?: number;
 }): Promise<PaginatedResult<RecordConversationItem>> {
@@ -59,6 +64,9 @@ export async function fetchApiConversations(options?: {
   }
   if (options?.needAssistance && options.needAssistance !== 'All Assistance') {
     params.set('need_assistance', options.needAssistance);
+  }
+  if (options?.assignedTo && options.assignedTo !== 'all') {
+    params.set('assigned_to', options.assignedTo);
   }
   if (options?.page) {
     params.set('page', String(options.page));

@@ -364,12 +364,21 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   }, []);
 
   // Load database conversations & customer list
-  const loadData = async () => {
+  const loadData = async (targetUser?: string, targetRole?: string) => {
     setLoading(true);
     try {
+      const userToCheck = targetUser || activeUserName;
+      const roleToCheck = targetRole || activeUserRole;
+      const userIsManager = roleToCheck.toLowerCase().includes('manager') ||
+        roleToCheck.toLowerCase().includes('manajemen') ||
+        roleToCheck.toLowerCase().includes('director');
+      const assignedToParam = (!userIsManager && userToCheck && userToCheck !== 'Sales Executive')
+        ? userToCheck
+        : undefined;
+
       const [customers, convRes] = await Promise.all([
-        fetchApiCustomers(),
-        fetchApiConversations({ limit: 100 })
+        fetchApiCustomers(assignedToParam),
+        fetchApiConversations({ limit: 100, assignedTo: assignedToParam })
       ]);
 
       setCustomerList(customers || []);
@@ -378,6 +387,8 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         const firstCust = customers[0];
         const defaultAcc = `${firstCust.company_name} (${firstCust.customer_code || 'CUST-001'})`;
         setSelectedAccount(prev => prev || defaultAcc);
+      } else {
+        setSelectedAccount('');
       }
 
       if (convRes.data && convRes.data.length > 0) {
@@ -425,21 +436,21 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           };
         });
 
-        setConversations(mappedDb.length > 0 ? mappedDb : MOCK_FIGMA_CONVERSATIONS);
+        setConversations(mappedDb);
       } else {
-        setConversations(MOCK_FIGMA_CONVERSATIONS);
+        setConversations([]);
       }
     } catch (err) {
       console.error('Error loading database conversations:', err);
-      setConversations(MOCK_FIGMA_CONVERSATIONS);
+      setConversations([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData(activeUserName, activeUserRole);
+  }, [activeUserName, activeUserRole]);
 
   // Auto-open Detail Modal if URL query param contains open_conv_id or need_assist
   useEffect(() => {
@@ -693,6 +704,16 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       } else if (item.date !== dateFilter) {
         return false;
       }
+    }
+
+    // Role-based data scoping: Sales Executive only sees conversations for their own assigned companies / PIC
+    if (!isManager && activeUserName && activeUserName !== 'Sales Executive') {
+      const userCompIds = new Set(customerList.map(c => c.company_list_id));
+      const userCompNames = new Set(customerList.map(c => c.company_name.toLowerCase()));
+      const isAssigned = (item.customer_id && userCompIds.has(item.customer_id)) ||
+        userCompNames.has(item.company.toLowerCase()) ||
+        item.pic.toLowerCase() === activeUserName.toLowerCase();
+      if (!isAssigned) return false;
     }
 
     return true;

@@ -5,12 +5,18 @@ import { CompanyItem, RecordConversationItem, NewConversationPayload, UpdateConv
  * Mengambil daftar seluruh akun pelanggan dari a1_company_list
  * untuk dropdown pada modal "Select Customer Account"
  */
-export async function getCustomers(): Promise<CompanyItem[]> {
-  const { data, error } = await supabase
+export async function getCustomers(assignedTo?: string): Promise<CompanyItem[]> {
+  let query = supabase
     .from('a1_company_list')
     .select('company_list_id, job_number, name, company_name, created_by, customer_code')
     .is('deleted_at', null)
     .order('company_name', { ascending: true });
+
+  if (assignedTo && assignedTo !== 'all') {
+    query = query.eq('created_by', assignedTo);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('Error fetching customers from a1_company_list:', error);
@@ -31,6 +37,7 @@ export async function getConversations(options?: {
   needAssistance?: string;
   page?: number;
   limit?: number;
+  assignedTo?: string;
 }): Promise<PaginatedResult<RecordConversationItem>> {
   const page = Math.max(1, options?.page || 1);
   const limit = Math.max(1, options?.limit || 8);
@@ -58,6 +65,21 @@ export async function getConversations(options?: {
       updated_at
     `, { count: 'exact' })
     .order('conversation_date', { ascending: false });
+
+  // Filter scoping per Sales Executive / Company assigned
+  if (options?.assignedTo && options.assignedTo !== 'all') {
+    const { data: compRows } = await supabase
+      .from('a1_company_list')
+      .select('company_list_id')
+      .is('deleted_at', null)
+      .eq('created_by', options.assignedTo);
+
+    const allowedCompIds = (compRows || []).map((c: any) => c.company_list_id);
+    if (allowedCompIds.length === 0) {
+      return { data: [], total: 0, page, limit, totalPages: 1 };
+    }
+    query = query.in('customer_id', allowedCompIds);
+  }
 
   if (options?.channelType && options.channelType !== 'All Channels') {
     query = query.eq('channel_type', options.channelType);
@@ -102,7 +124,7 @@ export async function getConversations(options?: {
 
   const [companyRes, regRes, employeeRes] = await Promise.all([
     customerIds.length > 0
-      ? supabase.from('a1_company_list').select('company_list_id, company_name, name, customer_code').in('company_list_id', customerIds)
+      ? supabase.from('a1_company_list').select('company_list_id, company_name, name, customer_code, created_by').in('company_list_id', customerIds)
       : Promise.resolve({ data: [] }),
     employeeIds.length > 0
       ? supabase.from('b2_register').select('id, full_name, email').in('id', employeeIds)
@@ -112,7 +134,7 @@ export async function getConversations(options?: {
       : Promise.resolve({ data: [] }),
   ]);
 
-  const companyMap = new Map<string, { company_name: string; name: string; customer_code: string | null }>();
+  const companyMap = new Map<string, { company_name: string; name: string; customer_code: string | null; created_by: string | null }>();
   (companyRes.data || []).forEach((c: any) => {
     companyMap.set(c.company_list_id, c);
   });
@@ -134,7 +156,7 @@ export async function getConversations(options?: {
       company_name: comp?.company_name || 'Perusahaan Pelanggan',
       client_contact_name: comp?.name || '',
       customer_code: item.customer_code || comp?.customer_code || 'CUST-001',
-      sales_pic_name: employeeMap.get(item.sales_pic_id) || item.created_by || 'Sales Executive',
+      sales_pic_name: comp?.created_by || employeeMap.get(item.sales_pic_id) || item.created_by || 'Sales Executive',
     } as RecordConversationItem;
   });
 

@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getConversations, createConversation, updateConversation } from '@/backend/record_conversation/conversationService';
 import { NewConversationPayload, UpdateConversationPayload } from '@/backend/record_conversation/types';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { getCurrentUserScope } from '@/lib/auth/roles';
+
+export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/record-conversation/conversations
  * Query Parameters:
  * - channel: 'All Channels' | 'WhatsApp' | 'Meeting'
  * - status: 'All Statuses' | 'Active' | 'Archived'
+ * - assigned_to: string (Sales Executive name)
  * - page: number (default: 1)
  * - limit: number (default: 8)
  */
@@ -17,14 +22,31 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || undefined;
     const date = searchParams.get('date') || undefined;
     const needAssistance = searchParams.get('need_assistance') || undefined;
+    let assignedTo = searchParams.get('assigned_to') || searchParams.get('executiveId') || undefined;
     const page = Math.max(1, Number(searchParams.get('page')) || 1);
     const limit = Math.max(1, Number(searchParams.get('limit')) || 8);
+
+    // Jika tidak dispesifikasikan di query param, periksa sesi login server
+    if (!assignedTo) {
+      try {
+        const supabase = await createServerSupabaseClient();
+        if (supabase) {
+          const userScope = await getCurrentUserScope(supabase);
+          if (userScope && !userScope.isManager) {
+            assignedTo = userScope.name;
+          }
+        }
+      } catch {
+        // Fallback jika session server tidak tersedia
+      }
+    }
 
     const result = await getConversations({
       channelType: channel,
       status: status,
       date: date,
       needAssistance: needAssistance,
+      assignedTo: assignedTo && assignedTo !== 'all' ? assignedTo : undefined,
       page,
       limit,
     });
