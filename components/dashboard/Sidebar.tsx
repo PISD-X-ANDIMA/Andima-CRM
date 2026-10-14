@@ -41,7 +41,7 @@ const crmMenus: SubMenuItem[] = [
     href: "/dashboard/record-conversation",
   },
   {
-    name: "Task Field Agent",
+    name: "Monitoring Task Field Agent",
     href: "/dashboard/task-of-field-agent",
   },
   {

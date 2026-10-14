@@ -219,7 +219,7 @@ export default function ManageFieldAgentAccount() {
         const stored = localStorage.getItem('andima_field_agent_accounts');
         if (stored) {
           const parsed: FieldAgentAccount[] = JSON.parse(stored);
-          const cleaned = parsed.filter(a => !a.name.includes('121212121'));
+          const cleaned = parsed.filter(a => !a.name.includes('121212121') && !/\d/.test(a.name));
           if (cleaned.length !== parsed.length) {
             localStorage.setItem('andima_field_agent_accounts', JSON.stringify(cleaned));
           }
@@ -230,14 +230,14 @@ export default function ManageFieldAgentAccount() {
     return DEFAULT_FIELD_AGENT_ACCOUNTS;
   });
 
-  // Auto-clean test accounts like "121212121"
+  // Auto-clean test accounts like "121212121" or names containing numbers
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
         const stored = localStorage.getItem('andima_field_agent_accounts');
         if (stored) {
           const parsed: FieldAgentAccount[] = JSON.parse(stored);
-          const cleaned = parsed.filter(a => !a.name.includes('121212121'));
+          const cleaned = parsed.filter(a => !a.name.includes('121212121') && !/\d/.test(a.name));
           if (cleaned.length !== parsed.length) {
             localStorage.setItem('andima_field_agent_accounts', JSON.stringify(cleaned));
             setAgentAccounts(cleaned);
@@ -278,11 +278,34 @@ export default function ManageFieldAgentAccount() {
   const [formAgentStatus, setFormAgentStatus] = useState<'Active' | 'Inactive'>('Active');
   const [agentFormError, setAgentFormError] = useState<string | null>(null);
 
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Cegah pengetikan karakter angka 0-9 langsung dari keyboard
+    if (/^[0-9]$/.test(e.key)) {
+      e.preventDefault();
+      setAgentFormError('Full name tidak boleh mengandung angka.');
+    }
+  };
+
+  const handleNamePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pasteData = e.clipboardData.getData('text');
+    if (/[0-9]/.test(pasteData)) {
+      e.preventDefault();
+      const filtered = pasteData.replace(/[^a-zA-Z\s]/g, '');
+      setFormAgentName(prev => (prev + filtered).replace(/[^a-zA-Z\s]/g, ''));
+      setAgentFormError('Full name tidak boleh mengandung angka.');
+    }
+  };
+
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    if (/[0-9]/.test(raw)) {
+      setAgentFormError('Full name tidak boleh mengandung angka.');
+    } else if (agentFormError === 'Full name tidak boleh mengandung angka.') {
+      setAgentFormError(null);
+    }
     // Hanya menerima alfabet (A-Z, a-z) dan spasi, tidak menerima angka atau simbol
-    const filtered = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+    const filtered = raw.replace(/[^a-zA-Z\s]/g, '');
     setFormAgentName(filtered);
-    if (agentFormError) setAgentFormError(null);
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -331,8 +354,12 @@ export default function ManageFieldAgentAccount() {
       setAgentFormError('Nama Field Agent wajib diisi.');
       return;
     }
+    if (/[0-9]/.test(formAgentName)) {
+      setAgentFormError('Full name tidak boleh mengandung angka.');
+      return;
+    }
     if (!/^[a-zA-Z\s]+$/.test(formAgentName.trim())) {
-      setAgentFormError('Nama Field Agent hanya boleh berisi huruf alfabet (A-Z) dan spasi.');
+      setAgentFormError('Full name hanya boleh berisi huruf alfabet (A-Z) dan spasi.');
       return;
     }
     if (!formAgentEmail.trim()) {
@@ -390,8 +417,12 @@ export default function ManageFieldAgentAccount() {
       setAgentFormError('Nama Field Agent wajib diisi.');
       return;
     }
+    if (/[0-9]/.test(formAgentName)) {
+      setAgentFormError('Full name tidak boleh mengandung angka.');
+      return;
+    }
     if (!/^[a-zA-Z\s]+$/.test(formAgentName.trim())) {
-      setAgentFormError('Nama Field Agent hanya boleh berisi huruf alfabet (A-Z) dan spasi.');
+      setAgentFormError('Full name hanya boleh berisi huruf alfabet (A-Z) dan spasi.');
       return;
     }
     if (!formAgentEmail.trim()) {
@@ -545,7 +576,7 @@ export default function ManageFieldAgentAccount() {
       {/* DATA TABLE CONTAINER */}
       <div className="bg-[#F5F7FF] rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] border-collapse">
+          <table className="w-full min-w-[800px] border-collapse text-center">
             <thead className="bg-[#F5F7FF] border-b border-slate-200/80">
               <tr>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[20%] first:rounded-tl-2xl">
@@ -591,7 +622,7 @@ export default function ManageFieldAgentAccount() {
                       {agent.field_area}
                     </td>
                     <td className="py-4 px-6 text-center whitespace-nowrap">
-                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${
+                      <span className={`inline-flex items-center justify-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${
                         agent.status === 'Active'
                           ? 'text-[#16a34a] bg-[#eaf8ef] border border-[#bbf7d0]'
                           : 'text-rose-700 bg-rose-50 border border-rose-200'
@@ -621,15 +652,15 @@ export default function ManageFieldAgentAccount() {
 
         {/* DYNAMIC PAGINATION FOOTER */}
         <div className="py-4 px-6 bg-white border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="text-[11px] text-slate-400 font-normal">
-            Showing {filteredAgents.length > 0 ? (validPage - 1) * pageSize + 1 : 0}-{Math.min(validPage * pageSize, filteredAgents.length)} of {filteredAgents.length} agents
+          <div className="text-slate-500 font-medium">
+            Showing <strong className="text-slate-800">{filteredAgents.length > 0 ? (validPage - 1) * pageSize + 1 : 0}-{Math.min(validPage * pageSize, filteredAgents.length)}</strong> of <strong className="text-slate-800">{filteredAgents.length}</strong> agents
           </div>
           <div className="flex items-center gap-1.5">
             <button
               type="button"
               disabled={validPage <= 1}
               onClick={() => setPage(Math.max(1, validPage - 1))}
-              className="px-2 py-1 text-xs text-slate-400 hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
               Previous
             </button>
@@ -642,9 +673,9 @@ export default function ManageFieldAgentAccount() {
                   key={pageNumber}
                   type="button"
                   onClick={() => setPage(pageNumber)}
-                  className={`w-6 h-6 rounded text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                     validPage === pageNumber
-                      ? 'bg-[#0d6efd] text-white'
+                      ? 'bg-[#2563eb] text-white shadow-2xs'
                       : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
                 >
@@ -656,7 +687,7 @@ export default function ManageFieldAgentAccount() {
               type="button"
               disabled={validPage >= totalPages}
               onClick={() => setPage(Math.min(totalPages, validPage + 1))}
-              className="px-2 py-1 text-xs text-slate-400 hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
               Next
             </button>
@@ -719,9 +750,22 @@ export default function ManageFieldAgentAccount() {
                   type="text"
                   value={formAgentName}
                   onChange={handleNameChange}
+                  onKeyDown={handleNameKeyDown}
+                  onPaste={handleNamePaste}
+                  pattern="[a-zA-Z\s]*"
+                  inputMode="text"
                   placeholder="Enter field agent full name..."
-                  className="w-full bg-white border border-slate-200/90 rounded-2xl px-4 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 transition-colors"
+                  className={`w-full bg-white border rounded-2xl px-4 py-2.5 text-xs text-slate-800 outline-none transition-colors ${
+                    agentFormError && agentFormError.toLowerCase().includes('name')
+                      ? 'border-rose-400 focus:border-rose-500'
+                      : 'border-slate-200/90 focus:border-blue-500'
+                  }`}
                 />
+                {agentFormError && agentFormError.toLowerCase().includes('name') && (
+                  <p className="text-[11px] text-rose-500 font-medium mt-1">
+                    {agentFormError}
+                  </p>
+                )}
               </div>
 
               {/* Fields 3 & 4: EMAIL ADDRESS * & PHONE NUMBER * */}
@@ -922,9 +966,22 @@ export default function ManageFieldAgentAccount() {
                   type="text"
                   value={formAgentName}
                   onChange={handleNameChange}
+                  onKeyDown={handleNameKeyDown}
+                  onPaste={handleNamePaste}
+                  pattern="[a-zA-Z\s]*"
+                  inputMode="text"
                   placeholder="Enter field agent full name..."
-                  className="w-full bg-white border border-slate-200/90 rounded-2xl px-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 transition-colors"
+                  className={`w-full bg-white border rounded-2xl px-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-colors ${
+                    agentFormError && agentFormError.toLowerCase().includes('name')
+                      ? 'border-rose-400 focus:border-rose-500'
+                      : 'border-slate-200/90 focus:border-blue-500'
+                  }`}
                 />
+                {agentFormError && agentFormError.toLowerCase().includes('name') && (
+                  <p className="text-[11px] text-rose-500 font-medium mt-1">
+                    {agentFormError}
+                  </p>
+                )}
               </div>
 
               {/* Fields 3 & 4: EMAIL ADDRESS * & PHONE NUMBER * */}

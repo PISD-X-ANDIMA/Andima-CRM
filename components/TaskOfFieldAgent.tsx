@@ -1736,7 +1736,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       {/* 4. MAIN DATA TABLE CARD */}
       <div className="bg-[#F5F7FF] rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] border-collapse">
+          <table className="w-full min-w-[800px] border-collapse text-center">
             {/* Header: Consistent #F5F7FF matching standard */}
             <thead className="bg-[#F5F7FF] border-b border-slate-200/80">
               <tr>
@@ -1782,12 +1782,12 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                         <FileText size={24} />
                       </div>
                       <h3 className="text-sm font-bold text-slate-800">
-                        Tidak Ada Task Field Agent
+                        Tidak Ada Monitoring Task Field Agent
                       </h3>
                       <p className="text-xs text-slate-500 mt-1 max-w-xs">
                         {searchQuery.trim()
                           ? `Tidak ada task yang cocok dengan pencarian "${searchQuery}".`
-                          : 'Belum ada data task Field Agent tersimpan.'}
+                          : 'Belum ada data monitoring task Field Agent tersimpan.'}
                       </p>
                     </div>
                   </td>

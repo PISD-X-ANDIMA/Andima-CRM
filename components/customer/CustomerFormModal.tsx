@@ -32,6 +32,8 @@ function validate(data: CreateCustomerInput): FormErrors {
   if (!data.company_name.trim()) errors.company_name = "Company name is required";
   if (!data.address.trim()) errors.address = "Address is required";
   if (!data.pic_full_name.trim()) errors.pic_full_name = "PIC name is required";
+  else if (/[0-9]/.test(data.pic_full_name)) errors.pic_full_name = "Full name cannot contain numbers";
+  else if (!/^[a-zA-Z\s]+$/.test(data.pic_full_name.trim())) errors.pic_full_name = "Full name must contain letters and spaces only";
   if (!data.pic_phone_number.trim()) errors.pic_phone_number = "PIC phone number is required";
   else if (!isValidPicPhoneNumber(data.pic_phone_number)) errors.pic_phone_number = "Use a number beginning with 0 or +62, followed by digits";
   return errors;
@@ -225,7 +227,19 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
                       id="field-pic_full_name"
                       type="text"
                       value={form.pic_full_name}
-                      onChange={(e) => handleChange("pic_full_name", e.target.value)}
+                      onKeyDown={(e) => {
+                        if (/^[0-9]$/.test(e.key)) {
+                          e.preventDefault();
+                          setErrors((prev) => ({ ...prev, pic_full_name: "Full name cannot contain numbers" }));
+                        }
+                      }}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        if (/[0-9]/.test(raw)) {
+                          setErrors((prev) => ({ ...prev, pic_full_name: "Full name cannot contain numbers" }));
+                        }
+                        handleChange("pic_full_name", raw.replace(/[^a-zA-Z\s]/g, ""));
+                      }}
                       placeholder="Full name"
                       className={`w-full pl-9 pr-4 py-2.5 border rounded-lg text-sm transition-all focus:outline-none focus:ring-2 ${
                         errors.pic_full_name

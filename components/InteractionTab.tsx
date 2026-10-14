@@ -1207,23 +1207,23 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       {/* 3. TABLE CARD */}
       <div className="bg-[#F5F7FF] rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[720px]">
+          <table className="w-full text-center border-collapse min-w-[720px]">
             {/* TABLE HEADER */}
             <thead className="bg-[#F5F7FF] border-b border-slate-200/80">
               <tr>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal first:rounded-tl-2xl">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[22%] first:rounded-tl-2xl">
                   Conversation ID
                 </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[28%]">
                   Company
                 </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[18%]">
                   Channel
                 </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[18%]">
                   Date
                 </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal last:rounded-tr-2xl">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[14%] last:rounded-tr-2xl">
                   Detail
                 </th>
               </tr>
@@ -1284,12 +1284,12 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     {/* Channel Badge */}
                     <td className="py-4.5 px-6 text-center whitespace-nowrap">
                       {row.source.toLowerCase() === 'meeting' ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-[#f4e8ff] text-[#9333ea] border border-[#e9d5ff]">
+                        <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-[#f4e8ff] text-[#9333ea] border border-[#e9d5ff]">
                           <Video size={13} className="text-[#9333ea]" />
                           <span>Meeting</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-[#e6f9ed] text-[#16a34a] border border-[#bbf7d0]">
+                        <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-[#e6f9ed] text-[#16a34a] border border-[#bbf7d0]">
                           <MessageCircle size={13} className="text-[#16a34a]" />
                           <span>WhatsApp</span>
                         </span>
