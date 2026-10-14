@@ -603,6 +603,48 @@ Exported on: ${new Date().toLocaleString('id-ID')}
     }
   };
 
+  // Direct Attachment Download Handler without opening browser tab
+  const handleDownloadAttachment = async (fileUrl: string, fileName: string) => {
+    try {
+      if (fileUrl.startsWith('blob:') || fileUrl.startsWith('data:')) {
+        const a = document.createElement('a');
+        a.href = fileUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        return;
+      }
+
+      const downloadEndpoint = `/api/record-conversation/download?url=${encodeURIComponent(fileUrl)}&filename=${encodeURIComponent(fileName)}`;
+      const res = await fetch(downloadEndpoint);
+      if (res.ok) {
+        const blob = await res.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1500);
+        return;
+      }
+
+      // Fallback
+      const a = document.createElement('a');
+      a.href = downloadEndpoint;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Download attachment failed:', err);
+      const downloadEndpoint = `/api/record-conversation/download?url=${encodeURIComponent(fileUrl)}&filename=${encodeURIComponent(fileName)}`;
+      window.location.href = downloadEndpoint;
+    }
+  };
+
   // Footer Need Assistance Handler
   const handleAssistanceChoice = (needHelp: boolean) => {
     setAssistanceChoice(needHelp);
@@ -1172,7 +1214,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal first:rounded-tl-2xl">
                   Conversation ID
                 </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-left tracking-normal">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
                   Company
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal">
@@ -1193,7 +1235,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 Array.from({ length: 5 }).map((_, idx) => (
                   <tr key={`conv-skeleton-${idx}`} className="animate-pulse border-b border-slate-100">
                     <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-24 mx-auto" /></td>
-                    <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-44" /></td>
+                    <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-44 mx-auto" /></td>
                     <td className="py-4.5 px-6"><div className="h-6 bg-slate-200/70 rounded-full w-24 mx-auto" /></td>
                     <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-24 mx-auto" /></td>
                     <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-20 mx-auto" /></td>
@@ -1235,7 +1277,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     </td>
 
                     {/* Company */}
-                    <td className="py-4.5 px-6 text-left text-sm font-semibold text-slate-800 max-w-[280px] leading-snug">
+                    <td className="py-4.5 px-6 text-center text-sm font-semibold text-slate-800 max-w-[280px] leading-snug">
                       {row.company}
                     </td>
 
@@ -1469,16 +1511,14 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <a
-                          href={file.url}
-                          download={file.name}
-                          target="_blank"
-                          rel="noreferrer"
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadAttachment(file.url, file.name)}
                           className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                          title="Download"
+                          title="Download Langsung"
                         >
                           <Download size={16} />
-                        </a>
+                        </button>
                         <button
                           type="button"
                           onClick={() => setPreviewModal({ isOpen: true, url: file.url, title: file.name })}
@@ -2052,7 +2092,15 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 title={previewModal.title}
               />
             </div>
-            <div className="px-5 py-3 border-t border-slate-200 flex justify-end bg-slate-50">
+            <div className="px-5 py-3 border-t border-slate-200 flex items-center justify-between bg-slate-50">
+              <button
+                type="button"
+                onClick={() => handleDownloadAttachment(previewModal.url, previewModal.title)}
+                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              >
+                <Download size={14} />
+                <span>Download File</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setPreviewModal(null)}

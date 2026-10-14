@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
-  Search, ChevronDown, Plus, X, Check, AlertTriangle, CheckCircle, FileText, Pencil, Trash2, Lock
+  Search, ChevronDown, Plus, X, Check, AlertTriangle, CheckCircle, FileText, Pencil, Lock
 } from 'lucide-react';
 
 export interface FieldAgentAccount {
@@ -219,21 +219,56 @@ export default function ManageFieldAgentAccount() {
         const stored = localStorage.getItem('andima_field_agent_accounts');
         if (stored) {
           const parsed: FieldAgentAccount[] = JSON.parse(stored);
-          if (parsed.length >= 24 && parsed[0]?.agent_id?.startsWith('AGNT-')) return parsed;
+          const cleaned = parsed.filter(a => !a.name.includes('121212121'));
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem('andima_field_agent_accounts', JSON.stringify(cleaned));
+          }
+          if (cleaned.length >= 24 && cleaned[0]?.agent_id?.startsWith('AGNT-')) return cleaned;
         }
       } catch {}
     }
     return DEFAULT_FIELD_AGENT_ACCOUNTS;
   });
 
+  // Auto-clean test accounts like "121212121"
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('andima_field_agent_accounts');
+        if (stored) {
+          const parsed: FieldAgentAccount[] = JSON.parse(stored);
+          const cleaned = parsed.filter(a => !a.name.includes('121212121'));
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem('andima_field_agent_accounts', JSON.stringify(cleaned));
+            setAgentAccounts(cleaned);
+          }
+        }
+      } catch {}
+    }
+  }, []);
+
   const [agentSearchQuery, setAgentSearchQuery] = useState('');
   const [agentStatusFilter, setAgentStatusFilter] = useState('All');
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const statusDropdownRef = useRef<HTMLDivElement | null>(null);
   const [page, setPage] = useState(1);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleDocumentClick(e: MouseEvent) {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+        setIsStatusDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleDocumentClick);
+    return () => {
+      document.removeEventListener('mousedown', handleDocumentClick);
+    };
+  }, []);
 
   // Modals
   const [editingAgent, setEditingAgent] = useState<FieldAgentAccount | null>(null);
   const [isAddAgentModalOpen, setIsAddAgentModalOpen] = useState(false);
-  const [agentToDelete, setAgentToDelete] = useState<FieldAgentAccount | null>(null);
 
   // Form states
   const [formAgentName, setFormAgentName] = useState('');
@@ -242,6 +277,13 @@ export default function ManageFieldAgentAccount() {
   const [formAgentArea, setFormAgentArea] = useState('Bekasi Industrial Area');
   const [formAgentStatus, setFormAgentStatus] = useState<'Active' | 'Inactive'>('Active');
   const [agentFormError, setAgentFormError] = useState<string | null>(null);
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Hanya menerima alfabet (A-Z, a-z) dan spasi, tidak menerima angka atau simbol
+    const filtered = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+    setFormAgentName(filtered);
+    if (agentFormError) setAgentFormError(null);
+  };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -287,6 +329,10 @@ export default function ManageFieldAgentAccount() {
 
     if (!formAgentName.trim()) {
       setAgentFormError('Nama Field Agent wajib diisi.');
+      return;
+    }
+    if (!/^[a-zA-Z\s]+$/.test(formAgentName.trim())) {
+      setAgentFormError('Nama Field Agent hanya boleh berisi huruf alfabet (A-Z) dan spasi.');
       return;
     }
     if (!formAgentEmail.trim()) {
@@ -344,6 +390,10 @@ export default function ManageFieldAgentAccount() {
       setAgentFormError('Nama Field Agent wajib diisi.');
       return;
     }
+    if (!/^[a-zA-Z\s]+$/.test(formAgentName.trim())) {
+      setAgentFormError('Nama Field Agent hanya boleh berisi huruf alfabet (A-Z) dan spasi.');
+      return;
+    }
     if (!formAgentEmail.trim()) {
       setAgentFormError('Kolom email kosong. Email wajib diisi untuk membuat akun.');
       return;
@@ -380,13 +430,6 @@ export default function ManageFieldAgentAccount() {
     showToast(`Akun Field Agent "${newAgent.name}" (${newAgent.agent_id}) berhasil ditambahkan.`);
   };
 
-  const handleConfirmDeleteAgent = () => {
-    if (!agentToDelete) return;
-    const updated = agentAccounts.filter(a => a.id !== agentToDelete.id);
-    saveAgentAccounts(updated);
-    showToast(`Akun Field Agent "${agentToDelete.name}" (${agentToDelete.agent_id}) berhasil dihapus.`);
-    setAgentToDelete(null);
-  };
 
   // Filtered Agents
   const filteredAgents = agentAccounts.filter(a => {
@@ -449,21 +492,42 @@ export default function ManageFieldAgentAccount() {
             />
           </div>
 
-          {/* Dropdown: Status */}
-          <div className="relative min-w-[120px]">
-            <select
-              value={agentStatusFilter}
-              onChange={(e) => {
-                setAgentStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
+          {/* Status Dropdown - Matching Record Conversation */}
+          <div className="relative" ref={statusDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+              className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
             >
-              <option value="All">Status</option>
-              <option value="Active">✓ Active</option>
-              <option value="Inactive">● Inactive</option>
-            </select>
-            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+              <span>{agentStatusFilter === 'All' ? 'Status' : agentStatusFilter}</span>
+              <ChevronDown size={14} className={`text-slate-400 transition-transform ${isStatusDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
+            </button>
+
+            {isStatusDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1.5 w-40 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1">
+                {[
+                  { label: 'Status (All)', value: 'All' },
+                  { label: 'Active', value: 'Active' },
+                  { label: 'Inactive', value: 'Inactive' },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      setAgentStatusFilter(opt.value);
+                      setPage(1);
+                      setIsStatusDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
+                      agentStatusFilter === opt.value ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                    {agentStatusFilter === opt.value && <Check size={13} className="text-blue-600" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -537,7 +601,7 @@ export default function ManageFieldAgentAccount() {
                       </span>
                     </td>
                     <td className="py-4 px-6 text-center whitespace-nowrap">
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-center">
                         <button
                           type="button"
                           onClick={() => handleOpenEditAgent(agent)}
@@ -545,14 +609,6 @@ export default function ManageFieldAgentAccount() {
                           className="p-1 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
                         >
                           <Pencil size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setAgentToDelete(agent)}
-                          title="Hapus"
-                          className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                        >
-                          <Trash2 size={15} />
                         </button>
                       </div>
                     </td>
@@ -662,7 +718,7 @@ export default function ManageFieldAgentAccount() {
                 <input
                   type="text"
                   value={formAgentName}
-                  onChange={(e) => setFormAgentName(e.target.value)}
+                  onChange={handleNameChange}
                   placeholder="Enter field agent full name..."
                   className="w-full bg-white border border-slate-200/90 rounded-2xl px-4 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-500 transition-colors"
                 />
@@ -865,7 +921,7 @@ export default function ManageFieldAgentAccount() {
                 <input
                   type="text"
                   value={formAgentName}
-                  onChange={(e) => setFormAgentName(e.target.value)}
+                  onChange={handleNameChange}
                   placeholder="Enter field agent full name..."
                   className="w-full bg-white border border-slate-200/90 rounded-2xl px-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 transition-colors"
                 />
@@ -1009,43 +1065,6 @@ export default function ManageFieldAgentAccount() {
         </div>
       )}
 
-      {/* MODAL: DELETE FIELD AGENT CONFIRMATION */}
-      {agentToDelete && (
-        <div
-          onClick={(e) => { if (e.target === e.currentTarget) setAgentToDelete(null); }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in"
-        >
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-[420px] p-6 space-y-4 text-center">
-            <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
-              <AlertTriangle size={24} />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">
-                Konfirmasi Hapus Akun
-              </h3>
-              <p className="text-xs text-slate-500 mt-1.5">
-                Apakah Anda yakin ingin menghapus akun Field Agent <strong className="text-slate-800">{agentToDelete.name}</strong> ({agentToDelete.agent_id})? Tindakan ini tidak dapat dibatalkan.
-              </p>
-            </div>
-            <div className="flex items-center justify-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setAgentToDelete(null)}
-                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDeleteAgent}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-2xs"
-              >
-                Ya, Hapus
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

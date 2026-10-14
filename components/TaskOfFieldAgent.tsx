@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Camera, FileText, ChevronRight, ChevronDown, Eye, Plus, X, MapPin,
   CheckCircle, AlertOctagon, Check, Send, AlertTriangle, Search,
@@ -563,6 +563,29 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
   const [issueFilter, setIssueFilter] = useState('All');
   const [periodFilter, setPeriodFilter] = useState('All');
 
+  // Custom Dropdown Open States & Refs
+  const [isIssueDropdownOpen, setIsIssueDropdownOpen] = useState(false);
+  const [isPeriodDropdownOpen, setIsPeriodDropdownOpen] = useState(false);
+  const issueDropdownRef = useRef<HTMLDivElement | null>(null);
+  const periodDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function handleDocumentClick(e: MouseEvent) {
+      const target = e.target as Node;
+      if (issueDropdownRef.current && !issueDropdownRef.current.contains(target)) {
+        setIsIssueDropdownOpen(false);
+      }
+      if (periodDropdownRef.current && !periodDropdownRef.current.contains(target)) {
+        setIsPeriodDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleDocumentClick);
+    return () => {
+      document.removeEventListener('mousedown', handleDocumentClick);
+    };
+  }, []);
+
   // Table 2 State: Manage Field Agent Accounts
   const [agentAccounts, setAgentAccounts] = useState<FieldAgentAccount[]>(() => {
     if (typeof window !== 'undefined') {
@@ -570,8 +593,12 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
         const stored = localStorage.getItem('andima_field_agent_accounts');
         if (stored) {
           const parsed: FieldAgentAccount[] = JSON.parse(stored);
-          if (parsed.length >= 24) {
-            return parsed;
+          const cleaned = parsed.filter(a => !a.name.includes('121212121'));
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem('andima_field_agent_accounts', JSON.stringify(cleaned));
+          }
+          if (cleaned.length >= 24) {
+            return cleaned;
           }
         }
       } catch {}
@@ -585,7 +612,6 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
   // Modals for Field Agent Account Management
   const [editingAgent, setEditingAgent] = useState<FieldAgentAccount | null>(null);
   const [isAddAgentModalOpen, setIsAddAgentModalOpen] = useState(false);
-  const [agentToDelete, setAgentToDelete] = useState<FieldAgentAccount | null>(null);
 
   // Form states for Edit / Add Agent
   const [formAgentName, setFormAgentName] = useState('');
@@ -1099,13 +1125,6 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     showToast(`Akun Field Agent "${newAgent.name}" (${newAgent.agent_id}) berhasil ditambahkan.`);
   };
 
-  const handleConfirmDeleteAgent = () => {
-    if (!agentToDelete) return;
-    const updated = agentAccounts.filter(a => a.id !== agentToDelete.id);
-    saveAgentAccounts(updated);
-    showToast(`Akun Field Agent "${agentToDelete.name}" (${agentToDelete.agent_id}) berhasil dihapus.`);
-    setAgentToDelete(null);
-  };
 
   useEffect(() => {
     let stored: FieldTaskItem[] = [];
@@ -1634,39 +1653,82 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             />
           </div>
 
-          {/* Dropdown 1: Status */}
-          <div className="relative min-w-[120px]">
-            <select
-              value={issueFilter}
-              onChange={(e) => {
-                setIssueFilter(e.target.value);
-                setT1Page(1);
+          {/* Status Dropdown - Matching Record Conversation */}
+          <div className="relative" ref={issueDropdownRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setIsIssueDropdownOpen(!isIssueDropdownOpen);
+                setIsPeriodDropdownOpen(false);
               }}
-              className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
+              className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
             >
-              <option value="All">Status</option>
-              <option value="Issue">● Issue</option>
-              <option value="Completed">✓ Completed</option>
-            </select>
-            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+              <span>{issueFilter === 'All' ? 'Status' : issueFilter}</span>
+              <ChevronDown size={14} className={`text-slate-400 transition-transform ${isIssueDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
+            </button>
+
+            {isIssueDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1.5 w-40 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1">
+                {[
+                  { label: 'Status (All)', value: 'All' },
+                  { label: 'Issue', value: 'Issue' },
+                  { label: 'Completed', value: 'Completed' },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      setIssueFilter(opt.value);
+                      setT1Page(1);
+                      setIsIssueDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
+                      issueFilter === opt.value ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                    {issueFilter === opt.value && <Check size={13} className="text-blue-600" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Dropdown 2: All Periods */}
-          <div className="relative min-w-[130px]">
-            <select
-              value={periodFilter}
-              onChange={(e) => {
-                setPeriodFilter(e.target.value);
-                setT1Page(1);
+          {/* Period Dropdown - Matching Record Conversation */}
+          <div className="relative" ref={periodDropdownRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setIsPeriodDropdownOpen(!isPeriodDropdownOpen);
+                setIsIssueDropdownOpen(false);
               }}
-              className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
+              className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
             >
-              <option value="All">All Periods</option>
-              <option value="Today">Today</option>
-              <option value="This Week">This Week</option>
-              <option value="This Month">This Month</option>
-            </select>
-            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+              <span>{periodFilter === 'All' ? 'All Periods' : periodFilter}</span>
+              <ChevronDown size={14} className={`text-slate-400 transition-transform ${isPeriodDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
+            </button>
+
+            {isPeriodDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1.5 w-40 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1">
+                {['All', 'Today', 'This Week', 'This Month'].map(opt => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => {
+                      setPeriodFilter(opt);
+                      setT1Page(1);
+                      setIsPeriodDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
+                      periodFilter === opt ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>{opt === 'All' ? 'All Periods' : opt}</span>
+                    {periodFilter === opt && <Check size={13} className="text-blue-600" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1754,7 +1816,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                         <button
                           type="button"
                           onClick={() => handleOpenIssueModal(task)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-[#e11d48] bg-[#ffe4e6] border border-[#fecdd3] hover:bg-rose-200 transition-colors cursor-pointer"
+                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-[#e11d48] bg-[#ffe4e6] border border-[#fecdd3] hover:bg-rose-200 transition-colors cursor-pointer"
                           title="Klik untuk melihat detail issue"
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-[#e11d48]" />
@@ -1764,7 +1826,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                         <button
                           type="button"
                           onClick={() => handleOpenIssueModal(task)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
                           title="Klik untuk melihat Detail Status"
                         >
                           <Check size={11} className="text-emerald-600 stroke-[3]" />
