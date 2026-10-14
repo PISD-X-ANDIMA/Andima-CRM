@@ -67,6 +67,50 @@ export async function GET(_request: NextRequest) {
       };
     });
 
+    const registeredNames = new Set(users.map((u: any) => String(u.name || "").toLowerCase()));
+
+    // Also include active Sales Executives who have assigned accounts in CRM (a1_company_list)
+    try {
+      const { data: companies } = await (supabase as any)
+        .from("a1_company_list")
+        .select("created_by")
+        .is("deleted_at", null);
+
+      const defaultSalesPos = (positions || []).find((p: any) => {
+        const code = String(p.code || "").toLowerCase();
+        const title = String(p.title || "").toLowerCase();
+        return code === "com-sls" || title.includes("sales executive");
+      });
+
+      const activeExecs = new Set<string>();
+      (companies || []).forEach((c: any) => {
+        if (c.created_by && c.created_by.trim()) {
+          activeExecs.add(String(c.created_by).trim());
+        }
+      });
+
+      activeExecs.forEach((execName) => {
+        if (!registeredNames.has(execName.toLowerCase())) {
+          registeredNames.add(execName.toLowerCase());
+          users.push({
+            id: `crm-se-${execName.toLowerCase().replace(/\s+/g, "-")}`,
+            employee_id: `SE-${execName.slice(0, 3).toUpperCase()}`,
+            name: execName,
+            email: `${execName.toLowerCase().split(" ")[0]}se@andima.co.id`,
+            phone: "-",
+            position_id: defaultSalesPos?.id || null,
+            hrms_position_title: defaultSalesPos?.title || "Sales Executive",
+            hrms_position_code: defaultSalesPos?.code || "COM-SLS",
+            crm_role: "sales_executive",
+            is_active: true,
+            notes: null,
+            access_id: `crm-se-${execName.toLowerCase().replace(/\s+/g, "-")}`,
+            updated_at: new Date().toISOString(),
+          });
+        }
+      });
+    } catch {}
+
     return createSuccessResponse(users, { total: users.length });
   } catch (error: any) {
     console.error("[GET /api/v1/manager/roles]", error);
