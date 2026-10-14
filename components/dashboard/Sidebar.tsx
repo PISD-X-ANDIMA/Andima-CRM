@@ -4,35 +4,30 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from "@/lib/supabaseClient";
 import {
-  LayoutDashboard,
-  ShoppingBag,
-  Users,
+  ChevronUp,
   ChevronDown,
-  Briefcase,
-  Settings,
-  LogOut,
+  LayoutGrid,
+  Users,
   X,
 } from "lucide-react";
-
-interface SubMenuItem {
-  name: string;
-  href: string;
-}
-
-interface MenuItem {
-  name: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
 
 export interface SidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
 }
 
-const salesExecutiveMenus: SubMenuItem[] = [
+interface SubMenuItem {
+  name: string;
+  href: string;
+}
+
+const crmMenus: SubMenuItem[] = [
+  {
+    name: "Sales Executif",
+    href: "/dashboard/sales-executive",
+  },
   {
     name: "Company List",
     href: "/dashboard/company-list",
@@ -46,270 +41,185 @@ const salesExecutiveMenus: SubMenuItem[] = [
     href: "/dashboard/record-conversation",
   },
   {
-    name: "Monitoring Task of Field Agent",
+    name: "Task Field Agent",
     href: "/dashboard/task-of-field-agent",
   },
   {
-    name: "Manage Field Agent Account",
+    name: "Manage Account",
     href: "/dashboard/manage-field-agent-account",
-  },
-];
-
-const topMenuItems: MenuItem[] = [
-  {
-    name: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    name: "CCR",
-    href: "#",
-    icon: ShoppingBag,
-  },
-];
-
-const bottomMenuItems: MenuItem[] = [
-  {
-    name: "HRMS",
-    href: "#",
-    icon: Briefcase,
   },
 ];
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-
   const [crmOpen, setCrmOpen] = useState(true);
-  const [salesExecOpen, setSalesExecOpen] = useState(true);
 
-  const isSalesExecutiveDashboard =
-    pathname === "/dashboard/sales-executive";
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+    try {
+      localStorage.removeItem("andima_user");
+      sessionStorage.removeItem("andima_logged_in");
+      sessionStorage.clear();
+    } catch {}
+    router.push("/login");
+  };
 
-  const isSalesExecutiveActive =
-    pathname.startsWith("/dashboard/sales-executive") ||
-    pathname.startsWith("/dashboard/company-list") ||
-    pathname.startsWith("/dashboard/meeting-schedule") ||
-    pathname.startsWith("/dashboard/record-conversation") ||
-    pathname.startsWith("/dashboard/task-of-field-agent") ||
-    pathname.startsWith("/dashboard/manage-field-agent-account");
-  const isCrmActive = isSalesExecutiveActive;
+  const isItemActive = (href: string) => {
+    if (href === "/dashboard/sales-executive") {
+      return pathname === href;
+    }
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
+  const isDashboardActive = pathname === "/dashboard";
 
   const sidebarContent = (
-    <>
-      <div className="mx-4 flex h-[102px] items-center justify-between border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <Image src="/andima-logo.png" alt="PT Andima Transportindo" width={470} height={300} className="h-11 w-[50px] shrink-0 object-contain" priority />
-          <div className="leading-tight text-white">
-            <h1 className="text-[16px] font-extrabold tracking-wide">ANDIMA</h1>
-            <p className="text-[12px] font-bold tracking-[0.04em]">TRANSPORTINDO</p>
-            <p className="mt-0.5 text-[6px] tracking-[0.18em] text-slate-400">ENTERPRISE DIGITAL ECOSYSTEM</p>
+    <div className="flex h-full flex-col justify-between py-6 px-4">
+      {/* Top Section */}
+      <div>
+        {/* Mobile Close Button (only on mobile drawer) */}
+        {onClose && (
+          <div className="flex justify-end lg:hidden mb-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+              aria-label="Close sidebar"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        )}
+
+        {/* 1. Logo & Company Title Header */}
+        <div className="flex items-center gap-3 mb-4">
+          <Image
+            src="/andima-logo.png"
+            alt="PT Andima Transportindo"
+            width={60}
+            height={40}
+            className="h-10 w-auto shrink-0 object-contain"
+            priority
+          />
+          <div className="leading-tight text-white select-none">
+            <h1 className="text-[15px] font-extrabold tracking-wide text-white">ANDIMA</h1>
+            <p className="text-[12px] font-bold tracking-[0.03em] text-white">TRANSPORTINDO</p>
+            <p className="mt-0.5 text-[6.5px] font-semibold tracking-[0.14em] text-slate-400 uppercase">
+              Enterprise Digital Ecosystem
+            </p>
           </div>
         </div>
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg lg:hidden"
-            aria-label="Close sidebar"
-          >
-            <X size={20} />
-          </button>
-        )}
-      </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto overflow-x-hidden px-3 pt-6 pb-4 [scrollbar-width:thin] [scrollbar-color:#1e3a66_transparent]">
-        {topMenuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = item.href !== "#" && (
-            pathname === item.href ||
-            (item.href !== "/dashboard" && pathname.startsWith(`${item.href}/`))
-          );
+        {/* Divider Line */}
+        <div className="border-b border-slate-700/60 mb-5" />
 
-          if (item.href === "#") {
-            return (
-              <button
-                key={item.name}
-                type="button"
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-slate-400 transition-colors hover:bg-white/[0.04] hover:text-slate-200"
-              >
-                <Icon className="h-[18px] w-[18px] text-slate-500" />
-                <span>{item.name}</span>
-              </button>
-            );
-          }
-
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors ${
-                isActive
-                  ? "bg-blue-600 text-white shadow-sm shadow-blue-600/25"
-                  : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
-              }`}
-            >
-              <Icon
-                className={`h-[18px] w-[18px] ${
-                  isActive ? "text-white" : "text-slate-500"
-                }`}
-              />
-              <span>{item.name}</span>
-            </Link>
-          );
-        })}
-
-        <div className="pt-0.5">
-          <button
-            type="button"
-            onClick={() => setCrmOpen((value) => !value)}
-            className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors ${
-              isCrmActive
-                ? "bg-blue-600 text-white"
-                : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
+        {/* 2. Dashboard Menu Item */}
+        <div className="mb-4">
+          <Link
+            href="/dashboard"
+            onClick={() => {
+              if (onClose) onClose();
+            }}
+            className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-bold transition-colors ${
+              isDashboardActive
+                ? "bg-[#1665FF] text-white shadow-sm"
+                : "text-slate-300 hover:text-white hover:bg-white/5"
             }`}
           >
-            <span className="flex items-center gap-3">
-              <Users
-                className={`h-[18px] w-[18px] ${
-                  isCrmActive ? "text-white" : "text-slate-500"
-                }`}
-              />
-              <span>CRM</span>
-            </span>
+            <LayoutGrid className="w-5 h-5 shrink-0" />
+            <span>Dashboard</span>
+          </Link>
+        </div>
 
-            <ChevronDown
-              className={`h-4 w-4 transition-transform duration-200 ${
-                isCrmActive ? "text-white" : "text-slate-500"
-              } ${crmOpen ? "rotate-0" : "-rotate-90"}`}
-            />
+        {/* 3. CRM Section */}
+        <div className="flex items-center gap-2.5">
+          {/* ID Badge Icon matching screenshot exactly */}
+          <svg
+            className="w-5 h-5 text-white shrink-0"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="4" y="3" width="16" height="18" rx="2" />
+            <path d="M9 7h6" />
+            <circle cx="12" cy="12" r="2.5" />
+            <path d="M8 18c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5" />
+          </svg>
+
+          {/* CRM Bright Blue Button */}
+          <button
+            type="button"
+            onClick={() => setCrmOpen(!crmOpen)}
+            className="flex flex-1 items-center justify-between bg-[#1665FF] hover:bg-blue-600 text-white rounded-lg px-3 py-1.5 text-xs font-bold tracking-wide transition-colors cursor-pointer shadow-sm"
+          >
+            <span>CRM</span>
+            {crmOpen ? (
+              <ChevronUp className="h-4 w-4 text-white stroke-[2.5]" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-white stroke-[2.5]" />
+            )}
           </button>
+        </div>
 
-          {crmOpen && (
-            <div className="mt-0.5 ml-2">
-              <div className="flex w-full items-center rounded-lg text-[13px] font-medium">
-              <Link
-                href="/dashboard/sales-executive"
-                prefetch
-                onClick={() => {
-                  setCrmOpen(true);
-                  setSalesExecOpen(true);
-                }}
-                className={`flex flex-1 items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors ${
-                  isSalesExecutiveDashboard
-                    ? "bg-[#b4c9d4] text-slate-700"
-                    : isSalesExecutiveActive
-                      ? "text-white"
-                      : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                <span>Sales Executive</span>
+        {/* CRM Submenu with left guideline */}
+        {crmOpen && (
+          <div className="relative ml-2.5 my-3 border-l border-slate-700/70 pl-3 space-y-1.5">
+            {crmMenus.map((item) => {
+              const active = isItemActive(item.href);
 
-              </Link>
-                <button
-                  type="button"
-                  aria-label="Toggle Sales Executive submenu"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setSalesExecOpen((value) => !value);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => {
+                    if (onClose) onClose();
                   }}
-                  className="rounded p-0.5 hover:bg-white/10"
+                  className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors ${
+                    active
+                      ? "bg-[#AFC0D0] text-[#0B1E38] font-bold shadow-xs"
+                      : "text-slate-300 hover:text-white font-medium hover:bg-white/5"
+                  }`}
                 >
-                  <ChevronDown
-                    className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                      salesExecOpen ? "rotate-0" : "-rotate-90"
-                    } ${
-                      isSalesExecutiveDashboard
-                        ? "text-blue-300"
-                        : "text-slate-500"
-                    }`}
-                  />
-                </button>
-              </div>
+                  {active && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#0d9488] shrink-0" />
+                  )}
+                  <span className="truncate">{item.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
 
-              {salesExecOpen && (
-                <div className="mt-0.5 ml-3 space-y-0.5">
-                  {salesExecutiveMenus.map((item) => {
-                    const isActive =
-                      pathname === item.href ||
-                      pathname.startsWith(`${item.href}/`);
-
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`flex items-center rounded-lg px-3 py-2 text-[13px] font-medium whitespace-nowrap transition-all duration-150 ${
-                          isActive
-                            ? "bg-blue-600 text-white shadow-sm shadow-blue-600/25"
-                            : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
-                        }`}
-                      >
-                        <span className="whitespace-nowrap">{item.name}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-
-              <div className="mt-0.5 flex w-full items-center rounded-lg px-3 py-2 text-[13px] font-medium text-slate-400">
-                <span>Field Agent</span>
-              </div>
-
-            </div>
-          )}
+        {/* 4. HRMS Section below CRM */}
+        <div className="mt-5 flex items-center gap-2.5 px-0 text-white font-bold text-xs tracking-wide select-none">
+          <Users className="h-5 w-5 text-white shrink-0" />
+          <span>HRMS</span>
         </div>
+      </div>
 
-        <div className="space-y-0.5 pt-0.5">
-          {bottomMenuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.name}
-                type="button"
-                className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-[13px] font-medium text-slate-400 transition-colors hover:bg-white/[0.04] hover:text-slate-200"
-              >
-                <span className="flex items-center gap-3">
-                  <Icon className="h-[18px] w-[18px] text-slate-500" />
-                  <span>{item.name}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-
-      <div className="px-3 pb-4 space-y-0.5">
+      {/* Bottom Section: Logout Button */}
+      <div className="pt-6">
         <button
           type="button"
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-slate-400 transition-colors hover:bg-white/[0.04] hover:text-slate-200"
+          onClick={handleLogout}
+          className="w-full py-2.5 px-4 rounded-full border-2 border-[#E11D48] text-[#E11D48] hover:bg-[#E11D48]/10 font-bold text-sm tracking-wide transition-colors cursor-pointer text-center block"
         >
-          <Settings className="h-[18px] w-[18px] text-slate-500" />
-          <span>Settings</span>
-        </button>
-        <button
-          type="button"
-          onClick={async () => {
-            await supabase.auth.signOut();
-            try {
-              localStorage.removeItem('andima_user');
-              sessionStorage.removeItem('andima_logged_in');
-              sessionStorage.clear();
-            } catch {}
-            router.push('/login');
-          }}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300"
-        >
-          <LogOut className="h-[18px] w-[18px] text-red-400" />
-          <span>Logout</span>
+          Logout
         </button>
       </div>
-    </>
+    </div>
   );
 
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex sticky top-0 h-screen w-[285px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
+      <aside className="hidden lg:flex sticky top-0 h-screen w-[235px] shrink-0 flex-col bg-[#0B1E38] select-none border-r border-[#1a3154]/50">
         {sidebarContent}
       </aside>
 
@@ -320,7 +230,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             onClick={onClose}
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in cursor-pointer"
           />
-          <aside className="fixed inset-y-0 left-0 z-50 flex h-full w-[285px] flex-col bg-[#102445] shadow-2xl animate-in slide-in-from-left duration-200">
+          <aside className="fixed inset-y-0 left-0 z-50 flex h-full w-[240px] flex-col bg-[#0B1E38] shadow-2xl animate-in slide-in-from-left duration-200">
             {sidebarContent}
           </aside>
         </div>
