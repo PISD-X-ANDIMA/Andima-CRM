@@ -75,6 +75,9 @@ export interface FieldTaskItem {
   checklists?: { label: string; is_verified: boolean }[];
   timeline: TimelineEvent[];
   notes?: string;
+  notes_timestamp?: string;
+  notes_author?: string;
+  notes_role?: string;
 }
 
 export interface TaskOfFieldAgentProps {
@@ -704,6 +707,41 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     return trimmed.split(/\s+/).filter(Boolean).length;
   };
 
+  const formatCurrentWibDateTime = (): string => {
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy}, ${hh}:${min} WIB`;
+  };
+
+  const [currentWibDateTime, setCurrentWibDateTime] = useState<string>(() => {
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy}, ${hh}:${min} WIB`;
+  });
+
+  useEffect(() => {
+    const updateRealtime = () => {
+      const now = new Date();
+      const dd = String(now.getDate()).padStart(2, '0');
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const yyyy = now.getFullYear();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const min = String(now.getMinutes()).padStart(2, '0');
+      setCurrentWibDateTime(`${dd}/${mm}/${yyyy}, ${hh}:${min} WIB`);
+    };
+    updateRealtime();
+    const interval = setInterval(updateRealtime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleMax50WordsChange = (
     value: string,
     setter: (val: string) => void
@@ -911,19 +949,31 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     if (!notesModalTask) return;
     const updatedNote = editingNoteText.trim();
     const updatedAgent = assignedAgentName.trim() || notesModalTask.field_agent_name;
+    const currentTimestamp = formatCurrentWibDateTime();
     const updated = tasks.map(t => {
       if (t.id === notesModalTask.id) {
         return {
           ...t,
           notes: updatedNote,
           field_agent_name: updatedAgent,
-          status: updatedAgent ? ('Assigned' as const) : t.status
+          status: updatedAgent ? ('Assigned' as const) : t.status,
+          notes_timestamp: currentTimestamp,
+          notes_author: activeUserName || 'Adelia',
+          notes_role: activeUserRole || 'Sales Executive'
         };
       }
       return t;
     });
     saveTasks(updated);
-    setNotesModalTask(null);
+    setNotesModalTask(prev => prev ? {
+      ...prev,
+      notes: updatedNote,
+      field_agent_name: updatedAgent,
+      status: updatedAgent ? ('Assigned' as const) : prev.status,
+      notes_timestamp: currentTimestamp,
+      notes_author: activeUserName || 'Adelia',
+      notes_role: activeUserRole || 'Sales Executive'
+    } : null);
     showToast(`Penugasan & catatan untuk ${notesModalTask.job_number} berhasil disimpan.`);
   };
 
@@ -938,9 +988,27 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
   const handleSaveIssueModalNotes = () => {
     if (!issueModalTask) return;
     const updatedNote = issueModalNoteText.trim();
-    const updated = tasks.map(t => t.id === issueModalTask.id ? { ...t, notes: updatedNote } : t);
+    const currentTimestamp = formatCurrentWibDateTime();
+    const updated = tasks.map(t => {
+      if (t.id === issueModalTask.id) {
+        return {
+          ...t,
+          notes: updatedNote,
+          notes_timestamp: currentTimestamp,
+          notes_author: activeUserName || 'Adelia',
+          notes_role: activeUserRole || 'Sales Executive'
+        };
+      }
+      return t;
+    });
     saveTasks(updated);
-    setIssueModalTask(null);
+    setIssueModalTask(prev => prev ? {
+      ...prev,
+      notes: updatedNote,
+      notes_timestamp: currentTimestamp,
+      notes_author: activeUserName || 'Adelia',
+      notes_role: activeUserRole || 'Sales Executive'
+    } : null);
     showToast(`Notes untuk ${issueModalTask.job_number} berhasil disimpan.`);
   };
 
@@ -1990,8 +2058,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     <span className="text-xs sm:text-sm font-bold text-slate-900 block truncate">
                       {notesModalTask.field_agent_name || 'Khoirul Anwar'}
                     </span>
-                    <span className="text-[10px] text-slate-400 mt-0.5 block truncate">
-                      {notesModalTask.handover_datetime || '08/10/2026, 10:15 WIB'}
+                    <span className="text-[10px] text-slate-400 mt-0.5 block truncate font-mono">
+                      {currentWibDateTime || formatCurrentWibDateTime()}
                     </span>
                   </div>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fffbeb] border border-[#fde68a] text-[#b45309] text-[10px] font-bold shrink-0 ml-1">
@@ -2016,14 +2084,14 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               <div className="pl-3 border-l-2 border-blue-500 space-y-2 relative ml-1">
                 <div className="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-blue-500" />
                 <div className="flex items-center gap-2 text-xs flex-wrap">
-                  <span className="font-bold text-slate-900">Adelia</span>
+                  <span className="font-bold text-slate-900">{notesModalTask.notes_author || activeUserName || 'Adelia'}</span>
                   <span className="bg-slate-100 text-slate-600 text-[10px] font-semibold px-2 py-0.5 rounded">
-                    Sales Executive
+                    {notesModalTask.notes_role || 'Sales Executive'}
                   </span>
-                  <span className="text-slate-400">• 08/10/2026, 14:00 WIB</span>
+                  <span className="text-slate-400">• {notesModalTask.notes_timestamp || currentWibDateTime || formatCurrentWibDateTime()}</span>
                 </div>
                 <div className="p-3.5 bg-[#f8fafd] border border-[#e2eaf5] rounded-xl text-xs text-slate-700 leading-relaxed shadow-2xs">
-                  “Hasil rapat internal: Kendala selisih koli telah diselesaikan secara langsung bersama Tim Supervisor Warehouse Cikarang. 2 koli tertinggal sudah berhasil diangkut ke armada kedua.”
+                  “{notesModalTask.notes || 'Kendala operasional telah dicatat dan dalam penanganan.'}”
                 </div>
               </div>
             </div>
@@ -2695,7 +2763,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                         {issueModalTask.field_agent_name || 'Maselinus'}
                       </span>
                       <span className="text-[10px] text-slate-400 font-mono block">
-                        08/10/2026, 10:15 WIB
+                        {currentWibDateTime || formatCurrentWibDateTime()}
                       </span>
                     </div>
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#fff7ed] border border-[#fed7aa] text-[#c2410c] text-[10px] font-medium self-start">
@@ -2717,11 +2785,13 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 {issueModalTask.notes && (
                   <div className="relative pl-4 border-l-2 border-blue-500 space-y-1.5 py-0.5">
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="font-bold text-slate-900">{activeUserName || 'Adelia'}</span>
+                      <span className="font-bold text-slate-900">{issueModalTask.notes_author || activeUserName || 'Adelia'}</span>
                       <span className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-semibold">
-                        Sales Executive
+                        {issueModalTask.notes_role || 'Sales Executive'}
                       </span>
-                      <span className="text-slate-400 text-[11px]">• 08/10/2026, 14:00 WIB</span>
+                      <span className="text-slate-400 text-[11px]">
+                        • {issueModalTask.notes_timestamp || currentWibDateTime || formatCurrentWibDateTime()}
+                      </span>
                     </div>
                     <div className="bg-[#f8fafc] border border-slate-200 rounded-xl p-3 text-xs text-slate-700 leading-relaxed shadow-2xs">
                       “{issueModalTask.notes}”
@@ -3266,7 +3336,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 <div className="border-t border-slate-200/70 pt-2.5 grid grid-cols-2 gap-3">
                   <div>
                     <span className="text-[10px] text-slate-400 font-medium block">Created At:</span>
-                    <span className="text-xs font-bold text-slate-800 block mt-0.5">06 Oct 2026, 14:30 WIB</span>
+                    <span className="text-xs font-bold text-slate-800 block mt-0.5">{currentWibDateTime || formatCurrentWibDateTime()}</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 font-medium block">Sales Executive:</span>
@@ -3324,7 +3394,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-500">Assigned At</span>
-                      <span className="font-bold text-slate-900">06 Oct 2026, 09:00 WIB</span>
+                      <span className="font-bold text-slate-900">{currentWibDateTime || formatCurrentWibDateTime()}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-500">Task Area / Location</span>
@@ -3642,7 +3712,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 font-medium block">Date &amp; Time:</span>
-                    <span className="text-xs font-bold text-slate-800 block mt-0.5">06-10-2026, 14:35 WIB</span>
+                    <span className="text-xs font-bold text-slate-800 block mt-0.5">{currentWibDateTime || formatCurrentWibDateTime()}</span>
                   </div>
                 </div>
               </div>
