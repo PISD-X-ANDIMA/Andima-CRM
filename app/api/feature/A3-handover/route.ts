@@ -49,7 +49,31 @@ export async function POST(request: Request) {
     }
 
     if (!wsData || wsData.length === 0) {
-      return apiError(new Error(`Job ${jobNumber} tidak ditemukan.`), 404);
+      // Auto-insert worksheet if not present so newly created tasks by field agent can handover smoothly
+      const transactionNo = `TRX-${Date.now().toString().slice(-8)}`;
+      const { error: insErr } = await client
+        .from("a2_worksheets")
+        .insert({
+          job_no: jobNumber,
+          transaction_no: transactionNo,
+          customer_id: "909016c5-ecc1-41ba-b57f-2ba328d006ea",
+          created_by_user_id: 1,
+          create_date: new Date().toISOString().split("T")[0],
+          status_kendala: "normal",
+          field_agent_id: body.fieldAgentId || "9c274330-44f1-474d-91c0-523aac3ea9cf",
+          sales_pic_id: "9c274330-44f1-474d-91c0-523aac3ea9cf",
+          shipper: deliveringParty || "PT Indofood CBP Sukses Makmur Tbk",
+          consignee: receivingParty || "Singapore (SIN)",
+          handover_location: typeof body.location === "string" ? body.location.slice(0, 255) : "Cengkareng, Banten, Indonesia",
+          pihak_penyerah: deliveringParty,
+          pihak_penerima: receivingParty,
+          is_dangerous_goods: false,
+          has_issue: false,
+        });
+
+      if (insErr) {
+        console.warn(`[POST A3-handover] Auto-create worksheet warning for "${jobNumber}":`, insErr);
+      }
     }
 
     // Catatan: Ini bukan transaksi database penuh (RPC); kompensasi dilakukan manual jika insert handover gagal.
@@ -118,6 +142,20 @@ export async function POST(request: Request) {
         }
       }
       throw new Error("Unable to save handover.");
+    }
+
+    try {
+      await client
+        .from("a3_tasks")
+        .update({
+          handover_status: "COMPLETED",
+          actual_cargo: `${pieces} Pcs · ${weight} Kg`,
+          location: typeof body.location === "string" ? body.location.slice(0, 500) : undefined,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("Job Number", jobNumber);
+    } catch (taskUpErr) {
+      console.warn("[POST A3-handover] a3_tasks handover status update skipped:", taskUpErr);
     }
 
     await writeHistory({

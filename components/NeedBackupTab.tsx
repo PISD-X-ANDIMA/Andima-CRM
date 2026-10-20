@@ -13,14 +13,169 @@ import {
   Paperclip,
   AtSign,
   PenLine,
+  Clock,
+  ChevronDown,
 } from 'lucide-react';
-import { NeedBackupTicket, NeedBackupTicketLog } from '@/backend/record_conversation/types';
+import { NeedBackupTicket, NeedBackupTicketLog, NeedBackupStatus } from '@/backend/record_conversation/types';
 import {
   getNeedBackupTickets,
   updateNeedBackupStatus,
 } from '@/backend/record_conversation/worksheetService';
 
-// Default seed tickets matching user's Figma screenshot & modal mockup
+// The 6 requested statuses in exact user order:
+// 1. Open
+// 2. To do
+// 3. Pending
+// 4. In progres
+// 5. In riview
+// 6. Completed
+export const STATUS_LIST: NeedBackupStatus[] = [
+  'Open',
+  'To do',
+  'Pending',
+  'In progres',
+  'In riview',
+  'Completed',
+];
+
+export function normalizeStatus(rawStatus?: string): NeedBackupStatus {
+  if (!rawStatus) return 'Open';
+  const s = rawStatus.trim().toLowerCase();
+  if (s === 'to do' || s === 'todo') return 'To do';
+  if (s === 'pending') return 'Pending';
+  if (
+    s === 'in progres' ||
+    s === 'in progress' ||
+    s === 'inprogress' ||
+    s === 'progres' ||
+    s === 'progress'
+  )
+    return 'In progres';
+  if (
+    s === 'in riview' ||
+    s === 'in review' ||
+    s === 'inriview' ||
+    s === 'inreview' ||
+    s === 'review' ||
+    s === 'riview'
+  )
+    return 'In riview';
+  if (
+    s === 'completed' ||
+    s === 'resolved' ||
+    s === 'selesai' ||
+    s === 'done' ||
+    s === 'close' ||
+    s === 'closed'
+  )
+    return 'Completed';
+  return 'Open';
+}
+
+export const STATUS_CONFIG: Record<
+  string,
+  {
+    label: string;
+    bg: string;
+    text: string;
+    border: string;
+    darkBg: string;
+    darkText: string;
+    darkBorder: string;
+    dotBg: string;
+    icon: 'dot' | 'check' | 'clock' | 'eye' | 'todo';
+    detailLabel: string;
+    btnClass: string;
+    btnActiveClass: string;
+  }
+> = {
+  'Open': {
+    label: 'Open',
+    bg: 'bg-[#fffbeb]',
+    text: 'text-[#d97706]',
+    border: 'border-[#fde68a]',
+    darkBg: 'dark:bg-amber-950/40',
+    darkText: 'dark:text-amber-300',
+    darkBorder: 'dark:border-amber-900/60',
+    dotBg: 'bg-[#d97706]',
+    icon: 'dot',
+    detailLabel: 'Open / Menunggu Respons',
+    btnClass: 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50 dark:bg-slate-800 dark:text-amber-300 dark:border-amber-900/60 dark:hover:bg-slate-700',
+    btnActiveClass: 'bg-amber-500 text-white border-amber-600 shadow-sm',
+  },
+  'To do': {
+    label: 'To do',
+    bg: 'bg-[#f1f5f9]',
+    text: 'text-[#475569]',
+    border: 'border-[#cbd5e1]',
+    darkBg: 'dark:bg-slate-800/60',
+    darkText: 'dark:text-slate-300',
+    darkBorder: 'dark:border-slate-700',
+    dotBg: 'bg-[#64748b]',
+    icon: 'todo',
+    detailLabel: 'To do / Dalam Antrean',
+    btnClass: 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700',
+    btnActiveClass: 'bg-slate-700 text-white border-slate-800 shadow-sm',
+  },
+  'Pending': {
+    label: 'Pending',
+    bg: 'bg-[#fff7ed]',
+    text: 'text-[#ea580c]',
+    border: 'border-[#fed7aa]',
+    darkBg: 'dark:bg-orange-950/40',
+    darkText: 'dark:text-orange-300',
+    darkBorder: 'dark:border-orange-900/60',
+    dotBg: 'bg-[#ea580c]',
+    icon: 'clock',
+    detailLabel: 'Pending / Menunggu Konfirmasi',
+    btnClass: 'bg-white text-orange-700 border-orange-200 hover:bg-orange-50 dark:bg-slate-800 dark:text-orange-300 dark:border-orange-900/60 dark:hover:bg-slate-700',
+    btnActiveClass: 'bg-orange-500 text-white border-orange-600 shadow-sm',
+  },
+  'In progres': {
+    label: 'In progres',
+    bg: 'bg-[#eff6ff]',
+    text: 'text-[#2563eb]',
+    border: 'border-[#bfdbfe]',
+    darkBg: 'dark:bg-blue-950/40',
+    darkText: 'dark:text-blue-300',
+    darkBorder: 'dark:border-blue-900/60',
+    dotBg: 'bg-[#2563eb]',
+    icon: 'dot',
+    detailLabel: 'In progres / Dalam Penanganan',
+    btnClass: 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50 dark:bg-slate-800 dark:text-blue-300 dark:border-blue-900/60 dark:hover:bg-slate-700',
+    btnActiveClass: 'bg-blue-600 text-white border-blue-700 shadow-sm',
+  },
+  'In riview': {
+    label: 'In riview',
+    bg: 'bg-[#faf5ff]',
+    text: 'text-[#9333ea]',
+    border: 'border-[#e9d5ff]',
+    darkBg: 'dark:bg-purple-950/40',
+    darkText: 'dark:text-purple-300',
+    darkBorder: 'dark:border-purple-900/60',
+    dotBg: 'bg-[#9333ea]',
+    icon: 'eye',
+    detailLabel: 'In riview / Dalam Peninjauan',
+    btnClass: 'bg-white text-purple-700 border-purple-200 hover:bg-purple-50 dark:bg-slate-800 dark:text-purple-300 dark:border-purple-900/60 dark:hover:bg-slate-700',
+    btnActiveClass: 'bg-purple-600 text-white border-purple-700 shadow-sm',
+  },
+  'Completed': {
+    label: 'Completed',
+    bg: 'bg-[#ecfdf5]',
+    text: 'text-[#059669]',
+    border: 'border-[#a7f3d0]',
+    darkBg: 'dark:bg-emerald-950/40',
+    darkText: 'dark:text-emerald-300',
+    darkBorder: 'dark:border-emerald-900/60',
+    dotBg: 'bg-[#059669]',
+    icon: 'check',
+    detailLabel: 'Completed / Selesai',
+    btnClass: 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-slate-800 dark:text-emerald-300 dark:border-emerald-900/60 dark:hover:bg-slate-700',
+    btnActiveClass: 'bg-emerald-600 text-white border-emerald-700 shadow-sm',
+  },
+};
+
+// Default seed tickets showcasing all 6 statuses in order
 const SEED_TICKETS: NeedBackupTicket[] = [
   {
     id: 'bck-seed-1',
@@ -49,121 +204,125 @@ const SEED_TICKETS: NeedBackupTicket[] = [
   },
   {
     id: 'bck-seed-2',
-    ticket_id: 'BCK-2026-001',
+    ticket_id: 'BCK-2026-002',
     job_number: '#AENAT/2609/0306',
     customer_name: 'PT. Sinar Baja Nusantara',
     category: 'Gross Weight',
-    priority: 'High',
-    date: '24-09-2026',
-    time: '10:35 WIB',
-    status: 'Inprogress',
-    connected_job: 'DSVEXP/2605/2552',
-    sla_description: 'SLA Tindakan Segera (< 30 Menit)',
-    description: 'Jumlah koli fisik yang diterima di lokasi (8 koli) tidak sesuai dengan data dokumen awal (10 koli). Mohon koordinasi tim warehouse Cikarang untuk pengecekan 2 koli tertinggal.',
+    priority: 'Normal',
+    date: '03-03-2026',
+    time: '10:00 WIB',
+    status: 'To do',
+    connected_job: 'DSVEXP/2605/2551',
+    sla_description: 'SLA Respon < 4 Jam',
+    description: 'Menunggu penugasan personil lapangan untuk verifikasi timbangan ulang kargo sebelum stuffing kontainer.',
     requested_by: 'Adelia (Sales Executive)',
-    created_at: '2026-09-24T10:35:00Z',
+    created_at: '2026-03-03T10:00:00Z',
     logs: [
       {
         id: 'log-2-1',
-        author: 'Budi (Ops Senior)',
-        timestamp: '24-09-2026 10:45',
-        message: 'Tim warehouse Cikarang sedang melakukan audit fisik 2 koli...',
+        author: 'Dispatcher Ops',
+        timestamp: '03-03-2026 10:05',
+        message: 'Tiket masuk antrean To do jadwal inspeksi shift siang.',
         is_active: true,
-      },
-      {
-        id: 'log-2-2',
-        author: 'Adelia',
-        timestamp: '24-09-2026 10:35',
-        message: 'Tiket diajukan ke tim Operasional & Senior Manager.',
-        is_active: false,
       },
     ],
   },
   {
     id: 'bck-seed-3',
-    ticket_id: 'BCK-2026-001',
+    ticket_id: 'BCK-2026-003',
     job_number: '#AENAT/2609/0307',
-    customer_name: 'PT. Multi Logistik Sentosa',
-    category: 'Kerusakan barang',
-    priority: 'Medium',
+    customer_name: 'PT. Bahtera Nusa Logistik',
+    category: 'Kendala Surat Jalan',
+    priority: 'High',
     date: '03-03-2026',
-    time: '11:45 WIB',
-    status: 'Inprogress',
-    connected_job: 'DSVEXP/2605/2553',
-    sla_description: 'SLA Respon < 4 Jam',
-    description: 'Kemasan karton sobek di bagian sudut saat proses forklift bongkar muat. Memerlukan berita acara re-packing dan dokumentasi foto resmi.',
-    requested_by: 'Adelia (Sales Executive)',
-    created_at: '2026-03-03T11:45:00Z',
+    time: '10:35 WIB',
+    status: 'Pending',
+    connected_job: 'DSVEXP/2605/2552',
+    sla_description: 'SLA Tindakan Segera (< 30 Menit)',
+    description: 'Pending konfirmasi stempel bea cukai dari consignee. Menunggu upload berkas legalisir resmi.',
+    requested_by: 'Budi (Ops Senior)',
+    created_at: '2026-03-03T10:35:00Z',
     logs: [
       {
         id: 'log-3-1',
-        author: 'Budi Santoso (Field Lead)',
-        timestamp: '03-03-2026 12:10',
-        message: 'Sedang dilakukan pembuatan Berita Acara Kerusakan bersama petugas kargo.',
+        author: 'Budi (Ops Senior)',
+        timestamp: '03-03-2026 10:45',
+        message: 'Status dipending sementara menunggu dokumen revisi shipper.',
         is_active: true,
-      },
-      {
-        id: 'log-3-2',
-        author: 'Adelia',
-        timestamp: '03-03-2026 11:45',
-        message: 'Laporan kerusakan barang dibuat.',
-        is_active: false,
       },
     ],
   },
   {
     id: 'bck-seed-4',
-    ticket_id: 'BCK-2026-001',
-    job_number: '#AENAT/2609/0307',
-    customer_name: 'PT. Trans Sejahtera Abadi',
-    category: 'Kendala Surat Jalan',
-    priority: 'Low',
+    ticket_id: 'BCK-2026-004',
+    job_number: '#AENAT/2609/0308',
+    customer_name: 'PT. Multi Logistik Sentosa',
+    category: 'Kerusakan barang',
+    priority: 'Medium',
     date: '03-03-2026',
-    time: '13:20 WIB',
-    status: 'Resolved',
-    connected_job: 'DSVEXP/2605/2554',
-    sla_description: 'SLA Respon Standard 24 Jam',
-    description: 'Stempel surat jalan belum terbaca jelas pada lembar copy penerima. Telah dikonfirmasi ulang via e-stempel resmi dan consignee menandatangani BA.',
-    requested_by: 'Siti Rahmawati',
-    created_at: '2026-03-03T13:20:00Z',
+    time: '11:45 WIB',
+    status: 'In progres',
+    connected_job: 'DSVEXP/2605/2553',
+    sla_description: 'SLA Respon < 4 Jam',
+    description: 'Kemasan karton sobek di bagian sudut saat forklift bongkar muat. Sedang dilakukan pembuatan Berita Acara Kerusakan bersama tim gudang.',
+    requested_by: 'Adelia (Sales Executive)',
+    created_at: '2026-03-03T11:45:00Z',
     logs: [
       {
         id: 'log-4-1',
-        author: 'Siti Rahmawati',
-        timestamp: '03-03-2026 14:00',
-        message: 'Surat jalan selesai divalidasi dan stempel basah telah diverifikasi OK.',
+        author: 'Budi Santoso (Field Lead)',
+        timestamp: '03-03-2026 12:10',
+        message: 'Sedang dilakukan pembuatan Berita Acara Kerusakan bersama petugas kargo.',
         is_active: true,
-      },
-      {
-        id: 'log-4-2',
-        author: 'Siti Rahmawati',
-        timestamp: '03-03-2026 13:20',
-        message: 'Permohonan bantuan konfirmasi stempel dibuat.',
-        is_active: false,
       },
     ],
   },
   {
     id: 'bck-seed-5',
-    ticket_id: 'BCK-2026-001',
-    job_number: '#AENAT/2609/0307',
+    ticket_id: 'BCK-2026-005',
+    job_number: '#AENAT/2609/0309',
+    customer_name: 'PT. Trans Sejahtera Abadi',
+    category: 'Dokumen Tertahan',
+    priority: 'High',
+    date: '03-03-2026',
+    time: '13:20 WIB',
+    status: 'In riview',
+    connected_job: 'DSVEXP/2605/2554',
+    sla_description: 'SLA Respon < 4 Jam',
+    description: 'Dokumen revisi koli dan manifest baru telah diunggah. Menunggu approval review dari Operation Lead.',
+    requested_by: 'Siti Rahmawati',
+    created_at: '2026-03-03T13:20:00Z',
+    logs: [
+      {
+        id: 'log-5-1',
+        author: 'Siti Rahmawati',
+        timestamp: '03-03-2026 13:50',
+        message: 'Dokumen lengkap telah diserahkan untuk proses in riview supervisi.',
+        is_active: true,
+      },
+    ],
+  },
+  {
+    id: 'bck-seed-6',
+    ticket_id: 'BCK-2026-006',
+    job_number: '#AENAT/2609/0310',
     customer_name: 'PT. Global Kargo Mandiri',
     category: 'Selisih Koli',
     priority: 'Low',
     date: '03-03-2026',
     time: '14:10 WIB',
-    status: 'Resolved',
+    status: 'Completed',
     connected_job: 'DSVEXP/2605/2555',
     sla_description: 'SLA Respon Standard 24 Jam',
-    description: 'Selisih koli terselesaikan setelah pengecekan fisik di gudang transit kargo internasional.',
+    description: 'Selisih koli terselesaikan setelah pengecekan fisik di gudang transit kargo internasional. Serah terima tuntas.',
     requested_by: 'Dewi Lestari',
     created_at: '2026-03-03T14:10:00Z',
     logs: [
       {
-        id: 'log-5-1',
+        id: 'log-6-1',
         author: 'Dewi Lestari',
         timestamp: '03-03-2026 15:30',
-        message: 'Semua koli telah diverifikasi lengkap di transit bay.',
+        message: 'Semua koli telah diverifikasi lengkap di transit bay. Tiket ditutup (Completed).',
         is_active: true,
       },
     ],
@@ -180,12 +339,25 @@ interface NeedBackupProps {
 export default function NeedBackupTab({}: NeedBackupProps = {}) {
   const [tickets, setTickets] = useState<NeedBackupTicket[]>(SEED_TICKETS);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | NeedBackupStatus>('all');
+  const [statusDropdownOpenId, setStatusDropdownOpenId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const ticketsPerPage = 5;
+  const ticketsPerPage = 6;
   const [selectedTicket, setSelectedTicket] = useState<NeedBackupTicket | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setStatusDropdownOpenId(null);
+    };
+    if (statusDropdownOpenId) {
+      window.addEventListener('click', handleGlobalClick);
+      return () => window.removeEventListener('click', handleGlobalClick);
+    }
+  }, [statusDropdownOpenId]);
 
   // Helper to count words for 200-word limit
   const countWords = (text: string): number => {
@@ -206,6 +378,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
   const [newCustomer, setNewCustomer] = useState('');
   const [newCategory, setNewCategory] = useState('Selisih Koli');
   const [newPriority, setNewPriority] = useState<string>('Normal');
+  const [newStatus, setNewStatus] = useState<NeedBackupStatus>('Open');
   const [newDescription, setNewDescription] = useState('');
 
   const showToast = (msg: string) => {
@@ -219,7 +392,29 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
     if (typeof window !== 'undefined') {
       try {
         const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (raw) localData = JSON.parse(raw);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // Check if older version data needs migration to the 6 statuses
+            const hasNewStatuses = parsed.some(
+              (t: any) =>
+                t.status === 'To do' ||
+                t.status === 'In riview' ||
+                t.status === 'Pending' ||
+                t.status === 'In progres' ||
+                t.status === 'Completed'
+            );
+            if (!hasNewStatuses && parsed.length <= 5) {
+              localData = SEED_TICKETS;
+              localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(SEED_TICKETS));
+            } else {
+              localData = parsed.map((t: any) => ({
+                ...t,
+                status: normalizeStatus(t.status),
+              }));
+            }
+          }
+        }
       } catch {}
     }
 
@@ -272,18 +467,40 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
     }
   };
 
-  // Filtered tickets based on search
+  // Dynamic counts for each status
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      'Open': 0,
+      'To do': 0,
+      'Pending': 0,
+      'In progres': 0,
+      'In riview': 0,
+      'Completed': 0,
+    };
+    tickets.forEach(t => {
+      const norm = normalizeStatus(t.status);
+      counts[norm] = (counts[norm] || 0) + 1;
+    });
+    return counts;
+  }, [tickets]);
+
+  // Filtered tickets based on search and status filter
   const filteredTickets = useMemo(() => {
-    if (!searchQuery.trim()) return tickets;
-    const q = searchQuery.toLowerCase();
-    return tickets.filter(t =>
-      t.job_number.toLowerCase().includes(q) ||
-      (t.customer_name && t.customer_name.toLowerCase().includes(q)) ||
-      t.ticket_id.toLowerCase().includes(q) ||
-      t.category.toLowerCase().includes(q) ||
-      t.status.toLowerCase().includes(q)
-    );
-  }, [tickets, searchQuery]);
+    return tickets.filter(t => {
+      const norm = normalizeStatus(t.status);
+      if (statusFilter !== 'all' && norm !== statusFilter) return false;
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        t.job_number.toLowerCase().includes(q) ||
+        (t.customer_name && t.customer_name.toLowerCase().includes(q)) ||
+        t.ticket_id.toLowerCase().includes(q) ||
+        t.category.toLowerCase().includes(q) ||
+        norm.toLowerCase().includes(q) ||
+        (t.status && t.status.toLowerCase().includes(q))
+      );
+    });
+  }, [tickets, statusFilter, searchQuery]);
 
   // Pagination calculations (Exact Match with Sales Executive)
   const totalTickets = filteredTickets.length;
@@ -299,16 +516,15 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
 
   // Dynamic counts for top cards
   const totalCount = tickets.length;
-  const openCount = tickets.filter(t => t.status === 'Open').length;
-  const inprogressCount = tickets.filter(t => t.status === 'Inprogress').length;
-  const resolvedCount = tickets.filter(t => t.status === 'Resolved').length;
+  const openCount = statusCounts['Open'] || 0;
+  const todoCount = statusCounts['To do'] || 0;
+  const pendingCount = statusCounts['Pending'] || 0;
+  const inprogressCount = statusCounts['In progres'] || 0;
+  const inreviewCount = statusCounts['In riview'] || 0;
+  const resolvedCount = statusCounts['Completed'] || 0;
 
   // Handle status update
-  const handleUpdateStatus = async (ticketId: string, newStatus: 'Open' | 'Inprogress' | 'Resolved') => {
-    if (selectedTicket?.status === 'Resolved') {
-      showToast('Tiket sudah berstatus Resolved dan tidak dapat diedit lagi.');
-      return;
-    }
+  const handleUpdateStatus = async (ticketId: string, newStatus: NeedBackupStatus) => {
     setIsUpdating(true);
 
     const now = new Date();
@@ -398,14 +614,14 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
 
     const newTicket: NeedBackupTicket = {
       id: `bck-${Date.now()}`,
-      ticket_id: 'BCK-2026-001',
+      ticket_id: `BCK-2026-${String(tickets.length + 1).padStart(3, '0')}`,
       job_number: cleanJobNumber(newJobNumber),
       customer_name: newCustomer || 'PT. Sinar Baja Nusantara',
       category: newCategory,
       priority: newPriority,
       date: dateStr,
       time: timeStr,
-      status: 'Open',
+      status: newStatus || 'Open',
       connected_job: 'DSVEXP/2605/2552',
       sla_description: newPriority === 'Urgent' || newPriority === 'High' ? 'SLA Tindakan Segera (< 30 Menit)' : 'SLA Respon < 4 Jam',
       description: newDescription || 'Permohonan bantuan operasional dari agen lapangan.',
@@ -416,7 +632,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
           id: `log-${Date.now()}`,
           author: 'Adelia (Sales Executive)',
           timestamp: `${dateStr} ${timeStr}`,
-          message: 'Tiket diajukan ke tim Operasional & Senior Manager.',
+          message: `Tiket dibuat dengan status "${newStatus || 'Open'}".`,
           is_active: true,
         },
       ],
@@ -426,6 +642,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
     setIsCreateModalOpen(false);
     setNewDescription('');
     setNewCustomer('');
+    setNewStatus('Open');
     showToast(`Tiket ${newTicket.job_number} berhasil dibuat!`);
   };
 
@@ -486,7 +703,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 {totalCount} Tiket
               </div>
               <div className="text-[10px] font-medium text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1">
-                <span>→ Semua kanal aktif</span>
+                <span>→ Semua status aktif</span>
               </div>
             </div>
             <div className="w-8 h-8 rounded-lg bg-blue-50/90 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -494,17 +711,17 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
             </div>
           </div>
 
-          {/* Card 2: Menunggu Respons */}
+          {/* Card 2: Menunggu Respons & To do */}
           <div className="bg-white rounded-xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-3 flex items-start justify-between dark:bg-[#0f172a] dark:border-slate-800">
             <div>
               <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 tracking-tight block">
-                Menunggu Respons
+                Open &amp; To do
               </span>
               <div className="text-xl font-bold text-slate-900 dark:text-white mt-0.5 tracking-tight">
-                {openCount} Tiket
+                {openCount + todoCount} Tiket
               </div>
               <div className="text-[10px] font-medium text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
-                <span>! Perlu eskalasi segera</span>
+                <span>! {openCount} Open, {todoCount} To do</span>
               </div>
             </div>
             <div className="w-8 h-8 rounded-lg bg-amber-50/90 text-amber-500 dark:bg-amber-950/40 dark:text-amber-400 flex items-center justify-center shrink-0">
@@ -512,18 +729,18 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
             </div>
           </div>
 
-          {/* Card 3: Dalam Penanganan */}
+          {/* Card 3: Dalam Penanganan (In progres & Pending) */}
           <div className="bg-white rounded-xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-3 flex items-start justify-between dark:bg-[#0f172a] dark:border-slate-800">
             <div>
               <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 tracking-tight block">
-                Dalam Penanganan
+                In progres &amp; Pending
               </span>
               <div className="text-xl font-bold text-slate-900 dark:text-white mt-0.5 tracking-tight">
-                {inprogressCount} Tiket
+                {inprogressCount + pendingCount} Tiket
               </div>
               <div className="text-[10px] font-medium text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1">
                 <RefreshCw size={10} className="inline mr-0.5" />
-                <span>Tim lapangan bertugas</span>
+                <span>{inprogressCount} Aktif, {pendingCount} Pending</span>
               </div>
             </div>
             <div className="w-8 h-8 rounded-lg bg-blue-50/90 text-blue-500 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -531,23 +748,65 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
             </div>
           </div>
 
-          {/* Card 4: Selesai */}
+          {/* Card 4: Selesai & Review */}
           <div className="bg-white rounded-xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-3 flex items-start justify-between dark:bg-[#0f172a] dark:border-slate-800">
             <div>
               <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 tracking-tight block">
-                Selesai
+                Completed &amp; Review
               </span>
               <div className="text-xl font-bold text-slate-900 dark:text-white mt-0.5 tracking-tight">
-                {resolvedCount} Tiket
+                {resolvedCount + inreviewCount} Tiket
               </div>
               <div className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
-                <span>✓ Solved &amp; Verifikasi OK</span>
+                <span>✓ {resolvedCount} Selesai, {inreviewCount} Riview</span>
               </div>
             </div>
             <div className="w-8 h-8 rounded-lg bg-emerald-50/90 text-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-400 flex items-center justify-center shrink-0">
               <CheckCircle2 size={16} />
             </div>
           </div>
+        </div>
+
+        {/* QUICK STATUS FILTER PILLS */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 mb-2 scrollbar-none">
+          <button
+            type="button"
+            onClick={() => {
+              setStatusFilter('all');
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border ${
+              statusFilter === 'all'
+                ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white shadow-xs'
+                : 'bg-white text-slate-600 border-slate-200/80 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800 dark:hover:bg-slate-800'
+            }`}
+          >
+            Semua ({totalCount})
+          </button>
+          {STATUS_LIST.map(st => {
+            const cfg = STATUS_CONFIG[st];
+            const count = statusCounts[st] || 0;
+            const isSelected = statusFilter === st;
+            return (
+              <button
+                key={st}
+                type="button"
+                onClick={() => {
+                  setStatusFilter(st);
+                  setCurrentPage(1);
+                }}
+                className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border flex items-center gap-1.5 ${
+                  isSelected
+                    ? `${cfg.bg} ${cfg.text} ${cfg.border} ring-2 ring-current/30 shadow-xs`
+                    : 'bg-white text-slate-600 border-slate-200/80 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800 dark:hover:bg-slate-800'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${cfg.dotBg}`} />
+                <span>{cfg.label}</span>
+                <span className="text-[10px] opacity-75">({count})</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* SEARCH BAR */}
@@ -666,24 +925,69 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
 
                     {/* Status */}
                     <td className="py-5 px-6 text-center align-middle">
-                      {item.status === 'Open' && (
-                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold bg-[#fffbeb] text-[#d97706] border border-[#fde68a] dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/60">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#d97706]" />
-                          Open
-                        </span>
-                      )}
-                      {item.status === 'Inprogress' && (
-                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold bg-[#eff6ff] text-[#2563eb] border border-[#bfdbfe] dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#2563eb]" />
-                          Inprogress
-                        </span>
-                      )}
-                      {item.status === 'Resolved' && (
-                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60">
-                          <Check size={12} className="text-[#059669]" />
-                          Resolved
-                        </span>
-                      )}
+                      {(() => {
+                        const norm = normalizeStatus(item.status);
+                        const cfg = STATUS_CONFIG[norm] || STATUS_CONFIG['Open'];
+                        const isOpen = statusDropdownOpenId === item.id;
+                        return (
+                          <div className="relative inline-block text-left" onClick={e => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={() => setStatusDropdownOpenId(isOpen ? null : item.id)}
+                              className={`group inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer shadow-2xs hover:brightness-95 active:scale-95 ${cfg.bg} ${cfg.text} ${cfg.border} ${cfg.darkBg} ${cfg.darkText} ${cfg.darkBorder}`}
+                              title="Klik untuk ubah status"
+                            >
+                              {cfg.icon === 'check' ? (
+                                <Check size={12} className={cfg.text} />
+                              ) : cfg.icon === 'clock' ? (
+                                <Clock size={11} className={cfg.text} />
+                              ) : cfg.icon === 'eye' ? (
+                                <Eye size={11} className={cfg.text} />
+                              ) : cfg.icon === 'todo' ? (
+                                <span className="w-1.5 h-1.5 rounded-xs bg-current" />
+                              ) : (
+                                <span className={`w-1.5 h-1.5 rounded-full ${cfg.dotBg}`} />
+                              )}
+                              <span>{cfg.label}</span>
+                              <ChevronDown size={11} className="opacity-60 group-hover:opacity-100 transition-opacity ml-0.5" />
+                            </button>
+
+                            {/* Status Quick Select Dropdown */}
+                            {isOpen && (
+                              <div className="absolute left-1/2 -translate-x-1/2 mt-1.5 w-44 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-1.5 z-40 animate-in fade-in zoom-in-95 duration-150">
+                                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 mb-1">
+                                  Ubah Status
+                                </div>
+                                {STATUS_LIST.map(st => {
+                                  const itemCfg = STATUS_CONFIG[st];
+                                  const isSelected = norm === st;
+                                  return (
+                                    <button
+                                      key={st}
+                                      type="button"
+                                      onClick={() => {
+                                        setStatusDropdownOpenId(null);
+                                        handleUpdateStatus(item.id, st);
+                                      }}
+                                      className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer ${
+                                        isSelected
+                                          ? 'font-bold text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/30'
+                                          : 'text-slate-700 dark:text-slate-300'
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <span className={`w-2 h-2 rounded-full ${itemCfg.dotBg}`} />
+                                        <span>{itemCfg.label}</span>
+                                      </div>
+                                      {isSelected && <Check size={12} className="text-blue-600 dark:text-blue-400" />}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
 
                     {/* Action */}
@@ -788,36 +1092,34 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
               {/* TOP TWO CARDS (Status Tiket & Prioritas) */}
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 {/* Status Tiket Card */}
-                <div className="bg-white rounded-2xl border border-slate-200/70 p-3.5 sm:p-4 shadow-2xs dark:bg-slate-900/90 dark:border-slate-800">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-400 dark:text-slate-400">Status Tiket</span>
-                    {selectedTicket.status === 'Open' && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#fffbeb] text-[#d97706] border border-[#fef3c7] dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/60">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#d97706]" />
-                        Active
-                      </span>
-                    )}
-                    {selectedTicket.status === 'Inprogress' && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#eff6ff] text-[#2563eb] border border-[#bfdbfe] dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#2563eb]" />
-                        Active
-                      </span>
-                    )}
-                    {selectedTicket.status === 'Resolved' && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60">
-                        <Check size={11} className="text-[#059669]" />
-                        Resolved
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-2">
-                    {selectedTicket.status === 'Open'
-                      ? 'Open / Menunggu Respons'
-                      : selectedTicket.status === 'Inprogress'
-                      ? 'Inprogress / Dalam Penanganan'
-                      : 'Resolved / Selesai'}
-                  </div>
-                </div>
+                {(() => {
+                  const norm = normalizeStatus(selectedTicket.status);
+                  const cfg = STATUS_CONFIG[norm] || STATUS_CONFIG['Open'];
+                  return (
+                    <div className="bg-white rounded-2xl border border-slate-200/70 p-3.5 sm:p-4 shadow-2xs dark:bg-slate-900/90 dark:border-slate-800">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-slate-400 dark:text-slate-400">Status Tiket</span>
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${cfg.bg} ${cfg.text} ${cfg.border} ${cfg.darkBg} ${cfg.darkText} ${cfg.darkBorder}`}>
+                          {cfg.icon === 'check' ? (
+                            <Check size={11} className={cfg.text} />
+                          ) : cfg.icon === 'clock' ? (
+                            <Clock size={11} className={cfg.text} />
+                          ) : cfg.icon === 'eye' ? (
+                            <Eye size={11} className={cfg.text} />
+                          ) : cfg.icon === 'todo' ? (
+                            <span className="w-1.5 h-1.5 rounded-xs bg-current" />
+                          ) : (
+                            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dotBg}`} />
+                          )}
+                          {cfg.label}
+                        </span>
+                      </div>
+                      <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-2">
+                        {cfg.detailLabel}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Prioritas Card */}
                 <div className="bg-white rounded-2xl border border-slate-200/70 p-3.5 sm:p-4 shadow-2xs dark:bg-slate-900/90 dark:border-slate-800">
@@ -975,10 +1277,54 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                   <span className="text-[11px] text-slate-400 dark:text-slate-500">Markdown didukung</span>
                 </div>
 
-                {selectedTicket.status === 'Resolved' ? (
-                  <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/90 rounded-2xl text-emerald-800 text-xs font-semibold flex items-center gap-2.5 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300">
-                    <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span>Tiket ini telah diselesaikan (Resolved) dan terkunci. Tindak lanjut dan status tidak dapat diedit lagi.</span>
+                {normalizeStatus(selectedTicket.status) === 'Completed' ? (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-emerald-50/80 border border-emerald-200/90 rounded-2xl text-emerald-800 text-xs font-semibold flex items-center justify-between dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <span>Status: Completed (Terselesaikan)</span>
+                      </div>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal">
+                        Dapat diaktifkan kembali kapan saja
+                      </span>
+                    </div>
+
+                    <div className="border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-2xs focus-within:border-blue-400 dark:border-slate-700 dark:bg-slate-900 transition-colors">
+                      <textarea
+                        rows={3}
+                        value={newComment}
+                        onChange={e => setNewComment(e.target.value)}
+                        placeholder="Tulis catatan tindak lanjut tambahan..."
+                        className="w-full p-3 text-xs text-slate-700 outline-none resize-none placeholder:text-slate-400 dark:text-slate-200 dark:placeholder:text-slate-500 bg-transparent"
+                      />
+                      <div className="px-3.5 py-2 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between dark:bg-slate-900/90 dark:border-slate-800">
+                        <div className="flex items-center gap-3 text-slate-400 dark:text-slate-500">
+                          <button
+                            type="button"
+                            className="hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
+                            title="Lampirkan Dokumen"
+                          >
+                            <Paperclip size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            className="hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
+                            title="Mention Rekan Kerja"
+                          >
+                            <AtSign size={15} />
+                          </button>
+                        </div>
+                        {newComment.trim() && (
+                          <button
+                            type="button"
+                            onClick={() => handleAddComment()}
+                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-2xs transition-colors cursor-pointer"
+                          >
+                            Kirim Tanggapan
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-2xs focus-within:border-blue-400 dark:border-slate-700 dark:bg-slate-900 transition-colors">
@@ -1025,58 +1371,36 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-2">
                   Ubah Status Tiket:
                 </label>
-                {selectedTicket.status === 'Resolved' ? (
-                  <div className="py-2.5 px-4 rounded-xl bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800/60 flex items-center justify-between">
-                    <span className="inline-flex items-center gap-2 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                      <CheckCircle2 size={15} className="text-emerald-600 dark:text-emerald-400" />
-                      Status: Resolved (Terkunci)
-                    </span>
-                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">
-                      Perubahan status dinonaktifkan
-                    </span>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      disabled={isUpdating}
-                      onClick={() => handleUpdateStatus(selectedTicket.id, 'Open')}
-                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                        selectedTicket.status === 'Open'
-                          ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
-                          : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50 dark:bg-slate-800 dark:text-amber-300 dark:border-amber-900/60 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      <span className="w-2 h-2 rounded-full bg-current" />
-                      Open
-                    </button>
-
-                    <button
-                      disabled={isUpdating}
-                      onClick={() => handleUpdateStatus(selectedTicket.id, 'Inprogress')}
-                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                        selectedTicket.status === 'Inprogress'
-                          ? 'bg-blue-600 text-white border-blue-700 shadow-sm'
-                          : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50 dark:bg-slate-800 dark:text-blue-300 dark:border-blue-900/60 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      <RefreshCw size={12} className={selectedTicket.status === 'Inprogress' ? 'animate-spin' : ''} />
-                      Inprogress
-                    </button>
-
-                    <button
-                      disabled={isUpdating}
-                      onClick={() => handleUpdateStatus(selectedTicket.id, 'Resolved')}
-                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                        selectedTicket.status === 'Resolved'
-                          ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
-                          : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-slate-800 dark:text-emerald-300 dark:border-emerald-900/60 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      <Check size={14} />
-                      Resolved
-                    </button>
-                  </div>
-                )}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {STATUS_LIST.map(st => {
+                    const cfg = STATUS_CONFIG[st];
+                    const isCurrent = normalizeStatus(selectedTicket.status) === st;
+                    return (
+                      <button
+                        key={st}
+                        type="button"
+                        disabled={isUpdating}
+                        onClick={() => handleUpdateStatus(selectedTicket.id, st)}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                          isCurrent ? cfg.btnActiveClass : cfg.btnClass
+                        }`}
+                      >
+                        {cfg.icon === 'check' ? (
+                          <Check size={13} className={isCurrent ? 'text-white' : cfg.text} />
+                        ) : cfg.icon === 'clock' ? (
+                          <Clock size={12} className={isCurrent ? 'text-white' : cfg.text} />
+                        ) : cfg.icon === 'eye' ? (
+                          <Eye size={12} className={isCurrent ? 'text-white' : cfg.text} />
+                        ) : cfg.icon === 'todo' ? (
+                          <span className={`w-1.5 h-1.5 rounded-xs ${isCurrent ? 'bg-white' : 'bg-current'}`} />
+                        ) : (
+                          <span className={`w-2 h-2 rounded-full ${isCurrent ? 'bg-white' : cfg.dotBg}`} />
+                        )}
+                        <span>{cfg.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
@@ -1149,7 +1473,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                     Kategori Kendala *
@@ -1157,7 +1481,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                   <select
                     value={newCategory}
                     onChange={e => setNewCategory(e.target.value)}
-                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 dark:bg-slate-900 outline-none focus:border-blue-500 bg-white"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 dark:bg-slate-900 outline-none focus:border-blue-500 bg-white"
                   >
                     <option value="Gross Weight" className="dark:bg-slate-900 dark:text-white">Gross Weight</option>
                     <option value="Selisih Koli" className="dark:bg-slate-900 dark:text-white">Selisih Koli</option>
@@ -1175,12 +1499,29 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                   <select
                     value={newPriority}
                     onChange={e => setNewPriority(e.target.value)}
-                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 dark:bg-slate-900 outline-none focus:border-blue-500 bg-white"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 dark:bg-slate-900 outline-none focus:border-blue-500 bg-white"
                   >
                     <option value="Urgent" className="dark:bg-slate-900 dark:text-white">Urgent</option>
                     <option value="High" className="dark:bg-slate-900 dark:text-white">High</option>
                     <option value="Normal" className="dark:bg-slate-900 dark:text-white">Normal</option>
                     <option value="Low" className="dark:bg-slate-900 dark:text-white">Low</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                    Status Awal *
+                  </label>
+                  <select
+                    value={newStatus}
+                    onChange={e => setNewStatus(e.target.value as NeedBackupStatus)}
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 dark:bg-slate-900 outline-none focus:border-blue-500 bg-white"
+                  >
+                    {STATUS_LIST.map(st => (
+                      <option key={st} value={st} className="dark:bg-slate-900 dark:text-white">
+                        {st}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

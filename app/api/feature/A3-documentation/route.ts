@@ -32,19 +32,20 @@ export async function POST(request: Request) {
 
     const client = getA3WriteClient();
 
-    // Validasi keberadaan job di a2_worksheets
-    const { data: wsData, error: wsError } = await client
+    // Validasi keberadaan job di a3_tasks atau a2_worksheets
+    const { data: a3Data } = await client
+      .from("a3_tasks")
+      .select('id, "Job Number"')
+      .eq('Job Number', jobNumber)
+      .limit(1);
+
+    const { data: wsData } = await client
       .from("a2_worksheets")
       .select("worksheet_id, job_no")
       .eq("job_no", jobNumber)
       .limit(1);
 
-    if (wsError) {
-      console.error(`[POST A3-documentation] Error validating job_no "${jobNumber}":`, wsError);
-      return apiError(new Error("Database error validating job."), 500);
-    }
-
-    if (!wsData || wsData.length === 0) {
+    if ((!a3Data || a3Data.length === 0) && (!wsData || wsData.length === 0)) {
       return apiError(new Error(`Job ${jobNumber} tidak ditemukan.`), 404);
     }
 
@@ -57,6 +58,18 @@ export async function POST(request: Request) {
     if (error) {
       console.error("[POST A3-documentation] Error inserting a3_documentation:", error);
       throw new Error("Unable to save documentation.");
+    }
+
+    try {
+      await client
+        .from("a3_tasks")
+        .update({
+          documentation_status: "COMPLETE",
+          updated_at: new Date().toISOString(),
+        })
+        .eq('Job Number', jobNumber);
+    } catch (taskUpErr) {
+      console.warn("[POST A3-documentation] a3_tasks documentation_status update skipped:", taskUpErr);
     }
 
     await writeHistory({

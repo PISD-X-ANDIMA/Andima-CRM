@@ -40,12 +40,6 @@ const AVATAR_COLOR_MAP: Record<string, string> = {
 }
 
 const routeLabels: Record<string, string> = {
-  'sales-executive': 'Sales Eksekutif',
-  'company-list': 'Company List',
-  'meeting-schedule': 'Meeting Schedule',
-  'record-conversation': 'Record Conversation',
-  'task-of-field-agent': 'Monitoring Task of Field Agent',
-  'manage-field-agent': 'Manage Field Agent Account',
   'need-backup': 'Need Backup',
   'field-agent': 'Field Agent',
   profile: 'User Profile',
@@ -72,12 +66,12 @@ interface NotificationItem {
 const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   {
     id: '1',
-    title: 'New Meeting Scheduled',
-    desc: 'Meeting with PT. Indah Jaya scheduled for tomorrow at 10:00 AM',
+    title: 'New Field Task Assigned',
+    desc: 'Job #AENAT/2606/0217 assigned to field inspection',
     time: '10m ago',
     read: false,
-    link: '/dashboard/meeting-schedule',
-    type: 'meeting',
+    link: '/dashboard/field-agent?tab=tasks',
+    type: 'task',
   },
   {
     id: '2',
@@ -90,12 +84,12 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   },
   {
     id: '3',
-    title: 'Customer Added',
-    desc: 'PT. Citra Mandiri Cargo was registered into the system',
+    title: 'Need Backup Ticket Created',
+    desc: 'New backup requested for handling cargo documentation',
     time: '3h ago',
     read: false,
-    link: '/dashboard/company-list',
-    type: 'customer',
+    link: '/dashboard/need-backup',
+    type: 'task',
   },
 ]
 
@@ -103,7 +97,7 @@ export function DashboardHeader() {
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [username, setUsername] = useState('choirul')
+  const [username, setUsername] = useState('Management Officer')
   const [avatarColor, setAvatarColor] = useState('emerald')
   const [avatarStyle, setAvatarStyle] = useState<'initial' | 'icon'>('initial')
 
@@ -118,7 +112,6 @@ export function DashboardHeader() {
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS)
   const [isOpenNotifications, setIsOpenNotifications] = useState(false)
   const [activeNotifTab, setActiveNotifTab] = useState<'all' | 'unread'>('all')
-  const [needAssistanceCount, setNeedAssistanceCount] = useState<number>(0)
   const notificationsRef = useRef<HTMLDivElement>(null)
 
   // Help Modal States
@@ -239,10 +232,10 @@ export function DashboardHeader() {
 
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        const accountName = session?.user.user_metadata?.full_name || session?.user.email?.split('@')[0] || 'choirul'
-        if (active) setUsername(accountName)
+        const accountName = session?.user.user_metadata?.full_name || session?.user.email?.split('@')[0] || 'Management Officer'
+        if (active) setUsername(accountName === 'choirul' || !accountName ? 'Management Officer' : accountName)
       } catch {
-        if (active) setUsername('choirul')
+        if (active) setUsername('Management Officer')
       }
     }
     void loadUsername()
@@ -266,24 +259,7 @@ export function DashboardHeader() {
     return () => window.removeEventListener('andima_preferences_updated', readPrefs)
   }, [])
 
-  // Fetch count of Need Assistance conversations once on mount
-  useEffect(() => {
-    let active = true
-    const fetchNeedAssistanceCount = async () => {
-      try {
-        const res = await fetch('/api/record-conversation/conversations?need_assistance=Yes&limit=1')
-        if (!res.ok) return
-        const data = await res.json()
-        if (active && data.success && typeof data.total === 'number') {
-          setNeedAssistanceCount(data.total)
-        }
-      } catch {
-        // Jangan error di UI jika panggilan gagal
-      }
-    }
-    void fetchNeedAssistanceCount()
-    return () => { active = false }
-  }, [])
+
 
   // Initialize Dark Mode on mount
   useEffect(() => {
@@ -315,30 +291,22 @@ export function DashboardHeader() {
   }
 
   const currentLabel = useMemo(() => {
-    if (pathname?.startsWith('/dashboard/field-agent') && !pathname.includes('task-of-field-agent')) {
+    if (pathname?.startsWith('/dashboard/field-agent') || pathname === '/dashboard') {
       const tab = searchParams?.get('tab')
-      if (tab === 'history') return 'Field Agent / Job History'
-      if (tab === 'tasks') return 'Field Agent / My Task'
-      return 'Field Agent / Overview'
+      if (tab === 'history') return 'Field Reports'
+      if (tab === 'tasks') return 'My Tasks'
+      return 'Overview'
     }
     const segments = pathname.split('/').filter(Boolean)
     const last = segments[segments.length - 1]
-    return routeLabels[last] || (last ? last.replace(/-/g, ' ') : 'Dashboard')
+    return routeLabels[last] || (last ? last.replace(/-/g, ' ') : 'Overview')
   }, [pathname, searchParams])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
       setIsOpenResults(false)
       const q = encodeURIComponent(searchQuery.trim())
-      if (pathname.includes('company-list')) {
-        router.push(`/dashboard/company-list?search=${q}`)
-      } else if (pathname.includes('field-agent')) {
-        router.push(`/dashboard/field-agent?tab=tasks&search=${q}`)
-      } else if (pathname.includes('meeting-schedule')) {
-        router.push(`/dashboard/meeting-schedule?search=${q}`)
-      } else {
-        router.push(`/dashboard/company-list?search=${q}`)
-      }
+      router.push(`/dashboard/field-agent?tab=tasks&search=${q}`)
     }
   }
 
@@ -349,12 +317,12 @@ export function DashboardHeader() {
 
   const handleSelectCustomer = (customerName: string) => {
     setIsOpenResults(false)
-    router.push(`/dashboard/company-list?search=${encodeURIComponent(customerName)}`)
+    router.push(`/dashboard/field-agent?tab=tasks&search=${encodeURIComponent(customerName)}`)
   }
 
   const handleSelectConversation = (convId: string) => {
     setIsOpenResults(false)
-    router.push(`/dashboard/record-conversation?search=${encodeURIComponent(convId)}`)
+    router.push(`/dashboard/field-agent?tab=tasks&search=${encodeURIComponent(convId)}`)
   }
 
   const handleMarkAllNotificationsAsRead = () => {
@@ -407,7 +375,7 @@ export function DashboardHeader() {
           <span className='font-semibold text-slate-400 dark:text-slate-500'>CRM</span>
           <span className='text-slate-300 dark:text-slate-600'>/</span>
           <span className='font-semibold text-slate-400 dark:text-slate-500 hidden sm:inline'>
-            {pathname?.startsWith('/dashboard/field-agent') ? 'FIELD AGENT' : 'SALES EXECUTIVE'}
+            FIELD AGENT
           </span>
           <span className='text-slate-300 dark:text-slate-600 hidden sm:inline'>/</span>
           <span className='font-bold text-blue-600 dark:text-blue-400 truncate'>{currentLabel}</span>
@@ -727,11 +695,11 @@ export function DashboardHeader() {
               {/* Footer */}
               <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[#0b1324] p-2.5 text-center">
                 <Link
-                  href="/dashboard/record-conversation"
+                  href="/dashboard/field-agent?tab=history"
                   onClick={() => setIsOpenNotifications(false)}
                   className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                 >
-                  <span>Lihat Seluruh Riwayat Log Aktivitas</span>
+                  <span>Lihat Seluruh Riwayat Tugas Lapangan</span>
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
@@ -784,23 +752,23 @@ export function DashboardHeader() {
                 </div>
 
                 <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 p-2.5">
-                  <p className="font-semibold text-slate-800 dark:text-slate-200">Company List</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200">Field Agent Overview</p>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    Kelola data pelanggan, informasi PIC, buat jadwal meeting langsung, dan ekspor data ke Excel/PDF.
+                    Ringkasan statistik operasional lapangan, tren tugas harian, dan metrik penyelesaian kerja.
                   </p>
                 </div>
 
                 <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 p-2.5">
-                  <p className="font-semibold text-slate-800 dark:text-slate-200">Meeting Schedule</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200">My Tasks & Handover</p>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    Atur janji temu dengan perusahaan rekanan dan tugaskan perwakilan tim sales/lapangan.
+                    Kelola penugasan aktif, verifikasi kargo, upload dokumentasi lapangan, dan proses handover.
                   </p>
                 </div>
 
                 <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 p-2.5">
-                  <p className="font-semibold text-slate-800 dark:text-slate-200">Field Agent</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200">Field Reports & Need Backup</p>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    Lihat penugasan aktif (My Tasks), riwayat tugas (History), serta integrasi tim operasional lapangan.
+                    Arsip riwayat pekerjaan lapangan dan tiket eskalasi bantuan (backup) operasional secara real-time.
                   </p>
                 </div>
               </div>
@@ -843,7 +811,7 @@ export function DashboardHeader() {
               {avatarStyle === 'icon' ? (
                 <User className="h-3.5 w-3.5" />
               ) : (
-                username.slice(0, 1).toLowerCase()
+                username.slice(0, 1).toUpperCase()
               )}
             </span>
             <div className="hidden sm:block leading-tight text-left">

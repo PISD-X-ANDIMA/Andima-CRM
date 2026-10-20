@@ -24,28 +24,6 @@ interface SubMenuItem {
   key?: 'myTasks' | 'fieldReports' | 'needBackup'
 }
 
-const salesExecutiveSubMenus: SubMenuItem[] = [
-  {
-    name: 'Company List',
-    href: '/dashboard/company-list',
-  },
-  {
-    name: 'Meeting Schedule',
-    href: '/dashboard/meeting-schedule',
-  },
-  {
-    name: 'Record Conversation',
-    href: '/dashboard/record-conversation',
-  },
-  {
-    name: 'Monitoring Task of Field Agent',
-    href: '/dashboard/task-of-field-agent',
-  },
-  {
-    name: 'Manage Field Agent Account',
-    href: '/dashboard/manage-field-agent',
-  },
-]
 
 const fieldAgentMenus: SubMenuItem[] = [
   {
@@ -91,15 +69,19 @@ export function Sidebar(): React.ReactElement {
     needBackup: 2,
   })
 
-  const isFieldAgentActive = pathname.startsWith('/dashboard/field-agent') || pathname.startsWith('/dashboard/need-backup')
-  const currentFieldTab = searchParams?.get('tab') || 'field-agent'
+  const isFieldAgentActive =
+    pathname.startsWith('/dashboard/field-agent') ||
+    pathname.startsWith('/dashboard/need-backup') ||
+    pathname === '/dashboard'
+  const currentFieldTab =
+    pathname === '/dashboard' ? 'field-agent' : (searchParams?.get('tab') || 'field-agent')
 
   useEffect(() => {
     const fetchCounts = async (): Promise<void> => {
       try {
         // 1. Fetch from A3-tasks API (same endpoint used by Field Agent App)
-        let myTasksTotal = 5
-        let completedTotal = 3
+        let myTasksTotal = 0
+        let completedTotal = 0
 
         try {
           const a3Res = await fetch('/api/feature/A3-tasks', { cache: 'no-store' })
@@ -107,7 +89,10 @@ export function Sidebar(): React.ReactElement {
             const a3Data = await a3Res.json()
             if (a3Data.success && Array.isArray(a3Data.data)) {
               myTasksTotal = a3Data.data.length
-              completedTotal = a3Data.data.filter((t: any) => t.status === 'COMPLETED' || t.field_stage === 'Completed').length
+              completedTotal = a3Data.data.filter((t: any) => {
+                const s = String(t.status || '').trim().toUpperCase()
+                return s === 'COMPLETED' || s === 'SELESAI'
+              }).length
             }
           }
         } catch {}
@@ -118,13 +103,13 @@ export function Sidebar(): React.ReactElement {
           const raw = typeof window !== 'undefined' ? localStorage.getItem('andima_need_backup_tickets') : null
           if (raw) {
             const parsed = JSON.parse(raw)
-            const activeTickets = parsed.filter((t: any) => t.status !== 'Resolved').length
+            const activeTickets = parsed.filter((t: any) => t.status !== 'Resolved' && t.status !== 'Completed').length
             backupTotal = activeTickets
           } else {
             const { count: bckCount, error: bckErr } = await supabase
               .from('a2_need_backups')
               .select('*', { count: 'exact', head: true })
-              .in('status', ['Pending', 'Open', 'Inprogress', 'pending', 'open'])
+              .in('status', ['Pending', 'Open', 'Inprogress', 'pending', 'open', 'To do', 'In progres', 'In riview', 'to do', 'in progres', 'in riview'])
 
             if (!bckErr && typeof bckCount === 'number' && bckCount > 0) {
               backupTotal = bckCount
@@ -214,7 +199,7 @@ export function Sidebar(): React.ReactElement {
       </div>
 
       {/* Main Nav */}
-      <nav className='flex-1 space-y-1.5 overflow-y-auto px-3.5 pt-5 pb-4'>
+      <nav className='flex-1 space-y-1.5 overflow-y-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3.5 pt-5 pb-4'>
         {/* Dashboard */}
         <Link
           href='/dashboard'
@@ -260,52 +245,8 @@ export function Sidebar(): React.ReactElement {
           {/* Submenu Tree List */}
           {crmOpen && (
             <div className='mt-2.5 ml-4 space-y-1 border-l border-slate-600/40 pl-3'>
-              {/* Sales Executive Parent */}
-              <Link
-                href='/dashboard/sales-executive'
-                className={`flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs transition-colors ${
-                  pathname === '/dashboard/sales-executive'
-                    ? 'bg-[#9cb8cd] text-slate-800 font-bold shadow-xs'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] font-semibold'
-                }`}
-              >
-                <span
-                  className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                    pathname === '/dashboard/sales-executive' ? 'bg-[#06b6d4]' : 'bg-slate-500'
-                  }`}
-                />
-                <span>Sales Executive</span>
-              </Link>
-
-              {/* Indented Sales Executive Submenu Items */}
-              <div className='space-y-1 pl-1.5'>
-                {salesExecutiveSubMenus.map((sub) => {
-                  const isActive =
-                    pathname === sub.href || pathname.startsWith(`${sub.href}/`)
-
-                  return (
-                    <Link
-                      key={sub.href}
-                      href={sub.href}
-                      className={`flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs transition-colors ${
-                        isActive
-                          ? 'bg-[#9cb8cd] text-slate-800 font-bold shadow-xs'
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] font-medium'
-                      }`}
-                    >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                          isActive ? 'bg-[#06b6d4]' : 'bg-slate-500'
-                        }`}
-                      />
-                      <span>{sub.name}</span>
-                    </Link>
-                  )
-                })}
-              </div>
-
               {/* Field Agent Item */}
-              <div className='pt-1.5'>
+              <div>
                 <button
                   type='button'
                   onClick={() => setFieldAgentOpen((prev) => !prev)}
@@ -331,7 +272,7 @@ export function Sidebar(): React.ReactElement {
                       const isNeedBackupRoute = item.href === '/dashboard/need-backup'
                       const isActive = isNeedBackupRoute
                         ? pathname === '/dashboard/need-backup'
-                        : pathname.startsWith('/dashboard/field-agent') && currentFieldTab === itemTab
+                        : (pathname.startsWith('/dashboard/field-agent') || pathname === '/dashboard') && currentFieldTab === itemTab
 
                       return (
                         <Link
@@ -373,6 +314,7 @@ export function Sidebar(): React.ReactElement {
               </div>
             </div>
           )}
+
         </div>
 
         {/* HRMS */}

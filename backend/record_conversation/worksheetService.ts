@@ -8,6 +8,7 @@ import {
   PaginatedResult,
   FieldTaskItem,
   NeedBackupTicket,
+  NeedBackupStatus,
 } from './types';
 
 /**
@@ -455,12 +456,18 @@ export async function getNeedBackupTickets(): Promise<NeedBackupTicket[] | null>
     if (error || !data) return null;
 
     return data.map((item: any, idx: number) => {
-      let status: 'Open' | 'Inprogress' | 'Resolved' = 'Open';
+      let status: NeedBackupStatus = 'Open';
       const s = (item.status || '').toLowerCase();
-      if (s.includes('resolv') || s.includes('selesai') || s.includes('done')) {
-        status = 'Resolved';
+      if (s.includes('complet') || s.includes('resolv') || s.includes('selesai') || s.includes('done')) {
+        status = 'Completed';
+      } else if (s.includes('riview') || s.includes('review')) {
+        status = 'In riview';
       } else if (s.includes('prog') || s.includes('proses') || s.includes('tangani')) {
-        status = 'Inprogress';
+        status = 'In progres';
+      } else if (s.includes('pend') || s.includes('tunda')) {
+        status = 'Pending';
+      } else if (s.includes('to do') || s.includes('todo')) {
+        status = 'To do';
       }
 
       let priority: 'High' | 'Medium' | 'Low' = 'Medium';
@@ -497,7 +504,7 @@ export async function getNeedBackupTickets(): Promise<NeedBackupTicket[] | null>
 /**
  * Memperbarui status tiket Need Backup
  */
-export async function updateNeedBackupStatus(ticketId: string, status: 'Open' | 'Inprogress' | 'Resolved') {
+export async function updateNeedBackupStatus(ticketId: string, status: NeedBackupStatus) {
   try {
     const { data, error } = await supabase
       .from('a2_need_backups')

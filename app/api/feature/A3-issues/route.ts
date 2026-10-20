@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   try {
     const jobNumber = new URL(request.url).searchParams.get("jobNumber");
     const client = getA3ReadClient();
-    let query = client.from("a3_field_issues").select("*").order("created_at", { ascending: false });
+    let query = client.from("a3_issues").select("*").order("created_at", { ascending: false });
     if (jobNumber) query = query.eq("job_number", jobNumber.trim().replace(/^#/, ""));
     const { data, error } = await query;
     if (error) {
@@ -33,24 +33,25 @@ export async function POST(request: Request) {
 
     const client = getA3WriteClient();
 
-    // Validasi keberadaan job di a2_worksheets
-    const { data: wsData, error: wsError } = await client
+    // Validasi keberadaan job di a3_tasks atau a2_worksheets
+    const { data: a3Data } = await client
+      .from("a3_tasks")
+      .select('id, "Job Number"')
+      .eq('Job Number', jobNumber)
+      .limit(1);
+
+    const { data: wsData } = await client
       .from("a2_worksheets")
       .select("worksheet_id, job_no")
       .eq("job_no", jobNumber)
       .limit(1);
 
-    if (wsError) {
-      console.error(`[POST A3-issues] Error validating job_no "${jobNumber}":`, wsError);
-      return apiError(new Error("Database error validating job."), 500);
-    }
-
-    if (!wsData || wsData.length === 0) {
+    if ((!a3Data || a3Data.length === 0) && (!wsData || wsData.length === 0)) {
       return apiError(new Error(`Job ${jobNumber} tidak ditemukan.`), 404);
     }
 
     const { data, error } = await client
-      .from("a3_field_issues")
+      .from("a3_issues")
       .insert({
         job_number: jobNumber,
         category,
@@ -62,8 +63,21 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      console.error("[POST A3-issues] Error inserting a3_field_issues:", error);
+      console.error("[POST A3-issues] Error inserting a3_issues:", error);
       throw new Error("Unable to save issue.");
+    }
+
+    try {
+      await client
+        .from("a3_tasks")
+        .update({
+          "Has Issue": true,
+          status: "HAS_ISSUE",
+          updated_at: new Date().toISOString(),
+        })
+        .eq('Job Number', jobNumber);
+    } catch (taskUpErr) {
+      console.warn("[POST A3-issues] a3_tasks Has Issue update skipped:", taskUpErr);
     }
 
     await writeHistory({

@@ -252,6 +252,17 @@ export interface NeedBackupTicketLog {
   is_active?: boolean;
 }
 
+export type NeedBackupStatus =
+  | 'Open'
+  | 'To do'
+  | 'Pending'
+  | 'In progres'
+  | 'In riview'
+  | 'Completed'
+  | 'Inprogress'
+  | 'Resolved'
+  | string;
+
 export interface NeedBackupTicket {
   id: string;
   ticket_id: string;
@@ -261,7 +272,7 @@ export interface NeedBackupTicket {
   priority: 'Urgent' | 'High' | 'Normal' | 'Low' | 'Medium' | 'Origin' | 'Standard' | string;
   date: string;
   time?: string;
-  status: 'Open' | 'Inprogress' | 'Resolved';
+  status: NeedBackupStatus;
   connected_job?: string;
   sla_description?: string;
   description?: string;
@@ -269,4 +280,5 @@ export interface NeedBackupTicket {
   logs?: NeedBackupTicketLog[];
   created_at?: string;
 }
+
 
