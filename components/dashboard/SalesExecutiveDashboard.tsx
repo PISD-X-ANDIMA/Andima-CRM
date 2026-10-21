@@ -216,15 +216,15 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
     <h1 className="mb-0 text-4xl font-bold tracking-tight text-black sm:text-5xl">Welcome Back, {displayName}</h1>
     <p className="mb-5 ml-2 text-lg text-[#858585] sm:text-2xl">Here’s your CRM Overview today!</p>
 
-    <section aria-label="Key performance indicators" className="mb-3 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <section aria-label="Key performance indicators" className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {[
-        { label: "Total Customer", value: metrics.totalCustomers, percentage: metrics.customerPercentage, hint: "Company records", icon: UsersRound, color: "bg-blue-50 text-blue-500" },
-        { label: "Upcoming Meeting", value: metrics.upcomingMeetings, percentage: metrics.meetingPercentage, hint: "Scheduled meetings", icon: CalendarDays, color: "bg-rose-100 text-rose-500" },
-        { label: "Task", value: metrics.tasks, percentage: metrics.taskPercentage, hint: "Worksheet rows", icon: BriefcaseBusiness, color: "bg-sky-50 text-sky-500" },
+        { label: "Total Customer", value: metrics.totalCustomers, percentage: metrics.customerPercentage, hint: "Company records", icon: UsersRound, color: "bg-blue-50 text-blue-600" },
+        { label: "Upcoming Meeting", value: metrics.upcomingMeetings, percentage: metrics.meetingPercentage, hint: "Scheduled meetings", icon: CalendarDays, color: "bg-rose-50 text-rose-600" },
+        { label: "Task", value: metrics.tasks, percentage: metrics.taskPercentage, hint: "Worksheet rows", icon: BriefcaseBusiness, color: "bg-sky-50 text-sky-600" },
       ].map(({ label, value, percentage, hint, icon: Icon, color }) => (
-        <article key={label} className="flex min-h-[112px] flex-col justify-between rounded-xl border border-[#aaa] bg-white px-4 py-2">
+        <article key={label} className="flex min-w-0 flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs transition-colors">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-[#505050] sm:text-xl">{label}</h2>
+            <h2 className="text-sm font-semibold text-slate-700">{label}</h2>
             {percentage !== undefined && percentage !== null && (
               <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
                 percentage > 0 ? "border border-emerald-200 bg-emerald-50 text-emerald-700" :
@@ -235,38 +235,88 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
               </span>
             )}
           </div>
-          <div className="mt-2 flex items-center gap-3">
-            <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${color}`}>
+          <div className="mt-3 flex items-center gap-3">
+            <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${color}`}>
               <Icon className="h-5 w-5" />
             </span>
-            <p className="text-3xl font-bold text-[#202020]">{value ?? "—"}</p>
-            <span className="ml-auto text-right text-[10px] leading-tight text-slate-400">{hint}</span>
+            <p className="text-3xl font-bold tracking-tight text-slate-900">{value ?? "—"}</p>
+            <span className="ml-auto text-right text-[11px] leading-tight text-slate-400">{hint}</span>
           </div>
         </article>
       ))}
     </section>
-    {unavailableMetrics.length > 0 && <div role="alert" className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><span>Gagal memuat data statistik, coba lagi nanti. Periksa koneksi basis data.</span><button type="button" onClick={() => router.refresh()} className="font-semibold underline">Retry</button></div>}
+    {unavailableMetrics.length > 0 && <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><span>Gagal memuat data statistik, coba lagi nanti. Periksa koneksi basis data.</span><button type="button" onClick={() => router.refresh()} className="font-semibold underline">Retry</button></div>}
 
-    <section aria-labelledby="weekly-schedule-title" className="mb-4">
-      <div className="mb-4 flex items-center justify-between"><h2 id="weekly-schedule-title" className="text-xl font-bold text-[#505050] sm:text-2xl">Schedule this week</h2><Link href="/dashboard/meeting-schedule" aria-label="Open Meeting Schedule" className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50"><CalendarDays className="h-5 w-5" /></Link></div>
+    <section aria-labelledby="weekly-schedule-title" className="mb-6">
+      <div className="mb-3 flex items-center justify-between"><h2 id="weekly-schedule-title" className="text-xl font-bold text-slate-800 sm:text-2xl">Schedule this week</h2><Link href="/dashboard/meeting-schedule" aria-label="Open Meeting Schedule" className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"><CalendarDays className="h-5 w-5" /></Link></div>
       {!scheduleLoading && !scheduleLoadError && nearbyMeetings.length > 0 && <div role="status" className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><strong>{nearbyMeetings.some(({ startsAt }) => (startsAt.getTime() - clockNow) / 60_000 < 15) ? "A meeting is starting soon:" : "Upcoming meeting within an hour:"}</strong> {nearbyMeetings.map(({ customer, startsAt }) => { const minutes = Math.max(0, Math.ceil((startsAt.getTime() - clockNow) / 60_000)); return `${customer.companyName} (${minutes === 0 ? "starting now" : `in ${minutes} min`})`; }).join(" · ")}</div>}
-      <div className="space-y-2.5">{scheduleLoadError ? <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">{scheduleLoadError || "Gagal memuat jadwal mingguan"}<button type="button" onClick={() => void refreshSchedule()} className="ml-2 underline">Retry</button></div> : scheduleLoading ? <div role="status" className="space-y-2.5">{Array.from({ length: 5 }, (_, index) => <div key={index} className="h-[70px] animate-pulse rounded-2xl border border-slate-200 bg-slate-50" />)}</div> : nearestWeeklyMeetings.length ? nearestWeeklyMeetings.map(({ customer, date, time, endsAt, startsAt }) => { const minutesUntil = Math.max(0, Math.ceil((startsAt.getTime() - clockNow) / 60_000)); const isStartingSoon = minutesUntil <= 60; return <Link key={`${customer.id}-${date.toISOString()}-${time}`} href={`/dashboard/company-list/${customer.id}`} className={`flex min-h-[70px] items-center justify-between gap-5 rounded-2xl border px-4 py-4 text-[#555] transition-colors hover:border-blue-300 sm:px-5 ${isStartingSoon ? "border-amber-300 bg-amber-50/70" : "border-[#d0d0d0]"}`}><span className="min-w-0"><span className="block truncate text-lg font-semibold sm:text-xl">{customer.companyName}</span><span className="text-xs text-slate-500">{date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span></span><span className="shrink-0 text-right text-sm sm:text-base">{date.toLocaleDateString("en-GB", { weekday: "long" })}, {time} - {endsAt}{isStartingSoon && <span className="mt-1 block text-xs font-semibold text-amber-800">{minutesUntil === 0 ? "Starting now" : `Starting in ${minutesUntil} min`}</span>}</span></Link>; }) : <div className="rounded-2xl border border-dashed border-slate-300 px-5 py-6 text-sm text-slate-500">Tidak ada jadwal meeting</div>}</div>
+      <div className="space-y-2.5">{scheduleLoadError ? <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">{scheduleLoadError || "Gagal memuat jadwal mingguan"}<button type="button" onClick={() => void refreshSchedule()} className="ml-2 font-semibold underline">Retry</button></div> : scheduleLoading ? <div role="status" className="space-y-2.5">{Array.from({ length: 3 }, (_, index) => <div key={index} className="h-16 animate-pulse rounded-xl border border-slate-200 bg-slate-100/70" />)}</div> : nearestWeeklyMeetings.length ? nearestWeeklyMeetings.map(({ customer, date, time, endsAt, startsAt }) => { const minutesUntil = Math.max(0, Math.ceil((startsAt.getTime() - clockNow) / 60_000)); const isStartingSoon = minutesUntil <= 60; return <Link key={`${customer.id}-${date.toISOString()}-${time}`} href={`/dashboard/company-list/${customer.id}`} className={`flex min-h-[64px] items-center justify-between gap-5 rounded-xl border px-4 py-3.5 text-slate-700 transition-colors hover:border-blue-300 sm:px-5 ${isStartingSoon ? "border-amber-300 bg-amber-50/70" : "border-slate-200 bg-white"}`}><span className="min-w-0"><span className="block truncate text-base font-semibold text-slate-900 sm:text-lg">{customer.companyName}</span><span className="text-xs text-slate-500">{date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span></span><span className="shrink-0 text-right text-xs sm:text-sm">{date.toLocaleDateString("en-GB", { weekday: "long" })}, {time} - {endsAt}{isStartingSoon && <span className="mt-1 block text-xs font-semibold text-amber-800">{minutesUntil === 0 ? "Starting now" : `Starting in ${minutesUntil} min`}</span>}</span></Link>; }) : <div className="rounded-xl border border-dashed border-slate-200 bg-white px-5 py-6 text-sm text-slate-500">Tidak ada jadwal meeting</div>}</div>
     </section>
 
-    <div className="mb-2 flex items-center justify-between gap-4 px-1 sm:px-2">
-      <label className="relative block w-full max-w-[720px]"><Search aria-hidden="true" className="absolute left-7 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" /><input type="search" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search Company or PIC" aria-label="Search company or PIC" className="h-[70px] w-full rounded-2xl border border-[#bdbdbd] bg-white pl-16 pr-5 text-base font-medium text-slate-700 outline-none placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:text-lg" /></label>
-      <button type="button" onClick={() => { setExportError(""); setExportOpen(true); }} disabled={!customers.length} className="inline-flex h-[52px] shrink-0 items-center gap-3 rounded-2xl border border-slate-300 bg-white px-5 text-base font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"><Download className="h-5 w-5" />Export Transaction Records</button>
+    <div className="mb-4 flex items-center justify-between gap-4">
+      <label className="relative block w-full max-w-[500px]">
+        <Search aria-hidden="true" className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => { setSearch(event.target.value); setPage(1); }}
+          placeholder="Search Company or PIC"
+          aria-label="Search company or PIC"
+          className="h-12 w-full rounded-full border border-slate-300 bg-white pl-12 pr-4 text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        />
+      </label>
+      <button
+        type="button"
+        onClick={() => { setExportError(""); setExportOpen(true); }}
+        disabled={!customers.length}
+        className="inline-flex h-12 shrink-0 items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+      >
+        <Download className="h-4 w-4" />Export Transaction Records
+      </button>
     </div>
 
-    <section aria-label="Company records" className="overflow-x-auto rounded-lg border border-[#d0d0d0]">
-      <table className="w-full min-w-[1100px] table-fixed text-left"><thead className="bg-[#edf4f8] text-[#333]"><tr>
-        <th className="w-[18%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Transaction ID</th><th className="w-[18%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Job Number</th><th className="w-[22%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Company</th><th className="w-[12%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">PIC</th><th className="w-[17%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">PIC Number</th><th className="w-[13%] px-4 py-6 text-center text-lg font-semibold sm:text-xl">Detail</th>
-      </tr></thead><tbody className="text-[#383838]">{customers.map((customer) => <tr key={customer.id} className="border-t border-[#d0d0d0]"><td className="break-words px-4 py-5 text-center text-base sm:text-lg">{customer.transactionNo || "—"}</td><td className="break-words px-4 py-5 text-center text-base sm:text-lg">{customer.jobNumber || "—"}</td><td className="px-4 py-3 text-base leading-tight sm:text-lg">{customer.companyName}</td><td className="px-4 py-5 text-center text-base sm:text-lg">{customer.primaryPic?.fullName || "—"}</td><td className="break-words px-4 py-5 text-center text-base sm:text-lg">{customer.primaryPic?.phoneNumber || "—"}</td><td className="px-4 py-5 text-center"><button type="button" onClick={() => void openCustomerDetail(customer.id)} className="text-base text-blue-600 underline underline-offset-2 hover:text-blue-800 sm:text-lg">See more</button></td></tr>)}</tbody></table>
+    <section aria-label="Company records" className="overflow-x-auto rounded-xl border border-slate-200/90 bg-white shadow-xs">
+      <table className="w-full min-w-[1000px] table-fixed text-left">
+        <thead className="border-b border-slate-200 bg-[#edf4f8] text-slate-700">
+          <tr>
+            <th className="w-[17%] px-4 py-3.5 text-center text-sm font-semibold">Transaction ID</th>
+            <th className="w-[17%] px-4 py-3.5 text-center text-sm font-semibold">Job Number</th>
+            <th className="w-[24%] px-4 py-3.5 text-left text-sm font-semibold">Company</th>
+            <th className="w-[15%] px-4 py-3.5 text-center text-sm font-semibold">PIC</th>
+            <th className="w-[15%] px-4 py-3.5 text-center text-sm font-semibold">PIC Number</th>
+            <th className="w-[12%] px-4 py-3.5 text-center text-sm font-semibold">Detail</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+          {isSearching ? (
+            Array.from({ length: 5 }, (_, row) => (
+              <tr key={row} className="border-t border-slate-100">
+                <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-24 animate-pulse rounded bg-slate-200/70" /></td>
+                <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-28 animate-pulse rounded bg-slate-200/70" /></td>
+                <td className="px-4 py-3.5 text-left"><div className="h-4 w-36 animate-pulse rounded bg-slate-200/70" /></td>
+                <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-20 animate-pulse rounded bg-slate-200/70" /></td>
+                <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-24 animate-pulse rounded bg-slate-200/70" /></td>
+                <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-12 animate-pulse rounded bg-slate-200/70" /></td>
+              </tr>
+            ))
+          ) : customers.map((customer) => (
+            <tr key={customer.id} className="transition-colors hover:bg-slate-50/70">
+              <td className="break-words px-4 py-3.5 text-center font-mono text-xs font-semibold text-slate-800">{customer.transactionNo || "—"}</td>
+              <td className="break-words px-4 py-3.5 text-center font-mono text-xs font-semibold text-slate-800">{customer.jobNumber || "—"}</td>
+              <td className="truncate px-4 py-3.5 text-left font-medium text-slate-900 leading-tight" title={customer.companyName}>{customer.companyName}</td>
+              <td className="truncate px-4 py-3.5 text-center text-slate-800" title={customer.primaryPic?.fullName || ""}>{customer.primaryPic?.fullName || "—"}</td>
+              <td className="break-words px-4 py-3.5 text-center font-mono text-xs text-slate-700">{customer.primaryPic?.phoneNumber || "—"}</td>
+              <td className="px-4 py-3.5 text-center">
+                <button type="button" onClick={() => void openCustomerDetail(customer.id)} className="font-semibold text-blue-600 hover:text-blue-800 hover:underline">See more</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
       {initialDataError && <div role="alert" className="m-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">Customer data could not be loaded: {initialDataError}</div>}
-      {searchError ? <div role="alert" className="border-t border-slate-200 p-6 text-center text-sm text-red-700">{searchError}</div> : customers.length === 0 && !initialDataError ? <div className="border-t border-slate-200 p-8 text-center text-slate-500"><FileText className="mx-auto mb-2 h-5 w-5" />{search ? "No customer or PIC found" : "Belum terdapat data transaksi"}</div> : null}
-      {isSearching && <p className="sr-only" role="status">Searching customers</p>}
+      {searchError ? <div role="alert" className="border-t border-slate-200 p-6 text-center text-sm text-amber-800 bg-amber-50/50">{searchError}</div> : customers.length === 0 && !initialDataError && !isSearching ? <div className="border-t border-slate-200 p-8 text-center text-slate-500"><FileText className="mx-auto mb-2 h-5 w-5" />{search ? "No customer or PIC found" : "Belum terdapat data transaksi"}</div> : null}
     </section>
-    <div className="flex flex-wrap items-center justify-between gap-4 px-3 pt-1 text-xs text-slate-500"><span>Showing {firstRow}-{lastRow} of {total} transactions</span><nav className="flex items-center gap-1" aria-label="Dashboard pages"><button type="button" aria-label="Previous page" disabled={page <= 1 || isSearching} onClick={() => setPage((value) => value - 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40">‹</button>{Array.from({ length: Math.min(totalPages, 5) }, (_, index) => { const pageNumber = totalPages <= 5 ? index + 1 : Math.max(1, Math.min(page - 2, totalPages - 4)) + index; return <button type="button" key={pageNumber} aria-current={page === pageNumber ? "page" : undefined} onClick={() => setPage(pageNumber)} className={`h-8 min-w-8 rounded-md px-2 ${page === pageNumber ? "bg-blue-600 font-semibold text-white" : "text-slate-600 hover:bg-slate-100"}`}>{pageNumber}</button>; })}{totalPages > 5 && <><span className="px-1">...</span><button type="button" onClick={() => setPage(totalPages)} className="h-8 min-w-8 rounded-md px-2 text-slate-600">{totalPages}</button></>}<button type="button" aria-label="Next page" disabled={page >= totalPages || isSearching} onClick={() => setPage((value) => value + 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40">›</button></nav></div>
+    <div className="flex flex-wrap items-center justify-between gap-4 px-3 pt-2 text-xs text-slate-500"><span>Showing {firstRow}-{lastRow} of {total} transactions</span><nav className="flex items-center gap-1" aria-label="Dashboard pages"><button type="button" aria-label="Previous page" disabled={page <= 1 || isSearching} onClick={() => setPage((value) => value - 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40">‹</button>{Array.from({ length: Math.min(totalPages, 5) }, (_, index) => { const pageNumber = totalPages <= 5 ? index + 1 : Math.max(1, Math.min(page - 2, totalPages - 4)) + index; return <button type="button" key={pageNumber} aria-current={page === pageNumber ? "page" : undefined} onClick={() => setPage(pageNumber)} className={`h-8 min-w-8 rounded-md px-2 ${page === pageNumber ? "bg-blue-600 font-semibold text-white" : "text-slate-600 hover:bg-slate-100"}`}>{pageNumber}</button>; })}{totalPages > 5 && <><span className="px-1">...</span><button type="button" onClick={() => setPage(totalPages)} className="h-8 min-w-8 rounded-md px-2 text-slate-600">{totalPages}</button></>}<button type="button" aria-label="Next page" disabled={page >= totalPages || isSearching} onClick={() => setPage((value) => value + 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40">›</button></nav></div>
 
     {exportOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setExportOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="export-title" className="w-full max-w-5xl rounded-xl bg-white px-6 py-8 shadow-2xl sm:px-11 sm:py-10">
       <h2 id="export-title" className="text-3xl font-bold tracking-tight text-black sm:text-4xl">Export Transaction Records</h2><p className="mt-1 text-base text-[#747474] sm:text-xl">Select a creation date range to export transaction records</p>

@@ -11,7 +11,6 @@ const salesExecutiveMenu = [
   { label: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { label: "Record Conversation", href: "/dashboard/record-conversation" },
   { label: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
-  { label: "Need Backup", href: "/dashboard/need-backup" },
   { label: "Field Agent Management", href: "/dashboard/field-agent-management" },
 ];
 
@@ -21,7 +20,6 @@ const managerCustomerSuccessMenu = [
   { label: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { label: "Record Conversation", href: "/dashboard/record-conversation" },
   { label: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
-  { label: "Need Backup", href: "/dashboard/need-backup" },
   { label: "Manage User Roles", href: "/dashboard/manager-customer-success/role-management" },
 ];
 

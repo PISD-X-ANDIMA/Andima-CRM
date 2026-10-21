@@ -151,10 +151,22 @@ export default function TaskOfFieldAgentPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {filteredTasks.length === 0 ? (
+            {isLoading ? (
+              Array.from({ length: 5 }, (_, row) => (
+                <tr key={row} className="border-t border-slate-100">
+                  <td className="py-3.5 px-4"><div className="h-4 w-28 animate-pulse rounded bg-slate-200/70" /><div className="mt-1 h-3 w-36 animate-pulse rounded bg-slate-100" /></td>
+                  <td className="py-3.5 px-4"><div className="h-4 w-24 animate-pulse rounded bg-slate-200/70" /></td>
+                  <td className="py-3.5 px-4"><div className="h-4 w-24 animate-pulse rounded bg-slate-200/70" /></td>
+                  <td className="py-3.5 px-4"><div className="h-5 w-16 animate-pulse rounded-full bg-slate-200/70" /></td>
+                  <td className="py-3.5 px-4"><div className="h-4 w-12 animate-pulse rounded bg-slate-200/70" /></td>
+                  <td className="py-3.5 px-4"><div className="h-4 w-32 animate-pulse rounded bg-slate-200/70" /></td>
+                  <td className="py-3.5 px-4 text-right"><div className="ml-auto h-6 w-14 animate-pulse rounded-lg bg-slate-200/70" /></td>
+                </tr>
+              ))
+            ) : filteredTasks.length === 0 ? (
               <tr>
                 <td colSpan={7} className="py-8 text-center text-sm text-slate-500">
-                  {isLoading ? "Loading field agent tasks..." : "Belum terdapat data task field agent."}
+                  Belum terdapat data task field agent.
                 </td>
               </tr>
             ) : (

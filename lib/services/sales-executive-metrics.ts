@@ -131,8 +131,8 @@ export async function getSalesExecutiveMetrics(executiveId?: string): Promise<Sa
       : null;
 
     const meetingPercentage = upcomingMeetings > 0 ? Math.round((meetingsThisWeek / upcomingMeetings) * 100) : 0;
-    const totalTasks = tasksResult.error ? null : tasksResult.count || 0;
-    const taskPercentage = totalTasks !== null ? (totalCust && totalCust > 0 ? Math.min(100, Math.round((totalTasks / totalCust) * 100)) : 0) : null;
+    const totalTasks = tasksResult.error ? 0 : (tasksResult.count ?? 0);
+    const taskPercentage = totalTasks !== null ? (totalCust && totalCust > 0 ? Math.min(100, Math.round((totalTasks / totalCust) * 100)) : 0) : 0;
 
     return {
       totalCustomers: totalCust,

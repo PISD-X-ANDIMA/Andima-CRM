@@ -6,13 +6,12 @@ import { ManagerGlobalFilterBar } from "@/components/dashboard/ManagerGlobalFilt
 import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
 
 interface ConversationRecord {
+  rawId?: string;
   id: string;
   company: string;
   salesExecutive: string;
   source: "WhatsApp" | "Meeting" | "Phone" | "Email";
   date: string;
-  needBackup: boolean;
-  needBackupReason?: string;
   summary: string;
   time: string;
   attachmentName?: string;
@@ -62,18 +61,20 @@ export default function RecordConversationPage() {
           const userMap = new Map((users || []).map((u: any) => [u.id, u.full_name]));
 
           setConversations(
-            data.map((c: any) => ({
-              id: c.conversation_id || (c.id ? `CONV-${String(c.id).slice(0, 8).toUpperCase()}` : "CONV-000"),
-              company: compById.get(c.customer_id) || compByCode.get(c.customer_code) || c.company_name || c.customer_code || "Perusahaan",
-              salesExecutive: userMap.get(c.sales_pic_id) || userMap.get(c.created_by) || c.sales_executive || c.created_by || "Sales Executive",
-              source: (c.channel_type || c.channel || c.source || "WhatsApp") as "WhatsApp" | "Meeting" | "Phone" | "Email",
-              date: c.conversation_date || (c.created_at ? c.created_at.slice(0, 10) : "-"),
-              time: c.conversation_time || (c.created_at ? c.created_at.slice(11, 16) : "-"),
-              needBackup: Boolean(c.need_assistance ?? c.need_backup),
-              needBackupReason: c.urgency_level || c.need_backup_reason || "",
-              summary: c.summary || "-",
-              attachmentName: Array.isArray(c.document_urls) && c.document_urls.length > 0 ? c.document_urls[0].split("/").pop() : c.attachment_name,
-            }))
+            data.map((c: any, index: number) => {
+              const displayCode = c.conversation_id || (c.id ? `CONV-${String(c.id).slice(-8).toUpperCase()}` : `CONV-${String(index + 1).padStart(4, "0")}`);
+              return {
+                rawId: String(c.id || index),
+                id: displayCode,
+                company: compById.get(c.customer_id) || compByCode.get(c.customer_code) || c.company_name || c.customer_code || "Perusahaan",
+                salesExecutive: userMap.get(c.sales_pic_id) || userMap.get(c.created_by) || c.sales_executive || c.created_by || "Sales Executive",
+                source: (c.channel_type || c.channel || c.source || "WhatsApp") as "WhatsApp" | "Meeting" | "Phone" | "Email",
+                date: c.conversation_date || (c.created_at ? c.created_at.slice(0, 10) : "-"),
+                time: c.conversation_time || (c.created_at ? c.created_at.slice(11, 16) : "-"),
+                summary: c.summary || "-",
+                attachmentName: Array.isArray(c.document_urls) && c.document_urls.length > 0 ? c.document_urls[0].split("/").pop() : c.attachment_name,
+              };
+            })
           );
         } else if (active) {
           setConversations([]);
@@ -90,7 +91,6 @@ export default function RecordConversationPage() {
   }, []);
 
   const [channelFilter, setChannelFilter] = useState<string>("All");
-  const [needBackupFilter, setNeedBackupFilter] = useState<string>("All");
   const [search, setSearch] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<ConversationRecord | null>(null);
 
@@ -103,19 +103,13 @@ export default function RecordConversationPage() {
       if (channelFilter !== "All" && rec.source !== channelFilter) {
         return false;
       }
-      if (needBackupFilter === "Yes" && !rec.needBackup) {
-        return false;
-      }
-      if (needBackupFilter === "No" && rec.needBackup) {
-        return false;
-      }
       if (search.trim()) {
         const q = search.toLowerCase();
         return rec.company.toLowerCase().includes(q) || rec.id.toLowerCase().includes(q);
       }
       return true;
     });
-  }, [conversations, selectedExecutive, channelFilter, needBackupFilter, search]);
+  }, [conversations, selectedExecutive, channelFilter, search]);
 
   return (
     <div className="mx-auto w-full max-w-[1360px] space-y-6 pb-12">
@@ -148,20 +142,6 @@ export default function RecordConversationPage() {
               <option value="Meeting">Meeting</option>
               <option value="Phone">Phone</option>
               <option value="Email">Email</option>
-            </select>
-          </div>
-
-          {/* Need backup dropdown */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-600">Need backup:</span>
-            <select
-              value={needBackupFilter}
-              onChange={(e) => setNeedBackupFilter(e.target.value)}
-              className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs font-medium text-slate-700 shadow-2xs focus:border-blue-500 focus:outline-none"
-            >
-              <option value="All">All ▾</option>
-              <option value="Yes">Need backup</option>
-              <option value="No">No</option>
             </select>
           </div>
 
@@ -198,20 +178,30 @@ export default function RecordConversationPage() {
               <th className="py-3 px-4">Sales Executive</th>
               <th className="py-3 px-4">Source</th>
               <th className="py-3 px-4">Date</th>
-              <th className="py-3 px-4">Need Backup</th>
               <th className="py-3 px-4 text-right">Detail</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {filteredRecords.length === 0 ? (
+            {isLoading ? (
+              Array.from({ length: 5 }, (_, row) => (
+                <tr key={row} className="border-t border-slate-100">
+                  <td className="py-3 px-4"><div className="h-4 w-28 animate-pulse rounded bg-slate-200/70" /></td>
+                  <td className="py-3 px-4"><div className="h-4 w-36 animate-pulse rounded bg-slate-200/70" /></td>
+                  <td className="py-3 px-4"><div className="h-4 w-24 animate-pulse rounded bg-slate-200/70" /></td>
+                  <td className="py-3 px-4"><div className="h-5 w-20 animate-pulse rounded-full bg-slate-200/70" /></td>
+                  <td className="py-3 px-4"><div className="h-4 w-20 animate-pulse rounded bg-slate-200/70" /></td>
+                  <td className="py-3 px-4 text-right"><div className="ml-auto h-6 w-16 animate-pulse rounded-lg bg-slate-200/70" /></td>
+                </tr>
+              ))
+            ) : filteredRecords.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-sm text-slate-500">
-                  {isLoading ? "Loading conversation records..." : "Belum terdapat data record conversation."}
+                <td colSpan={6} className="py-8 text-center text-sm text-slate-500">
+                  Belum terdapat data record conversation.
                 </td>
               </tr>
             ) : (
-              filteredRecords.map((item) => (
-                <tr key={item.id} className="transition-colors hover:bg-slate-50/60">
+              filteredRecords.map((item, index) => (
+                <tr key={item.rawId || `${item.id}-${index}`} className="transition-colors hover:bg-slate-50/60">
                   <td className="py-3 px-4 font-medium text-slate-800">{item.id}</td>
                   <td className="py-3 px-4 font-semibold text-slate-900">{item.company}</td>
                   <td className="py-3 px-4 text-slate-700">{item.salesExecutive}</td>
@@ -227,17 +217,6 @@ export default function RecordConversationPage() {
                     </span>
                   </td>
                   <td className="py-3 px-4 text-slate-600">{item.date}</td>
-                  <td className="py-3 px-4">
-                    {item.needBackup ? (
-                      <span className="inline-flex rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-600">
-                        Need backup
-                      </span>
-                    ) : (
-                      <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">
-                        No
-                      </span>
-                    )}
-                  </td>
                   <td className="py-3 px-4 text-right">
                     <button
                       type="button"
@@ -316,17 +295,6 @@ export default function RecordConversationPage() {
               <div>
                 <p className="font-semibold uppercase tracking-wider text-slate-400">Summary</p>
                 <p className="mt-1 text-sm text-slate-700">{selectedRecord.summary}</p>
-              </div>
-
-              <div>
-                <p className="font-semibold uppercase tracking-wider text-slate-400">Need Backup</p>
-                <p className="mt-1 text-sm text-slate-800">
-                  {selectedRecord.needBackup ? (
-                    <span className="font-medium text-rose-600">Yes · {selectedRecord.needBackupReason}</span>
-                  ) : (
-                    <span className="text-slate-500">No</span>
-                  )}
-                </p>
               </div>
 
               {selectedRecord.attachmentName && (

@@ -22,7 +22,6 @@ const defaultSalesExecutiveMenus: SubMenuItem[] = [
   { name: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { name: "Record Conversation", href: "/dashboard/record-conversation" },
   { name: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
-  { name: "Need Backup", href: "/dashboard/need-backup" },
   { name: "Field Agent Management", href: "/dashboard/field-agent-management" },
 ];
 
@@ -32,7 +31,6 @@ const defaultManagerMenus: SubMenuItem[] = [
   { name: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { name: "Record Conversation", href: "/dashboard/record-conversation" },
   { name: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
-  { name: "Need Backup", href: "/dashboard/need-backup" },
   { name: "Manage User Roles", href: "/dashboard/manager-customer-success/role-management" },
 ];
 
@@ -88,7 +86,6 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
     pathname.startsWith("/dashboard/meeting-schedule") ||
     pathname.startsWith("/dashboard/record-conversation") ||
     pathname.startsWith("/dashboard/task-of-field-agent") ||
-    pathname.startsWith("/dashboard/need-backup") ||
     pathname.startsWith("/dashboard/field-agent-management") ||
     pathname.startsWith("/dashboard/field-agent-access");
 

@@ -193,8 +193,9 @@ export default function CompanyListPage() {
         {!isManager && (
           <button
             type="button"
+            disabled={Boolean(error)}
             onClick={() => { setSuccessMessage(""); setModalCustomer(null); setIsModalOpen(true); }}
-            className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-base font-semibold text-white hover:bg-blue-700"
+            className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-base font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="h-4 w-4" />Add Company
           </button>

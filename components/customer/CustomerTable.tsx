@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertCircle, CalendarDays, Eye, Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { AlertCircle, CalendarDays, ClipboardList, Eye, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import type { CustomerListItem } from "@/types/customer";
 
 interface Props {
@@ -33,20 +33,22 @@ export function CustomerTable({
 }: Props) {
   if (error) {
     return (
-      <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
-        <AlertCircle className="mx-auto h-6 w-6 text-red-600" />
-        <p className="mt-2 font-semibold text-red-800">Failed to load company data</p>
-        <p className="mt-1 text-sm text-red-700">{error}</p>
-        <button onClick={onRetry} className="mt-4 inline-flex items-center gap-2 text-sm text-blue-700">
-          <RefreshCw className="h-4 w-4" />Try again
+      <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-8 text-center">
+        <AlertCircle className="mx-auto h-6 w-6 text-amber-600" />
+        <p className="mt-2 font-semibold text-amber-800">Gagal memuat data perusahaan</p>
+        <p className="mt-1 text-sm text-amber-700">{error}</p>
+        <button onClick={onRetry} className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">
+          <RefreshCw className="h-4 w-4" />Coba lagi
         </button>
       </div>
     );
   }
 
   if (isLoading) {
+    const colCount = isManager ? 8 : 7;
+    const widths = ["w-4/5", "w-3/5", "w-2/3", "w-1/2", "w-3/4", "w-2/5", "w-1/3", "w-1/2"];
     return (
-      <div aria-label="Loading company list" aria-busy="true" className="overflow-x-auto rounded-md border border-slate-300 bg-white">
+      <div aria-label="Loading company list" aria-busy="true" className="overflow-x-auto rounded-xl border border-slate-200/90 bg-white shadow-xs">
         <table className="w-full min-w-[1120px] table-fixed text-left">
           <thead className="bg-[#edf4f8] text-slate-700">
             <tr>
@@ -54,16 +56,16 @@ export function CustomerTable({
                 ? ["Company", "Sales Executive", "Address", "PIC", "PIC Number", "Meeting Schedule", "Task", "Details"]
                 : ["Company", "Address", "PIC", "PIC Number", "Meeting Schedule", "View Task", "Action"]
               ).map((heading) => (
-                <th key={heading} className="px-4 py-5 text-sm font-semibold">{heading}</th>
+                <th key={heading} className="px-4 py-4 text-sm font-semibold">{heading}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {Array.from({ length: 5 }, (_, row) => (
-              <tr key={row} className="border-t border-slate-200">
-                {Array.from({ length: isManager ? 8 : 7 }, (_, cell) => (
-                  <td key={cell} className="px-4 py-5">
-                    <div className="h-4 animate-pulse rounded bg-slate-200 w-3/4" />
+              <tr key={row} className="border-t border-slate-100">
+                {Array.from({ length: colCount }, (_, cell) => (
+                  <td key={cell} className="px-4 py-4">
+                    <div className={`h-4 animate-pulse rounded-md bg-slate-200/70 ${widths[cell % widths.length]}`} style={{ animationDelay: `${row * 80 + cell * 40}ms` }} />
                   </td>
                 ))}
               </tr>
@@ -167,9 +169,9 @@ export function CustomerTable({
                       onClick={() => onViewTasks(customer)}
                       aria-label={`View tasks for ${customer.companyName}`}
                       title="View tasks"
-                      className="mx-auto grid rounded p-1.5 text-blue-600 hover:bg-blue-50 hover:text-blue-800"
+                      className="mx-auto grid rounded p-1.5 text-slate-600 hover:bg-blue-50 hover:text-blue-700"
                     >
-                      <Eye className="h-4 w-4" />
+                      <ClipboardList className="h-4 w-4" />
                     </button>
                   )}
                 </td>

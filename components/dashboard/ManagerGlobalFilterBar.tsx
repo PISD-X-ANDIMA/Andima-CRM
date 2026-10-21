@@ -78,7 +78,7 @@ export function ManagerGlobalFilterBar({
 
       <p className="text-xs text-slate-500">
         {isCompanyListPage
-          ? "Set here. This selection also applies to Meeting Schedule, Record Conversation, Task Field Agent, and Need Backup."
+          ? "Set here. This selection also applies to Meeting Schedule, Record Conversation, and Task Field Agent."
           : "Selected in Company List and shared across pages. You can change it here."}
       </p>
     </div>

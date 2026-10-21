@@ -299,7 +299,20 @@ export default function MeetingSchedulePage() {
         Manager sees meetings of the selected Sales Executive plus his or her own. Add, edit, delete, and status change are only for the Manager&apos;s own meetings. A time slot is blocked only by the Manager&apos;s own meetings.
       </div>
     )}
-    <header className="flex flex-wrap items-end justify-between gap-5"><div><h1 className="text-3xl font-bold tracking-tight text-black">{formatDate(selectedDate)}</h1><p className="mt-1 text-lg text-slate-500">Meeting schedule and availability for this date</p></div><button type="button" disabled={selectedDateIsPast || selectableSlots.length === 0} onClick={() => beginAdd(selectableSlots[0]?.start || "09:00")} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-lg font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"><Plus className="h-5 w-5" />Add Meeting</button></header>
+    <header className="flex flex-wrap items-end justify-between gap-5">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-black">{formatDate(selectedDate)}</h1>
+        <p className="mt-1 text-lg text-slate-500">Meeting schedule and availability for this date</p>
+      </div>
+      <button
+        type="button"
+        disabled={selectedDateIsPast || selectableSlots.length === 0 || Boolean(error) || loading || customers.length === 0}
+        onClick={() => beginAdd(selectableSlots[0]?.start || "09:00")}
+        className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-lg font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <Plus className="h-5 w-5" />Add Meeting
+      </button>
+    </header>
     <div className="grid items-start gap-8 lg:grid-cols-[minmax(350px,0.76fr)_minmax(500px,1.24fr)]">
       <section className="rounded-2xl border border-slate-200 bg-white p-7"><div className="mb-7 flex items-center justify-between"><button aria-label="Previous month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="rounded p-2 text-slate-400 hover:bg-slate-100"><ChevronLeft className="h-7 w-7" /></button><h2 className="text-2xl font-semibold text-slate-950">{month.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h2><button aria-label="Next month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="rounded p-2 text-slate-400 hover:bg-slate-100"><ChevronRight className="h-7 w-7" /></button></div>
         <div className="grid grid-cols-7 gap-y-3 text-center">{weekdayNames.map((day) => <span key={day} className="pb-2 text-sm font-medium text-slate-600">{day}</span>)}{calendarDays.map((date) => { const key = dateKey(date); const inMonth = date.getMonth() === month.getMonth(); const statuses = calendarEvents.filter((event) => event.date === key).map((event) => event.status); const dotClass = statuses.includes("completed") ? "bg-emerald-500" : statuses.includes("scheduled") ? "bg-blue-500" : "bg-slate-400"; return <button key={key} onClick={() => setSelected(key)} className={`relative mx-auto grid h-10 w-10 place-items-center rounded-full text-sm ${!inMonth ? "text-slate-300" : "text-slate-700 hover:bg-blue-50"} ${key === selected ? "bg-blue-600 font-semibold text-white hover:bg-blue-700" : ""}`} aria-pressed={key === selected}><span>{date.getDate()}</span>{inMonth && <span className={`absolute bottom-0.5 h-1.5 w-1.5 rounded-full ${key === selected ? "bg-white" : dotClass}`} />}</button>; })}</div>
@@ -307,21 +320,35 @@ export default function MeetingSchedulePage() {
       </section>
       <section className="space-y-3">
         {slotError && !loading && <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{slotError} Showing the latest available schedule data.</p>}
-        {loading ? <div className="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center text-slate-500">Loading schedule...</div> : error ? <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-700">{error}<button className="ml-3 underline" onClick={() => void load()}>Try again</button></div> : null}
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 4 }, (_, idx) => (
+              <div key={idx} className="flex min-h-[70px] animate-pulse items-center justify-between rounded-xl border border-slate-200 bg-slate-100/70 px-5 py-4">
+                <div className="h-4 w-36 rounded bg-slate-200/80" />
+                <div className="h-4 w-28 rounded bg-slate-200/80" />
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-800">
+            {error}
+            <button className="ml-3 font-semibold underline" onClick={() => void load()}>Try again</button>
+          </div>
+        ) : null}
         {!loading && !error && agenda.length === 0 && <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-center text-slate-500">Available - no meetings are scheduled for this date.</div>}
         {!loading && !error && hours.map((hour) => {
           const slotMeetings = meetingAtHour(hour);
           const apiSlot = selectedDaySlots[selected]?.[hour - 8];
           const apiMeeting = apiSlot?.meeting;
           const matchedMeeting = apiMeeting ? agenda.find(({ meeting }) => meeting.id === apiMeeting.id) : null;
-          if (apiSlot && !apiMeeting) return <div key={hour} className="flex min-h-[70px] items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-slate-500"><span className="flex items-center gap-4"><i className="h-3 w-3 rounded-full bg-slate-400" />Available</span><span className="whitespace-nowrap">{String(hour).padStart(2, "0")}:00 - {String(hour + 1).padStart(2, "0")}:00</span><button type="button" disabled={apiSlot.status === "past" || isSelectedDateSlotPast(hour)} onClick={() => beginAdd(`${String(hour).padStart(2, "0")}:00`)} className="rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40">+Add</button></div>;
+          if (apiSlot && !apiMeeting) return <div key={hour} className="flex min-h-[70px] items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-slate-500"><span className="flex items-center gap-4"><i className="h-3 w-3 rounded-full bg-slate-400" />Available</span><span className="whitespace-nowrap">{String(hour).padStart(2, "0")}:00 - {String(hour + 1).padStart(2, "0")}:00</span><button type="button" disabled={apiSlot.status === "past" || isSelectedDateSlotPast(hour) || Boolean(error) || loading || customers.length === 0} onClick={() => beginAdd(`${String(hour).padStart(2, "0")}:00`)} className="rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40">+Add</button></div>;
           if (apiSlot && apiMeeting && !matchedMeeting) return <div key={hour} className="flex min-h-[70px] items-center justify-between gap-4 rounded-xl border border-blue-200 bg-blue-50/60 px-5 py-4 text-blue-800"><span>{apiMeeting.company_name || "Scheduled meeting"}</span><span className="whitespace-nowrap">{apiMeeting.start_time} - {apiMeeting.end_time}</span></div>;
           return slotMeetings.length ? slotMeetings.map(({ customer, meeting }) => {
             const meetingStatus = meeting.status || "scheduled";
             const statusStyle = meetingStatus === "completed" ? "border-emerald-200 bg-emerald-50/70 text-emerald-800" : meetingStatus === "cancelled" ? "border-slate-200 bg-slate-100 text-slate-600" : "border-blue-200 bg-blue-50/60 text-blue-800";
             const statusColor = meetingStatus === "completed" ? "bg-emerald-500" : meetingStatus === "cancelled" ? "bg-slate-400" : "bg-blue-500";
-            return <div key={`${meeting.id}-${hour}`} className={`flex min-h-[70px] w-full items-center justify-between gap-4 rounded-xl border px-5 py-4 ${statusStyle}`}><button type="button" onClick={() => { setSelectedMeeting({ customer, meeting }); setEditingMeeting(false); setMutationError(""); }} className="flex min-w-0 flex-1 items-center justify-between gap-4 text-left"><span className="flex min-w-0 items-center gap-4"><i className={`h-3 w-3 shrink-0 rounded-full ${statusColor}`} /><span className="truncate font-medium">{customer.companyName}<small className="ml-2 text-slate-500">{meetingStatus === "completed" ? "Completed" : meetingStatus === "cancelled" ? "Canceled" : "Scheduled"} · View details</small></span></span><span className="whitespace-nowrap text-slate-600">{meeting.startTime?.slice(0, 5)} - {meeting.endTime?.slice(0, 5)}</span></button>{meetingStatus === "cancelled" && <button type="button" onClick={() => beginAdd(meeting.startTime?.slice(0, 5) || `${String(hour).padStart(2, "0")}:00`)} className="shrink-0 rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50">+Add</button>}</div>;
-          }) : <div key={hour} className="flex min-h-[70px] items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-slate-500"><span className="flex items-center gap-4"><i className="h-3 w-3 rounded-full bg-slate-400" />Available</span><span className="whitespace-nowrap">{String(hour).padStart(2, "0")}:00 - {String(hour + 1).padStart(2, "0")}:00</span><button type="button" disabled={isSelectedDateSlotPast(hour)} onClick={() => beginAdd(`${String(hour).padStart(2, "0")}:00`)} className="rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40">+Add</button></div>;
+            return <div key={`${meeting.id}-${hour}`} className={`flex min-h-[70px] w-full items-center justify-between gap-4 rounded-xl border px-5 py-4 ${statusStyle}`}><button type="button" onClick={() => { setSelectedMeeting({ customer, meeting }); setEditingMeeting(false); setMutationError(""); }} className="flex min-w-0 flex-1 items-center justify-between gap-4 text-left"><span className="flex min-w-0 items-center gap-4"><i className={`h-3 w-3 shrink-0 rounded-full ${statusColor}`} /><span className="truncate font-medium">{customer.companyName}<small className="ml-2 text-slate-500">{meetingStatus === "completed" ? "Completed" : meetingStatus === "cancelled" ? "Canceled" : "Scheduled"} · View details</small></span></span><span className="whitespace-nowrap text-slate-600">{meeting.startTime?.slice(0, 5)} - {meeting.endTime?.slice(0, 5)}</span></button>{meetingStatus === "cancelled" && <button type="button" disabled={Boolean(error) || loading || customers.length === 0} onClick={() => beginAdd(meeting.startTime?.slice(0, 5) || `${String(hour).padStart(2, "0")}:00`)} className="shrink-0 rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40">+Add</button>}</div>;
+          }) : <div key={hour} className="flex min-h-[70px] items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-slate-500"><span className="flex items-center gap-4"><i className="h-3 w-3 rounded-full bg-slate-400" />Available</span><span className="whitespace-nowrap">{String(hour).padStart(2, "0")}:00 - {String(hour + 1).padStart(2, "0")}:00</span><button type="button" disabled={isSelectedDateSlotPast(hour) || Boolean(error) || loading || customers.length === 0} onClick={() => beginAdd(`${String(hour).padStart(2, "0")}:00`)} className="rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40">+Add</button></div>;
         })}
       </section>
     </div>
