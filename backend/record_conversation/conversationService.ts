@@ -5,11 +5,15 @@ import { CompanyItem, RecordConversationItem, NewConversationPayload, UpdateConv
  * Mengambil daftar seluruh akun pelanggan dari a1_company_list
  * untuk dropdown pada modal "Select Customer Account"
  */
-export async function getCustomers(): Promise<CompanyItem[]> {
-  const { data, error } = await supabase
+export async function getCustomers(visibleCompanyIds?: string[] | null): Promise<CompanyItem[]> {
+  if (Array.isArray(visibleCompanyIds) && visibleCompanyIds.length === 0) return [];
+
+  let query = supabase
     .from('a1_company_list')
     .select('company_list_id, job_number, name, company_name, created_by, customer_code')
-    .order('company_name', { ascending: true });
+    .is('deleted_at', null);
+  if (Array.isArray(visibleCompanyIds)) query = query.in('company_list_id', visibleCompanyIds);
+  const { data, error } = await query.order('company_name', { ascending: true });
 
   if (error) {
     console.error('Error fetching customers from a1_company_list:', error);
@@ -30,11 +34,16 @@ export async function getConversations(options?: {
   needAssistance?: string;
   page?: number;
   limit?: number;
+  visibleCompanyIds?: string[] | null;
 }): Promise<PaginatedResult<RecordConversationItem>> {
   const page = Math.max(1, options?.page || 1);
   const limit = Math.max(1, options?.limit || 8);
   const from = (page - 1) * limit;
   const to = from + limit - 1;
+
+  if (Array.isArray(options?.visibleCompanyIds) && options.visibleCompanyIds.length === 0) {
+    return { data: [], total: 0, page, limit, totalPages: 1 };
+  }
 
   let query = supabase
     .from('a2_record_conversations')
@@ -79,6 +88,11 @@ export async function getConversations(options?: {
     query = query.eq('need_assistance', options.needAssistance === 'Yes');
   }
 
+  // A sales executive only sees conversations for companies they own.
+  if (Array.isArray(options?.visibleCompanyIds)) {
+    query = query.in('customer_id', options.visibleCompanyIds);
+  }
+
   query = query.range(from, to);
 
   const { data, count, error } = await query;
@@ -101,7 +115,7 @@ export async function getConversations(options?: {
 
   const [companyRes, employeeRes] = await Promise.all([
     customerIds.length > 0
-      ? supabase.from('a1_company_list').select('company_list_id, company_name, name, customer_code').in('company_list_id', customerIds)
+      ? supabase.from('a1_company_list').select('company_list_id, company_name, name, customer_code').in('company_list_id', customerIds).is('deleted_at', null)
       : Promise.resolve({ data: [] }),
     employeeIds.length > 0
       ? supabase.from('d3_employee').select('id, full_name').in('id', employeeIds)
@@ -118,11 +132,12 @@ export async function getConversations(options?: {
     employeeMap.set(e.id, e.full_name);
   });
 
-  const mappedData = data.map((item: any) => {
+  // Rows whose company was removed from the Company List are not shown.
+  const mappedData = data.filter((item: any) => companyMap.has(item.customer_id)).map((item: any) => {
     const comp = companyMap.get(item.customer_id);
     return {
       ...item,
-      company_name: comp?.company_name || 'Perusahaan Pelanggan',
+      company_name: comp?.company_name || '-',
       client_contact_name: comp?.name || '',
       customer_code: item.customer_code || comp?.customer_code || 'CUST-001',
       sales_pic_name: employeeMap.get(item.sales_pic_id) || 'Adelia',
@@ -311,7 +326,7 @@ export async function updateConversation(payload: UpdateConversationPayload): Pr
     }
 
     // Ambil data pendukung relasi untuk company_name dan sales_pic_name
-    let companyName = 'Perusahaan Pelanggan';
+    let companyName = '-';
     let customerCode = data.customer_code || 'CUST-001';
     let salesPicName = 'Adelia';
 

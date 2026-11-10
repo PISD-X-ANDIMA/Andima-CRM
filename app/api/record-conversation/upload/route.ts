@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadConversationFile } from '@/backend/record_conversation/uploadService';
+import { getCompanyScope } from '@/lib/services/access-scope';
 
 /**
  * POST /api/record-conversation/upload
@@ -9,6 +10,11 @@ import { uploadConversationFile } from '@/backend/record_conversation/uploadServ
  */
 export async function POST(request: NextRequest) {
   try {
+    const scope = await getCompanyScope();
+    if (!scope) {
+      return NextResponse.json({ success: false, error: 'Please sign in to continue.' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
 

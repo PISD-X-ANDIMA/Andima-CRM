@@ -31,6 +31,7 @@ const defaultManagerMenus: SubMenuItem[] = [
   { name: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { name: "Record Conversation", href: "/dashboard/record-conversation" },
   { name: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
+  { name: "Manage Account", href: "/dashboard/manage-field-agent-account" },
   { name: "Manage User Roles", href: "/dashboard/manager-customer-success/role-management" },
 ];
 
@@ -87,6 +88,7 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
     pathname.startsWith("/dashboard/record-conversation") ||
     pathname.startsWith("/dashboard/task-of-field-agent") ||
     pathname.startsWith("/dashboard/field-agent-management") ||
+    pathname.startsWith("/dashboard/manage-field-agent-account") ||
     pathname.startsWith("/dashboard/field-agent-access");
 
   return (

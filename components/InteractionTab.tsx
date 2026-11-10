@@ -234,8 +234,8 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 8;
 
-  // Data States (Connected to Database with Figma Mock Fallback)
-  const [conversations, setConversations] = useState<ConversationDisplayItem[]>(MOCK_FIGMA_CONVERSATIONS);
+  // Data States (Connected to Database)
+  const [conversations, setConversations] = useState<ConversationDisplayItem[]>([]);
   const [customerList, setCustomerList] = useState<CompanyItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -421,7 +421,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
             id: c.id,
             conversation_id: convCode,
             job_number: displayJob,
-            company: c.company_name || 'Tanpa Perusahaan',
+            company: c.company_name || '-',
             source: c.channel_type === 'WhatsApp' ? 'WhatsApp' : 'Meeting',
             date: formatDateDisplay(c.conversation_date),
             pic: c.sales_pic_name || 'Sales Executive',
@@ -437,13 +437,13 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           };
         });
 
-        setConversations(mappedDb.length > 0 ? mappedDb : MOCK_FIGMA_CONVERSATIONS);
+        setConversations(mappedDb);
       } else {
-        setConversations(MOCK_FIGMA_CONVERSATIONS);
+        setConversations([]);
       }
     } catch (err) {
       console.error('Error loading database conversations:', err);
-      setConversations(MOCK_FIGMA_CONVERSATIONS);
+      setConversations([]);
     } finally {
       setLoading(false);
     }

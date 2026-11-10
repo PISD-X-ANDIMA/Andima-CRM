@@ -17,11 +17,16 @@ import {
 export async function getWorksheets(options?: {
   page?: number;
   limit?: number;
+  visibleCompanyIds?: string[] | null;
 }): Promise<PaginatedResult<WorksheetItem>> {
   const page = Math.max(1, options?.page || 1);
   const limit = Math.max(1, options?.limit || 8);
   const from = (page - 1) * limit;
   const to = from + limit - 1;
+
+  if (Array.isArray(options?.visibleCompanyIds) && options.visibleCompanyIds.length === 0) {
+    return { data: [], total: 0, page, limit, totalPages: 1 };
+  }
 
   let query = supabase
     .from('a2_worksheets')
@@ -51,8 +56,14 @@ export async function getWorksheets(options?: {
       updated_at,
       conversation_id
     `, { count: 'exact' })
-    .order('worksheet_id', { ascending: false })
-    .range(from, to);
+    .order('worksheet_id', { ascending: false });
+
+  // A sales executive only sees worksheets for companies they own.
+  if (Array.isArray(options?.visibleCompanyIds)) {
+    query = query.in('customer_id', options.visibleCompanyIds);
+  }
+
+  query = query.range(from, to);
 
   const { data, count, error } = await query;
 
@@ -75,7 +86,7 @@ export async function getWorksheets(options?: {
 
   const [companyRes, employeeRes] = await Promise.all([
     customerIds.length > 0
-      ? supabase.from('a1_company_list').select('company_list_id, company_name').in('company_list_id', customerIds)
+      ? supabase.from('a1_company_list').select('company_list_id, company_name').in('company_list_id', customerIds).is('deleted_at', null)
       : Promise.resolve({ data: [] }),
     allEmpIds.length > 0
       ? supabase.from('d3_employee').select('id, full_name, email').in('id', allEmpIds)
@@ -92,7 +103,8 @@ export async function getWorksheets(options?: {
     employeeMap.set(e.id, e.full_name);
   });
 
-  const mappedData = data.map((item: any) => {
+  // Rows whose company was removed from the Company List are not shown.
+  const mappedData = data.filter((item: any) => companyMap.has(item.customer_id)).map((item: any) => {
     const agentName = employeeMap.get(item.field_agent_id) || 'Marsel';
     const initials = agentName
       .split(' ')
@@ -103,7 +115,7 @@ export async function getWorksheets(options?: {
 
     return {
       ...item,
-      company_name: companyMap.get(item.customer_id) || 'PT DSV TRANSPORT INDONESIA',
+      company_name: companyMap.get(item.customer_id) || '-',
       field_agent_name: agentName,
       field_agent_role: 'Field Inspector',
       field_agent_initials: initials,
@@ -124,7 +136,9 @@ export async function getWorksheets(options?: {
  * Mengambil detail lengkap satu worksheet beserta seluruh tabel anak
  * untuk disajikan pada Panel AGT (Field Agent Worksheet Detail)
  */
-export async function getWorksheetDetail(worksheetId: number): Promise<WorksheetItem | null> {
+export async function getWorksheetDetail(worksheetId: number, visibleCompanyIds?: string[] | null): Promise<WorksheetItem | null> {
+  if (Array.isArray(visibleCompanyIds) && visibleCompanyIds.length === 0) return null;
+
   const { data: wsData, error: wsError } = await supabase
     .from('a2_worksheets')
     .select('*')
@@ -133,6 +147,10 @@ export async function getWorksheetDetail(worksheetId: number): Promise<Worksheet
 
   if (wsError || !wsData) {
     console.error(`Error fetching worksheet detail #${worksheetId}:`, wsError);
+    return null;
+  }
+
+  if (Array.isArray(visibleCompanyIds) && !visibleCompanyIds.includes(wsData.customer_id)) {
     return null;
   }
 
@@ -159,7 +177,7 @@ export async function getWorksheetDetail(worksheetId: number): Promise<Worksheet
       .eq('worksheet_id', worksheetId)
       .order('sort_order', { ascending: true }),
     wsData.customer_id
-      ? supabase.from('a1_company_list').select('company_name').eq('company_list_id', wsData.customer_id).single()
+      ? supabase.from('a1_company_list').select('company_name').eq('company_list_id', wsData.customer_id).is('deleted_at', null).single()
       : Promise.resolve({ data: null }),
     wsData.field_agent_id
       ? supabase.from('d3_employee').select('full_name').eq('id', wsData.field_agent_id).single()
@@ -176,7 +194,7 @@ export async function getWorksheetDetail(worksheetId: number): Promise<Worksheet
 
   return {
     ...wsData,
-    company_name: compRes.data?.company_name || 'PT DSV Transport Indonesia',
+    company_name: compRes.data?.company_name || '-',
     field_agent_name: agentName,
     field_agent_role: 'Field Inspector',
     field_agent_initials: initials,
@@ -192,7 +210,8 @@ export async function getWorksheetDetail(worksheetId: number): Promise<Worksheet
  * Mengambil seluruh data penugasan field agent untuk TaskOfFieldAgent
  * langsung dari tabel a2_worksheets dan relasinya di Supabase.
  */
-export async function getFieldAgentTasks(): Promise<FieldTaskItem[] | null> {
+export async function getFieldAgentTasks(visibleCompanyIds?: string[] | null): Promise<FieldTaskItem[] | null> {
+  if (Array.isArray(visibleCompanyIds) && visibleCompanyIds.length === 0) return [];
   try {
     const { data: wsData, error: wsError } = await supabase
       .from('a2_worksheets')
@@ -211,7 +230,9 @@ export async function getFieldAgentTasks(): Promise<FieldTaskItem[] | null> {
       return null;
     }
 
-    return wsData.map((w: any) => {
+    const allowedCompanyIds = Array.isArray(visibleCompanyIds) ? new Set(visibleCompanyIds) : null;
+
+    return wsData.filter((w: any) => Boolean(w.a1_company_list?.company_list_id) && (!allowedCompanyIds || allowedCompanyIds.has(w.customer_id))).map((w: any) => {
       const photos = w.a2_worksheet_photos || [];
       const docs = w.a2_worksheet_documents || [];
       const checklists = w.a2_worksheet_checklists || [];
@@ -235,7 +256,7 @@ export async function getFieldAgentTasks(): Promise<FieldTaskItem[] | null> {
         id: `ws-${w.worksheet_id}`,
         task_id_code: w.task_id_code || `TSK-2506-${String(w.worksheet_id).padStart(4, '0')}`,
         job_number: jobFormatted,
-        customer_name: w.a1_company_list?.company_name || 'PT. YOSSAVA TRANS LOGISTIK',
+        customer_name: w.a1_company_list?.company_name || '-',
         field_agent_name: w.field_agent?.full_name || undefined,
         status: (w.progress_status as any) || (w.field_agent_id ? 'Assigned' : 'Unassigned'),
         has_issue: isIssue,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getWorksheetDetail } from '@/backend/record_conversation/worksheetService';
+import { getCompanyScope } from '@/lib/services/access-scope';
 
 /**
  * GET /api/record-conversation/worksheets/[id]
@@ -14,6 +15,11 @@ export async function GET(
   context: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    const scope = await getCompanyScope();
+    if (!scope) {
+      return NextResponse.json({ success: false, error: 'Please sign in to continue.' }, { status: 401 });
+    }
+
     const resolvedParams = await Promise.resolve(context.params);
     const worksheetId = Number(resolvedParams.id);
 
@@ -27,7 +33,7 @@ export async function GET(
       );
     }
 
-    const detail = await getWorksheetDetail(worksheetId);
+    const detail = await getWorksheetDetail(worksheetId, scope.isManager ? null : scope.companyIds);
 
     if (!detail) {
       return NextResponse.json(

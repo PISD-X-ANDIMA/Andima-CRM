@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getConversations, createConversation, updateConversation } from '@/backend/record_conversation/conversationService';
 import { NewConversationPayload, UpdateConversationPayload } from '@/backend/record_conversation/types';
+import { getCompanyScope } from '@/lib/services/access-scope';
+
+const unauthorized = () => NextResponse.json({ success: false, error: 'Please sign in to continue.' }, { status: 401 });
 
 /**
  * GET /api/record-conversation/conversations
@@ -12,6 +15,9 @@ import { NewConversationPayload, UpdateConversationPayload } from '@/backend/rec
  */
 export async function GET(request: NextRequest) {
   try {
+    const scope = await getCompanyScope();
+    if (!scope) return unauthorized();
+
     const { searchParams } = new URL(request.url);
     const channel = searchParams.get('channel') || undefined;
     const status = searchParams.get('status') || undefined;
@@ -27,6 +33,7 @@ export async function GET(request: NextRequest) {
       needAssistance: needAssistance,
       page,
       limit,
+      visibleCompanyIds: scope.isManager ? null : scope.companyIds,
     });
 
     return NextResponse.json({
@@ -55,6 +62,9 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const scope = await getCompanyScope();
+    if (!scope) return unauthorized();
+
     const body = (await request.json()) as NewConversationPayload;
 
     if (!body.customer_id) {
@@ -74,6 +84,14 @@ export async function POST(request: NextRequest) {
           error: 'summary is required',
         },
         { status: 400 }
+      );
+    }
+
+    // A sales executive may only log conversations for companies they own.
+    if (!scope.isManager && !scope.companyIds.includes(body.customer_id)) {
+      return NextResponse.json(
+        { success: false, error: 'You can only record conversations for your own companies.' },
+        { status: 403 }
       );
     }
 
@@ -114,6 +132,9 @@ export async function POST(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
+    const scope = await getCompanyScope();
+    if (!scope) return unauthorized();
+
     const body = (await request.json()) as UpdateConversationPayload;
 
     if (!body.id) {

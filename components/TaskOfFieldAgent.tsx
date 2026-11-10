@@ -8,7 +8,7 @@ import {
   Lock, Shield, User, RefreshCw, Building2, Truck, Box, Tag, AlertCircle,
   ExternalLink, Image as ImageIcon, MessageCircle
 } from 'lucide-react';
-import { getFieldAgentTasks, submitNeedBackup } from '@/backend/record_conversation/worksheetService';
+import { submitNeedBackup } from '@/backend/record_conversation/worksheetService';
 
 // ==========================================
 // TYPES & INTERFACES
@@ -1195,94 +1195,14 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
 
   useEffect(() => {
-    let stored: FieldTaskItem[] = [];
-    if (typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem('andima_field_agent_figma_tasks');
-        if (raw) stored = JSON.parse(raw);
-      } catch { }
-    }
-    if (stored.length === 0 || stored[0]?.handover_datetime !== '08/10/2026' || stored[0]?.customer_name !== 'PT. JPG Trans Indonesia' || stored.length < 24) {
-      stored = EXACT_FIGMA_TASKS;
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('andima_field_agent_figma_tasks', JSON.stringify(EXACT_FIGMA_TASKS));
-      }
-    } else {
-      // Ensure existing cached task-2 gets the upgraded issue fields
-      let hasChange = false;
-      stored = stored.map(t => {
-        if (t.id === 'task-2' || t.job_number === '#AENAT/2609/0306') {
-          hasChange = true;
-          return {
-            ...t,
-            task_id_code: t.task_id_code || 'TSK-2506-1207',
-            issue_type: 'Physical Load Difference',
-            issue_category: 'Physical Load Difference',
-            issue_note: 'Jumlah koli fisik yang diterima (8 koli) tidak sesuai dengan data dokumen awal (10 koli). Terdapat 2 koli tertinggal di gudang.',
-            issue_document_status: 'Manifest Mismatch (B/L #0306)',
-            variance_tolerance: '0%',
-            issue_reported_at: '24 Sep 2026, 10:30 WIB',
-            handover_location: t.handover_location?.includes('MM2100') ? t.handover_location : 'Area Cargo MM2100, Cikarang Barat',
-            issue_files: t.issue_files && t.issue_files.length > 0 ? t.issue_files : [
-              {
-                name: 'Foto_Barang_1.jpg',
-                size: '2.4 MB',
-                type: 'JPEG',
-                badge: 'OPS Stamped',
-                url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop'
-              },
-              {
-                name: 'Foto_Surat_Jalan.jpg',
-                size: '1.8 MB',
-                type: 'JPEG',
-                badge: 'Digital Sign',
-                url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop'
-              }
-            ]
-          };
-        }
-        if (t.id === 'task-3' || (t.field_agent_name === 'Eysa Franata' && t.job_number === '#AENAT/2609/0307')) {
-          hasChange = true;
-          return {
-            ...t,
-            issue_status: 'Resolved',
-            has_issue: false,
-            issue_type: 'Physical Load Difference',
-            issue_category: 'Physical Load Difference',
-            issue_note: 'Kendala selisih koli telah diselesaikan secara langsung bersama Tim Supervisor Warehouse Cikarang. 2 koli tertinggal sudah berhasil diangkut ke armada kedua.'
-          };
-        }
-        return t;
-      });
-      if (hasChange && typeof window !== 'undefined') {
-        localStorage.setItem('andima_field_agent_figma_tasks', JSON.stringify(stored));
-      }
-    }
-    setTasks(stored);
-
+    // Source of truth is a2_worksheets joined to a1_company_list, so company
+    // names match the Company List. No local dummy seed or cache fallback.
     setLoading(true);
-    // Attempt to hydrate from Supabase database if connected
-    getFieldAgentTasks().then(dbTasks => {
-      if (dbTasks && dbTasks.length > 0) {
-        const allTasks = [...dbTasks, ...stored];
-        const uniqueTasks: FieldTaskItem[] = [];
-        const seenKeys = new Set<string>();
-        for (const t of allTasks) {
-          const key = t.id || t.job_number;
-          if (key && !seenKeys.has(key)) {
-            seenKeys.add(key);
-            uniqueTasks.push(t);
-          }
-        }
-        setTasks(uniqueTasks);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('andima_field_agent_figma_tasks', JSON.stringify(uniqueTasks));
-        }
-      }
-    }).catch(() => { })
-    .finally(() => {
-      setLoading(false);
-    });
+    fetch('/api/record-conversation/tasks', { cache: 'no-store' })
+      .then(res => res.json())
+      .then(json => setTasks(Array.isArray(json?.data) ? json.data : []))
+      .catch(() => setTasks([]))
+      .finally(() => setLoading(false));
   }, []);
 
   const saveTasks = (newTasks: FieldTaskItem[]) => {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getWorksheets } from '@/backend/record_conversation/worksheetService';
+import { getCompanyScope } from '@/lib/services/access-scope';
 
 /**
  * GET /api/record-conversation/worksheets
@@ -10,11 +11,20 @@ import { getWorksheets } from '@/backend/record_conversation/worksheetService';
  */
 export async function GET(request: NextRequest) {
   try {
+    const scope = await getCompanyScope();
+    if (!scope) {
+      return NextResponse.json({ success: false, error: 'Please sign in to continue.' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, Number(searchParams.get('page')) || 1);
     const limit = Math.max(1, Number(searchParams.get('limit')) || 8);
 
-    const result = await getWorksheets({ page, limit });
+    const result = await getWorksheets({
+      page,
+      limit,
+      visibleCompanyIds: scope.isManager ? null : scope.companyIds,
+    });
 
     return NextResponse.json({
       success: true,

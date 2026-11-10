@@ -561,16 +561,6 @@ export default function ManageFieldAgentAccount() {
             )}
           </div>
         </div>
-
-        {/* Right: Create Field Agent Accounts Button */}
-        <button
-          type="button"
-          onClick={handleOpenAddAgent}
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#0d6efd] hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer shrink-0"
-        >
-          <Plus size={14} />
-          <span>Create Field Agent Accounts</span>
-        </button>
       </div>
 
       {/* DATA TABLE CONTAINER */}

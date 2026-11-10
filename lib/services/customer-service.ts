@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createSupabaseOperationError } from "@/lib/supabase/errors";
 import { isValidPicPhoneNumber } from "@/lib/validation/pic-phone";
 import { getCurrentUserScope } from "@/lib/auth/roles";
+import { getCompanyScope } from "@/lib/services/access-scope";
 import {
   CustomerListItem,
   CustomerDetailItem,
@@ -97,7 +98,6 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
   {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError) throw createSupabaseOperationError("Login session verification failed", authError);
-    const userScope = await getCurrentUserScope(supabase);
     let countQuery = (supabase as any)
       .from("a1_company_list")
       .select("company_list_id", { count: "exact", head: true })
@@ -107,13 +107,23 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
       .select("company_list_id, company_name, address, name, pic_phone_number, customer_code, job_number, created_by, created_at")
       .is("deleted_at", null);
 
-    // Data scoping: filter by specific Sales Executive if requested, or isolate to own data for non-managers
-    if (options.executiveId) {
-      countQuery = countQuery.eq("created_by", options.executiveId);
-      dataQuery = dataQuery.eq("created_by", options.executiveId);
-    } else if (!options.forceAll && userScope && !userScope.isManager) {
-      countQuery = countQuery.in("created_by", userScope.identifiers);
-      dataQuery = dataQuery.in("created_by", userScope.identifiers);
+    // Managers see every company. Everyone else sees only companies mapped to
+    // them in a2_company_sales. A missing scope means no access at all.
+    const scope = await getCompanyScope();
+    if (!scope) {
+      return { customers: [], total: 0, page, perPage: validPerPage, totalPages: 1 };
+    }
+    if (scope.isManager) {
+      if (options.executiveId) {
+        countQuery = countQuery.eq("created_by", options.executiveId);
+        dataQuery = dataQuery.eq("created_by", options.executiveId);
+      }
+    } else {
+      if (scope.companyIds.length === 0) {
+        return { customers: [], total: 0, page, perPage: validPerPage, totalPages: 1 };
+      }
+      countQuery = countQuery.in("company_list_id", scope.companyIds);
+      dataQuery = dataQuery.in("company_list_id", scope.companyIds);
     }
 
     if (search.trim()) {
@@ -134,22 +144,24 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
     const rows = (data || []) as CompanyRow[];
     const companyIds = rows.map((item) => item.company_list_id);
 
-    // Dashboard transaction identifiers are owned by Squad A2. The existing
-    // customer_code is the shared identifier used to associate those records.
-    const worksheetByTransaction = new Map<string, { transactionNo: string; jobNumber: string | null }>();
-    const customerCodes = rows.map((item) => item.customer_code).filter((code): code is string => Boolean(code));
-    if (customerCodes.length) {
+    // A2 worksheets reference a company through customer_id. customer_code is
+    // not a worksheet key, so join on customer_id and keep the newest row.
+    const worksheetByCompany = new Map<string, { transactionNo: string; jobNumber: string | null }>();
+    if (companyIds.length) {
       const { data: worksheetRows, error: worksheetError } = await (supabase as any)
         .from("a2_worksheets")
-        .select("transaction_no, job_no")
-        .in("transaction_no", customerCodes);
+        .select("customer_id, transaction_no, job_no, worksheet_id")
+        .in("customer_id", companyIds)
+        .order("worksheet_id", { ascending: false });
       if (worksheetError && requireTransactions) throw createSupabaseOperationError("a2_worksheets query failed", worksheetError);
       if (!worksheetError) {
         for (const worksheet of worksheetRows || []) {
-          if (worksheet.transaction_no) worksheetByTransaction.set(worksheet.transaction_no, {
-            transactionNo: worksheet.transaction_no,
-            jobNumber: worksheet.job_no || null,
-          });
+          if (worksheet.customer_id && !worksheetByCompany.has(worksheet.customer_id)) {
+            worksheetByCompany.set(worksheet.customer_id, {
+              transactionNo: worksheet.transaction_no,
+              jobNumber: worksheet.job_no || null,
+            });
+          }
         }
       }
     }
@@ -181,8 +193,8 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
       companyName: item.company_name,
       customerCode: item.customer_code,
       address: item.address,
-      transactionNo: worksheetByTransaction.get(item.customer_code || "")?.transactionNo || item.customer_code || null,
-      jobNumber: worksheetByTransaction.get(item.customer_code || "")?.jobNumber || item.job_number || null,
+      transactionNo: worksheetByCompany.get(item.company_list_id)?.transactionNo || item.customer_code || null,
+      jobNumber: worksheetByCompany.get(item.company_list_id)?.jobNumber || item.job_number || null,
       createdBy: item.created_by,
       createdDate: item.created_at,
       primaryPic: item.name ? {
@@ -331,16 +343,15 @@ export async function getCustomerById(
 
     let transactionNo: string | null = null;
     let worksheetJobNumber: string | null = null;
-    if (data.customer_code) {
-      const { data: worksheet } = await (supabase as any)
-        .from("a2_worksheets")
-        .select("transaction_no, job_no")
-        .eq("transaction_no", data.customer_code)
-        .limit(1)
-        .maybeSingle();
-      transactionNo = worksheet?.transaction_no || data.customer_code || null;
-      worksheetJobNumber = worksheet?.job_no || data.job_number || null;
-    }
+    const { data: worksheet } = await (supabase as any)
+      .from("a2_worksheets")
+      .select("transaction_no, job_no")
+      .eq("customer_id", customerId)
+      .order("worksheet_id", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    transactionNo = worksheet?.transaction_no || data.customer_code || null;
+    worksheetJobNumber = worksheet?.job_no || data.job_number || null;
 
     const meetings = (meetingRows || []).map((meeting: any) => ({
       id: meeting.id,
