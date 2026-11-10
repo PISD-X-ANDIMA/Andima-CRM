@@ -127,9 +127,14 @@ body {
     opacity: 0 !important;
   }
 
-  /* Make modal container backdrop completely transparent without dark overlay */
+  /* Make modal container backdrop completely transparent without dark overlay.
+     Fixed ancestors only paginate one page in Chrome, so make them absolute. */
   div[class*="fixed"],
   div[class*="backdrop"] {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
     background: transparent !important;
     background-color: transparent !important;
     backdrop-filter: none !important;
@@ -157,8 +162,6 @@ body {
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
   }
 
   .printable-header {
@@ -195,9 +198,16 @@ body {
     max-height: 48px !important;
   }
 
-  * {
+  /* Keep each section whole, but allow the document to flow across pages.
+     Never apply break-inside: avoid to every element - tall content gets clipped. */
+  .printable-body > * {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+  }
+
+  .printable-body {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
   }
 }
 
