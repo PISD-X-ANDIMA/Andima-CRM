@@ -3,21 +3,7 @@
 import React, { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
-const REGISTERED_USERS = {
-  'crm@andima.co.id': {
-    passwordRole: 'Crm123!@#$',
-    role: 'CRM Staff',
-    name: 'Andima CRM Specialist',
-    redirectTo: '/dashboard',
-  },
-  'manajemen@andima.co.id': {
-    passwordRole: 'Manajemen123!@#',
-    role: 'Manajemen',
-    name: 'Management Officer',
-    redirectTo: '/dashboard',
-  },
-};
+import { hasSupabaseConfig, supabase } from '@/lib/supabaseClient';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,6 +19,29 @@ export default function LoginPage() {
   const [countdown, setCountdown] = useState<number>(0);
   const [greeting, setGreeting] = useState<string>('Good Morning');
 
+  // Reuse an existing authenticated session; anonymous users stay on login.
+  useEffect(() => {
+    if (!hasSupabaseConfig) return;
+    let active = true;
+    void (async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (!active) return;
+
+      if (error) {
+        const invalidRefreshToken = error.code === 'refresh_token_not_found' ||
+          /invalid refresh token|refresh token not found/i.test(error.message);
+        if (invalidRefreshToken) {
+          // Remove only this browser's unusable session. No role is checked here.
+          await supabase.auth.signOut({ scope: 'local' });
+          if (active) setErrorMessage('Your previous login session expired. Please sign in again.');
+        }
+        return;
+      }
+
+      if (user) router.replace('/dashboard');
+    })();
+    return () => { active = false; };
+  }, [router]);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -57,6 +66,13 @@ export default function LoginPage() {
   const validateEmailFormat = (emailVal: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(emailVal);
+  };
+
+  const validatePasswordStrength = (passVal: string): boolean => {
+    const hasLetter = /[a-zA-Z]/.test(passVal);
+    const hasDigit = /\d/.test(passVal);
+    const hasSpecial = /[^a-zA-Z0-9]/.test(passVal);
+    return passVal.length >= 10 && hasLetter && hasDigit && hasSpecial;
   };
 
   const handleFailedAttempt = (customMessage: string) => {
@@ -89,6 +105,11 @@ export default function LoginPage() {
 
     if (isLocked || isPermanentlyBlocked) return;
 
+    if (!hasSupabaseConfig) {
+      setErrorMessage('Supabase is not configured. Add the Supabase URL and public key to the environment, then restart the application.');
+      return;
+    }
+
     if (!email.trim() || !password.trim()) {
       setErrorMessage('Email and Password are required.');
       return;
@@ -99,22 +120,10 @@ export default function LoginPage() {
       return;
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-    const userAccount = REGISTERED_USERS[normalizedEmail as keyof typeof REGISTERED_USERS];
-    if (userAccount && userAccount.passwordRole === password) {
-      setLoginAttempts(0);
-      try {
-        localStorage.setItem('andima_user', JSON.stringify({
-          name: userAccount.name,
-          role: userAccount.role,
-          email: email.toLowerCase().trim(),
-        }));
-        sessionStorage.setItem('andima_logged_in', 'true');
-      } catch (err) {
-        console.error(err);
-      }
-      setSuccessMessage(`Login successful! Redirecting to ${userAccount.role} Dashboard...`);
-      window.setTimeout(() => { router.push('/dashboard'); }, 1000);
+    if (!validatePasswordStrength(password)) {
+      setErrorMessage(
+        'Password must be at least 10 characters long and contain a mix of letters, numbers, and special characters.'
+      );
       return;
     }
 
@@ -128,10 +137,14 @@ export default function LoginPage() {
       });
 
       if (error) {
-        const message = error.message.toLowerCase().includes('email not confirmed')
-          ? 'Email belum dikonfirmasi. Selesaikan konfirmasi melalui email terlebih dahulu.'
-          : 'Email atau password salah.';
-        handleFailedAttempt(message);
+        const normalizedMessage = error.message.toLowerCase();
+        if (normalizedMessage.includes('invalid login credentials')) {
+          handleFailedAttempt('Email or password is incorrect.');
+        } else if (normalizedMessage.includes('email not confirmed')) {
+          setErrorMessage('Your email has not been confirmed. Confirm it using the link sent to your inbox.');
+        } else {
+          setErrorMessage(`Unable to sign in to Supabase: ${error.message}`);
+        }
         return;
       }
 
@@ -142,30 +155,63 @@ export default function LoginPage() {
       let displayName = authData?.user?.user_metadata?.full_name || email.split('@')[0];
       let displayRole = 'CRM Staff';
       let positionName = '';
+      let targetDashboard = '/dashboard';
 
       try {
+        let profile: any = null;
         if (authData?.user?.id) {
-          const { data: profile } = await supabase
+          const { data: profileById } = await supabase
             .from('b2_register')
-            .select('full_name, employment_status, position_id, departement_id')
+            .select('id, full_name, employment_status, position_id, departement_id, email')
             .eq('id', authData.user.id)
             .maybeSingle();
+          profile = profileById;
+        }
 
-          if (profile) {
-            if (profile.full_name) {
-              displayName = profile.full_name;
-            }
+        const normalizedEmail = email.toLowerCase().trim();
+        if (!profile && normalizedEmail) {
+          const { data: profileByEmail } = await supabase
+            .from('b2_register')
+            .select('id, full_name, employment_status, position_id, departement_id, email')
+            .ilike('email', normalizedEmail)
+            .maybeSingle();
+          profile = profileByEmail;
+        }
 
-            // Fetch nama posisi dari d3_positions
-            if (profile.position_id) {
-              const { data: posData } = await supabase
-                .from('d3_positions')
-                .select('title, name')
-                .eq('id', profile.position_id)
-                .maybeSingle();
+        if (profile) {
+          if (profile.full_name) {
+            displayName = profile.full_name;
+          }
 
-              if (posData) {
-                positionName = posData.title || posData.name || '';
+          // Fetch nama posisi dari d3_positions
+          if (profile.position_id) {
+            const { data: posData } = await supabase
+              .from('d3_positions')
+              .select('code, title')
+              .eq('id', profile.position_id)
+              .maybeSingle();
+
+            if (posData) {
+              positionName = posData.title || '';
+              const code = String(posData.code || '').toLowerCase();
+              const title = String(posData.title || '').toLowerCase();
+              if (
+                code === 'com-cs-mgr' ||
+                title.includes('manager of customer success') ||
+                title.includes('customer success manager') ||
+                title.includes('cs manager')
+              ) {
+                displayRole = 'Manager of Customer Success';
+                targetDashboard = '/dashboard/manager-customer-success';
+              } else if (
+                code === 'com-sls' ||
+                code.startsWith('sls') ||
+                title.includes('sales executive') ||
+                title.includes('sales')
+              ) {
+                displayRole = 'Sales Executive';
+                targetDashboard = '/dashboard/sales-executive';
+              } else {
                 displayRole = positionName || displayRole;
               }
             }
@@ -175,7 +221,7 @@ export default function LoginPage() {
         console.warn('Profile fetch warning:', fetchErr);
       }
 
-      // Simpan data user ke localStorage & sessionStorage
+      // Simpan data user ke localStorage
       try {
         localStorage.setItem('andima_user', JSON.stringify({
           id: authData?.user?.id,
@@ -183,16 +229,17 @@ export default function LoginPage() {
           role: displayRole,
           email: email.toLowerCase().trim(),
         }));
-        sessionStorage.setItem('andima_logged_in', 'true');
       } catch (err) {
         console.error(err);
       }
 
-      setSuccessMessage(`Login berhasil! Selamat datang, ${displayName}. Mengalihkan ke Dashboard...`);
-      window.setTimeout(() => { router.push('/dashboard'); }, 1000);
+      setSuccessMessage(`Login successful. Welcome, ${displayName}. Redirecting to the dashboard...`);
+      window.setTimeout(() => {
+        window.location.href = targetDashboard;
+      }, 1000);
 
     } catch {
-      setErrorMessage('Tidak dapat menghubungi server login. Silakan coba lagi.');
+      setErrorMessage('Unable to reach the login server. Please try again.');
     } finally {
       setIsSigningIn(false);
     }
@@ -216,16 +263,15 @@ export default function LoginPage() {
       <div className="absolute -top-20 -left-20 w-96 h-96 bg-[#18C7C0]/30 rounded-full blur-3xl pointer-events-none z-0" />
       <div className="absolute -bottom-20 left-1/3 w-96 h-96 bg-[#3B6FF5]/30 rounded-full blur-3xl pointer-events-none z-0" />
 
-      {/* 2. BRAND TEXT (TITLE) MENGGUNAKAN FONT SYNE */}
+      {/* 2. BRAND TEXT & LOGO */}
       <div className="hidden md:flex absolute top-1/2 -translate-y-1/2 right-8 lg:right-16 xl:right-24 z-20 pointer-events-none flex-col items-end text-right max-w-lg">
-        <div className="w-16 h-16 rounded-2xl flex items-center justify-center p-2.5 shadow-xl shadow-[#3B6FF5]/30 bg-white/10 backdrop-blur-md border border-white/20 shrink-0 mb-4">
+        <div className="mb-4">
           <img
             src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo-ANDIMA-wzx4gpZx20EFE5IYcH3jqabixELIo3.png"
             alt="Logo ANDIMA"
-            className="w-full h-auto object-contain"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = '/Logo-ANDIMA.png';
-            }}
+            width="400"
+            height="246"
+            className="h-20 w-auto object-contain drop-shadow-[0_4px_20px_rgba(0,0,0,0.6)]"
           />
         </div>
         <h1 className="font-[family-name:var(--font-syne)] text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-wider text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)] leading-tight">
@@ -262,7 +308,7 @@ export default function LoginPage() {
                 </label>
                 <input
                   type="email"
-                  placeholder="manajemen@andima.co.id"
+                  placeholder="username@andima.co.id"
                   value={email}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                   disabled={isLocked || isPermanentlyBlocked}
@@ -327,7 +373,7 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* Tombol Login Solid Blue #3B6FF5 dengan Hover #2B5CE5 */}
+              {/* Tombol Login */}
               <button
                 type="submit"
                 disabled={isLocked || isPermanentlyBlocked || isSigningIn}
@@ -342,16 +388,9 @@ export default function LoginPage() {
             </form>
 
             <p className="relative z-10 mt-4 text-center text-sm text-[#334155]">
-              Not login ?{' '}
-              <Link href="/register" className="font-bold text-[#3B6FF5] hover:underline">Register</Link>
+              Don&apos;t have an account?{' '}
+              <Link href="/register" className="font-bold text-[#3B6FF5] hover:underline">Register here</Link>
             </p>
-
-            {/* Info Demo Credentials */}
-            <div className="mt-7 p-4 rounded-xl bg-white/60 backdrop-blur-md border border-white/80 text-xs text-[#334155] space-y-1.5 font-[family-name:var(--font-montserrat)] shadow-sm relative z-10">
-              <p className="font-bold text-[#3B6FF5]">Demo Credentials:</p>
-              <p>• CRM Staff: <span className="text-[#0D1B2A] font-semibold">crm@andima.co.id</span> | Pass: <span className="text-[#0D1B2A] font-semibold">Crm123!@#$</span></p>
-              <p>• Management: <span className="text-[#0D1B2A] font-semibold">manajemen@andima.co.id</span> | Pass: <span className="text-[#0D1B2A] font-semibold">Manajemen123!@#</span></p>
-            </div>
           </div>
 
         </div>
@@ -359,4 +398,3 @@ export default function LoginPage() {
     </main>
   );
 }
-

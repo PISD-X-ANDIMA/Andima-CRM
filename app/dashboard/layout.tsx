@@ -1,23 +1,21 @@
-"use client";
-
-import { useState } from "react";
-import { Sidebar } from "@/components/dashboard/Sidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { AuthGuard } from "@/components/dashboard/AuthGuard";
+import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+export default async function DashboardLayout({ children }: { children: ReactNode }) {
+  const supabase = await createServerSupabaseClient();
+  if (!supabase) {
+    return (
+      <main className="mx-auto max-w-3xl p-8" role="alert">
+        Supabase configuration is missing. Set the public Supabase URL and key, then restart the application.
+      </main>
+    );
+  }
 
-  return (
-    <AuthGuard>
-      <div className="min-h-screen bg-white lg:flex">
-        <Sidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
-        <main className="min-w-0 flex-1 px-3 py-4 sm:px-6 sm:py-8 lg:px-12">
-          <DashboardHeader onMenuClick={() => setIsMobileMenuOpen(true)} />
-          {children}
-        </main>
-      </div>
-    </AuthGuard>
-  );
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) redirect("/login");
+
+  return <DashboardShell><DashboardHeader />{children}</DashboardShell>;
 }

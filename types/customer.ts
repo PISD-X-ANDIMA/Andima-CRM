@@ -95,7 +95,6 @@ export interface CustomerDetailItem {
   jobNumber?: string | null;
   createdBy?: string | null;
   address: string;
-  salesId?: string | null;
   createdAt: string;
   updatedAt: string;
   primaryPic: PrimaryContact | null;
@@ -160,6 +159,10 @@ export interface ApiResponseSuccess<T> {
     limit?: number;
     perPage?: number;
     totalPages?: number;
+    format?: string;
+    search?: string;
+    start_date?: string;
+    end_date?: string;
   };
 }
 

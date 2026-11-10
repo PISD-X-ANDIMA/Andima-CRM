@@ -17,7 +17,19 @@ import {
   RecordConversationItem,
   UploadedFileMetadata
 } from '../backend/record_conversation';
-import { ManagerNotificationItem } from './dashboard/DashboardHeader';
+
+// Local shape for the manager notification payload stored in localStorage.
+// The A1 DashboardHeader no longer exports this type after the integration merge.
+interface ManagerNotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  conversation_id: string;
+  company_name: string;
+  timestamp: string;
+  read: boolean;
+}
 
 interface AuditLogItem {
   id: string;

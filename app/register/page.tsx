@@ -16,7 +16,8 @@ const DEFAULT_POSITIONS: OptionItem[] = [
   { id: '265c9357-105c-437c-a244-6897122f17c1', name: 'Information Technology' },
   { id: '0ec333af-8737-413f-adab-841a3067e485', name: 'Director' },
   { id: '10da1bac-a6a8-472e-a171-e4984ab768d9', name: 'Accounting Associate' },
-  { id: '1978f4a2-13ad-4fcc-a9e4-e03b6940cce0', name: 'CRM Staff' },
+  { id: '58706b7f-950b-4e71-b066-792fbd91424d', name: 'Sales Executive' },
+  { id: '56f0fe6d-crm1-48d4-b81d-aecfc1091611', name: 'CRM Staff' },
 ];
 
 const DEFAULT_DEPARTMENTS: OptionItem[] = [
@@ -58,11 +59,13 @@ export default function RegisterPage() {
 
   // Cek jika sudah login, langsung redirect ke dashboard
   useEffect(() => {
-    const isSessionLoggedIn = typeof window !== 'undefined' ? sessionStorage.getItem('andima_logged_in') : null;
-    if (isSessionLoggedIn) {
-      router.replace('/dashboard');
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        router.replace('/dashboard/sales-executive');
+      }
+    });
   }, [router]);
+
   // States Error UI
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [generalError, setGeneralError] = useState<string>('');
@@ -72,14 +75,14 @@ export default function RegisterPage() {
     async function fetchOptions() {
       try {
         const [posRes, deptRes] = await Promise.all([
-          supabase.from('d3_positions').select('id, title, name'),
+          supabase.from('d3_positions').select('id, title'),
           supabase.from('d3_departments').select('id, name')
         ]);
 
         if (posRes.data && posRes.data.length > 0) {
           setPositions(posRes.data.map((p: any) => ({
             id: p.id,
-            name: p.title || p.name || 'Unknown Position'
+            name: p.title || 'Unknown Position'
           })));
         }
 
@@ -96,27 +99,21 @@ export default function RegisterPage() {
     fetchOptions();
   }, []);
 
-  // Fungsi untuk Generate Employee ID otomatis (AND-001, AND-002, dst.)
+  // Fungsi untuk Generate Employee ID otomatis (EMP-001, EMP-002, dst.)
   const generateNextEmployeeId = async (): Promise<string> => {
     const { data, error } = await supabase
       .from('b2_register')
       .select('employee_id')
-      .like('employee_id', 'AND-%');
+      .like('employee_id', 'AND-%')
+      .order('created_at', { ascending: false })
+      .limit(1);
 
     if (error) throw new Error('Gagal menyiapkan ID registrasi: ' + error.message);
     if (!data?.length) return 'AND-001';
 
-    let maxNum = 0;
-    for (const row of data) {
-      const match = /^AND-(\d+)$/i.exec(row.employee_id?.trim() ?? '');
-      if (match) {
-        const num = parseInt(match[1], 10);
-        if (num > maxNum) maxNum = num;
-      }
-    }
-
-    if (maxNum === 0) return 'AND-001';
-    return `AND-${String(maxNum + 1).padStart(3, '0')}`;
+    const match = /^AND-(\d+)$/.exec(data[0].employee_id ?? '');
+    if (!match) throw new Error('Format ID registrasi terakhir tidak valid. Hubungi administrator.');
+    return `AND-${String(Number(match[1]) + 1).padStart(3, '0')}`;
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -200,7 +197,7 @@ export default function RegisterPage() {
       // 1. Generate Employee ID
       const autoEmployeeId = await generateNextEmployeeId();
 
-      // 2. Buat akun Supabase Auth
+      // 2. Buat akun Supabase Auth (diubah: tangkap data untuk mengambil UUID)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: emailLower,
         password: password,
@@ -212,32 +209,20 @@ export default function RegisterPage() {
         },
       });
 
-      let userId = authData?.user?.id;
-
-      // Jika user sudah terdaftar di auth (misalnya dari percobaan sebelumnya yang gagal simpan DB)
-      if (authError || (authData?.user && authData.user.identities && authData.user.identities.length === 0)) {
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: emailLower,
-          password: password,
-        });
-
-        if (!signInError && signInData?.user?.id) {
-          userId = signInData.user.id;
-        } else if (authError) {
-          throw new Error('Registration failed: ' + authError.message);
-        } else {
-          throw new Error('Email sudah terdaftar. Silakan langsung login.');
-        }
+      if (authError) {
+        throw new Error('Registration failed: ' + authError.message);
       }
 
+      // Ambil ID user dari auth
+      const userId = authData?.user?.id;
       if (!userId) {
-        throw new Error('User ID tidak ditemukan setelah pendaftaran auth.');
+        throw new Error('The user ID was not returned after authentication registration.');
       }
 
-      // 3. Simpan data ke b2_register (upsert agar aman jika id sudah tercatat)
+      // 3. Simpan data ke b2_register (diubah: tambahkan id: userId bertipe UUID)
       const { error: dbError } = await supabase
         .from('b2_register')
-        .upsert([
+        .insert([
           {
             id: userId,
             employee_id: autoEmployeeId,
@@ -251,7 +236,7 @@ export default function RegisterPage() {
         ]);
 
       if (dbError) {
-        throw new Error('Gagal menyimpan ke b2_register: ' + dbError.message);
+        throw new Error('Failed to save the registration profile: ' + dbError.message);
       }
 
       // 4. Berhasil
@@ -267,7 +252,7 @@ export default function RegisterPage() {
       setGeneralError(
         err instanceof Error
           ? err.message
-          : 'Terjadi kesalahan saat menyimpan. Silakan coba lagi.'
+          : 'An error occurred while saving. Please try again.'
       );
     } finally {
       submitting.current = false;
