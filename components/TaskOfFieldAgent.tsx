@@ -2867,33 +2867,14 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       {resultModalTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
           <div className="printable-modal-card bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-full max-w-[520px] overflow-hidden flex flex-col max-h-[92vh]">
-            {/* Top Dark Navy Header */}
-            <div className="printable-header bg-[#0b1329] px-5 sm:px-6 py-4 text-white shrink-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono tracking-wider text-slate-400 font-bold uppercase">
-                    C-TRACK FIELD APP
-                  </span>
-                  <span className="text-slate-600">•</span>
-                  {(resultModalTask.has_issue || resultModalTask.issue_status === 'Issue') ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-950/80 border border-rose-500/40 text-rose-400 text-[10px] font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
-                      <span>Issue</span>
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-[10px] font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      <span>Completed</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="mt-2.5">
-                <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">Field Agent Worksheet</h2>
-                <p className="text-xs text-blue-400 font-mono font-medium mt-0.5">
-                  {resultModalTask.job_number || '#DSVEXP/2605/2551'}
-                </p>
-              </div>
+            {/* Light Header */}
+            <div className="px-5 sm:px-6 py-4 border-b border-slate-200 flex items-center gap-2 shrink-0">
+              <h2 className="text-[15px] font-bold text-slate-900 tracking-tight uppercase">
+                Field Agent Worksheet
+              </h2>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-[10px] font-bold tracking-wide">
+                A3 INSPECTION RESULT
+              </span>
             </div>
 
             {/* Scrollable Body Content */}
@@ -2920,134 +2901,131 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 </div>
               )}
 
-              {/* 1. JOB INFORMATION */}
+              {/* 1. ASSIGNMENT & CREATION INFORMATION */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5 text-slate-800 text-[11px] font-bold uppercase tracking-wider">
-                    <Building2 size={13} className="text-[#2563eb]" />
-                    <span>JOB INFORMATION</span>
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  ASSIGNMENT &amp; CREATION INFORMATION
+                </h3>
+                <div className="border border-slate-200 rounded-xl p-4 grid grid-cols-2 gap-x-6 gap-y-4">
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">Job Number</span>
+                    <span className="text-xs font-bold text-slate-900 block mt-0.5 font-mono">
+                      {resultModalTask.job_number || '#DSVEXP/2605/2551'}
+                    </span>
                   </div>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    ID : {resultModalTask.job_number.replace(/^#/, '') || 'DSVEXP/2605/2551'}
-                  </span>
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">Job Type</span>
+                    <span className="inline-flex mt-1 px-2.5 py-0.5 rounded-full border border-blue-200 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase">
+                      Export
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">Customer</span>
+                    <span className="text-xs font-bold text-slate-900 block mt-0.5">
+                      {resultModalTask.customer_name || '-'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">Sales Executive</span>
+                    <span className="text-xs font-bold text-slate-900 block mt-0.5">
+                      Adelia (HQ)
+                    </span>
+                  </div>
+                  <div className="col-span-2 grid grid-cols-3 gap-x-6 gap-y-2 pt-3 border-t border-slate-100">
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">Shipper</span>
+                      <span className="text-[11px] font-bold text-slate-800 block mt-0.5 truncate">{resultModalTask.shipper || '-'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">MAWB</span>
+                      <span className="text-[11px] font-bold text-slate-800 block mt-0.5 font-mono truncate">{resultModalTask.mawb || '-'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">HAWB</span>
+                      <span className="text-[11px] font-bold text-slate-800 block mt-0.5 font-mono truncate">{resultModalTask.hawb || '-'}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3">
+              </div>
+
+              {/* 2. ROUTE & HANDOVER TIME */}
+              <div>
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  ROUTE &amp; HANDOVER TIME
+                </h3>
+                <div className="border border-slate-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[11px] text-slate-500">Waktu &amp; Lokasi GPS.</span>
+                    <span className="text-[11px] font-bold text-slate-900">
+                      {formatTaskDateDisplay(resultModalTask.handover_datetime)}
+                    </span>
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <span className="text-[10px] text-slate-400 font-medium block">Job Number</span>
-                      <span className="text-xs font-bold text-slate-900 block mt-0.5 font-mono">
-                        {resultModalTask.job_number || '#DSVEXP/2605/2551'}
+                    <div className="border border-slate-100 bg-slate-50/60 rounded-lg px-3 py-2">
+                      <span className="text-[9px] font-semibold uppercase tracking-wide text-slate-400 block">
+                        Port Asal (Handover)
                       </span>
-                      <span className="text-[10px] text-slate-400 font-medium block mt-2">Sales</span>
-                      <span className="text-xs font-bold text-slate-900 block mt-0.5">
-                        Adelia
+                      <span className="flex items-center gap-1.5 text-[11px] font-bold text-slate-800 mt-1">
+                        <MapPin size={12} className="text-slate-400 shrink-0" />
+                        <span className="truncate">{resultModalTask.handover_location || 'Gate 3 Priok'}</span>
                       </span>
                     </div>
-                    <div>
-                      <span className="text-[10px] text-slate-400 font-medium block">Transaction ID</span>
-                      <span className="text-xs font-bold text-slate-900 block mt-0.5 font-mono">
-                        TRX-0526-03382
+                    <div className="border border-slate-100 bg-slate-50/60 rounded-lg px-3 py-2">
+                      <span className="text-[9px] font-semibold uppercase tracking-wide text-slate-400 block">
+                        Tujuan (Destination)
                       </span>
-                      <span className="text-[10px] text-slate-400 font-medium block mt-2">Created By</span>
-                      <span className="text-xs font-bold text-slate-900 block mt-0.5">
-                        {resultModalTask.field_agent_name || 'Marsel'}
+                      <span className="flex items-center gap-1.5 text-[11px] font-bold text-slate-800 mt-1">
+                        <Truck size={12} className="text-slate-400 shrink-0" />
+                        <span className="truncate">{resultModalTask.consignee || '-'}</span>
                       </span>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* 2. SHIPMENT INFORMATION */}
-              <div>
-                <div className="flex items-center gap-1.5 text-slate-800 text-[11px] font-bold uppercase tracking-wider mb-2">
-                  <Truck size={13} className="text-[#2563eb]" />
-                  <span>SHIPMENT INFORMATION</span>
-                </div>
-                <div className="bg-[#f8fafd] border border-[#e2e8f0] rounded-xl p-3 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Customer:</span>
-                    <span className="font-bold text-slate-900 text-right">{resultModalTask.customer_name || 'PT DSV Transport Indonesia'}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Shipper:</span>
-                    <span className="font-bold text-slate-900 text-right">{resultModalTask.shipper || 'PT Example Shipper'}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Consignee:</span>
-                    <span className="font-bold text-slate-900 text-right">{resultModalTask.consignee || 'PT Example Consignee'}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">MAWB:</span>
-                    <span className="font-bold text-slate-900 font-mono text-right">{resultModalTask.mawb || '123-45678901'}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">HAWB:</span>
-                    <span className="font-bold text-[#2563eb] font-mono text-right">{resultModalTask.hawb || 'HAWB-00123'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 3. WAKTU SERAH TERIMA */}
-              <div>
-                <div className="flex items-center gap-1.5 text-slate-800 text-[11px] font-bold uppercase tracking-wider mb-2">
-                  <Clock size={13} className="text-[#2563eb]" />
-                  <span>WAKTU SERAH TERIMA</span>
-                </div>
-                <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-3 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1.5 text-slate-500">
-                      <Calendar size={13} className="text-slate-400" />
-                      <span>Handover Time:</span>
+                  <div className="mt-3 flex items-center justify-between gap-2 border border-slate-100 bg-slate-50/60 rounded-lg px-3 py-2">
+                    <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-[#2563eb] shrink-0" />
+                      <span className="truncate">{resultModalTask.handover_location || 'Cengkareng, Banten, Indonesia'}</span>
                     </span>
-                    <span className="font-bold text-slate-900">
-                      20 Sep 2026, 10:30
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1.5 text-slate-500">
-                      <MapPin size={13} className="text-rose-500" />
-                      <span>Handover Location:</span>
-                    </span>
-                    <span className="font-bold text-slate-900">
-                      {resultModalTask.handover_location || 'Gate 3 Priok'}
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-emerald-200 bg-emerald-50 text-emerald-700 text-[9px] font-bold uppercase shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                      GPS Verified
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* 4. DATA FISIK BARANG */}
+              {/* 3. COMMODITY & CARGO DETAILS */}
               <div>
-                <div className="flex items-center gap-1.5 text-slate-800 text-[11px] font-bold uppercase tracking-wider mb-2">
-                  <Box size={13} className="text-[#2563eb]" />
-                  <span>DATA FISIK BARANG</span>
-                </div>
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  COMMODITY &amp; CARGO DETAILS
+                </h3>
                 <div className="grid grid-cols-3 gap-2.5">
-                  <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-2.5 text-center">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">JUMLAH COIL</span>
-                    <span className="text-sm font-extrabold text-slate-900 mt-0.5 block">12</span>
-                  </div>
-                  <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-2.5 text-center">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">ACTUAL PIECES</span>
-                    <span className="text-sm font-extrabold text-slate-900 mt-0.5 block">
-                      {resultModalTask.cargo_pieces || '12 Pcs'}
+                  <div className="border border-slate-200 rounded-xl px-3 py-2.5 text-center">
+                    <span className="text-[9px] font-semibold uppercase tracking-wide text-slate-400 block">Komoditas</span>
+                    <span className="text-xs font-bold text-slate-900 mt-1 block leading-tight">
+                      {resultModalTask.packaging_type || 'Instant Noodles & Food'}
                     </span>
                   </div>
-                  <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-2.5 text-center">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">GROSS WEIGHT</span>
-                    <span className="text-sm font-extrabold text-[#2563eb] mt-0.5 block">
-                      {resultModalTask.gross_weight || '2,450 Kg'}
+                  <div className="border border-slate-200 rounded-xl px-3 py-2.5 text-center">
+                    <span className="text-[9px] font-semibold uppercase tracking-wide text-slate-400 block">Jumlah Koli</span>
+                    <span className="text-xs font-bold text-slate-900 mt-1 block">
+                      {resultModalTask.cargo_pieces || '24 Pcs'}
+                    </span>
+                  </div>
+                  <div className="border border-slate-200 rounded-xl px-3 py-2.5 text-center">
+                    <span className="text-[9px] font-semibold uppercase tracking-wide text-blue-600 block">Berat Aktual</span>
+                    <span className="text-xs font-bold text-blue-600 mt-1 block">
+                      {resultModalTask.gross_weight || '360.0 Kg'}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* 5. FOTO BUKTI LAPANGAN */}
+              {/* 4. FIELD PHOTO EVIDENCE */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5 text-slate-800 text-[11px] font-bold uppercase tracking-wider">
-                    <Camera size={13} className="text-[#2563eb]" />
-                    <span>FOTO BUKTI LAPANGAN</span>
-                  </div>
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    FIELD PHOTO EVIDENCE
+                  </h3>
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold">
                     <Check size={11} className="text-emerald-600" />
                     <span>4/4 Verified</span>
@@ -3066,7 +3044,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       <span className="text-[9px] text-slate-400 font-mono mt-0.5">IMG_8411.JPG • 10:12</span>
                     </div>
                     <div className="px-2 py-1 bg-white flex items-center justify-between border-t border-slate-100">
-                      <span className="text-[10px] font-semibold text-slate-800">1. Foto Keseluruhan</span>
+                      <span className="text-[10px] font-semibold text-slate-800">1. Overall Cargo</span>
                       <span className="text-[10px] font-bold text-emerald-600">OK</span>
                     </div>
                   </div>
@@ -3083,7 +3061,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       <span className="text-[9px] text-slate-400 font-mono mt-0.5">IMG_8412.JPG • 10:14</span>
                     </div>
                     <div className="px-2 py-1 bg-white flex items-center justify-between border-t border-slate-100">
-                      <span className="text-[10px] font-semibold text-slate-800">2. Marking / Label</span>
+                      <span className="text-[10px] font-semibold text-slate-800">2. Marking &amp; Label</span>
                       <span className="text-[10px] font-bold text-emerald-600">Match</span>
                     </div>
                   </div>
@@ -3100,7 +3078,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       <span className="text-[9px] text-slate-400 font-mono mt-0.5">IMG_8413.JPG • 10:15</span>
                     </div>
                     <div className="px-2 py-1 bg-white flex items-center justify-between border-t border-slate-100">
-                      <span className="text-[10px] font-semibold text-slate-800">3. Foto Seal</span>
+                      <span className="text-[10px] font-semibold text-slate-800">3. Container Seal</span>
                       <span className="text-[10px] font-bold text-emerald-600">Intact</span>
                     </div>
                   </div>
@@ -3117,19 +3095,18 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       <span className="text-[9px] text-slate-400 font-mono mt-0.5">Inspected • 10:20</span>
                     </div>
                     <div className="px-2 py-1 bg-white flex items-center justify-between border-t border-slate-100">
-                      <span className="text-[10px] font-semibold text-slate-800">4. Area Kerusakan</span>
-                      <span className="text-[9px] font-bold text-emerald-600">No damage reported</span>
+                      <span className="text-[10px] font-semibold text-slate-800">4. Surface Detail</span>
+                      <span className="text-[10px] font-bold text-blue-600">Verified</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* 6. DOKUMEN PENDUKUNG & NAMA PETUGAS */}
+              {/* 5. DOCUMENT ATTACHMENTS */}
               <div>
-                <div className="flex items-center gap-1.5 text-slate-800 text-[11px] font-bold uppercase tracking-wider mb-2">
-                  <FileText size={13} className="text-[#2563eb]" />
-                  <span>DOKUMEN PENDUKUNG &amp; NAMA PETUGAS</span>
-                </div>
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  DOCUMENT ATTACHMENTS
+                </h3>
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between p-2.5 bg-white border border-[#e2eaf5] rounded-xl shadow-2xs">
                     <div className="flex items-center gap-2">
@@ -3137,8 +3114,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                         <FileText size={14} />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-slate-800 block">Packing List.pdf</span>
-                        <span className="text-[10px] text-slate-400">PDF • 1.4 MB • Verified</span>
+                        <span className="text-xs font-bold text-slate-800 block">Primary Document</span>
+                        <span className="text-[10px] text-slate-400">Packing List.pdf • PDF • 1.4 MB</span>
                       </div>
                     </div>
                     <button
@@ -3165,8 +3142,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                         <FileText size={14} />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-slate-800 block">MSDS.pdf</span>
-                        <span className="text-[10px] text-slate-400">PDF • 860 KB • Material Safety Sheet</span>
+                        <span className="text-xs font-bold text-slate-800 block">Supporting Document</span>
+                        <span className="text-[10px] text-slate-400">MSDS.pdf • PDF • 860 KB</span>
                       </div>
                     </div>
                     <button
@@ -3207,7 +3184,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 </div>
               </div>
 
-              {/* 7. CHECKLIST CENTANG & STATUS MASALAH */}
+              {/* 6. CHECKLIST CENTANG & STATUS MASALAH */}
               <div>
                 <div className="flex items-center gap-1.5 text-slate-800 text-[11px] font-bold uppercase tracking-wider mb-2">
                   <CheckCircle size={13} className="text-[#2563eb]" />
@@ -3252,48 +3229,64 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 </div>
               </div>
 
-              {/* 8. ISSUE */}
+              {/* 7. FIELD ISSUES */}
               <div>
-                <div className="flex items-center gap-1.5 text-slate-800 text-[11px] font-bold uppercase tracking-wider mb-2">
-                  <AlertCircle size={13} className="text-[#2563eb]" />
-                  <span>ISSUE</span>
-                </div>
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  FIELD ISSUES
+                </h3>
                 {(resultModalTask.has_issue || resultModalTask.issue_status === 'Issue') ? (
-                  <div className="bg-[#fef2f2] border border-[#fecaca] rounded-xl p-3 flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0 mt-0.5">
-                      <AlertOctagon size={14} />
+                  <div className="rounded-xl border border-red-200 bg-red-50/70 p-3.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-red-600 shrink-0" />
+                        <span className="px-2.5 py-0.5 rounded bg-red-600 text-white text-[9px] font-bold uppercase tracking-wide">
+                          Yes - Has Issue
+                        </span>
+                      </span>
+                      <span className="text-[9px] font-bold uppercase tracking-wide text-red-500">
+                        Severity: Medium
+                      </span>
                     </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-red-900">{resultModalTask.issue_type || 'Cargo Damage'} Detected</h4>
-                      <p className="text-[11px] text-red-700 mt-0.5 leading-relaxed">
-                        {resultModalTask.issue_note || 'Physical damage detected during on-site inspection.'}
-                      </p>
-                    </div>
+                    <p className="text-[10px] font-bold text-red-600 mt-3">Agent Issue Note:</p>
+                    <p className="mt-1.5 rounded-md border border-red-200 bg-white/70 px-3 py-2 text-[11px] italic text-red-600 leading-relaxed">
+                      &ldquo;{resultModalTask.issue_note || 'Tidak ada catatan tambahan dari field agent.'}&rdquo;
+                    </p>
                   </div>
                 ) : (
-                  <div className="bg-[#ecfdf5] border border-[#a7f3d0] rounded-xl p-3 flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
-                      <Check size={14} />
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-700 shrink-0" />
+                        <span className="px-2.5 py-0.5 rounded bg-emerald-700 text-white text-[9px] font-bold uppercase tracking-wide">
+                          No - Clear/Safe
+                        </span>
+                      </span>
                     </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-emerald-900">No operational issue detected.</h4>
-                      <p className="text-[11px] text-emerald-700 mt-0.5 leading-relaxed">
-                        Seluruh parameter kuantitas, segel, dan fisik kargo telah terverifikasi normal.
-                      </p>
-                    </div>
+                    <p className="text-[10px] font-bold text-emerald-700 mt-3">Agent Issue Note:</p>
+                    <p className="mt-1.5 rounded-md border border-emerald-200 bg-white/70 px-3 py-2 text-[11px] italic text-emerald-700 leading-relaxed">
+                      &ldquo;Tidak terdapat masalah&rdquo;
+                    </p>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Bottom Actions Footer */}
-            <div className="printable-footer px-5 sm:px-6 py-3.5 bg-white border-t border-slate-200 flex items-center justify-end gap-3 shrink-0">
+            <div className="printable-footer px-5 sm:px-6 py-3.5 bg-white border-t border-slate-200 flex items-center gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setResultModalTask(null)}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer text-center"
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-bold transition-colors cursor-pointer text-center"
               >
-                Close
+                Close Panel
+              </button>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="flex-[2] inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-bold transition-colors cursor-pointer"
+              >
+                <Download size={14} />
+                Export PDF
               </button>
             </div>
           </div>
