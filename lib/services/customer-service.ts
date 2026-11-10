@@ -427,20 +427,19 @@ export async function createCustomer(
       return { success: false, error: "User identity is unavailable for the customer record." };
     }
 
-    let dupQuery = (supabase as any)
+    // Global duplicate check: 1 Company can only be added by 1 sales across the whole CRM system.
+    const dupQuery = (supabase as any)
       .from("a1_company_list")
-      .select("company_list_id")
+      .select("company_list_id, created_by")
       .ilike("company_name", input.company_name.trim().replace(/[\\%_]/g, "\\$&"))
       .is("deleted_at", null);
-    if (!userScope.isManager) {
-      dupQuery = dupQuery.in("created_by", userScope.identifiers);
-    }
+
     const { data: existing, error: duplicateCheckError } = await dupQuery;
     if (duplicateCheckError) return { success: false, error: duplicateCheckError.message };
     if (existing?.length) {
       return {
         success: false,
-        error: "CUSTOMER_003: Gunakan nama unik",
+        error: "DUPLICATE_COMPANY: This company is already registered",
       };
     }
 
@@ -486,7 +485,26 @@ export async function updateCustomer(
       updated_at: new Date().toISOString(),
     };
 
-    if (input.company_name) updatePayload.company_name = input.company_name.trim();
+    if (input.company_name) {
+      const cleanName = input.company_name.trim();
+      updatePayload.company_name = cleanName;
+
+      // Global duplicate check for update: ensure company name is not already claimed by another company
+      const { data: existingDup, error: dupCheckErr } = await (supabase as any)
+        .from("a1_company_list")
+        .select("company_list_id")
+        .ilike("company_name", cleanName.replace(/[\\%_]/g, "\\$&"))
+        .neq("company_list_id", customerId)
+        .is("deleted_at", null);
+
+      if (dupCheckErr) return { success: false, error: dupCheckErr.message };
+      if (existingDup && existingDup.length > 0) {
+        return {
+          success: false,
+          error: "DUPLICATE_COMPANY: This company is already on the company list",
+        };
+      }
+    }
     if (input.address !== undefined) updatePayload.address = input.address.trim();
     if (input.pic_full_name) updatePayload.name = input.pic_full_name.trim();
     if (input.pic_phone_number !== undefined) updatePayload.pic_phone_number = input.pic_phone_number.trim();

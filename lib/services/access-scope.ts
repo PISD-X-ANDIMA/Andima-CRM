@@ -70,23 +70,41 @@ export async function getCompanyScope(): Promise<CompanyScope | null> {
     return { userId: userScope.user.id, isManager: true, companyIds: [] };
   }
 
+  // 1. Try a2_company_sales if populated
+  let companyIds: string[] = [];
   const employeeId = await resolveEmployeeId(supabase, {
     id: userScope.user.id,
     email: userScope.user.email,
   });
-  if (!employeeId) return { userId: userScope.user.id, isManager: false, companyIds: [] };
 
-  const { data, error } = await supabase
-    .from("a2_company_sales")
-    .select("company_id")
-    .eq("sales_pic_id", employeeId)
-    .eq("is_active", true);
+  if (employeeId) {
+    const { data: salesRel } = await supabase
+      .from("a2_company_sales")
+      .select("company_id")
+      .eq("sales_pic_id", employeeId)
+      .eq("is_active", true);
 
-  if (error) return { userId: userScope.user.id, isManager: false, companyIds: [] };
+    if (salesRel && salesRel.length > 0) {
+      companyIds = salesRel.map((row: { company_id: string }) => String(row.company_id));
+    }
+  }
+
+  // 2. Fallback to a1_company_list.created_by (owned companies by sales identifiers/name)
+  if (companyIds.length === 0) {
+    const { data: directOwned } = await supabase
+      .from("a1_company_list")
+      .select("company_list_id")
+      .in("created_by", userScope.identifiers)
+      .is("deleted_at", null);
+
+    if (directOwned && directOwned.length > 0) {
+      companyIds = directOwned.map((row: { company_list_id: string }) => String(row.company_list_id));
+    }
+  }
 
   return {
     userId: userScope.user.id,
     isManager: false,
-    companyIds: Array.from(new Set((data || []).map((row: { company_id: string }) => String(row.company_id)))),
+    companyIds: Array.from(new Set(companyIds)),
   };
 }

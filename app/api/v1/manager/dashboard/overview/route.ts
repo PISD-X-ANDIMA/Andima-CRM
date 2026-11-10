@@ -35,7 +35,7 @@ export async function GET(_request: NextRequest) {
 
     const totalCustomers = (companies || []).length;
 
-    // 3. Fetch sales executives list strictly from b2_register + d3_positions
+    // 3. Fetch sales executives list from b2_register + d3_positions, with fallback to d3_employee and active CRM assignees
     const { data: registers } = await (supabase as any)
       .from("b2_register")
       .select("id, full_name, email, position_id, is_active");
@@ -60,7 +60,35 @@ export async function GET(_request: NextRequest) {
       }
     });
 
-    const execArray = Array.from(salesExecNames).sort();
+    // Also include sales executives from d3_employee whose position resolves to sales_executive
+    try {
+      const { data: employees } = await (supabase as any)
+        .from("d3_employee")
+        .select("id, full_name, email, position_id");
+
+      (employees || []).forEach((e: any) => {
+        const pos = e.position_id ? posMap.get(e.position_id) : null;
+        const role = resolveCrmRoleFromPosition(pos);
+        if (role === "sales_executive" && e.full_name) {
+          salesExecNames.add(String(e.full_name).trim());
+        }
+      });
+    } catch {}
+
+    // Also include active Sales Executives who have assigned accounts in CRM (a1_company_list)
+    (companies || []).forEach((c: any) => {
+      if (c.created_by && c.created_by.trim()) {
+        salesExecNames.add(String(c.created_by).trim());
+      }
+    });
+
+    // Sort executives so those with active companies appear first, then alphabetically
+    const execArray = Array.from(salesExecNames).sort((a, b) => {
+      const aCust = (companies || []).filter((c: any) => String(c.created_by || "").toLowerCase() === a.toLowerCase()).length;
+      const bCust = (companies || []).filter((c: any) => String(c.created_by || "").toLowerCase() === b.toLowerCase()).length;
+      if (bCust !== aCust) return bCust - aCust;
+      return a.localeCompare(b);
+    });
     const totalSalesExecutives = execArray.length;
 
     // 4. Fetch meetings this week
@@ -88,6 +116,7 @@ export async function GET(_request: NextRequest) {
     const totalNeedBackup = needBackupConversations.length;
 
     const compNameMap = new Map((companies || []).map((c: any) => [c.company_list_id, c.company_name]));
+    const compOwnerMap = new Map((companies || []).map((c: any) => [c.company_list_id, c.created_by]));
     const regNameMap = new Map((registers || []).map((r: any) => [r.id, r.full_name]));
 
     // 6. Build Sales Executive table stats
@@ -103,8 +132,8 @@ export async function GET(_request: NextRequest) {
       }).length;
 
       const execIssues = needBackupConversations.filter((c: any) => {
-        const rep = String(regNameMap.get(c.sales_pic_id) || regNameMap.get(c.created_by) || c.created_by || c.sales_executive || "").toLowerCase();
-        return rep === execName.toLowerCase();
+        const rep = String(compOwnerMap.get(c.customer_id) || regNameMap.get(c.sales_pic_id) || regNameMap.get(c.created_by) || c.created_by || c.sales_executive || "").toLowerCase();
+        return rep === execName.toLowerCase() || rep.includes(execName.toLowerCase());
       }).length;
 
       return {
@@ -120,7 +149,7 @@ export async function GET(_request: NextRequest) {
     const latestIssues = needBackupConversations.slice(0, 5).map((c: any) => ({
       id: c.id ? `TKT-${String(c.id).slice(0, 8).toUpperCase()}` : "ISSUE",
       company_name: compNameMap.get(c.customer_id) || c.company_name || c.customer_name || "Company",
-      executive_name: regNameMap.get(c.sales_pic_id) || regNameMap.get(c.created_by) || c.sales_executive || c.created_by || "Sales Executive",
+      executive_name: compOwnerMap.get(c.customer_id) || regNameMap.get(c.sales_pic_id) || regNameMap.get(c.created_by) || c.sales_executive || c.created_by || "Sales Executive",
       meeting_date: c.conversation_date || c.meeting_date || c.date || "-",
       meeting_time: c.conversation_time || c.meeting_time || c.time || "-",
       badge: "Need backup",
