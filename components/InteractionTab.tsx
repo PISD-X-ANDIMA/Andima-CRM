@@ -258,7 +258,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
   };
 
-  const [channelSelection, setChannelSelection] = useState<'WhatsApp' | 'Meeting'>('WhatsApp');
+  const [channelSelection, setChannelSelection] = useState<'WhatsApp' | 'Meeting' | null>(null);
   const [recordSummary, setRecordSummary] = useState('');
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
@@ -811,7 +811,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
     const yyyy = today.getFullYear();
     setRecordDate(`${dd}/${mm}/${yyyy}`);
 
-    setChannelSelection('WhatsApp');
+    setChannelSelection(null);
     setRecordSummary('');
     setNewUploadedFiles([]);
     setCreateNeedAssistance(false);
@@ -909,7 +909,6 @@ Exported on: ${new Date().toLocaleString('id-ID')}
 
     const hasAccount = Boolean(selectedAccount.trim());
     const hasDate = Boolean(recordDate.trim());
-    const hasChannel = Boolean(channelSelection);
     const summaryText = recordSummary.trim();
 
     if (!hasAccount) {
@@ -922,7 +921,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       return;
     }
 
-    if (!hasChannel) {
+    if (channelSelection === null) {
       setCreateFormError('Channel harus dipilih.');
       return;
     }
@@ -1927,7 +1926,11 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     File Lampiran (Opsional)
                   </label>
                   <span className="text-[10px] text-slate-400 font-medium">
-                    {channelSelection === 'WhatsApp' ? 'Khusus .txt • Max 5MB' : 'Dokumen / Gambar • Max 5MB'}
+                    {channelSelection === 'WhatsApp'
+                      ? 'Khusus .txt • Max 5MB'
+                      : channelSelection === 'Meeting'
+                        ? 'Dokumen / Gambar • Max 5MB'
+                        : 'Pilih channel terlebih dahulu'}
                   </span>
                 </div>
                 <div
@@ -1952,20 +1955,30 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                   <p className="text-xs font-bold text-slate-800">
                     {channelSelection === 'WhatsApp'
                       ? 'Upload chat export .txt file (Khusus WhatsApp)'
-                      : 'Upload meeting notes & dokumen (.pdf, .docx, .xlsx, .png)'}
+                      : channelSelection === 'Meeting'
+                        ? 'Upload meeting notes & dokumen (.pdf, .docx, .xlsx, .png)'
+                        : 'Pilih channel type terlebih dahulu untuk melampirkan berkas'}
                   </p>
                   <p className="text-[11px] text-slate-500 mt-1">
                     Drag &amp; drop berkas di sini, atau <span className="text-[#2563eb] font-semibold underline">Browse files</span>
                   </p>
                   <div className={`mt-3 px-3 py-1 rounded-lg border text-[10px] font-semibold ${attachmentError ? 'border-red-200 bg-red-50 text-red-600' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
-                    Ukuran maks: 5MB • Format Channel {channelSelection}: {channelSelection === 'WhatsApp' ? 'HANYA .txt' : '.pdf, .docx, .xlsx, .png'}
+                    {channelSelection === null
+                      ? 'Ukuran maks: 5MB • Pilih channel type untuk melihat format yang diterima'
+                      : `Ukuran maks: 5MB • Format Channel ${channelSelection}: ${channelSelection === 'WhatsApp' ? 'HANYA .txt' : '.pdf, .docx, .xlsx, .png'}`}
                   </div>
                 </div>
                 <input
                   ref={createFileInputRef}
                   type="file"
                   multiple
-                  accept={channelSelection === 'WhatsApp' ? '.txt,text/plain' : '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.webp,.txt,.csv'}
+                  accept={
+                    channelSelection === 'WhatsApp'
+                      ? '.txt,text/plain'
+                      : channelSelection === 'Meeting'
+                        ? '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.webp,.txt,.csv'
+                        : undefined
+                  }
                   onChange={(e) => handleCreateFileUpload(e.target.files)}
                   className="hidden"
                 />
