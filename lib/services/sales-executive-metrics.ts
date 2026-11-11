@@ -58,7 +58,9 @@ export async function getSalesExecutiveMetrics(executiveId?: string): Promise<Sa
   const supabase = await createServerSupabaseClient();
   if (!supabase) return EMPTY_METRICS;
   try {
-    await cancelExpiredOneTimeMeetings();
+    // Non-blocking background cancellation to eliminate roundtrip latency from API response
+    cancelExpiredOneTimeMeetings().catch(() => {});
+
     const userScope = await getCurrentUserScope(supabase);
 
     let custCountQuery = (supabase as any).from("a1_company_list").select("company_list_id", { count: "exact", head: true }).is("deleted_at", null);
