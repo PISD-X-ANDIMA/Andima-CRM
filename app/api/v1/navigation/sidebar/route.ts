@@ -20,7 +20,7 @@ const managerCustomerSuccessMenu = [
   { label: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { label: "Record Conversation", href: "/dashboard/record-conversation" },
   { label: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
-  { label: "Manage Account", href: "/dashboard/manage-field-agent-account" },
+  { label: "Need Backup", href: "/dashboard/need-backup" },
   { label: "Manage User Roles", href: "/dashboard/manager-customer-success/role-management" },
 ];
 

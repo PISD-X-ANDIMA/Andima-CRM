@@ -114,9 +114,10 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
       return { customers: [], total: 0, page, perPage: validPerPage, totalPages: 1 };
     }
     if (scope.isManager) {
-      if (options.executiveId) {
-        countQuery = countQuery.eq("created_by", options.executiveId);
-        dataQuery = dataQuery.eq("created_by", options.executiveId);
+      if (options.executiveId && options.executiveId.toLowerCase() !== "all") {
+        const execFilter = options.executiveId.trim();
+        countQuery = countQuery.ilike("created_by", `%${execFilter}%`);
+        dataQuery = dataQuery.ilike("created_by", `%${execFilter}%`);
       }
     } else {
       if (scope.companyIds.length === 0) {
