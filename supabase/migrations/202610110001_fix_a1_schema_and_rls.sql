@@ -3,7 +3,7 @@
 -- TUJUAN: Menyelaraskan Database Supabase dengan Tiket Planka SE-02:
 --         1. Mengaktifkan Row Level Security (RLS) pada tabel A1
 --         2. Menerapkan Kebijakan RLS (Policy) untuk Mengunci Akses Publik Anonim
---         3. Menambahkan Kompatibilitas View a1_customers dan a1_meetings
+--         3. Menyediakan a1_customers dan a1_meetings
 --         4. Menjamin Data Retention Rule (Soft Delete & Protected Foreign Key)
 -- ==============================================================================
 
@@ -93,7 +93,7 @@ CREATE POLICY "a1_customer_meetings_service_role"
   USING (true)
   WITH CHECK (true);
 
--- 5. VIEW KOMPATIBILITAS (SE-02 Kepatuhan Penamaan Tabel dan Kolom Tiket Planka)
+-- 5. a1_customers DAN a1_meetings
 -- Memungkinkan query ke a1_customers dan a1_meetings langsung berfungsi transparan.
 CREATE OR REPLACE VIEW public.a1_customers AS
 SELECT 
@@ -134,3 +134,4 @@ FROM public.a1_customer_meetings;
 -- 6. BERIKAN HAK AKSES VIEW KE ROLE AUTHENTICATED
 GRANT SELECT ON public.a1_customers TO authenticated, service_role;
 GRANT SELECT ON public.a1_meetings TO authenticated, service_role;
+
