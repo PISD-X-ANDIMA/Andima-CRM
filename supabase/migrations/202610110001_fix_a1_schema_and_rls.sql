@@ -93,45 +93,7 @@ CREATE POLICY "a1_customer_meetings_service_role"
   USING (true)
   WITH CHECK (true);
 
--- 5. a1_customers DAN a1_meetings
--- Memungkinkan query ke a1_customers dan a1_meetings langsung berfungsi transparan.
-CREATE OR REPLACE VIEW public.a1_customers AS
-SELECT 
-  company_list_id AS id,
-  company_name,
-  address,
-  name AS pic_name,
-  pic_phone_number AS pic_number,
-  customer_code,
-  job_number,
-  created_by,
-  created_at,
-  updated_at,
-  deleted_at
-FROM public.a1_company_list;
-
-CREATE OR REPLACE VIEW public.a1_meetings AS
-SELECT 
-  id,
-  company_id AS customer_id,
-  agenda AS topic,
-  meeting_date AS date,
-  start_time,
-  end_time,
-  representative_name AS andima_rep,
-  pic_name,
-  meeting_type,
-  COALESCE(location, meeting_link) AS location_link,
-  schedule_type AS frequency,
-  status,
-  notes,
-  is_active,
-  created_at,
-  updated_at,
-  deleted_at
-FROM public.a1_customer_meetings;
-
--- 6. BERIKAN HAK AKSES VIEW KE ROLE AUTHENTICATED
-GRANT SELECT ON public.a1_customers TO authenticated, service_role;
-GRANT SELECT ON public.a1_meetings TO authenticated, service_role;
+-- 5. PASTIKAN TIDAK ADA VIEW TAMBAHAN (MENGGUNAKAN TABEL FISIK ASLI)
+DROP VIEW IF EXISTS public.a1_customers CASCADE;
+DROP VIEW IF EXISTS public.a1_meetings CASCADE;
 
