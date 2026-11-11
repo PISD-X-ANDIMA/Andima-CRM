@@ -8,56 +8,34 @@ export interface CompanyScope {
   companyIds: string[];
 }
 
+const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
 /**
- * Resolves the d3_employee row that owns CRM records for the signed-in user.
- * b2_register holds the HR employee number; d3_employee is what
- * a2_company_sales.sales_pic_id references.
+ * Builds a PostgREST OR filter matching either UUID `created_by` or legacy/display `created_by_name`
+ * on the `a1_customers` table.
  */
-async function resolveEmployeeId(supabase: any, user: { id: string; email?: string | null }): Promise<string | null> {
-  let register: any = null;
-
-  const { data: byId } = await supabase
-    .from("b2_register")
-    .select("id, employee_id, email")
-    .eq("id", user.id)
-    .maybeSingle();
-  register = byId ?? null;
-
-  if (!register && user.email) {
-    const { data: byEmail } = await supabase
-      .from("b2_register")
-      .select("id, employee_id, email")
-      .ilike("email", user.email.trim())
-      .maybeSingle();
-    register = byEmail ?? null;
+export function buildCustomerOwnerFilter(identifiers: string[], userId?: string): string {
+  const parts: string[] = [];
+  if (userId && UUID_REGEX.test(userId)) {
+    parts.push(`created_by.eq.${userId}`);
   }
-
-  if (register?.employee_id) {
-    const { data: byEmployeeNumber } = await supabase
-      .from("d3_employee")
-      .select("id")
-      .eq("employee_id", String(register.employee_id))
-      .maybeSingle();
-    if (byEmployeeNumber?.id) return String(byEmployeeNumber.id);
+  const uuidMatches = identifiers.filter((v) => UUID_REGEX.test(v));
+  for (const id of uuidMatches) {
+    if (id !== userId) parts.push(`created_by.eq.${id}`);
   }
-
-  if (user.email) {
-    const { data: byEmployeeEmail } = await supabase
-      .from("d3_employee")
-      .select("id")
-      .ilike("email", user.email.trim())
-      .maybeSingle();
-    if (byEmployeeEmail?.id) return String(byEmployeeEmail.id);
+  const cleanNames = identifiers
+    .map((v) => v.trim())
+    .filter(Boolean)
+    .map((v) => `"${v.replace(/"/g, '\\"')}"`);
+  if (cleanNames.length > 0) {
+    parts.push(`created_by_name.in.(${cleanNames.join(",")})`);
   }
-
-  return null;
+  return parts.join(",");
 }
 
 /**
- * Resolves which companies the signed-in user may read.
- * Managers see every company. Everyone else sees only companies mapped to
- * their d3_employee row in a2_company_sales.
- * Returns null when there is no valid session.
+ * Resolves which companies the signed-in user may read from `a1_customers`.
+ * Managers see every company. Everyone else sees only companies owned by them.
  */
 export async function getCompanyScope(): Promise<CompanyScope | null> {
   const supabase = await createServerSupabaseClient();
@@ -70,36 +48,21 @@ export async function getCompanyScope(): Promise<CompanyScope | null> {
     return { userId: userScope.user.id, isManager: true, companyIds: [] };
   }
 
-  // 1. Try a2_company_sales if populated
   let companyIds: string[] = [];
-  const employeeId = await resolveEmployeeId(supabase, {
-    id: userScope.user.id,
-    email: userScope.user.email,
-  });
+  const ownerFilter = buildCustomerOwnerFilter(userScope.identifiers, userScope.user.id);
+  let query = supabase
+    .from("a1_customers")
+    .select("id")
+    .is("deleted_at", null);
 
-  if (employeeId) {
-    const { data: salesRel } = await supabase
-      .from("a2_company_sales")
-      .select("company_id")
-      .eq("sales_pic_id", employeeId)
-      .eq("is_active", true);
-
-    if (salesRel && salesRel.length > 0) {
-      companyIds = salesRel.map((row: { company_id: string }) => String(row.company_id));
-    }
+  if (ownerFilter) {
+    query = query.or(ownerFilter);
   }
 
-  // 2. Fallback to a1_company_list.created_by (owned companies by sales identifiers/name)
-  if (companyIds.length === 0) {
-    const { data: directOwned } = await supabase
-      .from("a1_company_list")
-      .select("company_list_id")
-      .in("created_by", userScope.identifiers)
-      .is("deleted_at", null);
+  const { data: directOwned } = await query;
 
-    if (directOwned && directOwned.length > 0) {
-      companyIds = directOwned.map((row: { company_list_id: string }) => String(row.company_list_id));
-    }
+  if (directOwned && directOwned.length > 0) {
+    companyIds = directOwned.map((row: { id: string }) => String(row.id));
   }
 
   return {

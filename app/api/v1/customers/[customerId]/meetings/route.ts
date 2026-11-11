@@ -117,10 +117,10 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     const supabase = await createServerSupabaseClient();
     if (!supabase) return createErrorResponse("DATABASE_001", "Database client unavailable", undefined, 500);
     const { data: existing, error: existingError } = await (supabase as any)
-      .from("a1_customer_meetings")
+      .from("a1_meetings")
       .select("status, meeting_type, location, meeting_link, start_time, end_time, schedule_type, meeting_day, meeting_date, effective_start_date, representative_name")
       .eq("id", meetingId)
-      .eq("company_id", customerId)
+      .eq("customer_id", customerId)
       .maybeSingle();
     if (existingError || !existing) return createErrorResponse("NOT_FOUND_001", "Meeting not found", undefined, 404);
     if (existing.status === "completed") {
@@ -217,10 +217,10 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
     const supabase = await createServerSupabaseClient();
     if (!supabase) return createErrorResponse("DATABASE_001", "Database client unavailable", undefined, 500);
     const { data: existing, error } = await (supabase as any)
-      .from("a1_customer_meetings")
+      .from("a1_meetings")
       .select("status")
       .eq("id", meetingId)
-      .eq("company_id", customerId)
+      .eq("customer_id", customerId)
       .maybeSingle();
     if (error || !existing) return createErrorResponse("NOT_FOUND_001", "Meeting not found", undefined, 404);
     if (existing.status === "completed") {

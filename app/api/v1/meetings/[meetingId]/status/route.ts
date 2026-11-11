@@ -14,17 +14,17 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
   const supabase = await createServerSupabaseClient();
   if (!supabase) return createErrorResponse("DATABASE_001", "Database client unavailable", undefined, 503);
   const { data, error } = await (supabase as any)
-    .from("a1_customer_meetings")
-    .select("company_id")
+    .from("a1_meetings")
+    .select("customer_id")
     .eq("id", meetingId)
     .maybeSingle();
-  if (error || !data?.company_id) return createErrorResponse("NOT_FOUND_001", "Meeting not found", undefined, 404);
+  if (error || !data?.customer_id) return createErrorResponse("NOT_FOUND_001", "Meeting not found", undefined, 404);
   const delegatedRequest = new NextRequest(request.url, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ meetingId, status: body.status }),
   });
-  return updateCustomerMeeting(delegatedRequest, { params: Promise.resolve({ customerId: data.company_id }) });
+  return updateCustomerMeeting(delegatedRequest, { params: Promise.resolve({ customerId: data.customer_id }) });
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {

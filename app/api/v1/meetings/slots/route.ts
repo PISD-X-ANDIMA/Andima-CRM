@@ -3,6 +3,7 @@ import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { cancelExpiredOneTimeMeetings } from "@/lib/services/meeting-service";
 import { getCurrentUserScope } from "@/lib/auth/roles";
+import { buildCustomerOwnerFilter } from "@/lib/services/access-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -42,17 +43,23 @@ export async function GET(request: NextRequest) {
     await cancelExpiredOneTimeMeetings();
     const userScope = await getCurrentUserScope(supabase);
     let meetingQuery = (supabase as any)
-      .from("a1_customer_meetings")
-      .select("id, company_id, meeting_day, schedule_type, meeting_date, effective_start_date, start_time, end_time, status, representative_name, a1_company_list!inner(company_name, created_by)")
+      .from("a1_meetings")
+      .select("id, customer_id, meeting_day, schedule_type, meeting_date, effective_start_date, start_time, end_time, status, representative_name, a1_customers!inner(company_name, created_by, created_by_name)")
       .eq("is_active", true)
       .is("deleted_at", null)
       .neq("status", "cancelled");
 
     const assignedTo = request.nextUrl.searchParams.get("assigned_to");
     if (assignedTo && assignedTo !== "all") {
-      meetingQuery = meetingQuery.or(`a1_company_list.created_by.eq.${assignedTo},representative_name.ilike.%${assignedTo}%`);
+      meetingQuery = meetingQuery.or(`a1_customers.created_by_name.ilike.%${assignedTo}%,representative_name.ilike.%${assignedTo}%`);
     } else if (userScope && !userScope.isManager) {
-      meetingQuery = meetingQuery.in("a1_company_list.created_by", userScope.identifiers);
+      const { data: ownedCustomers } = await (supabase as any)
+        .from("a1_customers")
+        .select("id")
+        .is("deleted_at", null)
+        .or(buildCustomerOwnerFilter(userScope.identifiers, userScope.user.id));
+      const ownedIds = (ownedCustomers || []).map((c: any) => c.id);
+      meetingQuery = meetingQuery.in("customer_id", ownedIds.length ? ownedIds : ["00000000-0000-0000-0000-000000000000"]);
     }
 
     const { data, error } = await meetingQuery;
@@ -78,8 +85,8 @@ export async function GET(request: NextRequest) {
         status: past ? "past" : meeting ? meeting.status : "available",
         meeting: meeting ? {
           id: meeting.id,
-          company_id: meeting.company_id,
-          company_name: meeting.a1_company_list?.company_name || null,
+          company_id: meeting.customer_id,
+          company_name: meeting.a1_customers?.company_name || null,
           start_time: String(meeting.start_time).slice(0, 5),
           end_time: String(meeting.end_time).slice(0, 5),
           status: meeting.status,

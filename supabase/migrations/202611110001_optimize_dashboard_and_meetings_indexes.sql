@@ -20,6 +20,9 @@ CREATE INDEX IF NOT EXISTS idx_a1_customer_meetings_company_lookup
   ON public.a1_customer_meetings (company_id, is_active, deleted_at);
 
 -- 3. INDEKS UNTUK a2_worksheets
-CREATE INDEX IF NOT EXISTS idx_a2_worksheets_id 
-  ON public.a2_worksheets (id);
+CREATE INDEX IF NOT EXISTS idx_a2_worksheets_worksheet_id 
+  ON public.a2_worksheets (worksheet_id);
+
+CREATE INDEX IF NOT EXISTS idx_a2_worksheets_status_date 
+  ON public.a2_worksheets (create_date DESC, status_kendala, has_issue);
 

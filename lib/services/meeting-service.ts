@@ -67,7 +67,7 @@ export async function cancelExpiredOneTimeMeetings() {
   if (!supabase) return;
   const { date, minutes } = jakartaDateAndMinutes();
   const { error: pastDateError } = await (supabase as any)
-    .from("a1_customer_meetings")
+    .from("a1_meetings")
     .update({ status: "cancelled", updated_at: new Date().toISOString() })
     .eq("schedule_type", "one_day")
     .eq("status", "scheduled")
@@ -78,7 +78,7 @@ export async function cancelExpiredOneTimeMeetings() {
 
   const currentTime = `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}:00`;
   const { error: elapsedTodayError } = await (supabase as any)
-    .from("a1_customer_meetings")
+    .from("a1_meetings")
     .update({ status: "cancelled", updated_at: new Date().toISOString() })
     .eq("schedule_type", "one_day")
     .eq("meeting_date", date)
@@ -100,9 +100,9 @@ export async function getMeetingsByCustomerId(
 
   try {
     const { data, error } = await (supabase as any)
-      .from("a1_customer_meetings")
+      .from("a1_meetings")
       .select("*")
-      .eq("company_id", customerId)
+      .eq("customer_id", customerId)
       .eq("is_active", true)
       .is("deleted_at", null)
       .order("meeting_date", { ascending: true, nullsFirst: false })
@@ -112,7 +112,7 @@ export async function getMeetingsByCustomerId(
 
     return data.map((meeting: any): CustomerMeetingItem => ({
       id: meeting.id,
-      companyId: meeting.company_id,
+      companyId: meeting.customer_id,
       meetingDay: meeting.meeting_day,
       scheduleType: meeting.schedule_type,
       meetingDate: meeting.meeting_date,
@@ -155,8 +155,8 @@ export async function detectMeetingConflict(
 
   try {
     let query = (supabase as any)
-      .from("a1_customer_meetings")
-      .select("id, company_id, meeting_day, schedule_type, meeting_date, effective_start_date, start_time, end_time, representative_name, a1_company_list!inner(company_name)")
+      .from("a1_meetings")
+      .select("id, customer_id, meeting_day, schedule_type, meeting_date, effective_start_date, start_time, end_time, representative_name, a1_customers!inner(company_name)")
       .eq("is_active", true)
       .is("deleted_at", null)
       .neq("status", "cancelled");
@@ -180,8 +180,6 @@ export async function detectMeetingConflict(
     if (!inputStartDate) return { hasConflict: false };
 
     for (const m of allMeetings) {
-      // Conflicts are scoped to the same representative (the executive identity
-      // currently stored by A1), so separate executives may use the same slot.
       if (input.representative_name?.trim()
         && (m.representative_name || "").trim().toLocaleLowerCase() !== input.representative_name.trim().toLocaleLowerCase()) continue;
       let repeatsOnCommonDate = false;
@@ -200,20 +198,18 @@ export async function detectMeetingConflict(
         const existingFirstDate = m.effective_start_date
           ? getFirstWeeklyDate(m.effective_start_date, m.meeting_day)
           : null;
-        // Two weekly meetings only intersect when they repeat on the same weekday.
         repeatsOnCommonDate = m.meeting_day === input.meeting_day
           && Boolean(existingFirstDate)
           && input.start_time < m.end_time
           && input.end_time > m.start_time;
         if (repeatsOnCommonDate) {
-          // Both schedules recur indefinitely; the later first occurrence is their first shared date.
           repeatsOnCommonDate = true;
         }
       }
       if (repeatsOnCommonDate && overlaps(input.start_time, input.end_time, m.start_time, m.end_time)) {
         return {
           hasConflict: true,
-          conflictWith: m.a1_company_list?.company_name || "Another company",
+          conflictWith: m.a1_customers?.company_name || "Another company",
         };
       }
     }
@@ -236,9 +232,9 @@ export async function createMeeting(
 
   try {
     const { data, error } = await (supabase as any)
-      .from("a1_customer_meetings")
+      .from("a1_meetings")
       .insert({
-        company_id: customerId,
+        customer_id: customerId,
         meeting_day: input.meeting_day,
         schedule_type: input.schedule_type,
         meeting_date: input.meeting_date || null,
@@ -299,10 +295,10 @@ export async function updateMeeting(
     if (input.status !== undefined) updatePayload.status = input.status;
 
     const { error } = await (supabase as any)
-      .from("a1_customer_meetings")
+      .from("a1_meetings")
       .update(updatePayload)
       .eq("id", meetingId)
-      .eq("company_id", customerId);
+      .eq("customer_id", customerId);
 
     if (error) return { success: false, error: error.message };
 
@@ -324,14 +320,14 @@ export async function deleteMeeting(
 
   try {
     const { error } = await (supabase as any)
-      .from("a1_customer_meetings")
+      .from("a1_meetings")
       .update({
         is_active: false,
         deleted_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq("id", meetingId)
-      .eq("company_id", customerId);
+      .eq("customer_id", customerId);
 
     if (error) return { success: false, error: error.message };
 

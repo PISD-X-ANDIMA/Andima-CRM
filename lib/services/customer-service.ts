@@ -2,7 +2,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createSupabaseOperationError } from "@/lib/supabase/errors";
 import { isValidPicPhoneNumber } from "@/lib/validation/pic-phone";
 import { getCurrentUserScope } from "@/lib/auth/roles";
-import { getCompanyScope } from "@/lib/services/access-scope";
+import { getCompanyScope, buildCustomerOwnerFilter } from "@/lib/services/access-scope";
 import {
   CustomerListItem,
   CustomerDetailItem,
@@ -79,14 +79,13 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
   const offset = (page - 1) * validPerPage;
 
   type CompanyRow = {
-    company_list_id: string;
+    id: string;
     company_name: string;
     address: string | null;
-    name: string | null;
-    pic_phone_number: string | null;
-    customer_code: string | null;
-    job_number: string | null;
+    pic_name: string | null;
+    pic_phone: string | null;
     created_by: string | null;
+    created_by_name: string | null;
     created_at: string | null;
   };
 
@@ -99,16 +98,14 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError) throw createSupabaseOperationError("Login session verification failed", authError);
     let countQuery = (supabase as any)
-      .from("a1_company_list")
-      .select("company_list_id", { count: "exact", head: true })
+      .from("a1_customers")
+      .select("id", { count: "exact", head: true })
       .is("deleted_at", null);
     let dataQuery = (supabase as any)
-      .from("a1_company_list")
-      .select("company_list_id, company_name, address, name, pic_phone_number, customer_code, job_number, created_by, created_at")
+      .from("a1_customers")
+      .select("id, company_name, address, pic_name, pic_phone, created_by, created_by_name, created_at")
       .is("deleted_at", null);
 
-    // Managers see every company. Everyone else sees only companies mapped to
-    // them in a2_company_sales. A missing scope means no access at all.
     const scope = await getCompanyScope();
     if (!scope) {
       return { customers: [], total: 0, page, perPage: validPerPage, totalPages: 1 };
@@ -116,51 +113,49 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
     if (scope.isManager) {
       if (options.executiveId && options.executiveId.toLowerCase() !== "all") {
         const execFilter = options.executiveId.trim();
-        countQuery = countQuery.ilike("created_by", `%${execFilter}%`);
-        dataQuery = dataQuery.ilike("created_by", `%${execFilter}%`);
+        countQuery = countQuery.ilike("created_by_name", `%${execFilter}%`);
+        dataQuery = dataQuery.ilike("created_by_name", `%${execFilter}%`);
       }
     } else {
       if (scope.companyIds.length === 0) {
         return { customers: [], total: 0, page, perPage: validPerPage, totalPages: 1 };
       }
-      countQuery = countQuery.in("company_list_id", scope.companyIds);
-      dataQuery = dataQuery.in("company_list_id", scope.companyIds);
+      countQuery = countQuery.in("id", scope.companyIds);
+      dataQuery = dataQuery.in("id", scope.companyIds);
     }
 
     if (search.trim()) {
       const term = `%${search.trim()}%`;
-      const searchFilter = `company_name.ilike.${term},name.ilike.${term},pic_phone_number.ilike.${term},created_by.ilike.${term}`;
+      const searchFilter = `company_name.ilike.${term},pic_name.ilike.${term},pic_phone.ilike.${term},created_by_name.ilike.${term}`;
       countQuery = countQuery.or(searchFilter);
       dataQuery = dataQuery.or(searchFilter);
     }
 
     const { count, error: countError } = await countQuery;
-    if (countError) throw createSupabaseOperationError("a1_company_list count query failed", countError);
+    if (countError) throw createSupabaseOperationError("a1_customers count query failed", countError);
     const total = count || 0;
     const { data, error } = await dataQuery
       .order(sortBy, { ascending: sortOrder === "asc", nullsFirst: false })
       .range(offset, offset + validPerPage - 1);
-    if (error) throw createSupabaseOperationError("a1_company_list row query failed", error);
+    if (error) throw createSupabaseOperationError("a1_customers row query failed", error);
 
     const rows = (data || []) as CompanyRow[];
-    const companyIds = rows.map((item) => item.company_list_id);
+    const companyIds = rows.map((item) => item.id);
 
-    // A2 worksheets reference a company through customer_id. customer_code is
-    // not a worksheet key, so join on customer_id and keep the newest row.
-    const worksheetByCompany = new Map<string, { transactionNo: string; jobNumber: string | null }>();
+    const jobByCompany = new Map<string, { transactionNo: string | null; jobNumber: string | null }>();
     if (companyIds.length) {
-      const { data: worksheetRows, error: worksheetError } = await (supabase as any)
-        .from("a2_worksheets")
-        .select("customer_id, transaction_no, job_no, worksheet_id")
+      const { data: jobRows, error: jobError } = await (supabase as any)
+        .from("corp_jobs")
+        .select("id, customer_id, job_number")
         .in("customer_id", companyIds)
-        .order("worksheet_id", { ascending: false });
-      if (worksheetError && requireTransactions) throw createSupabaseOperationError("a2_worksheets query failed", worksheetError);
-      if (!worksheetError) {
-        for (const worksheet of worksheetRows || []) {
-          if (worksheet.customer_id && !worksheetByCompany.has(worksheet.customer_id)) {
-            worksheetByCompany.set(worksheet.customer_id, {
-              transactionNo: worksheet.transaction_no,
-              jobNumber: worksheet.job_no || null,
+        .order("created_at", { ascending: false });
+      if (jobError && requireTransactions) throw createSupabaseOperationError("corp_jobs query failed", jobError);
+      if (!jobError) {
+        for (const job of jobRows || []) {
+          if (job.customer_id && !jobByCompany.has(job.customer_id)) {
+            jobByCompany.set(job.customer_id, {
+              transactionNo: null,
+              jobNumber: job.job_number || null,
             });
           }
         }
@@ -171,18 +166,18 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
     if (companyIds.length) {
       try {
         const meetingQuery = (columns: string) => (supabase as any)
-          .from("a1_customer_meetings")
+          .from("a1_meetings")
           .select(columns)
-          .in("company_id", companyIds)
+          .in("customer_id", companyIds)
           .eq("is_active", true)
           .is("deleted_at", null);
-        let result = await meetingQuery("id, company_id, meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date, is_active, agenda, pic_name, representative_name, meeting_type, location, meeting_link, notes, status");
-        if (result.error) result = await meetingQuery("id, company_id, meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date, is_active");
-        if (result.error && requireMeetings) throw createSupabaseOperationError("a1_customer_meetings query failed", result.error);
+        let result = await meetingQuery("id, customer_id, meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date, is_active, agenda, pic_name, representative_name, meeting_type, location, meeting_link, notes, status");
+        if (result.error) result = await meetingQuery("id, customer_id, meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date, is_active");
+        if (result.error && requireMeetings) throw createSupabaseOperationError("a1_meetings query failed", result.error);
         for (const meeting of result.data || []) {
-          const companyMeetings = meetingsByCompany.get(meeting.company_id) || [];
+          const companyMeetings = meetingsByCompany.get(meeting.customer_id) || [];
           companyMeetings.push(meeting);
-          meetingsByCompany.set(meeting.company_id, companyMeetings);
+          meetingsByCompany.set(meeting.customer_id, companyMeetings);
         }
       } catch (error) {
         if (requireMeetings) throw error;
@@ -190,18 +185,18 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
     }
 
     const customers: CustomerListItem[] = rows.map((item) => ({
-      id: item.company_list_id,
+      id: item.id,
       companyName: item.company_name,
-      customerCode: item.customer_code,
+      customerCode: null,
       address: item.address,
-      transactionNo: worksheetByCompany.get(item.company_list_id)?.transactionNo || item.customer_code || null,
-      jobNumber: worksheetByCompany.get(item.company_list_id)?.jobNumber || item.job_number || null,
-      createdBy: item.created_by,
+      transactionNo: jobByCompany.get(item.id)?.transactionNo || null,
+      jobNumber: jobByCompany.get(item.id)?.jobNumber || null,
+      createdBy: item.created_by_name || item.created_by,
       createdDate: item.created_at,
-      primaryPic: item.name ? {
-        id: item.company_list_id, fullName: item.name, phoneNumber: item.pic_phone_number || "",
+      primaryPic: item.pic_name ? {
+        id: item.id, fullName: item.pic_name, phoneNumber: item.pic_phone || "",
       } : null,
-      meetings: (meetingsByCompany.get(item.company_list_id) || []).map((meeting) => ({
+      meetings: (meetingsByCompany.get(item.id) || []).map((meeting) => ({
           id: meeting.id,
           meetingDay: meeting.meeting_day,
           scheduleType: meeting.schedule_type,
@@ -220,7 +215,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
           formattedSchedule: formatMeetingSchedule(meeting.meeting_day, meeting.schedule_type, meeting.meeting_date, meeting.start_time, meeting.end_time),
         })),
       meetingSchedule: (() => {
-        const meetings = meetingsByCompany.get(item.company_list_id) || [];
+        const meetings = meetingsByCompany.get(item.id) || [];
         if (!meetings.length) return null;
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -317,42 +312,42 @@ export async function getCustomerById(
     const userScope = await getCurrentUserScope(supabase);
     if (!userScope) return null;
     const { data, error } = await (supabase as any)
-      .from("a1_company_list")
-      .select("company_list_id, company_name, name, pic_phone_number, address, customer_code, job_number, created_by, created_at, updated_at")
-      .eq("company_list_id", customerId)
+      .from("a1_customers")
+      .select("id, company_name, pic_name, pic_phone, address, created_by, created_by_name, created_at, updated_at")
+      .eq("id", customerId)
       .is("deleted_at", null)
       .maybeSingle();
-    if (error) throw createSupabaseOperationError("a1_company_list detail query failed", error);
+    if (error) throw createSupabaseOperationError("a1_customers detail query failed", error);
     if (!data) return null;
-    if (!userScope.isManager && data.created_by && !userScope.identifiers.includes(data.created_by)) {
+    const ownerTokens = [data.created_by, data.created_by_name].filter(Boolean);
+    if (!userScope.isManager && ownerTokens.length > 0 && !ownerTokens.some((token: string) => userScope.identifiers.includes(token))) {
       return null;
     }
 
     const { data: meetingRows, error: meetingError } = await (supabase as any)
-      .from("a1_customer_meetings")
+      .from("a1_meetings")
       .select("*")
-      .eq("company_id", customerId)
+      .eq("customer_id", customerId)
       .eq("is_active", true)
       .is("deleted_at", null);
-    if (meetingError) throw createSupabaseOperationError("a1_customer_meetings detail query failed", meetingError);
+    if (meetingError) throw createSupabaseOperationError("a1_meetings detail query failed", meetingError);
 
-    const primaryPic = data.name ? {
-      id: data.company_list_id,
-      fullName: data.name,
-      phoneNumber: data.pic_phone_number || "",
+    const primaryPic = data.pic_name ? {
+      id: data.id,
+      fullName: data.pic_name,
+      phoneNumber: data.pic_phone || "",
     } : null;
 
     let transactionNo: string | null = null;
     let worksheetJobNumber: string | null = null;
-    const { data: worksheet } = await (supabase as any)
-      .from("a2_worksheets")
-      .select("transaction_no, job_no")
+    const { data: corpJob } = await (supabase as any)
+      .from("corp_jobs")
+      .select("id, job_number")
       .eq("customer_id", customerId)
-      .order("worksheet_id", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    transactionNo = worksheet?.transaction_no || data.customer_code || null;
-    worksheetJobNumber = worksheet?.job_no || data.job_number || null;
+    worksheetJobNumber = corpJob?.job_number || null;
 
     const meetings = (meetingRows || []).map((meeting: any) => ({
       id: meeting.id,
@@ -378,26 +373,21 @@ export async function getCustomerById(
     }));
     const activeMeeting = meetings.find((meeting: any) => meeting.status !== "cancelled") || null;
 
-    /*
-     * Transaction/job data belongs to its own source table, which is not in the
-     * confirmed A1 schema. Do not query an unprovisioned table or invent rows.
-     */
     const jobs: CustomerDetailItem["jobs"] = [];
 
     return {
-      id: data.company_list_id,
+      id: data.id,
       companyName: data.company_name,
-      customerCode: data.customer_code,
+      customerCode: null,
       transactionNo,
       jobNumber: worksheetJobNumber,
-      createdBy: data.created_by,
+      createdBy: data.created_by_name || data.created_by,
       address: data.address || "Address not provided",
       createdAt: data.created_at || "",
       updatedAt: data.updated_at || data.created_at || "",
       primaryPic,
       meetings,
       activeMeeting,
-      // No transaction/job table exists in the confirmed A1 schema.
       jobs,
     };
   } catch (error) {
@@ -423,15 +413,14 @@ export async function createCustomer(
       return { success: false, error: "No login session found. Please sign in again." };
     }
 
-    const createdBy = userScope.name || userScope.user.id || userScope.user.email;
-    if (!createdBy) {
+    const createdByName = userScope.name || userScope.user.email || userScope.user.id;
+    if (!createdByName) {
       return { success: false, error: "User identity is unavailable for the customer record." };
     }
 
-    // Global duplicate check: 1 Company can only be added by 1 sales across the whole CRM system.
     const dupQuery = (supabase as any)
-      .from("a1_company_list")
-      .select("company_list_id, created_by")
+      .from("a1_customers")
+      .select("id, created_by, created_by_name")
       .ilike("company_name", input.company_name.trim().replace(/[\\%_]/g, "\\$&"))
       .is("deleted_at", null);
 
@@ -444,19 +433,25 @@ export async function createCustomer(
       };
     }
 
-    // Insert using the columns available on the existing Company List table.
+    const { data: regUser } = await (supabase as any)
+      .from("b2_register")
+      .select("id")
+      .eq("id", userScope.user.id)
+      .maybeSingle();
+
     const newCompanyId = crypto.randomUUID();
     const { error: companyInsertErr } = await (supabase as any)
-      .from("a1_company_list")
+      .from("a1_customers")
       .insert({
-        company_list_id: newCompanyId,
+        id: newCompanyId,
         company_name: input.company_name.trim(),
         address: input.address.trim(),
-        name: input.pic_full_name.trim(),
-        pic_phone_number: input.pic_phone_number.trim(),
-        created_by: createdBy,
+        pic_name: input.pic_full_name.trim(),
+        pic_phone: input.pic_phone_number.trim(),
+        created_by: regUser?.id ?? null,
+        created_by_name: createdByName,
       });
-    if (companyInsertErr) return { success: false, error: companyInsertErr.message.includes("a1_company_list_unique_active_company_name") ? "DUPLICATE_COMPANY: This company is already on the company list" : companyInsertErr.message };
+    if (companyInsertErr) return { success: false, error: companyInsertErr.message.includes("duplicate") ? "DUPLICATE_COMPANY: This company is already on the company list" : companyInsertErr.message };
 
     return { success: true, companyId: newCompanyId };
   } catch (error: unknown) {
@@ -490,12 +485,11 @@ export async function updateCustomer(
       const cleanName = input.company_name.trim();
       updatePayload.company_name = cleanName;
 
-      // Global duplicate check for update: ensure company name is not already claimed by another company
       const { data: existingDup, error: dupCheckErr } = await (supabase as any)
-        .from("a1_company_list")
-        .select("company_list_id")
+        .from("a1_customers")
+        .select("id")
         .ilike("company_name", cleanName.replace(/[\\%_]/g, "\\$&"))
-        .neq("company_list_id", customerId)
+        .neq("id", customerId)
         .is("deleted_at", null);
 
       if (dupCheckErr) return { success: false, error: dupCheckErr.message };
@@ -507,21 +501,22 @@ export async function updateCustomer(
       }
     }
     if (input.address !== undefined) updatePayload.address = input.address.trim();
-    if (input.pic_full_name) updatePayload.name = input.pic_full_name.trim();
-    if (input.pic_phone_number !== undefined) updatePayload.pic_phone_number = input.pic_phone_number.trim();
+    if (input.pic_full_name) updatePayload.pic_name = input.pic_full_name.trim();
+    if (input.pic_phone_number !== undefined) updatePayload.pic_phone = input.pic_phone_number.trim();
 
     let updateQuery = (supabase as any)
-      .from("a1_company_list")
+      .from("a1_customers")
       .update(updatePayload)
-      .eq("company_list_id", customerId);
+      .eq("id", customerId);
 
     if (!userScope.isManager) {
-      updateQuery = updateQuery.in("created_by", userScope.identifiers);
+      const ownerFilter = buildCustomerOwnerFilter(userScope.identifiers, userScope.user.id);
+      if (ownerFilter) updateQuery = updateQuery.or(ownerFilter);
     }
 
     const { error } = await updateQuery;
 
-    if (error) return { success: false, error: error.message.includes("a1_company_list_unique_active_company_name") ? "DUPLICATE_COMPANY: This company is already on the company list" : error.message };
+    if (error) return { success: false, error: error.message.includes("duplicate") ? "DUPLICATE_COMPANY: This company is already on the company list" : error.message };
 
     return { success: true };
   } catch (err: any) {
@@ -544,31 +539,30 @@ export async function deleteCustomer(
 
     if (!userScope.isManager) {
       const { data: existing } = await (supabase as any)
-        .from("a1_company_list")
-        .select("created_by")
-        .eq("company_list_id", customerId)
+        .from("a1_customers")
+        .select("created_by, created_by_name")
+        .eq("id", customerId)
         .maybeSingle();
-      if (!existing || (existing.created_by && !userScope.identifiers.includes(existing.created_by))) {
+      const ownerTokens = [existing?.created_by, existing?.created_by_name].filter(Boolean);
+      if (!existing || (ownerTokens.length > 0 && !ownerTokens.some((token: string) => userScope.identifiers.includes(token)))) {
         return { success: false, error: "Unauthorized: You can only delete your own customer." };
       }
     }
 
     const now = new Date().toISOString();
 
-    // Deactivate scheduled meetings first. Their rows remain as history.
     const { error: meetingErr } = await (supabase as any)
-      .from("a1_customer_meetings")
+      .from("a1_meetings")
       .update({ is_active: false, updated_at: now })
-      .eq("company_id", customerId)
+      .eq("customer_id", customerId)
       .eq("status", "scheduled")
       .eq("is_active", true);
     if (meetingErr) return { success: false, error: meetingErr.message };
 
-    // Soft-delete the company after its scheduled meetings are deactivated.
     const { error: companyErr } = await (supabase as any)
-      .from("a1_company_list")
+      .from("a1_customers")
       .update({ deleted_at: now, updated_at: now })
-      .eq("company_list_id", customerId);
+      .eq("id", customerId);
 
     if (companyErr) return { success: false, error: companyErr.message };
 
