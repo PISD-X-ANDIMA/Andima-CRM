@@ -67,6 +67,11 @@ export async function getWorksheets(options?: {
 
   const { data, count, error } = await query;
 
+  if (error) {
+    console.warn('Warning fetching worksheets (a2_worksheets deprecated in favor of a3_tasks):', error.message);
+    return { data: [], total: 0, page, limit, totalPages: 1 };
+  }
+
   const total = count || 0;
   const totalPages = Math.ceil(total / limit) || 1;
 
@@ -86,7 +91,7 @@ export async function getWorksheets(options?: {
 
   const [companyRes, employeeRes] = await Promise.all([
     customerIds.length > 0
-      ? supabase.from('a1_company_list').select('company_list_id, company_name').in('company_list_id', customerIds).is('deleted_at', null)
+      ? supabase.from('a1_customers').select('id, company_name').in('id', customerIds).is('deleted_at', null)
       : Promise.resolve({ data: [] }),
     allEmpIds.length > 0
       ? supabase.from('d3_employee').select('id, full_name, email').in('id', allEmpIds)
@@ -95,7 +100,7 @@ export async function getWorksheets(options?: {
 
   const companyMap = new Map<string, string>();
   (companyRes.data || []).forEach((c: any) => {
-    companyMap.set(c.company_list_id, c.company_name);
+    companyMap.set(c.id, c.company_name);
   });
 
   const employeeMap = new Map<string, string>();
@@ -177,7 +182,7 @@ export async function getWorksheetDetail(worksheetId: number, visibleCompanyIds?
       .eq('worksheet_id', worksheetId)
       .order('sort_order', { ascending: true }),
     wsData.customer_id
-      ? supabase.from('a1_company_list').select('company_name').eq('company_list_id', wsData.customer_id).is('deleted_at', null).single()
+      ? supabase.from('a1_customers').select('company_name').eq('id', wsData.customer_id).is('deleted_at', null).maybeSingle()
       : Promise.resolve({ data: null }),
     wsData.field_agent_id
       ? supabase.from('d3_employee').select('full_name').eq('id', wsData.field_agent_id).single()
@@ -213,116 +218,65 @@ export async function getWorksheetDetail(worksheetId: number, visibleCompanyIds?
 export async function getFieldAgentTasks(visibleCompanyIds?: string[] | null): Promise<FieldTaskItem[] | null> {
   if (Array.isArray(visibleCompanyIds) && visibleCompanyIds.length === 0) return [];
   try {
-    const { data: wsData, error: wsError } = await supabase
-      .from('a2_worksheets')
+    const { data: tasks, error: taskErr } = await supabase
+      .from('a3_tasks')
       .select(`
-        *,
-        a1_company_list ( company_list_id, company_name ),
-        field_agent:d3_employee!a2_worksheets_field_agent_id_fkey ( id, full_name, employee_id ),
-        a2_worksheet_photos ( * ),
-        a2_worksheet_documents ( * ),
-        a2_worksheet_checklists ( * ),
-        a2_worksheet_physical_items ( * )
+        id,
+        job_id,
+        field_agent_id,
+        status,
+        issue_description,
+        created_at,
+        completed_at
       `)
-      .order('worksheet_id', { ascending: true });
+      .order('created_at', { ascending: false });
 
-    if (wsError || !wsData || wsData.length === 0) {
-      return null;
+    if (taskErr || !tasks || tasks.length === 0) {
+      return [];
     }
+
+    const jobIds = tasks.map((t: any) => t.job_id).filter(Boolean);
+    const agentIds = tasks.map((t: any) => t.field_agent_id).filter(Boolean);
+
+    const [jobsRes, usersRes] = await Promise.all([
+      jobIds.length > 0 ? supabase.from('corp_jobs').select('id, job_number, customer_id').in('id', jobIds) : Promise.resolve({ data: [] }),
+      agentIds.length > 0 ? supabase.from('b2_register').select('id, full_name').in('id', agentIds) : Promise.resolve({ data: [] }),
+    ]);
+
+    const jobMap = new Map((jobsRes.data || []).map((j: any) => [j.id, j]));
+    const userMap = new Map((usersRes.data || []).map((u: any) => [u.id, u.full_name]));
+
+    const custIds = (jobsRes.data || []).map((j: any) => j.customer_id).filter(Boolean);
+    const { data: custs } = custIds.length > 0 ? await supabase.from('a1_customers').select('id, company_name').in('id', custIds) : { data: [] };
+    const custMap = new Map((custs || []).map((c: any) => [c.id, c.company_name]));
 
     const allowedCompanyIds = Array.isArray(visibleCompanyIds) ? new Set(visibleCompanyIds) : null;
 
-    return wsData.filter((w: any) => Boolean(w.a1_company_list?.company_list_id) && (!allowedCompanyIds || allowedCompanyIds.has(w.customer_id))).map((w: any) => {
-      const photos = w.a2_worksheet_photos || [];
-      const docs = w.a2_worksheet_documents || [];
-      const checklists = w.a2_worksheet_checklists || [];
-      const physicalItems = w.a2_worksheet_physical_items || [];
-      
-      const grossWeightItem = physicalItems.find((p: any) => 
-        p.item_label?.toLowerCase().includes('gross') || p.item_label?.toLowerCase().includes('weight')
-      );
-      const piecesItem = physicalItems.find((p: any) => 
-        p.item_label?.toLowerCase().includes('piece') || p.item_label?.toLowerCase().includes('coil')
-      );
-
-      const jobFormatted = w.job_no 
-        ? (w.job_no.startsWith('#') ? w.job_no : `#${w.job_no}`) 
-        : `#JOB-${w.worksheet_id}`;
-        
-      const isIssue = Boolean(w.has_issue || w.status_kendala === 'kendala_terdeteksi');
-      const issueCategory = w.issue_category || (isIssue ? 'Physical Load Difference' : undefined);
-
-      return {
-        id: `ws-${w.worksheet_id}`,
-        task_id_code: w.task_id_code || `TSK-2506-${String(w.worksheet_id).padStart(4, '0')}`,
-        job_number: jobFormatted,
-        customer_name: w.a1_company_list?.company_name || '-',
-        field_agent_name: w.field_agent?.full_name || undefined,
-        status: (w.progress_status as any) || (w.field_agent_id ? 'Assigned' : 'Unassigned'),
-        has_issue: isIssue,
-        issue_type: issueCategory,
-        issue_category: issueCategory,
-        issue_note: w.issue_note || (isIssue ? 'Pemeriksaan fisik menemukan ketidaksesuaian manifest kargo.' : undefined),
-        issue_document_status: w.issue_document_status || (isIssue ? `Manifest Mismatch (B/L ${jobFormatted.replace('#', '')})` : undefined),
-        variance_tolerance: w.variance_tolerance || '0%',
-        photo_count: photos.length,
-        doc_count: docs.length,
-        issue_photos: photos.map((p: any) => p.photo_url).filter(Boolean),
-        issue_files: photos.map((p: any, idx: number) => ({
-          name: p.file_name || `Foto_Bukti_${idx + 1}.jpg`,
-          size: '2.4 MB',
-          type: 'JPEG',
-          badge: p.badge_tag || (p.is_verified ? 'OPS Stamped' : 'Digital Sign'),
-          url: p.photo_url || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800'
-        })),
-        result_photos: photos.map((p: any) => p.photo_url).filter(Boolean),
-        result_docs: docs.map((d: any) => ({
-          name: d.doc_name,
-          size: d.file_size_kb ? `${(d.file_size_kb / 1024).toFixed(1)} MB` : '1.2 MB',
-          url: d.doc_url
-        })),
-        handover_datetime: w.handover_datetime,
-        handover_location: w.handover_location || 'Area Cargo MM2100, Cikarang Barat',
-        shipper: w.shipper || 'PT. Astra Component Logistics',
-        consignee: w.consignee || 'Toyota Tsusho Asia',
-        mawb: w.mawb,
-        hawb: w.hawb,
-        gross_weight: grossWeightItem?.item_value || '2,450 Kg',
-        cargo_pieces: piecesItem?.item_value || '12 Coils',
-        packaging_type: 'Export Standard Pallet',
-        checklists: checklists.length > 0 ? checklists.map((c: any) => ({
-          label: c.check_label,
-          is_verified: c.is_verified
-        })) : [
-          { label: 'Quantity & Gross Weight verification', is_verified: !isIssue },
-          { label: 'Visual packaging condition sound', is_verified: !isIssue },
-          { label: 'Container seal number matches manifest', is_verified: true },
-          { label: 'Customs & port documentation match', is_verified: true },
-          { label: 'Safe for flight airfreight protocol', is_verified: true }
-        ],
-        timeline: [
-          {
-            id: `tl-1`,
-            title: 'Job Order Created',
-            description: `Created for ${jobFormatted}`,
-            timestamp: w.create_date || '2026-09-29',
-            author: 'Adelia (Sales PIC)',
-            status: 'completed'
-          },
-          ...(w.field_agent?.full_name ? [{
-            id: `tl-2`,
-            title: 'Field Inspector Assigned',
-            description: `Assigned to ${w.field_agent.full_name}`,
-            timestamp: w.create_date || '2026-09-29',
-            author: 'Dispatcher',
-            status: 'completed' as const
-          }] : [])
-        ]
-      };
-    });
+    return tasks
+      .filter((t: any) => {
+        const job = jobMap.get(t.job_id);
+        if (!allowedCompanyIds || !job?.customer_id) return true;
+        return allowedCompanyIds.has(job.customer_id);
+      })
+      .map((t: any, index: number) => {
+        const job = jobMap.get(t.job_id);
+        const isIssue = Boolean(t.issue_description) || t.status === 'has_issue';
+        return {
+          id: `tsk-${t.id}`,
+          task_id_code: `TSK-${String(t.id).slice(0, 8).toUpperCase()}`,
+          job_number: job?.job_number || `#JOB-${index + 1}`,
+          customer_name: (job?.customer_id ? custMap.get(job.customer_id) : null) || '-',
+          field_agent_name: userMap.get(t.field_agent_id) || undefined,
+          status: (t.status as any) || (t.field_agent_id ? 'Assigned' : 'Unassigned'),
+          has_issue: isIssue,
+          issue_type: isIssue ? 'Physical Load Difference' : undefined,
+          issue_category: isIssue ? 'Physical Load Difference' : undefined,
+          issue_note: t.issue_description || undefined,
+        };
+      }) as any;
   } catch (err) {
-    console.error('Error in getFieldAgentTasks:', err);
-    return null;
+    console.warn('Error fetching field agent tasks:', err);
+    return [];
   }
 }
 

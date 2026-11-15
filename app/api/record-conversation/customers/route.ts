@@ -14,7 +14,9 @@ export async function GET() {
       return NextResponse.json({ success: false, error: 'Please sign in to continue.' }, { status: 401 });
     }
 
-    const customers = await getCustomers(scope.isManager ? null : scope.companyIds);
+    const customers = await getCustomers(
+      scope.isManager || scope.companyIds.length === 0 ? null : scope.companyIds
+    );
     return NextResponse.json({
       success: true,
       data: customers,

@@ -73,14 +73,17 @@ export async function getSalesExecutiveMetrics(executiveId?: string): Promise<Sa
         ? buildCustomerOwnerFilter(userScope.identifiers, userScope.user.id)
         : "";
 
-    const isFiltered = Boolean(ownerFilter);
+    let userCompanyIds: string[] = [];
     if (ownerFilter) {
-      custCountQuery = custCountQuery.or(ownerFilter);
       custIdQuery = custIdQuery.or(ownerFilter);
+      const { data: userCompanies } = await custIdQuery;
+      userCompanyIds = (userCompanies || []).map((c: any) => c.id);
     }
 
-    const { data: userCompanies } = isFiltered ? await custIdQuery : { data: [] };
-    const userCompanyIds = (userCompanies || []).map((c: any) => c.id);
+    const shouldFilter = Boolean(executiveId) || userCompanyIds.length > 0;
+    if (shouldFilter && ownerFilter) {
+      custCountQuery = custCountQuery.or(ownerFilter);
+    }
 
     let meetQuery = (supabase as any)
       .from("a1_meetings")
@@ -89,7 +92,7 @@ export async function getSalesExecutiveMetrics(executiveId?: string): Promise<Sa
       .is("deleted_at", null)
       .eq("status", "scheduled");
 
-    if (isFiltered) {
+    if (shouldFilter) {
       meetQuery = meetQuery.in("customer_id", userCompanyIds.length ? userCompanyIds : ["00000000-0000-0000-0000-000000000000"]);
     }
 
@@ -102,7 +105,7 @@ export async function getSalesExecutiveMetrics(executiveId?: string): Promise<Sa
       .is("deleted_at", null)
       .gte("created_at", thirtyDaysAgo);
 
-    if (ownerFilter) {
+    if (shouldFilter && ownerFilter) {
       recentCustQuery = recentCustQuery.or(ownerFilter);
     }
 

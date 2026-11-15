@@ -9,18 +9,25 @@ export async function getCustomers(visibleCompanyIds?: string[] | null): Promise
   if (Array.isArray(visibleCompanyIds) && visibleCompanyIds.length === 0) return [];
 
   let query = supabase
-    .from('a1_company_list')
-    .select('company_list_id, job_number, name, company_name, created_by, customer_code')
+    .from('a1_customers')
+    .select('id, company_name, created_by_name, created_by')
     .is('deleted_at', null);
-  if (Array.isArray(visibleCompanyIds)) query = query.in('company_list_id', visibleCompanyIds);
+  if (Array.isArray(visibleCompanyIds)) query = query.in('id', visibleCompanyIds);
   const { data, error } = await query.order('company_name', { ascending: true });
 
   if (error) {
-    console.error('Error fetching customers from a1_company_list:', error);
+    console.error('Error fetching customers from a1_customers:', error);
     return [];
   }
 
-  return (data || []) as CompanyItem[];
+  return (data || []).map((c: any) => ({
+    company_list_id: c.id,
+    job_number: '',
+    name: c.company_name,
+    company_name: c.company_name,
+    created_by: c.created_by_name || c.created_by || '',
+    customer_code: null,
+  })) as CompanyItem[];
 }
 
 /**
@@ -49,30 +56,21 @@ export async function getConversations(options?: {
     .from('a2_record_conversations')
     .select(`
       id,
-      job_number,
       customer_id,
-      customer_code,
-      sales_pic_id,
-      channel_type,
+      channel,
       conversation_date,
       summary,
-      need_assistance,
-      urgency_level,
-      synced_to_ctrack,
-      document_urls,
-      status,
+      need_assist,
       created_by,
+      meeting_id,
+      attachment_url,
       created_at,
       updated_at
     `, { count: 'exact' })
     .order('conversation_date', { ascending: false });
 
   if (options?.channelType && options.channelType !== 'All Channels') {
-    query = query.eq('channel_type', options.channelType);
-  }
-
-  if (options?.status && options.status !== 'All Statuses') {
-    query = query.eq('status', options.status.toLowerCase());
+    query = query.eq('channel', options.channelType);
   }
 
   if (options?.date && options.date !== 'All Dates') {
@@ -85,7 +83,7 @@ export async function getConversations(options?: {
   }
 
   if (options?.needAssistance && options.needAssistance !== 'All Assistance') {
-    query = query.eq('need_assistance', options.needAssistance === 'Yes');
+    query = query.eq('need_assist', options.needAssistance === 'Yes' || options.needAssistance === 'true');
   }
 
   // A sales executive only sees conversations for companies they own.
@@ -110,21 +108,21 @@ export async function getConversations(options?: {
   }
 
   // Ambil data pendukung (perusahaan dan karyawan) untuk melengkapi nama di tabel
-  const customerIds = Array.from(new Set(data.map((c) => c.customer_id).filter(Boolean)));
-  const employeeIds = Array.from(new Set(data.map((c) => c.sales_pic_id).filter(Boolean)));
+  const customerIds = Array.from(new Set(data.map((c: any) => c.customer_id).filter(Boolean)));
+  const employeeIds = Array.from(new Set(data.map((c: any) => c.created_by).filter(Boolean)));
 
   const [companyRes, employeeRes] = await Promise.all([
     customerIds.length > 0
-      ? supabase.from('a1_company_list').select('company_list_id, company_name, name, customer_code').in('company_list_id', customerIds).is('deleted_at', null)
+      ? supabase.from('a1_customers').select('id, company_name').in('id', customerIds).is('deleted_at', null)
       : Promise.resolve({ data: [] }),
     employeeIds.length > 0
       ? supabase.from('d3_employee').select('id, full_name').in('id', employeeIds)
       : Promise.resolve({ data: [] }),
   ]);
 
-  const companyMap = new Map<string, { company_name: string; name: string; customer_code: string | null }>();
+  const companyMap = new Map<string, { company_name: string; customer_code: string | null }>();
   (companyRes.data || []).forEach((c: any) => {
-    companyMap.set(c.company_list_id, c);
+    companyMap.set(c.id, c);
   });
 
   const employeeMap = new Map<string, string>();
@@ -136,11 +134,25 @@ export async function getConversations(options?: {
   const mappedData = data.filter((item: any) => companyMap.has(item.customer_id)).map((item: any) => {
     const comp = companyMap.get(item.customer_id);
     return {
-      ...item,
+      id: String(item.id),
+      job_number: null,
+      customer_id: item.customer_id,
+      customer_code: comp?.customer_code || 'CUST-001',
+      sales_pic_id: item.created_by || '',
+      channel_type: item.channel || 'WhatsApp',
+      conversation_date: item.conversation_date || (item.created_at ? item.created_at.slice(0, 10) : ''),
+      summary: item.summary || '',
+      need_assistance: Boolean(item.need_assist),
+      urgency_level: item.need_assist ? 'high_priority' : 'standard',
+      synced_to_ctrack: true,
+      document_urls: item.attachment_url ? [item.attachment_url] : null,
+      status: 'active',
+      created_by: item.created_by,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
       company_name: comp?.company_name || '-',
-      client_contact_name: comp?.name || '',
-      customer_code: item.customer_code || comp?.customer_code || 'CUST-001',
-      sales_pic_name: employeeMap.get(item.sales_pic_id) || 'Adelia',
+      client_contact_name: comp?.company_name || '',
+      sales_pic_name: employeeMap.get(item.created_by) || 'Sales Executive',
     } as RecordConversationItem;
   });
 
@@ -230,17 +242,11 @@ export async function createConversation(payload: NewConversationPayload): Promi
 
     const insertPayload: any = {
       customer_id: payload.customer_id,
-      customer_code: payload.customer_code || null,
-      job_number: payload.job_number || null,
-      sales_pic_id: activeEmployeeId,
-      channel_type: payload.channel_type,
+      channel: payload.channel_type || 'WhatsApp',
       conversation_date: conversationDate,
       summary: payload.summary,
-      need_assistance: payload.need_assistance,
-      urgency_level: payload.urgency_level,
-      synced_to_ctrack: payload.synced_to_ctrack ?? true,
-      document_urls: fileUrls.length > 0 ? fileUrls : null,
-      status: 'active',
+      need_assist: Boolean(payload.need_assistance),
+      attachment_url: fileUrls.length > 0 ? fileUrls[0] : null,
       created_by: activeEmployeeId,
     };
 
@@ -253,6 +259,18 @@ export async function createConversation(payload: NewConversationPayload): Promi
     if (convError) {
       console.error('Error inserting conversation:', convError);
       return { success: false, error: convError.message };
+    }
+
+    if (payload.need_assistance && convData?.id) {
+      try {
+        await supabase.from('a2_conversation_alerts').insert({
+          conversation_id: convData.id,
+          status: 'pending',
+          alerted_at: new Date().toISOString(),
+        });
+      } catch (alertErr) {
+        console.warn('Warning creating conversation alert:', alertErr);
+      }
     }
 
     // Jika ada file yang diunggah, masukkan ke tabel a2_conversation_files
@@ -306,12 +324,11 @@ export async function updateConversation(payload: UpdateConversationPayload): Pr
     };
 
     if (payload.summary !== undefined) updateFields.summary = payload.summary;
-    if (payload.channel_type !== undefined) updateFields.channel_type = payload.channel_type;
-    if (payload.urgency_level !== undefined) updateFields.urgency_level = payload.urgency_level;
-    if (payload.need_assistance !== undefined) updateFields.need_assistance = payload.need_assistance;
-    if (payload.status !== undefined) updateFields.status = payload.status;
-    if (payload.job_number !== undefined) updateFields.job_number = payload.job_number;
-    if (payload.document_urls !== undefined) updateFields.document_urls = payload.document_urls;
+    if (payload.channel_type !== undefined) updateFields.channel = payload.channel_type;
+    if (payload.need_assistance !== undefined) updateFields.need_assist = payload.need_assistance;
+    if (payload.document_urls !== undefined && Array.isArray(payload.document_urls) && payload.document_urls.length > 0) {
+      updateFields.attachment_url = payload.document_urls[0];
+    }
 
     const { data, error } = await supabase
       .from('a2_record_conversations')
@@ -332,13 +349,12 @@ export async function updateConversation(payload: UpdateConversationPayload): Pr
 
     if (data.customer_id) {
       const { data: comp } = await supabase
-        .from('a1_company_list')
-        .select('company_name, customer_code')
-        .eq('company_list_id', data.customer_id)
-        .single();
+        .from('a1_customers')
+        .select('company_name')
+        .eq('id', data.customer_id)
+        .maybeSingle();
       if (comp) {
         companyName = comp.company_name;
-        if (comp.customer_code) customerCode = comp.customer_code;
       }
     }
 

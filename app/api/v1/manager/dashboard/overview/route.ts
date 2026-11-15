@@ -29,8 +29,8 @@ export async function GET(_request: NextRequest) {
 
     // 2. Fetch all companies
     const { data: companies } = await (supabase as any)
-      .from("a1_company_list")
-      .select("company_list_id, company_name, created_by")
+      .from("a1_customers")
+      .select("id, company_name, created_by, created_by_name")
       .is("deleted_at", null);
 
     const totalCustomers = (companies || []).length;
@@ -75,17 +75,18 @@ export async function GET(_request: NextRequest) {
       });
     } catch {}
 
-    // Also include active Sales Executives who have assigned accounts in CRM (a1_company_list)
+    // Also include active Sales Executives who have assigned accounts in CRM (a1_customers)
     (companies || []).forEach((c: any) => {
-      if (c.created_by && c.created_by.trim()) {
-        salesExecNames.add(String(c.created_by).trim());
+      const creator = c.created_by_name || c.created_by;
+      if (creator && String(creator).trim()) {
+        salesExecNames.add(String(creator).trim());
       }
     });
 
     // Sort executives so those with active companies appear first, then alphabetically
     const execArray = Array.from(salesExecNames).sort((a, b) => {
-      const aCust = (companies || []).filter((c: any) => String(c.created_by || "").toLowerCase() === a.toLowerCase()).length;
-      const bCust = (companies || []).filter((c: any) => String(c.created_by || "").toLowerCase() === b.toLowerCase()).length;
+      const aCust = (companies || []).filter((c: any) => String(c.created_by_name || c.created_by || "").toLowerCase() === a.toLowerCase()).length;
+      const bCust = (companies || []).filter((c: any) => String(c.created_by_name || c.created_by || "").toLowerCase() === b.toLowerCase()).length;
       if (bCust !== aCust) return bCust - aCust;
       return a.localeCompare(b);
     });
@@ -93,8 +94,8 @@ export async function GET(_request: NextRequest) {
 
     // 4. Fetch meetings this week
     const { data: meetings } = await (supabase as any)
-      .from("a1_customer_meetings")
-      .select("id, company_id, meeting_date, start_time, end_time, status, representative_name")
+      .from("a1_meetings")
+      .select("id, customer_id, meeting_date, start_time, end_time, status, representative_name")
       .is("deleted_at", null)
       .neq("status", "cancelled");
 
@@ -109,20 +110,20 @@ export async function GET(_request: NextRequest) {
       const { data: convs } = await (supabase as any)
         .from("a2_record_conversations")
         .select("*")
-        .eq("need_assistance", true);
+        .eq("need_assist", true);
       if (convs) needBackupConversations = convs;
     } catch {}
 
     const totalNeedBackup = needBackupConversations.length;
 
-    const compNameMap = new Map((companies || []).map((c: any) => [c.company_list_id, c.company_name]));
-    const compOwnerMap = new Map((companies || []).map((c: any) => [c.company_list_id, c.created_by]));
+    const compNameMap = new Map((companies || []).map((c: any) => [c.id, c.company_name]));
+    const compOwnerMap = new Map((companies || []).map((c: any) => [c.id, c.created_by_name || c.created_by]));
     const regNameMap = new Map((registers || []).map((r: any) => [r.id, r.full_name]));
 
     // 6. Build Sales Executive table stats
     const salesExecStats = execArray.map((execName) => {
       const execCustomers = (companies || []).filter((c: any) => {
-        const creator = String(c.created_by || "").toLowerCase();
+        const creator = String(c.created_by_name || c.created_by || "").toLowerCase();
         return creator === execName.toLowerCase() || creator.includes(execName.toLowerCase());
       }).length;
 

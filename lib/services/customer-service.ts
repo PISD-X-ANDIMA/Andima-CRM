@@ -95,8 +95,11 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
   }
 
   {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError) throw createSupabaseOperationError("Login session verification failed", authError);
+    const scope = await getCompanyScope();
+    if (!scope) {
+      return { customers: [], total: 0, page, perPage: validPerPage, totalPages: 1 };
+    }
+
     let countQuery = (supabase as any)
       .from("a1_customers")
       .select("id", { count: "exact", head: true })
@@ -106,22 +109,10 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
       .select("id, company_name, address, pic_name, pic_phone, created_by, created_by_name, created_at")
       .is("deleted_at", null);
 
-    const scope = await getCompanyScope();
-    if (!scope) {
-      return { customers: [], total: 0, page, perPage: validPerPage, totalPages: 1 };
-    }
-    if (scope.isManager) {
-      if (options.executiveId && options.executiveId.toLowerCase() !== "all") {
-        const execFilter = options.executiveId.trim();
-        countQuery = countQuery.ilike("created_by_name", `%${execFilter}%`);
-        dataQuery = dataQuery.ilike("created_by_name", `%${execFilter}%`);
-      }
-    } else {
-      if (scope.companyIds.length === 0) {
-        return { customers: [], total: 0, page, perPage: validPerPage, totalPages: 1 };
-      }
-      countQuery = countQuery.in("id", scope.companyIds);
-      dataQuery = dataQuery.in("id", scope.companyIds);
+    if (options.executiveId && options.executiveId.toLowerCase() !== "all") {
+      const execFilter = options.executiveId.trim();
+      countQuery = countQuery.ilike("created_by_name", `%${execFilter}%`);
+      dataQuery = dataQuery.ilike("created_by_name", `%${execFilter}%`);
     }
 
     if (search.trim()) {
@@ -131,27 +122,41 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
       dataQuery = dataQuery.or(searchFilter);
     }
 
-    const { count, error: countError } = await countQuery;
-    if (countError) throw createSupabaseOperationError("a1_customers count query failed", countError);
-    const total = count || 0;
-    const { data, error } = await dataQuery
-      .order(sortBy, { ascending: sortOrder === "asc", nullsFirst: false })
-      .range(offset, offset + validPerPage - 1);
-    if (error) throw createSupabaseOperationError("a1_customers row query failed", error);
+    const [countResult, dataResult] = await Promise.all([
+      countQuery,
+      dataQuery
+        .order(sortBy, { ascending: sortOrder === "asc", nullsFirst: false })
+        .range(offset, offset + validPerPage - 1),
+    ]);
 
-    const rows = (data || []) as CompanyRow[];
+    if (countResult.error) throw createSupabaseOperationError("a1_customers count query failed", countResult.error);
+    if (dataResult.error) throw createSupabaseOperationError("a1_customers row query failed", dataResult.error);
+
+    const total = countResult.count || 0;
+    const rows = (dataResult.data || []) as CompanyRow[];
     const companyIds = rows.map((item) => item.id);
 
     const jobByCompany = new Map<string, { transactionNo: string | null; jobNumber: string | null }>();
+    const meetingsByCompany = new Map<string, any[]>();
+
     if (companyIds.length) {
-      const { data: jobRows, error: jobError } = await (supabase as any)
+      const jobPromise = (supabase as any)
         .from("corp_jobs")
         .select("id, customer_id, job_number")
         .in("customer_id", companyIds)
         .order("created_at", { ascending: false });
-      if (jobError && requireTransactions) throw createSupabaseOperationError("corp_jobs query failed", jobError);
-      if (!jobError) {
-        for (const job of jobRows || []) {
+
+      const meetingPromise = (supabase as any)
+        .from("a1_meetings")
+        .select("id, customer_id, meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date, is_active, agenda, pic_name, representative_name, meeting_type, location, meeting_link, notes, status")
+        .in("customer_id", companyIds)
+        .eq("is_active", true)
+        .is("deleted_at", null);
+
+      const [jobRes, meetRes] = await Promise.all([jobPromise, meetingPromise]);
+
+      if (jobRes.data) {
+        for (const job of jobRes.data) {
           if (job.customer_id && !jobByCompany.has(job.customer_id)) {
             jobByCompany.set(job.customer_id, {
               transactionNo: null,
@@ -160,27 +165,13 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
           }
         }
       }
-    }
 
-    const meetingsByCompany = new Map<string, any[]>();
-    if (companyIds.length) {
-      try {
-        const meetingQuery = (columns: string) => (supabase as any)
-          .from("a1_meetings")
-          .select(columns)
-          .in("customer_id", companyIds)
-          .eq("is_active", true)
-          .is("deleted_at", null);
-        let result = await meetingQuery("id, customer_id, meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date, is_active, agenda, pic_name, representative_name, meeting_type, location, meeting_link, notes, status");
-        if (result.error) result = await meetingQuery("id, customer_id, meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date, is_active");
-        if (result.error && requireMeetings) throw createSupabaseOperationError("a1_meetings query failed", result.error);
-        for (const meeting of result.data || []) {
+      if (meetRes.data) {
+        for (const meeting of meetRes.data) {
           const companyMeetings = meetingsByCompany.get(meeting.customer_id) || [];
           companyMeetings.push(meeting);
           meetingsByCompany.set(meeting.customer_id, companyMeetings);
         }
-      } catch (error) {
-        if (requireMeetings) throw error;
       }
     }
 

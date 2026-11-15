@@ -35,18 +35,18 @@ export default function NeedBackupPage() {
           (supabase as any)
             .from("a2_record_conversations")
             .select("*")
-            .eq("need_assistance", true)
+            .eq("need_assist", true)
             .order("created_at", { ascending: false }),
           (supabase as any)
-            .from("a1_company_list")
-            .select("company_list_id, company_name, customer_code"),
+            .from("a1_customers")
+            .select("id, company_name"),
           (supabase as any)
             .from("b2_register")
             .select("id, full_name"),
         ]);
 
         if (active && !convErr && convData && convData.length > 0) {
-          const compById = new Map((companies || []).map((c: any) => [c.company_list_id, c.company_name]));
+          const compById = new Map((companies || []).map((c: any) => [c.id, c.company_name]));
           const compByCode = new Map((companies || []).map((c: any) => [c.customer_code, c.company_name]));
           const userMap = new Map((users || []).map((u: any) => [u.id, u.full_name]));
 

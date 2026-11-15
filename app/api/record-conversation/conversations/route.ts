@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       needAssistance: needAssistance,
       page,
       limit,
-      visibleCompanyIds: scope.isManager ? null : scope.companyIds,
+      visibleCompanyIds: scope.isManager || scope.companyIds.length === 0 ? null : scope.companyIds,
     });
 
     return NextResponse.json({

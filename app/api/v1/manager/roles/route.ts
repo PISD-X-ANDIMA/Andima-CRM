@@ -69,11 +69,11 @@ export async function GET(_request: NextRequest) {
 
     const registeredNames = new Set(users.map((u: any) => String(u.name || "").toLowerCase()));
 
-    // Also include active Sales Executives who have assigned accounts in CRM (a1_company_list)
+    // Also include active Sales Executives who have assigned accounts in CRM (a1_customers)
     try {
       const { data: companies } = await (supabase as any)
-        .from("a1_company_list")
-        .select("created_by")
+        .from("a1_customers")
+        .select("created_by, created_by_name")
         .is("deleted_at", null);
 
       const defaultSalesPos = (positions || []).find((p: any) => {
@@ -84,8 +84,9 @@ export async function GET(_request: NextRequest) {
 
       const activeExecs = new Set<string>();
       (companies || []).forEach((c: any) => {
-        if (c.created_by && c.created_by.trim()) {
-          activeExecs.add(String(c.created_by).trim());
+        const creator = c.created_by_name || c.created_by;
+        if (creator && String(creator).trim()) {
+          activeExecs.add(String(creator).trim());
         }
       });
 

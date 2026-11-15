@@ -19,14 +19,13 @@ export async function getDashboardStats(visibleCompanyIds?: string[] | null): Pr
     };
   }
   try {
-    let companyQuery = supabase.from('a1_company_list').select('company_list_id', { count: 'exact', head: true }).is('deleted_at', null);
-    let meetingQuery = supabase.from('a2_record_conversations').select('id', { count: 'exact', head: true }).eq('channel_type', 'Meeting');
-    let issueQuery = supabase.from('a2_worksheets').select('worksheet_id', { count: 'exact', head: true }).or('status_kendala.eq.kendala_terdeteksi,has_issue.eq.true');
+    let companyQuery = supabase.from('a1_customers').select('id', { count: 'exact', head: true }).is('deleted_at', null);
+    let meetingQuery = supabase.from('a1_meetings').select('id', { count: 'exact', head: true }).eq('is_active', true).is('deleted_at', null);
+    let issueQuery = supabase.from('a3_tasks').select('id', { count: 'exact', head: true });
 
     if (Array.isArray(visibleCompanyIds)) {
-      companyQuery = companyQuery.in('company_list_id', visibleCompanyIds);
+      companyQuery = companyQuery.in('id', visibleCompanyIds);
       meetingQuery = meetingQuery.in('customer_id', visibleCompanyIds);
-      issueQuery = issueQuery.in('customer_id', visibleCompanyIds);
     }
 
     const [companyRes, meetingRes, issueRes] = await Promise.all([companyQuery, meetingQuery, issueQuery]);

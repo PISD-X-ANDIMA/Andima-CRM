@@ -58,44 +58,53 @@ export default function TaskOfFieldAgentPage() {
     let active = true;
     async function loadTasks() {
       try {
-        const [{ data, error }, { data: companies }, { data: users }] = await Promise.all([
+        const [{ data, error }, { data: companies }, { data: users }, { data: jobs }] = await Promise.all([
           (supabase as any)
-            .from("a2_worksheets")
+            .from("a3_tasks")
             .select("*")
-            .order("create_date", { ascending: false }),
+            .order("created_at", { ascending: false }),
           (supabase as any)
-            .from("a1_company_list")
-            .select("company_list_id, company_name"),
+            .from("a1_customers")
+            .select("id, company_name"),
           (supabase as any)
             .from("b2_register")
             .select("id, full_name"),
+          (supabase as any)
+            .from("corp_jobs")
+            .select("id, job_number, customer_id"),
         ]);
 
         if (active && !error && data && data.length > 0) {
-          const compMap = new Map((companies || []).map((c: any) => [c.company_list_id, c.company_name]));
+          const compMap = new Map((companies || []).map((c: any) => [c.id, c.company_name]));
           const userMap = new Map((users || []).map((u: any) => [u.id, u.full_name]));
+          const jobMap = new Map((jobs || []).map((j: any) => [j.id, j]));
 
           setTasks(
-            data.map((t: any) => ({
-              jobNumber: t.job_no || t.job_number || "#AENAT/0000/0000",
-              company: compMap.get(t.customer_id) || t.company_name || t.shipper || t.consignee || "-",
-              salesExecutive: userMap.get(t.sales_pic_id) || t.sales_executive || t.created_by || "-",
-              fieldAgent: userMap.get(t.field_agent_id) || t.field_agent || t.agent_name || "Field Agent",
-              status: t.has_issue ? "In Progress" : (t.status || "Completed"),
-              hasIssue: Boolean(t.has_issue),
-              issueDetails: t.issue_note || t.issue_details,
-              resultSummary: t.issue_note || (t.has_issue ? "Kendala terdeteksi" : "Inspeksi normal"),
-              createdAt: t.create_date || t.created_at || "-",
-              trxNo: t.transaction_no || t.trx_no || "-",
-              mawb: t.mawb || "-",
-              assignedAt: t.handover_datetime || t.create_date || "-",
-              taskArea: t.handover_location || t.task_area || "-",
-              convId: t.conversation_id || "-",
-              taskId: String(t.worksheet_id || "-"),
-              pieces: t.pieces || 0,
-              grossWeight: t.gross_weight || "0 Kg",
-              photoName: t.photo_name || "",
-            }))
+            data.map((t: any) => {
+              const job = jobMap.get(t.job_id) as { customer_id?: string; job_number?: string } | undefined;
+              const custId = job?.customer_id;
+              const hasIssue = Boolean(t.issue_description) || t.status === "has_issue";
+              return {
+                jobNumber: job?.job_number || t.job_no || t.job_number || "#AENAT/0000/0000",
+                company: (custId ? compMap.get(custId) : null) || t.company_name || "-",
+                salesExecutive: userMap.get(t.field_agent_id) || "Sales Executive",
+                fieldAgent: userMap.get(t.field_agent_id) || "Field Agent",
+                status: hasIssue ? "In Progress" : (t.status || "Completed"),
+                hasIssue,
+                issueDetails: t.issue_description || t.issue_details,
+                resultSummary: t.issue_description || (hasIssue ? "Kendala terdeteksi" : "Inspeksi normal"),
+                createdAt: t.created_at || "-",
+                trxNo: "-",
+                mawb: "-",
+                assignedAt: t.created_at || "-",
+                taskArea: "-",
+                convId: "-",
+                taskId: String(t.id || "-"),
+                pieces: 0,
+                grossWeight: "0 Kg",
+                photoName: "",
+              };
+            })
           );
         } else if (active) {
           setTasks([]);
