@@ -1,6 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { cancelExpiredOneTimeMeetings } from "@/lib/services/meeting-service";
-import { getCurrentUserScope } from "@/lib/auth/roles";
 import { buildCustomerOwnerFilter } from "@/lib/services/access-scope";
 
 export interface SalesExecutiveMetrics {
@@ -62,27 +61,27 @@ export async function getSalesExecutiveMetrics(executiveId?: string): Promise<Sa
     // Non-blocking background cancellation to eliminate roundtrip latency from API response
     cancelExpiredOneTimeMeetings().catch(() => {});
 
-    const userScope = await getCurrentUserScope(supabase);
-
+    // For dashboard overview (no executiveId): show ALL data regardless of who is logged in
+    // Scope filtering only applies when fetching metrics for a specific executive (manager view)
     let custCountQuery = (supabase as any).from("a1_customers").select("id", { count: "exact", head: true }).is("deleted_at", null);
-    let custIdQuery = (supabase as any).from("a1_customers").select("id").is("deleted_at", null);
 
     const ownerFilter = executiveId
       ? buildCustomerOwnerFilter([executiveId], executiveId)
-      : userScope && !userScope.isManager
-        ? buildCustomerOwnerFilter(userScope.identifiers, userScope.user.id)
-        : "";
+      : "";
 
-    let userCompanyIds: string[] = [];
-    if (ownerFilter) {
-      custIdQuery = custIdQuery.or(ownerFilter);
-      const { data: userCompanies } = await custIdQuery;
-      userCompanyIds = (userCompanies || []).map((c: any) => c.id);
+    if (executiveId && ownerFilter) {
+      custCountQuery = custCountQuery.or(ownerFilter);
     }
 
-    const shouldFilter = Boolean(executiveId) || userCompanyIds.length > 0;
-    if (shouldFilter && ownerFilter) {
-      custCountQuery = custCountQuery.or(ownerFilter);
+    // For meeting filter: only scope if viewing a specific executive
+    let userCompanyIds: string[] = [];
+    if (executiveId && ownerFilter) {
+      const { data: userCompanies } = await (supabase as any)
+        .from("a1_customers")
+        .select("id")
+        .is("deleted_at", null)
+        .or(ownerFilter);
+      userCompanyIds = (userCompanies || []).map((c: any) => c.id);
     }
 
     let meetQuery = (supabase as any)
@@ -92,8 +91,8 @@ export async function getSalesExecutiveMetrics(executiveId?: string): Promise<Sa
       .is("deleted_at", null)
       .eq("status", "scheduled");
 
-    if (shouldFilter) {
-      meetQuery = meetQuery.in("customer_id", userCompanyIds.length ? userCompanyIds : ["00000000-0000-0000-0000-000000000000"]);
+    if (executiveId && userCompanyIds.length > 0) {
+      meetQuery = meetQuery.in("customer_id", userCompanyIds);
     }
 
     const now = new Date();
@@ -105,7 +104,7 @@ export async function getSalesExecutiveMetrics(executiveId?: string): Promise<Sa
       .is("deleted_at", null)
       .gte("created_at", thirtyDaysAgo);
 
-    if (shouldFilter && ownerFilter) {
+    if (executiveId && ownerFilter) {
       recentCustQuery = recentCustQuery.or(ownerFilter);
     }
 
