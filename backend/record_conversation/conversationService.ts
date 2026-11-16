@@ -242,6 +242,7 @@ export async function createConversation(payload: NewConversationPayload): Promi
 
     const insertPayload: any = {
       customer_id: payload.customer_id,
+      meeting_id: payload.meeting_id || null,
       channel: payload.channel_type || 'WhatsApp',
       conversation_date: conversationDate,
       summary: payload.summary,
@@ -265,7 +266,7 @@ export async function createConversation(payload: NewConversationPayload): Promi
       try {
         await supabase.from('a2_conversation_alerts').insert({
           conversation_id: convData.id,
-          status: 'pending',
+          status: 'Pending',
           alerted_at: new Date().toISOString(),
         });
       } catch (alertErr) {
@@ -322,6 +323,20 @@ export async function updateConversation(payload: UpdateConversationPayload): Pr
     if (error) {
       console.error('Error updating conversation:', error);
       return { success: false, error: error.message };
+    }
+
+    if (payload.need_assistance === true && data?.id) {
+      try {
+        await (supabase as any)
+          .from('a2_conversation_alerts')
+          .upsert({
+            conversation_id: data.id,
+            status: 'Pending',
+            alerted_at: new Date().toISOString(),
+          }, { onConflict: 'conversation_id' });
+      } catch (alertErr) {
+        console.warn('Warning syncing conversation alert on update:', alertErr);
+      }
     }
 
     // Ambil data pendukung relasi untuk company_name dan sales_pic_name

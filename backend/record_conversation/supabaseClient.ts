@@ -1,5 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Polyfill native WebSocket constructor on Node < 22 runtimes to prevent RealtimeClient crashes
+if (typeof globalThis !== 'undefined' && typeof (globalThis as any).WebSocket === 'undefined') {
+  (globalThis as any).WebSocket = class DummyWebSocket {};
+}
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseKey =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||

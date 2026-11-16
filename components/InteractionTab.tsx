@@ -253,6 +253,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
   // Create Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [linkedMeetingId, setLinkedMeetingId] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState('');
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
@@ -478,6 +479,46 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       console.error('Error auto-opening conversation detail from URL:', e);
     }
   }, [conversations]);
+
+  // Handle URL query parameters from Meeting Schedule (+ Record Conversation) or Company List
+  useEffect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const meetingId = urlParams.get('meeting_id');
+      const customerId = urlParams.get('customer_id');
+      const customerName = urlParams.get('customer_name');
+
+      if (meetingId || customerId || customerName) {
+        if (meetingId) {
+          setLinkedMeetingId(meetingId);
+        }
+        setChannelSelection('Meeting');
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yyyy = now.getFullYear();
+        setRecordDate(`${dd}/${mm}/${yyyy}`);
+
+        if (customerList.length > 0) {
+          const matched = customerList.find(c =>
+            (customerId && (c.company_list_id === customerId || (c as any).id === customerId)) ||
+            (customerName && c.company_name.toLowerCase().includes(customerName.toLowerCase()))
+          );
+          if (matched) {
+            setSelectedAccount(`${matched.company_name} (${matched.customer_code || 'CUST-001'})`);
+          } else if (customerName) {
+            setSelectedAccount(customerName);
+          }
+        } else if (customerName) {
+          setSelectedAccount(customerName);
+        }
+
+        setIsCreateModalOpen(true);
+      }
+    } catch (e) {
+      console.error('Error handling URL query parameters for record conversation:', e);
+    }
+  }, [customerList]);
 
   // Role Oversight & Privacy Isolation Check
   const isManager = activeUserRole.toLowerCase().includes('manager') ||
@@ -816,6 +857,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       setSelectedAccount('');
     }
     setJobNumberInput('');
+    setLinkedMeetingId(null);
 
     const today = new Date();
     const dd = String(today.getDate()).padStart(2, '0');
@@ -986,6 +1028,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
     try {
       const res = await createApiConversation({
         customer_id: matchedCompany.company_list_id,
+        meeting_id: linkedMeetingId || undefined,
         customer_code: matchedCompany.customer_code || undefined,
         job_number: rawJob ? rawJob.replace(/^#/, '') : undefined,
         channel_type: channelSelection,
@@ -1033,6 +1076,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       setRecordSummary('');
       setNewUploadedFiles([]);
       setJobNumberInput('');
+      setLinkedMeetingId(null);
       setIsCreateModalOpen(false);
       setSaveSuccessNotif(true);
     } catch (err: any) {

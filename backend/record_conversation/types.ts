@@ -21,6 +21,7 @@ export interface RecordConversationItem {
   id: string;
   job_number: string | null;
   customer_id: string;
+  meeting_id?: string | null;
   customer_code: string | null;
   sales_pic_id: string;
   channel_type: string;
@@ -139,6 +140,7 @@ export interface WorksheetItem {
 
 export interface NewConversationPayload {
   customer_id: string;
+  meeting_id?: string | null;
   customer_code?: string;
   channel_type: string;
   conversation_date?: string;

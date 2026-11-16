@@ -16,7 +16,9 @@ export async function GET() {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const { data, error } = await supabase.from("jobs").select("*");
+    const { data, error } = await supabase
+      .from("corp_jobs")
+      .select("*, customer:a1_customers(id, company_name)");
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

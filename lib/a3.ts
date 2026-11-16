@@ -1,6 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
+// Polyfill native WebSocket constructor on Node < 22 runtimes to prevent RealtimeClient crashes
+if (typeof globalThis !== 'undefined' && typeof (globalThis as any).WebSocket === 'undefined') {
+  (globalThis as any).WebSocket = class DummyWebSocket {};
+}
+
 export type A3Payload = Record<string, unknown>;
 
 export function getA3Client() {
