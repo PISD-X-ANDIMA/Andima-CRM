@@ -273,25 +273,7 @@ export async function createConversation(payload: NewConversationPayload): Promi
       }
     }
 
-    // Jika ada file yang diunggah, masukkan ke tabel a2_conversation_files
-    if (filesToInsert.length > 0 && convData?.id) {
-      const records = filesToInsert.map(f => ({
-        conversation_id: convData.id,
-        file_name: f.file_name,
-        file_type: f.file_type,
-        file_url: f.file_url,
-        file_size_kb: f.file_size_kb,
-        uploaded_by: activeEmployeeId,
-      }));
-
-      const { error: fileError } = await supabase
-        .from('a2_conversation_files')
-        .insert(records);
-
-      if (fileError) {
-        console.warn('Warning: Conversation created but file record failed:', fileError);
-      }
-    }
+    // Single attachment is stored directly in a2_record_conversations.attachment_url
 
     return {
       success: true,
