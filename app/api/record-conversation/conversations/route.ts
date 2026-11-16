@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       visibleCompanyIds: scope.isManager || scope.companyIds.length === 0 ? null : scope.companyIds,
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: result.data,
       total: result.total,
@@ -44,6 +44,8 @@ export async function GET(request: NextRequest) {
       limit: result.limit,
       totalPages: result.totalPages,
     });
+    response.headers.set('Cache-Control', 'private, max-age=3, stale-while-revalidate=30');
+    return response;
   } catch (error: any) {
     console.error('Error in GET /api/record-conversation/conversations:', error);
     return NextResponse.json(

@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
       perPage: result.perPage,
       totalPages: result.totalPages,
     });
-    response.headers.set("Cache-Control", "no-store, max-age=0");
+    response.headers.set("Cache-Control", "private, max-age=3, stale-while-revalidate=30");
     return response;
   } catch (error) {
     const detail = describeDatabaseError(error);

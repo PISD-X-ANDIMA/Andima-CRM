@@ -17,10 +17,12 @@ export async function GET() {
     const customers = await getCustomers(
       scope.isManager || scope.companyIds.length === 0 ? null : scope.companyIds
     );
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: customers,
     });
+    response.headers.set('Cache-Control', 'private, max-age=5, stale-while-revalidate=30');
+    return response;
   } catch (error: any) {
     console.error('Error in GET /api/record-conversation/customers:', error);
     return NextResponse.json(

@@ -33,9 +33,12 @@ export function buildCustomerOwnerFilter(identifiers: string[], userId?: string)
   return parts.join(",");
 }
 
+const scopeCache = new Map<string, { scope: CompanyScope; expiresAt: number }>();
+
 /**
  * Resolves which companies the signed-in user may read from `a1_customers`.
  * Managers see every company. Everyone else sees only companies owned by them.
+ * Results are cached in-memory for 30 seconds per user to eliminate redundant DB roundtrips.
  */
 export async function getCompanyScope(): Promise<CompanyScope | null> {
   const supabase = await createServerSupabaseClient();
@@ -44,8 +47,16 @@ export async function getCompanyScope(): Promise<CompanyScope | null> {
   const userScope = await getCurrentUserScope(supabase).catch(() => null);
   if (!userScope) return null;
 
+  const cacheKey = userScope.user.id;
+  const cached = scopeCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.scope;
+  }
+
   if (userScope.isManager) {
-    return { userId: userScope.user.id, isManager: true, companyIds: [] };
+    const scope: CompanyScope = { userId: userScope.user.id, isManager: true, companyIds: [] };
+    scopeCache.set(cacheKey, { scope, expiresAt: Date.now() + 30_000 });
+    return scope;
   }
 
   let companyIds: string[] = [];
@@ -65,9 +76,12 @@ export async function getCompanyScope(): Promise<CompanyScope | null> {
     companyIds = directOwned.map((row: { id: string }) => String(row.id));
   }
 
-  return {
+  const scope: CompanyScope = {
     userId: userScope.user.id,
     isManager: false,
     companyIds: Array.from(new Set(companyIds)),
   };
+  scopeCache.set(cacheKey, { scope, expiresAt: Date.now() + 30_000 });
+
+  return scope;
 }

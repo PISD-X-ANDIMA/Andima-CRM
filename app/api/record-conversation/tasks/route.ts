@@ -17,7 +17,9 @@ export async function GET() {
 
   try {
     const tasks = await getFieldAgentTasks(scope.isManager ? null : scope.companyIds);
-    return NextResponse.json({ success: true, data: tasks ?? [] });
+    const response = NextResponse.json({ success: true, data: tasks ?? [] });
+    response.headers.set('Cache-Control', 'private, max-age=3, stale-while-revalidate=30');
+    return response;
   } catch {
     return NextResponse.json({ success: false, error: 'Failed to load field agent tasks.' }, { status: 500 });
   }

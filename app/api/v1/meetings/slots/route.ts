@@ -93,7 +93,9 @@ export async function GET(request: NextRequest) {
         } : null,
       };
     });
-    return createSuccessResponse({ date, slots: result });
+    const response = createSuccessResponse({ date, slots: result });
+    response.headers.set("Cache-Control", "private, max-age=3, stale-while-revalidate=30");
+    return response;
   } catch {
     return createErrorResponse("CAL_001", "Failed to load available meeting slots", undefined, 500);
   }

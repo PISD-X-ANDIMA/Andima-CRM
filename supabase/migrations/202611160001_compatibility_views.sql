@@ -87,3 +87,4 @@ GRANT SELECT ON public.a1_customer_meetings TO authenticated, anon;
 GRANT SELECT ON public.a1_company_list TO authenticated, anon;
 GRANT SELECT ON public.a2_worksheets TO authenticated, anon;
 GRANT SELECT ON public.a2_need_backups TO authenticated, anon;
+
