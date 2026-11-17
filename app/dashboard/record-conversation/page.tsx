@@ -7,6 +7,8 @@ import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
 import InteractionTab from "@/components/InteractionTab";
 import { supabase } from "@/lib/supabaseClient";
 
+type BackupStatus = "Pending" | "In Progress" | "Reviewed";
+
 interface ConversationRecord {
   rawId?: string;
   id: string;
@@ -17,6 +19,8 @@ interface ConversationRecord {
   summary: string;
   time: string;
   attachmentName?: string;
+  alertId?: string;
+  backupStatus?: BackupStatus;
 }
 
 export default function RecordConversationPage() {
@@ -25,8 +29,10 @@ export default function RecordConversationPage() {
   const [conversations, setConversations] = useState<ConversationRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [channelFilter, setChannelFilter] = useState<string>("All");
+  const [backupFilter, setBackupFilter] = useState<"all" | "need">("all");
   const [search, setSearch] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<ConversationRecord | null>(null);
+  const [updatingAlertId, setUpdatingAlertId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -50,7 +56,7 @@ export default function RecordConversationPage() {
     let active = true;
     async function loadConversations() {
       try {
-        const [{ data, error }, { data: companies }, { data: users }] = await Promise.all([
+        const [{ data, error }, { data: companies }, { data: users }, alertsJson] = await Promise.all([
           (supabase as any)
             .from("a2_record_conversations")
             .select("*")
@@ -61,12 +67,21 @@ export default function RecordConversationPage() {
           (supabase as any)
             .from("b2_register")
             .select("id, full_name"),
+          fetch("/api/record-conversation/alerts", { cache: "no-store" })
+            .then((res) => res.json())
+            .catch(() => ({ items: [] })),
         ]);
 
         if (active && !error && data && data.length > 0) {
           const compById = new Map((companies || []).map((c: any) => [c.id, c.company_name]));
           const compByCode = new Map((companies || []).map((c: any) => [c.customer_code, c.company_name]));
           const userMap = new Map((users || []).map((u: any) => [u.id, u.full_name]));
+          const backupByConversation = new Map<string, { id: string; status: BackupStatus }>(
+            (alertsJson?.items || []).map((item: any) => [
+              String(item.conversation_id),
+              { id: String(item.id), status: item.status as BackupStatus },
+            ])
+          );
 
           setConversations(
             data.map((c: any, index: number) => {
@@ -81,6 +96,8 @@ export default function RecordConversationPage() {
                 time: c.conversation_time || (c.created_at ? c.created_at.slice(11, 16) : "-"),
                 summary: c.summary || "-",
                 attachmentName: Array.isArray(c.document_urls) && c.document_urls.length > 0 ? c.document_urls[0].split("/").pop() : c.attachment_name,
+                alertId: backupByConversation.get(String(c.id))?.id,
+                backupStatus: backupByConversation.get(String(c.id))?.status,
               };
             })
           );
@@ -106,13 +123,38 @@ export default function RecordConversationPage() {
       if (channelFilter !== "All" && rec.source !== channelFilter) {
         return false;
       }
+      if (backupFilter === "need" && (!rec.backupStatus || rec.backupStatus === "Reviewed")) {
+        return false;
+      }
       if (search.trim()) {
         const q = search.toLowerCase();
         return rec.company.toLowerCase().includes(q) || rec.id.toLowerCase().includes(q);
       }
       return true;
     });
-  }, [conversations, selectedExecutive, channelFilter, search]);
+  }, [conversations, selectedExecutive, channelFilter, backupFilter, search]);
+
+  const updateBackupStatus = async (record: ConversationRecord, status: BackupStatus) => {
+    if (!record.alertId || updatingAlertId) return;
+    setUpdatingAlertId(record.alertId);
+    try {
+      const response = await fetch("/api/record-conversation/alerts", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: record.alertId, status }),
+      });
+      const result = await response.json();
+      if (!result?.success) throw new Error(result?.error || "Gagal mengubah status");
+      setConversations((prev) =>
+        prev.map((item) => (item.alertId === record.alertId ? { ...item, backupStatus: status } : item))
+      );
+      setSelectedRecord((prev) => (prev && prev.alertId === record.alertId ? { ...prev, backupStatus: status } : prev));
+    } catch (err) {
+      alert(`Gagal mengubah status: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setUpdatingAlertId(null);
+    }
+  };
 
   // Jika masih loading role check, render loading skeleton ringan
   if (isManager === null) {
@@ -163,6 +205,16 @@ export default function RecordConversationPage() {
               <option value="Email">Email</option>
             </select>
           </div>
+          <div className="relative">
+            <select
+              value={backupFilter}
+              onChange={(e) => setBackupFilter(e.target.value as "all" | "need")}
+              className="h-10 appearance-none rounded-lg border border-slate-200 bg-white px-3.5 pr-8 text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300"
+            >
+              <option value="all">All Records</option>
+              <option value="need">Need Backup</option>
+            </select>
+          </div>
         </div>
 
         <div className="relative w-full max-w-xs">
@@ -188,25 +240,26 @@ export default function RecordConversationPage() {
               <th className="px-4 py-3.5">Source</th>
               <th className="px-4 py-3.5">Date</th>
               <th className="px-4 py-3.5">Summary</th>
+              <th className="px-4 py-3.5">Status</th>
               <th className="px-4 py-3.5 text-center">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
+                <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
                   Loading conversations...
                 </td>
               </tr>
             ) : filteredRecords.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
+                <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
                   No conversation records found for this selection.
                 </td>
               </tr>
             ) : (
               filteredRecords.map((r) => (
-                <tr key={r.id} className="hover:bg-slate-50/70">
+                <tr key={r.id} className={r.backupStatus && r.backupStatus !== "Reviewed" ? "bg-amber-50/50 hover:bg-amber-50" : "hover:bg-slate-50/70"}>
                   <td className="px-4 py-3.5 font-semibold text-slate-900">{r.id}</td>
                   <td className="px-4 py-3.5 font-medium text-slate-900">{r.company}</td>
                   <td className="px-4 py-3.5">{r.salesExecutive}</td>
@@ -219,6 +272,23 @@ export default function RecordConversationPage() {
                     {r.date} <span className="text-slate-400">{r.time}</span>
                   </td>
                   <td className="max-w-xs truncate px-4 py-3.5">{r.summary}</td>
+                  <td className="px-4 py-3.5">
+                    {r.backupStatus === "Pending" ? (
+                      <span className="rounded-full bg-amber-100 px-2.5 py-0.5 font-semibold text-amber-800">
+                        Need Backup
+                      </span>
+                    ) : r.backupStatus === "In Progress" ? (
+                      <span className="rounded-full bg-blue-100 px-2.5 py-0.5 font-semibold text-blue-800">
+                        On Progress
+                      </span>
+                    ) : r.backupStatus === "Reviewed" ? (
+                      <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 font-semibold text-emerald-800">
+                        Reviewed
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">Normal</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3.5 text-center">
                     <button
                       type="button"
@@ -294,6 +364,21 @@ export default function RecordConversationPage() {
                 <p className="mt-1 text-sm text-slate-700 leading-relaxed">{selectedRecord.summary}</p>
               </div>
 
+              {selectedRecord.alertId && (
+                <div>
+                  <p className="font-semibold uppercase tracking-wider text-slate-400">Backup Status</p>
+                  <p className="mt-1">
+                    {selectedRecord.backupStatus === "Pending" ? (
+                      <span className="rounded-full bg-amber-100 px-2.5 py-0.5 font-semibold text-amber-800">Need Backup</span>
+                    ) : selectedRecord.backupStatus === "In Progress" ? (
+                      <span className="rounded-full bg-blue-100 px-2.5 py-0.5 font-semibold text-blue-800">On Progress</span>
+                    ) : (
+                      <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 font-semibold text-emerald-800">Reviewed</span>
+                    )}
+                  </p>
+                </div>
+              )}
+
               {selectedRecord.attachmentName && (
                 <div>
                   <p className="font-semibold uppercase tracking-wider text-slate-400">Attachment (1) - Max 5 MB</p>
@@ -312,6 +397,26 @@ export default function RecordConversationPage() {
             </div>
 
             <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
+              {selectedRecord.backupStatus === "Pending" && (
+                <button
+                  type="button"
+                  onClick={() => updateBackupStatus(selectedRecord, "In Progress")}
+                  disabled={updatingAlertId === selectedRecord.alertId}
+                  className="rounded-lg border border-blue-200 bg-blue-50 px-5 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-60"
+                >
+                  {updatingAlertId === selectedRecord.alertId ? "Menyimpan..." : "Tandai On Progress"}
+                </button>
+              )}
+              {selectedRecord.backupStatus && selectedRecord.backupStatus !== "Reviewed" && (
+                <button
+                  type="button"
+                  onClick={() => updateBackupStatus(selectedRecord, "Reviewed")}
+                  disabled={updatingAlertId === selectedRecord.alertId}
+                  className="rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60"
+                >
+                  Selesaikan
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setSelectedRecord(null)}

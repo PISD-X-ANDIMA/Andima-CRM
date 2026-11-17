@@ -12,7 +12,8 @@ interface TaskItem {
   company: string;
   salesExecutive: string;
   fieldAgent: string;
-  status: "Assigned" | "In Progress" | "Completed";
+  status: "Assigned" | "In Progress" | "Completed" | "Has Issue";
+  reviewStatus: "Review" | "Completed" | "Archived";
   hasIssue: boolean;
   issueDetails?: string;
   resultSummary: string;
@@ -62,8 +63,7 @@ export default function TaskOfFieldAgentPage() {
           (supabase as any)
             .from("a3_tasks")
             .select("*")
-            .order("created_at", { ascending: false }),
-          (supabase as any)
+            .order("created_at", { ascending: false }),          (supabase as any)
             .from("a1_customers")
             .select("id, company_name"),
           (supabase as any)
@@ -90,6 +90,7 @@ export default function TaskOfFieldAgentPage() {
                 salesExecutive: userMap.get(t.field_agent_id) || "Sales Executive",
                 fieldAgent: userMap.get(t.field_agent_id) || "Field Agent",
                 status: hasIssue ? "In Progress" : (t.status || "Completed"),
+                reviewStatus: (t.review_status || "Review") as "Review" | "Completed" | "Archived",
                 hasIssue,
                 issueDetails: t.issue_description || t.issue_details,
                 resultSummary: t.issue_description || (hasIssue ? "Kendala terdeteksi" : "Inspeksi normal"),
@@ -186,7 +187,6 @@ export default function TaskOfFieldAgentPage() {
         <table className="w-full text-left text-xs text-slate-600">
           <thead className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
             <tr>
-              <th className="px-4 py-3.5">Job Number</th>
               <th className="px-4 py-3.5">Company</th>
               <th className="px-4 py-3.5">Sales Executive</th>
               <th className="px-4 py-3.5">Field Agent</th>
@@ -198,26 +198,25 @@ export default function TaskOfFieldAgentPage() {
           <tbody className="divide-y divide-slate-100">
             {isLoading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
+                <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
                   Loading field agent tasks...
                 </td>
               </tr>
             ) : filteredTasks.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
+                <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
                   No field agent tasks found for this selection.
                 </td>
               </tr>
             ) : (
               filteredTasks.map((t, idx) => (
-                <tr key={`${t.jobNumber}-${idx}`} className="hover:bg-slate-50/70">
-                  <td className="px-4 py-3.5 font-semibold text-blue-600">{t.jobNumber}</td>
+                <tr key={`${t.company}-${idx}`} className="hover:bg-slate-50/70">
                   <td className="px-4 py-3.5 font-medium text-slate-900">{t.company}</td>
                   <td className="px-4 py-3.5">{t.salesExecutive}</td>
                   <td className="px-4 py-3.5 font-medium text-slate-800">{t.fieldAgent}</td>
                   <td className="px-4 py-3.5">
-                    <span className={`rounded-full px-2.5 py-0.5 font-semibold ${t.hasIssue ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700"}`}>
-                      {t.status}
+                    <span className={`rounded-full px-2.5 py-0.5 font-semibold ${t.reviewStatus === "Completed" ? "bg-emerald-50 text-emerald-700" : t.reviewStatus === "Archived" ? "bg-slate-100 text-slate-600" : t.hasIssue ? "bg-rose-50 text-rose-700" : "bg-amber-50 text-amber-700"}`}>
+                      {t.reviewStatus}
                     </span>
                   </td>
                   <td className="px-4 py-3.5">

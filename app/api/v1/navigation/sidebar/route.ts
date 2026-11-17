@@ -20,12 +20,14 @@ const managerCustomerSuccessMenu = [
   { label: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { label: "Record Conversation", href: "/dashboard/record-conversation" },
   { label: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
+  { label: "Manage Accounts", href: "/dashboard/field-agent-management" },
   { label: "Need Backup", href: "/dashboard/need-backup" },
-  { label: "Manage User Roles", href: "/dashboard/manager-customer-success/role-management" },
 ];
 
 const fieldAgentMenu = [
-  { label: "Field Agent", href: "/dashboard/field-agent" },
+  { label: "Dashboard", href: "/dashboard/field-agent?tab=dashboard" },
+  { label: "My Tasks", href: "/dashboard/field-agent?tab=tasks" },
+  { label: "History", href: "/dashboard/field-agent?tab=history" },
 ];
 
 const sidebarCache = new Map<string, { data: any; expiresAt: number }>();
@@ -83,7 +85,7 @@ export async function GET(_request: NextRequest) {
       isFieldAgent,
       name: userScope.name,
       menu: [
-        { label: isFieldAgent ? "Field Agent" : "CRM", href: null, children: crmChildren },
+        { label: "CRM", href: null, children: crmChildren },
       ],
     };
 

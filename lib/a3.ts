@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentUserScope, type UserScope } from "@/lib/auth/roles";
 
 // Polyfill native WebSocket constructor on Node < 22 runtimes to prevent RealtimeClient crashes
 if (typeof globalThis !== 'undefined' && typeof (globalThis as any).WebSocket === 'undefined') {
@@ -14,6 +16,42 @@ export function getA3Client() {
 
   if (!url || !key) throw new Error("Database configuration is unavailable.");
   return createClient(url, key, { auth: { persistSession: false } });
+}
+
+export function getA3WriteClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error("Database configuration is unavailable.");
+  return createClient(url, key, { auth: { persistSession: false } });
+}
+
+export class A3HttpError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+/** Requires a signed-in CRM user. Field-agent routes add their own role check. */
+export async function requireA3User(): Promise<UserScope> {
+  const supabase = await createServerSupabaseClient();
+  if (!supabase) throw new A3HttpError(503, "Database client unavailable");
+  const scope = await getCurrentUserScope(supabase);
+  if (!scope) throw new A3HttpError(401, "Please sign in to continue.");
+  return scope;
+}
+
+export function requireA3FieldAgent(scope: UserScope): string {
+  if (scope.role !== "field_agent") throw new A3HttpError(403, "Field agent access only.");
+  return scope.user.id;
+}
+
+export function a3ErrorResponse(error: unknown) {
+  if (error instanceof A3HttpError) {
+    return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+  }
+  return apiError(error, 400);
 }
 
 export function apiError(error: unknown, status = 500) {

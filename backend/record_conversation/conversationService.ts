@@ -135,9 +135,10 @@ export async function getConversations(options?: {
   const alertRes = conversationIds.length > 0
     ? await supabase.from('a2_conversation_alerts').select('conversation_id, status').in('conversation_id', conversationIds)
     : { data: [] as { conversation_id: string; status: string }[] };
-  const alertMap = new Map<string, 'Pending' | 'Reviewed'>();
+  const alertMap = new Map<string, 'Pending' | 'In Progress' | 'Reviewed'>();
   (alertRes.data || []).forEach((alert: any) => {
-    alertMap.set(alert.conversation_id, alert.status === 'Reviewed' ? 'Reviewed' : 'Pending');
+    const status = alert.status === 'Reviewed' ? 'Reviewed' : alert.status === 'In Progress' ? 'In Progress' : 'Pending';
+    alertMap.set(alert.conversation_id, status);
   });
 
   // Rows whose company was removed from the Company List are not shown.

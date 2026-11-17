@@ -109,6 +109,14 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
       .select("id, company_name, address, pic_name, pic_phone, created_by, created_by_name, created_at")
       .is("deleted_at", null);
 
+    if (!scope.isManager) {
+      if (scope.companyIds.length === 0) {
+        return { customers: [], total: 0, page, perPage: validPerPage, totalPages: 1 };
+      }
+      countQuery = countQuery.in("id", scope.companyIds);
+      dataQuery = dataQuery.in("id", scope.companyIds);
+    }
+
     if (options.executiveId && options.executiveId.toLowerCase() !== "all") {
       const execFilter = options.executiveId.trim();
       countQuery = countQuery.ilike("created_by_name", `%${execFilter}%`);

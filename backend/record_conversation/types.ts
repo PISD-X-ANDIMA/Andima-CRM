@@ -28,8 +28,8 @@ export interface RecordConversationItem {
   conversation_date: string;
   summary: string;
   need_assistance: boolean;
-  /** a2_conversation_alerts.status: Pending or Reviewed. Null when no alert row exists. */
-  alert_status?: 'Pending' | 'Reviewed' | null;
+  /** a2_conversation_alerts.status: Pending, In Progress, or Reviewed. Null when no alert row exists. */
+  alert_status?: 'Pending' | 'In Progress' | 'Reviewed' | null;
   urgency_level: 'high_priority' | 'average' | 'critical' | 'standard' | null;
   synced_to_ctrack: boolean;
   document_urls?: string[] | null;

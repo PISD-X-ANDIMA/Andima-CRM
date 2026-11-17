@@ -1,65 +1,102 @@
-import { NextResponse } from "next/server";
-import { apiError, getA3Client, requireText, writeHistory } from "@/lib/a3";
+import { NextRequest, NextResponse } from "next/server";
+import {
+  A3HttpError,
+  a3ErrorResponse,
+  getA3WriteClient,
+  requireA3User,
+  requireA3FieldAgent,
+} from "@/lib/a3";
 
 export const dynamic = "force-dynamic";
 
-type IssueRecord = {
-  id: string;
-  job_number: string;
-  category: string;
-  classification: string;
-  description: string;
-  evidence_url: string | null;
-  created_at: string;
-};
-
-const fallbackIssues: IssueRecord[] = [];
-
-function fallbackResponse(data: Omit<IssueRecord, "id" | "created_at">) {
-  const issue = {
-    ...data,
-    id: `ISSUE-${Date.now()}`,
-    created_at: new Date().toISOString(),
-  };
-  fallbackIssues.unshift(issue);
-  return NextResponse.json({ success: true, data: issue, mode: "local" }, { status: 201 });
+async function findTask(db: any, jobNumber: string) {
+  const { data: job } = await db
+    .from("corp_jobs")
+    .select("id")
+    .eq("job_number", jobNumber)
+    .maybeSingle();
+  if (!job) return null;
+  const { data: task } = await db
+    .from("a3_tasks")
+    .select("id, field_agent_id, issue_description, status, updated_at")
+    .eq("job_id", job.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return task || null;
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const jobNumber = new URL(request.url).searchParams.get("jobNumber");
-    let client;
-    try {
-      client = getA3Client();
-    } catch {
-      const data = jobNumber ? fallbackIssues.filter(issue => issue.job_number === jobNumber) : fallbackIssues;
-      return NextResponse.json({ success: true, data, mode: "local" });
-    }
-    let query = client.from("job_issues").select("*").order("created_at", { ascending: false });
-    if (jobNumber) query = query.eq("job_number", jobNumber);
-    const { data, error } = await query;
-    if (error) throw new Error("Unable to load issues.");
-    return NextResponse.json({ success: true, data: data ?? [] });
-  } catch (error) { return apiError(error); }
+    await requireA3User();
+    const db = getA3WriteClient();
+    const jobNumber = (request.nextUrl.searchParams.get("jobNumber") || "").trim();
+    if (!jobNumber) throw new A3HttpError(400, "jobNumber is required.");
+    const task = await findTask(db, jobNumber);
+    return NextResponse.json({
+      success: true,
+      data: task?.issue_description
+        ? [{
+            id: task.id,
+            category: "Field Issue",
+            description: task.issue_description,
+            status: "Open",
+            reported_at: task.updated_at,
+          }]
+        : [],
+    });
+  } catch (error) {
+    return a3ErrorResponse(error);
+  }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const scope = await requireA3User();
+    const agentId = requireA3FieldAgent(scope);
+    const db = getA3WriteClient();
     const body = await request.json();
-    const jobNumber = requireText(body.jobNumber, "jobNumber", 100);
-    const category = requireText(body.category, "category", 100);
-    const description = requireText(body.description, "description", 500);
-    const classification = typeof body.classification === "string" ? body.classification.slice(0, 100) : "Non-Urgent";
-    const evidenceUrl = typeof body.evidenceUrl === "string" ? body.evidenceUrl.slice(0, 2048) : null;
-    let client;
-    try {
-      client = getA3Client();
-    } catch {
-      return fallbackResponse({ job_number: jobNumber, category, classification, description, evidence_url: evidenceUrl });
+
+    const jobNumber = typeof body.jobNumber === "string" ? body.jobNumber.trim() : "";
+    if (!jobNumber) throw new A3HttpError(400, "jobNumber is required.");
+    const description =
+      typeof body.description === "string" && body.description.trim()
+        ? body.description.trim()
+        : "Issue recorded on field form";
+
+    const task = await findTask(db, jobNumber);
+    if (!task) throw new A3HttpError(404, "Task not found for this job number.");
+    if (task.field_agent_id && task.field_agent_id !== agentId) {
+      throw new A3HttpError(403, "This task belongs to another field agent.");
     }
-    const { data, error } = await client.from("job_issues").insert({ job_number: jobNumber, category, description, evidence_url: evidenceUrl }).select().single();
-    if (error) throw new Error("Unable to save issue.");
-    await writeHistory({ jobNumber, activity: "Issue Reported", notes: `${category} - ${classification}` });
-    return NextResponse.json({ success: true, data }, { status: 201 });
-  } catch (error) { return apiError(error, 400); }
+
+    const { data, error } = await db
+      .from("a3_tasks")
+      .update({
+        issue_description: description.slice(0, 2000),
+        status: "Has Issue",
+        field_agent_id: task.field_agent_id || agentId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", task.id)
+      .select("id, status, issue_description, updated_at")
+      .single();
+    if (error) throw error;
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          id: data.id,
+          category: typeof body.category === "string" ? body.category : "Others/Lainnya",
+          description: data.issue_description,
+          status: "Open",
+          reported_at: data.updated_at,
+        },
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    return a3ErrorResponse(error);
+  }
 }

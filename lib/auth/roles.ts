@@ -1,4 +1,5 @@
 import { User } from "@supabase/supabase-js";
+import { roleForCrmEmail } from "./crm-role-map";
 
 export type CrmRole = "manager_customer_success" | "sales_executive" | "field_agent";
 
@@ -112,6 +113,10 @@ export async function getCurrentUserScope(supabase: any): Promise<UserScope | nu
   } else {
     role = "sales_executive";
   }
+
+  // The CRM roster file wins when HR data disagrees (e.g. a manager stored as field agent).
+  const rosterRole = roleForCrmEmail(user.email);
+  if (rosterRole) role = rosterRole;
 
   // Build all aliases/identifiers matching created_by in database
   const identifiers = new Set<string>();

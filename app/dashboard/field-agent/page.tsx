@@ -1,25 +1,30 @@
-import Link from "next/link";
+import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import FieldAgentApp from "@/components/field-agent/FieldAgentApp";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentUserScope } from "@/lib/auth/roles";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Temporary placeholder until the A3 field-agent app is merged into this branch.
- * Without this route, any field-agent session lands on a 404 after login.
- */
-export default function FieldAgentPage() {
+export default async function FieldAgentPage() {
+  const supabase = await createServerSupabaseClient();
+  if (!supabase) redirect("/login");
+
+  const scope = await getCurrentUserScope(supabase);
+  if (!scope) redirect("/login");
+  if (scope.role !== "field_agent") redirect("/dashboard");
+
   return (
-    <main className="mx-auto flex max-w-xl flex-col items-center justify-center gap-4 p-8 text-center">
-      <h1 className="text-2xl font-bold text-slate-900">Aplikasi Field Agent belum tersedia</h1>
-      <p className="text-sm text-slate-600">
-        Modul A3 (My Task, laporan lapangan, need backup) belum digabung ke branch ini.
-        Halaman ini sengaja kosong supaya tidak muncul 404.
-      </p>
-      <Link
-        href="/dashboard"
-        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+    <div className="h-full min-h-0 flex flex-col overflow-hidden">
+      <Suspense
+        fallback={
+          <div className="p-6 text-sm text-slate-400">
+            Loading Field Agent...
+          </div>
+        }
       >
-        Kembali ke dashboard
-      </Link>
-    </main>
+        <FieldAgentApp currentUser={{ id: scope.user.id, name: scope.name }} />
+      </Suspense>
+    </div>
   );
 }

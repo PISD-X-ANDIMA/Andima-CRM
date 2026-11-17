@@ -48,7 +48,7 @@ interface ConversationDisplayItem {
   status?: string;
   urgency_level?: string;
   need_assistance?: boolean;
-  alert_status?: 'Pending' | 'Reviewed' | null;
+  alert_status?: 'Pending' | 'In Progress' | 'Reviewed' | null;
   document_urls?: string[];
   connected_job_numbers?: string[];
   evidence_attachments?: EvidenceAttachmentItem[];
@@ -1634,7 +1634,11 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                               Need Assistance
                             </span>
                             <span className="bg-slate-100 text-slate-600 border border-slate-200 rounded-md px-2 py-0.5 text-[10px] font-medium">
-                              {selectedConversation.alert_status === 'Reviewed' ? 'Sudah ditangani Manager' : 'Menunggu respons Manager'}
+                              {selectedConversation.alert_status === 'Reviewed'
+                                ? 'Sudah ditangani Manager'
+                                : selectedConversation.alert_status === 'In Progress'
+                                  ? 'Sedang ditangani Manager'
+                                  : 'Menunggu respons Manager'}
                             </span>
                           </div>
                         </div>

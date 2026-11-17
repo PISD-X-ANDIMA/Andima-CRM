@@ -48,6 +48,7 @@ export interface FieldTaskItem {
   handover_location: string;
   field_agent_name?: string;
   status: TaskStatus;
+  review_status?: 'Review' | 'Completed' | 'Archived';
   has_issue: boolean;
   issue_status?: 'Issue' | 'Resolved' | 'None';
   issue_type?: string;
@@ -669,6 +670,33 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
   const [editingNoteText, setEditingNoteText] = useState('');
   const [assignedAgentName, setAssignedAgentName] = useState('');
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
+  const [reviewSaving, setReviewSaving] = useState(false);
+
+  const handleReviewAction = async (action: 'approve' | 'request' | 'archive') => {
+    if (!resultModalTask || reviewSaving) return;
+    let notes: string | undefined;
+    if (action === 'request') {
+      const input = window.prompt('Catatan kekurangan dokumentasi untuk field agent:');
+      if (input === null) return;
+      notes = input.trim() || 'Dokumentasi belum lengkap. Mohon dilengkapi.';
+    }
+    setReviewSaving(true);
+    try {
+      const res = await fetch('/api/record-conversation/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId: resultModalTask.id, action, notes }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) throw new Error(json?.error || 'Failed to update review status.');
+      // shortcut: full reload keeps the existing fetch logic; upgrade to refetch when state grows.
+      window.location.reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update review status.');
+    } finally {
+      setReviewSaving(false);
+    }
+  };
 
   const formatTaskDateDisplay = (dateStr?: string | null): string => {
     if (!dateStr || dateStr === 'MM/DD/YYYY') {
@@ -825,7 +853,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
         ``,
         `JOB INFORMATION`,
         `--------------------------------------------------`,
-        `Job Number       : ${task.job_number}`,
+        `Company         : ${task.customer_name}`,
         `Customer         : ${task.customer_name}`,
         `Field Agent      : ${task.field_agent_name || 'Marsel'}`,
         `Status           : ${statusText}`,
@@ -997,7 +1025,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       notes_author: activeUserName || 'Sales Executive',
       notes_role: activeUserRole || 'Sales Executive'
     } : null);
-    showToast(`Penugasan & catatan untuk ${notesModalTask.job_number} berhasil disimpan.`);
+    showToast(`Penugasan & catatan untuk ${notesModalTask.customer_name} berhasil disimpan.`);
   };
 
   const [issueModalNoteText, setIssueModalNoteText] = useState('');
@@ -1055,7 +1083,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       notes_author: activeUserName || 'Sales Executive',
       notes_role: activeUserRole || 'Sales Executive'
     } : null);
-    showToast(`Notes untuk ${issueModalTask.job_number} berhasil disimpan.`);
+    showToast(`Notes untuk ${issueModalTask.customer_name} berhasil disimpan.`);
   };
 
   const handleOpenBackupModal = (task: FieldTaskItem) => {
@@ -1117,7 +1145,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       const newTicket = {
         id: `nb-${Date.now()}`,
         ticket_id: 'BCK-2026-001',
-        job_number: backupModalTask.job_number.startsWith('#') ? backupModalTask.job_number : `#${backupModalTask.job_number}`,
+        job_number: backupModalTask.job_number.startsWith('#') ? backupModalTask.job_number : `#${backupModalTask.customer_name}`,
         customer_name: backupModalTask.customer_name,
         category: backupCategory,
         priority: backupPriority === 'urgent' ? 'High' : 'Medium',
@@ -1132,7 +1160,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       window.dispatchEvent(new Event('need_backup_updated'));
 
       setBackupModalTask(null);
-      showToast(`Need Backup untuk ${backupModalTask.job_number} berhasil diajukan!`);
+      showToast(`Need Backup untuk ${backupModalTask.customer_name} berhasil diajukan!`);
     } catch (err) {
       showToast('Gagal membuat Need Backup setelah meneruskan issue. Silakan coba lagi.');
     }
@@ -1310,9 +1338,9 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       return;
     }
 
-    // TC6 (BF -> E-2): Job Number tidak tersedia
+    // TC6 (BF -> E-2): Company tidak tersedia
     if (!autoJobNumber.trim() || autoJobNumber.toLowerCase().includes('fail') || autoJobNumber === 'INVALID') {
-      setTransactionFormError('Job Number tidak tersedia. Sistem gagal membuat nomor transaksi.');
+      setTransactionFormError('Company tidak tersedia. Sistem gagal membuat nomor transaksi.');
       return;
     }
 
@@ -1418,15 +1446,15 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       return;
     }
 
-    // TC5 (BF -> E-3): Job Number tidak ditemukan
+    // TC5 (BF -> E-3): Company tidak ditemukan
     if (!assignModalTask.job_number || assignModalTask.job_number.includes('999') || assignModalTask.job_number.toLowerCase().includes('invalid')) {
-      setAssignError('Assignment ditolak karena Job Number tidak ditemukan.');
+      setAssignError('Assignment ditolak karena Company tidak ditemukan.');
       return;
     }
 
-    // TC6 (BF -> E-4): Relasi Job Number dan Field Agent tidak valid
+    // TC6 (BF -> E-4): Relasi Company dan Field Agent tidak valid
     if (selectedAgent.includes('999') || selectedAgent === 'FA-999' || selectedAgent.toLowerCase().includes('invalid')) {
-      setAssignError('Assignment ditolak karena relasi Job Number dan Field Agent tidak valid.');
+      setAssignError('Assignment ditolak karena relasi Company dan Field Agent tidak valid.');
       return;
     }
 
@@ -1462,7 +1490,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
     saveTasks(updated);
     setAssignModalTask(null);
-    showToast(`Assignment ${assignModalTask.job_number} berhasil dilakukan dan ${agentToAssign} ditugaskan.`);
+    showToast(`Assignment ${assignModalTask.customer_name} berhasil dilakukan dan ${agentToAssign} ditugaskan.`);
   };
 
   // Resolve Issue Internally (UC-CRM-A2-002 A-1 / TC4: Issue Tidak Membutuhkan Bantuan)
@@ -1682,7 +1710,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 setSearchQuery(e.target.value);
                 setT1Page(1);
               }}
-              placeholder="Job Number, Company Name, dan Field Agent"
+              placeholder="Company Name atau Field Agent"
               className="w-full bg-[#f4f6fa] border border-slate-200/70 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:bg-white focus:border-blue-400 transition-colors"
             />
           </div>
@@ -1774,10 +1802,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             {/* Header: Consistent #F5F7FF matching standard */}
             <thead className="bg-[#F5F7FF] border-b border-slate-200/80">
               <tr>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[20%] first:rounded-tl-2xl">
-                  Job Number
-                </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[25%]">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[25%] first:rounded-tl-2xl">
                   Company Name
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[15%]">
@@ -1810,7 +1835,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 ))
               ) : filteredTasks.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-14 text-center">
+                  <td colSpan={5} className="py-14 text-center">
                     <div className="max-w-md mx-auto flex flex-col items-center">
                       <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
                         <FileText size={24} />
@@ -1829,12 +1854,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               ) : (
                 pagedTasks.map((task) => (
                   <tr key={task.id} className="hover:bg-blue-50/20 transition-colors">
-                    {/* Column 1: Job Number */}
-                    <td className="py-3.5 px-4 text-center text-xs sm:text-sm font-bold text-slate-900 font-mono tracking-tight">
-                      {task.job_number}
-                    </td>
-
-                    {/* Column 2: Company Name */}
+                    {/* Column 1: Company Name */}
                     <td className="py-3.5 px-4 text-center text-xs sm:text-sm font-semibold text-slate-800">
                       {task.customer_name}
                     </td>
@@ -1864,7 +1884,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                           title="Klik untuk melihat Detail Status"
                         >
                           <Check size={11} className="text-emerald-600 stroke-[3]" />
-                          <span>Completed</span>
+                          <span>{task.review_status || 'Completed'}</span>
                         </button>
                       )}
                     </td>
@@ -1964,7 +1984,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   Handling Notes &amp; Issue History
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal flex items-center gap-1.5 flex-wrap">
-                  <span>Job {notesModalTask.job_number}</span>
+                  <span>Job {notesModalTask.customer_name}</span>
                   <span className="text-slate-400">•</span>
                   <span>{notesModalTask.customer_name || 'PT Geodis Freight Forwarding'}</span>
                 </p>
@@ -2006,7 +2026,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       JOB NUMBER
                     </span>
                     <span className="text-xs sm:text-sm font-bold text-[#1d4ed8] font-mono">
-                      {notesModalTask.job_number}
+                      {notesModalTask.customer_name}
                     </span>
                   </div>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fffbeb] border border-[#fde68a] text-[#b45309] text-[10px] font-bold">
@@ -2149,11 +2169,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 </div>
               )}
 
-              {/* Field 1: Job Number (Auto-Generated) */}
+              {/* Company is shown instead of the internal job number */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-bold text-slate-800">
-                    Job Number (Auto-Generated)
+                    Company
                   </label>
                   <span className="text-[10px] text-slate-400 flex items-center gap-1 font-medium">
                     <User size={11} className="text-slate-400" />
@@ -2162,7 +2182,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 </div>
                 <div className="w-full bg-[#f1f5f9] border border-slate-200/90 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 text-xs font-semibold text-slate-700 shadow-2xs">
                   <Lock size={13} className="text-slate-400 shrink-0" />
-                  <span>{autoJobNumber}</span>
+                  <span>{customerCompany || "-"}</span>
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1">
                   Automatic system sequence number for operational agent assignment
@@ -2320,8 +2340,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
                 <div className="flex items-center justify-between pt-0.5">
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">JOB NUMBER</span>
-                    <span className="text-[13px] font-bold text-[#1d4ed8] mt-0.5 block font-mono">{assignModalTask.job_number}</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">COMPANY</span>
+                    <span className="text-[13px] font-bold text-[#1d4ed8] mt-0.5 block font-mono">{assignModalTask.customer_name}</span>
                   </div>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fff7ed] border border-[#fed7aa] text-[#c2410c] text-[10px] font-medium">
                     <Lock size={10} className="text-[#ea580c]" />
@@ -2476,9 +2496,9 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 {/* Job Number */}
                 <div className="flex items-center justify-between pt-0.5">
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">JOB NUMBER</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">COMPANY</span>
                     <span className="text-[13px] font-bold text-[#1d4ed8] mt-0.5 block font-mono">
-                      {reassignModalTask.job_number}
+                      {reassignModalTask.customer_name}
                     </span>
                   </div>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fff7ed] border border-[#fed7aa] text-[#c2410c] text-[10px] font-medium">
@@ -2657,7 +2677,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   Detail Status
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">
-                  Job <span className="font-semibold text-slate-700">{issueModalTask.job_number}</span> • <span className="font-semibold text-slate-700">{issueModalTask.customer_name}</span>
+                  Job <span className="font-semibold text-slate-700">{issueModalTask.customer_name}</span> • <span className="font-semibold text-slate-700">{issueModalTask.customer_name}</span>
                 </p>
               </div>
             </div>
@@ -2710,9 +2730,9 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   {/* Job Number */}
                   <div className="bg-white border border-slate-200/80 rounded-xl p-3 flex items-center justify-between shadow-2xs">
                     <div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">JOB NUMBER</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">COMPANY</span>
                       <span className="text-xs font-bold text-[#0d6efd] font-mono block mt-0.5">
-                        {issueModalTask.job_number}
+                        {issueModalTask.customer_name}
                       </span>
                     </div>
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#fff7ed] border border-[#fed7aa] text-[#c2410c] text-[10px] font-medium">
@@ -2874,9 +2894,9 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 </h3>
                 <div className="border border-slate-200 rounded-xl p-4 grid grid-cols-2 gap-x-6 gap-y-4">
                   <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">Job Number</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">Company</span>
                     <span className="text-xs font-bold text-slate-900 block mt-0.5 font-mono">
-                      {resultModalTask.job_number || '#DSVEXP/2605/2551'}
+                      {resultModalTask.customer_name}
                     </span>
                   </div>
                   <div>
@@ -3238,7 +3258,38 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             </div>
 
             {/* Bottom Actions Footer */}
-            <div className="printable-footer px-5 sm:px-6 py-3.5 bg-white border-t border-slate-200 flex items-center gap-3 shrink-0">
+            <div className="printable-footer px-5 sm:px-6 py-3.5 bg-white border-t border-slate-200 flex flex-wrap items-center gap-3 shrink-0">
+              <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${resultModalTask.review_status === 'Completed' ? 'bg-emerald-50 text-emerald-700' : resultModalTask.review_status === 'Archived' ? 'bg-slate-100 text-slate-600' : 'bg-amber-50 text-amber-700'}`}>
+                {resultModalTask.review_status || 'Review'}
+              </span>
+              {resultModalTask.review_status !== 'Archived' && (
+                <>
+                  <button
+                    type="button"
+                    disabled={reviewSaving}
+                    onClick={() => handleReviewAction('approve')}
+                    className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-bold transition-colors cursor-pointer text-center"
+                  >
+                    Acc
+                  </button>
+                  <button
+                    type="button"
+                    disabled={reviewSaving}
+                    onClick={() => handleReviewAction('request')}
+                    className="flex-1 py-2.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 disabled:opacity-60 text-amber-800 text-xs font-bold transition-colors cursor-pointer text-center"
+                  >
+                    Minta dilengkapi
+                  </button>
+                  <button
+                    type="button"
+                    disabled={reviewSaving}
+                    onClick={() => handleReviewAction('archive')}
+                    className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-60 text-slate-600 text-xs font-bold transition-colors cursor-pointer text-center"
+                  >
+                    Arsipkan
+                  </button>
+                </>
+              )}
               <button
                 type="button"
                 onClick={() => setResultModalTask(null)}
@@ -3269,7 +3320,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             <div className="px-6 pt-5 pb-3 flex items-start justify-between border-b border-slate-100">
               <div>
                 <h3 className="text-[17px] font-bold text-slate-900 leading-tight">Job / Transaction Detail Summary</h3>
-                <p className="text-xs text-slate-500 font-mono mt-0.5">{detailModalTask.job_number || '#AENAT/2609/0307'}</p>
+                <p className="text-xs text-slate-500 font-mono mt-0.5">{detailModalTask.customer_name}</p>
               </div>
             </div>
 
@@ -3288,9 +3339,6 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <h4 className="text-sm font-bold text-slate-900 leading-tight">
                     {detailModalTask.customer_name || 'PT Schneider Electric Indonesia'}
                   </h4>
-                  <span className="text-xs font-bold text-[#2563eb] font-mono block mt-0.5">
-                    {detailModalTask.job_number || '#AENAT/2609/0307'}
-                  </span>
                 </div>
                 <div className="border-t border-slate-200/70 pt-2.5 grid grid-cols-2 gap-3">
                   <div>
@@ -3659,7 +3707,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     {timelineModalTask.customer_name || 'PT JPG Trans Indonesia'}
                   </h4>
                   <span className="text-xs font-bold text-[#2563eb] font-mono block mt-0.5">
-                    {timelineModalTask.job_number || '#AENAT/2609/0307'}
+                    {timelineModalTask.customer_name}
                   </span>
                 </div>
                 <div className="border-t border-slate-200/70 pt-2.5 grid grid-cols-2 gap-3">
@@ -3804,10 +3852,10 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       {/* ========================================================================= */}
       {backupModalTask && (() => {
         const displayJobCustomer = backupModalTask.job_number.startsWith('##')
-          ? `${backupModalTask.job_number}– ${backupModalTask.customer_name}`
+          ? `${backupModalTask.customer_name}– ${backupModalTask.customer_name}`
           : backupModalTask.job_number.startsWith('#')
-            ? `#${backupModalTask.job_number}– ${backupModalTask.customer_name}`
-            : `##${backupModalTask.job_number}– ${backupModalTask.customer_name}`;
+            ? `#${backupModalTask.customer_name}– ${backupModalTask.customer_name}`
+            : `##${backupModalTask.customer_name}– ${backupModalTask.customer_name}`;
 
         return (
           <div

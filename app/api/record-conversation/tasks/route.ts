@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFieldAgentTasks, saveFieldTaskNote } from '@/backend/record_conversation/worksheetService';
 import { getCompanyScope } from '@/lib/services/access-scope';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,70 @@ export async function GET() {
     return response;
   } catch {
     return NextResponse.json({ success: false, error: 'Failed to load field agent tasks.' }, { status: 500 });
+  }
+}
+
+/**
+ * PATCH /api/record-conversation/tasks
+ * Sales review: approve (Completed), request completion (Review), or archive.
+ * Body: { taskId, action: 'approve' | 'request' | 'archive', notes? }
+ */
+export async function PATCH(request: NextRequest) {
+  const scope = await getCompanyScope();
+  if (!scope) {
+    return NextResponse.json({ success: false, error: 'Please sign in to continue.' }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const taskId = typeof body.taskId === 'string' ? body.taskId.replace(/^tsk-/, '') : '';
+    const action = body.action;
+    if (!taskId || !['approve', 'request', 'archive'].includes(action)) {
+      return NextResponse.json({ success: false, error: 'taskId and a valid action are required.' }, { status: 400 });
+    }
+
+    const supabase = await createServerSupabaseClient();
+    if (!supabase) {
+      return NextResponse.json({ success: false, error: 'Database client unavailable' }, { status: 503 });
+    }
+
+    const { data: task } = await supabase
+      .from('a3_tasks')
+      .select('id, job_id, status')
+      .eq('id', taskId)
+      .maybeSingle();
+    if (!task) {
+      return NextResponse.json({ success: false, error: 'Task not found.' }, { status: 404 });
+    }
+    if (task.status !== 'Completed' && task.status !== 'Has Issue') {
+      return NextResponse.json({ success: false, error: 'Only submitted reports can be reviewed.' }, { status: 409 });
+    }
+
+    if (!scope.isManager) {
+      const { data: job } = await supabase
+        .from('corp_jobs')
+        .select('customer_id')
+        .eq('id', task.job_id)
+        .maybeSingle();
+      if (!job?.customer_id || !scope.companyIds.includes(job.customer_id)) {
+        return NextResponse.json({ success: false, error: 'This report is outside your company scope.' }, { status: 403 });
+      }
+    }
+
+    const reviewStatus = action === 'approve' ? 'Completed' : action === 'archive' ? 'Archived' : 'Review';
+    const { error: updateError } = await supabase
+      .from('a3_tasks')
+      .update({ review_status: reviewStatus, updated_at: new Date().toISOString() })
+      .eq('id', taskId);
+    if (updateError) throw updateError;
+
+    if (typeof body.notes === 'string' && body.notes.trim()) {
+      await saveFieldTaskNote({ taskId, notes: body.notes, salesId: scope.userId || null });
+    }
+
+    return NextResponse.json({ success: true, data: { taskId, review_status: reviewStatus } });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
 

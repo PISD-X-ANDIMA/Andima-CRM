@@ -49,8 +49,8 @@ async function resolveManagerId(supabase: any, user: { id: string; email?: strin
 
 /**
  * GET /api/record-conversation/alerts
- * Daftar need-assist alert. Default hanya Pending. `?status=all` untuk riwayat.
- * Manager only.
+ * Daftar need-assist alert. Default hanya yang belum selesai (Pending/In Progress).
+ * `?status=all` untuk riwayat. Manager only.
  */
 export async function GET(request: NextRequest) {
   const supabase = await createServerSupabaseClient();
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     .from('a2_conversation_alerts')
     .select('id, conversation_id, status, alerted_at')
     .order('alerted_at', { ascending: false });
-  if (!includeAll) alertQuery = alertQuery.eq('status', 'Pending');
+  if (!includeAll) alertQuery = alertQuery.in('status', ['Pending', 'In Progress']);
 
   const { data: alertData, error: alertError } = await alertQuery;
   if (alertError) {
@@ -131,7 +131,8 @@ export async function GET(request: NextRequest) {
 
 /**
  * PATCH /api/record-conversation/alerts
- * Body: { conversationId } atau { id }. Manager only. Menandai alert Reviewed.
+ * Body: { conversationId } atau { id }, plus optional { status } (Pending|In Progress|Reviewed).
+ * Default Reviewed. Manager only.
  */
 export async function PATCH(request: NextRequest) {
   const supabase = await createServerSupabaseClient();
@@ -147,7 +148,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'Only a Manager of Customer Success can resolve a need backup.' }, { status: 403 });
   }
 
-  let body: { conversationId?: string; id?: string };
+  let body: { conversationId?: string; id?: string; status?: string };
   try {
     body = await request.json();
   } catch {
@@ -158,9 +159,14 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'conversationId or id is required' }, { status: 400 });
   }
 
+  const allowedStatuses = ['Pending', 'In Progress', 'Reviewed'];
+  if (body.status && !allowedStatuses.includes(body.status)) {
+    return NextResponse.json({ success: false, error: 'Invalid status' }, { status: 400 });
+  }
+
   const managerId = await resolveManagerId(supabase, { id: scope.user.id, email: scope.email });
   const updateFields = {
-    status: 'Reviewed',
+    status: body.status || 'Reviewed',
     manager_id: managerId,
   };
 

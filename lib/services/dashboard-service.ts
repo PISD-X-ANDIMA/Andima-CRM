@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getCompanyScope } from "@/lib/services/access-scope";
 import { DashboardSummaryData } from "@/types/customer";
 
 function startOfWeek(date: Date) {
@@ -25,11 +26,27 @@ export async function getDashboardSummary(): Promise<DashboardSummaryData> {
   if (!supabase) return fallback;
 
   try {
+    const scope = await getCompanyScope();
+    if (!scope) return fallback;
+
+    let customerQuery = (supabase as any)
+      .from("a1_customers")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null);
+    let meetingQuery = (supabase as any)
+      .from("a1_meetings")
+      .select("id, customer_id, schedule_type, meeting_date, meeting_day, effective_start_date, start_time, end_time, status")
+      .eq("is_active", true).is("deleted_at", null).neq("status", "cancelled");
+
+    if (!scope.isManager) {
+      if (scope.companyIds.length === 0) return fallback;
+      customerQuery = customerQuery.in("id", scope.companyIds);
+      meetingQuery = meetingQuery.in("customer_id", scope.companyIds);
+    }
+
     const [{ count, error: customerError }, { data: meetings, error: meetingError }] = await Promise.all([
-      (supabase as any).from("a1_customers").select("id", { count: "exact", head: true }).is("deleted_at", null),
-      (supabase as any).from("a1_meetings")
-        .select("id, schedule_type, meeting_date, meeting_day, effective_start_date, start_time, end_time, status")
-        .eq("is_active", true).is("deleted_at", null).neq("status", "cancelled"),
+      customerQuery,
+      meetingQuery,
     ]);
     if (customerError) throw customerError;
     if (meetingError) throw meetingError;

@@ -8,7 +8,7 @@ import { ManagerBackupBell } from "@/components/dashboard/ManagerBackupBell";
 const routeLabels: Record<string, string> = {
   "sales-executive": "Sales Executive",
   "manager-customer-success": "Manager of Customer Success",
-  "role-management": "Manage User Roles",
+  "field-agent": "Field Agent",
   "company-list": "Company List",
   "meeting-schedule": "Meeting Schedule",
   "record-conversation": "Record Conversation",
@@ -51,7 +51,11 @@ export function DashboardHeader() {
     const segments = pathname.split("/").filter(Boolean).slice(1);
     if (!segments.length) return ["Dashboard"];
     const isManager = pathname.includes("manager-customer-success");
-    const parentRole = isManager ? "Manager of Customer Success" : "Sales Executive";
+    const parentRole = isManager
+      ? "Manager of Customer Success"
+      : segments[0] === "field-agent"
+        ? "Field Agent"
+        : "Sales Executive";
     if (segments[0] === "task-of-field-agent") return ["CRM", parentRole, "Task of Field Agent"];
     const labels = segments.map((segment) => routeLabels[segment] || (segment.includes("-") ? "Details" : segment));
     if (labels[0] !== parentRole && labels[0] !== "Dashboard") labels.unshift(parentRole);

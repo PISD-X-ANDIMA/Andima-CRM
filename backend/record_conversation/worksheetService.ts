@@ -167,7 +167,7 @@ export async function getFieldAgentTasks(visibleCompanyIds?: string[] | null): P
   try {
     const { data: tasks, error } = await (supabase as any)
       .from('a3_tasks')
-      .select('id, job_id, field_agent_id, status, issue_description, completed_at, created_at, updated_at')
+      .select('id, job_id, field_agent_id, status, review_status, issue_description, completed_at, created_at, updated_at')
       .order('created_at', { ascending: false });
 
     if (error || !tasks) return [];
@@ -211,7 +211,10 @@ export async function getFieldAgentTasks(visibleCompanyIds?: string[] | null): P
     return tasks
       .filter((t: any) => {
         const job = jobMap.get(t.job_id);
-        if (!allowedCompanyIds || !job?.customer_id) return true;
+        if (!allowedCompanyIds) return true;
+        // Sales only receives reports after the field agent declares them done.
+        if (t.status !== 'Completed' && t.status !== 'Has Issue') return false;
+        if (!job?.customer_id) return false;
         return allowedCompanyIds.has(job.customer_id);
       })
       .map((t: any, index: number) => {
@@ -231,6 +234,7 @@ export async function getFieldAgentTasks(visibleCompanyIds?: string[] | null): P
           customer_name: (job?.customer_id ? custMap.get(job.customer_id) : null) || '-',
           field_agent_name: userMap.get(t.field_agent_id) || 'Field Agent',
           status: (t.status as any) || (t.field_agent_id ? 'Assigned' : 'Unassigned'),
+          review_status: t.review_status || 'Review',
           has_issue: isIssue,
           issue_type: isIssue ? 'Physical Load Difference' : undefined,
           issue_category: isIssue ? 'Physical Load Difference' : undefined,

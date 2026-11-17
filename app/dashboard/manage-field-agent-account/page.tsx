@@ -1,5 +1,5 @@
-import ManageFieldAgentAccount from '@/components/ManageFieldAgentAccount';
+import { redirect } from "next/navigation";
 
 export default function ManageFieldAgentAccountPage() {
-  return <ManageFieldAgentAccount />;
+  redirect("/dashboard/field-agent-management");
 }

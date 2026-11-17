@@ -10,7 +10,7 @@ interface BackupTicket {
   ticketId: string;
   company: string;
   salesExecutive: string;
-  status: "Open" | "Resolved";
+  status: "Open" | "On Progress" | "Resolved";
   reporter: string;
   dateTime: string;
   problemDescription: string;
@@ -48,7 +48,7 @@ export default function NeedBackupPage() {
           ticketId: `TKT-${String(item.id).slice(0, 8).toUpperCase()}`,
           company: item.company_name,
           salesExecutive: item.sales_name,
-          status: item.status === "Reviewed" ? ("Resolved" as const) : ("Open" as const),
+          status: item.status === "Reviewed" ? ("Resolved" as const) : item.status === "In Progress" ? ("On Progress" as const) : ("Open" as const),
           reporter: item.sales_name,
           dateTime: item.conversation_date || "-",
           problemDescription: item.summary || "-",
@@ -115,7 +115,7 @@ export default function NeedBackupPage() {
   }, [tickets, selectedExecutive, search]);
 
   const totalCount = filteredTickets.length;
-  const waitingCount = filteredTickets.filter((t) => t.status === "Open").length;
+  const waitingCount = filteredTickets.filter((t) => t.status !== "Resolved").length;
   const resolvedCount = filteredTickets.filter((t) => t.status === "Resolved").length;
 
   return (
@@ -207,7 +207,7 @@ export default function NeedBackupPage() {
                   <td className="px-4 py-3.5">{t.salesExecutive}</td>
                   <td className="px-4 py-3.5">{t.dateTime}</td>
                   <td className="px-4 py-3.5">
-                    <span className={`rounded-full px-2.5 py-0.5 font-semibold ${t.status === "Resolved" ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"}`}>
+                    <span className={`rounded-full px-2.5 py-0.5 font-semibold ${t.status === "Resolved" ? "bg-emerald-50 text-emerald-800" : t.status === "On Progress" ? "bg-blue-50 text-blue-800" : "bg-amber-50 text-amber-800"}`}>
                       {t.status}
                     </span>
                   </td>
@@ -262,7 +262,7 @@ export default function NeedBackupPage() {
             <div className="mt-4 space-y-4 text-xs">
               <div className="rounded-lg border border-slate-100 p-2.5">
                 <p className="text-slate-500">Ticket Status</p>
-                <p className={`mt-1 font-bold ${selectedTicket.status === "Resolved" ? "text-emerald-700" : "text-amber-700"}`}>
+                <p className={`mt-1 font-bold ${selectedTicket.status === "Resolved" ? "text-emerald-700" : selectedTicket.status === "On Progress" ? "text-blue-700" : "text-amber-700"}`}>
                   {selectedTicket.status}
                 </p>
               </div>
@@ -289,7 +289,7 @@ export default function NeedBackupPage() {
               >
                 Close
               </button>
-              {selectedTicket.status === "Open" && (
+              {selectedTicket.status !== "Resolved" && (
                 <button
                   type="button"
                   onClick={handleResolve}

@@ -37,8 +37,8 @@ const ROLES = [
       "/dashboard/meeting-schedule",
       "/dashboard/record-conversation",
       "/dashboard/task-of-field-agent",
-      "/dashboard/manage-field-agent-account",
-      "/dashboard/manager-customer-success/role-management",
+      "/dashboard/field-agent-management",
+      "/dashboard/need-backup",
     ],
     deniedPaths: ["/dashboard/sales-executive", "/dashboard/field-agent"],
     api: [

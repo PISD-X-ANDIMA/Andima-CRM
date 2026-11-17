@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from '@/lib/supabaseClient';
 import {
@@ -26,7 +26,9 @@ const defaultSalesExecutiveMenus: SubMenuItem[] = [
 ];
 
 const defaultFieldAgentMenus: SubMenuItem[] = [
-  { name: "Field Agent", href: "/dashboard/field-agent" },
+  { name: "Dashboard", href: "/dashboard/field-agent?tab=dashboard" },
+  { name: "My Tasks", href: "/dashboard/field-agent?tab=tasks" },
+  { name: "History", href: "/dashboard/field-agent?tab=history" },
 ];
 
 const defaultManagerMenus: SubMenuItem[] = [
@@ -42,6 +44,7 @@ const defaultManagerMenus: SubMenuItem[] = [
 export function Sidebar({ onHide }: { onHide: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [crmOpen, setCrmOpen] = useState(true);
   const [isManagerRole, setIsManagerRole] = useState(false);
@@ -97,7 +100,13 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
     return () => { active = false; };
   }, [pathname]);
 
-  const isCurrentDashboard = pathname === sectionHref;
+  // Root link is active only when no submenu (with query) matches the current URL.
+  const currentUrl = searchParams.toString()
+    ? `${pathname}?${searchParams.toString()}`
+    : pathname;
+  const isCurrentDashboard =
+    pathname === sectionHref &&
+    !submenuItems.some((item) => item.href === currentUrl);
 
   return (
     <aside className="group relative flex h-screen h-dvh w-[260px] shrink-0 flex-col bg-gradient-to-b from-[#0a1c31] via-[#15406a] to-[#2a6294]">
@@ -158,11 +167,10 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
               {submenuItems
                 .filter((item) => item.href !== sectionHref)
                 .map((item) => {
+                const [itemPath, itemQuery] = item.href.split("?");
                 const isActive =
-                  pathname === item.href ||
-                  (item.href !== "/dashboard/manager-customer-success" &&
-                   item.href !== "/dashboard/sales-executive" &&
-                   pathname.startsWith(`${item.href}/`));
+                  pathname === itemPath &&
+                  (!itemQuery || itemQuery === searchParams.toString());
 
                 return (
                   <Link
