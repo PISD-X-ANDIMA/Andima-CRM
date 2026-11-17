@@ -15,8 +15,7 @@ const DASHBOARD_ROUTES: ReadonlyArray<{ prefix: string; roles: readonly CrmRole[
   { prefix: "/dashboard/field-agent-management", roles: ["manager_customer_success", "sales_executive"] },
   { prefix: "/dashboard/field-agent-access", roles: ["manager_customer_success", "sales_executive"] },
   { prefix: "/dashboard/manage-field-agent-account", roles: ["manager_customer_success", "sales_executive"] },
-  // A3 field-agent app still shows this menu to field agents. Revisit when need-backup flow is final.
-  { prefix: "/dashboard/need-backup", roles: ["manager_customer_success", "sales_executive", "field_agent"] },
+  { prefix: "/dashboard/need-backup", roles: ["manager_customer_success"] },
   { prefix: "/dashboard/profile", roles: ["manager_customer_success", "sales_executive", "field_agent"] },
   { prefix: "/dashboard/settings", roles: ["manager_customer_success", "sales_executive", "field_agent"] },
 ];

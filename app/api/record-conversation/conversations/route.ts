@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getConversations, createConversation, updateConversation } from '@/backend/record_conversation/conversationService';
 import { NewConversationPayload, UpdateConversationPayload } from '@/backend/record_conversation/types';
 import { getCompanyScope } from '@/lib/services/access-scope';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 const unauthorized = () => NextResponse.json({ success: false, error: 'Please sign in to continue.' }, { status: 401 });
 
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
       needAssistance: needAssistance,
       page,
       limit,
-      visibleCompanyIds: scope.isManager || scope.companyIds.length === 0 ? null : scope.companyIds,
+      visibleCompanyIds: scope.isManager ? null : scope.companyIds,
     });
 
     const response = NextResponse.json({
@@ -97,7 +98,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await createConversation(body);
+    let author: { id: string; email: string | null } | undefined;
+    const supabase = await createServerSupabaseClient();
+    if (supabase) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) author = { id: user.id, email: user.email ?? null };
+    }
+
+    const result = await createConversation(body, author);
 
     if (!result.success) {
       return NextResponse.json(

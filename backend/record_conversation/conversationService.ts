@@ -116,7 +116,7 @@ export async function getConversations(options?: {
       ? supabase.from('a1_customers').select('id, company_name').in('id', customerIds).is('deleted_at', null)
       : Promise.resolve({ data: [] }),
     employeeIds.length > 0
-      ? supabase.from('d3_employee').select('id, full_name').in('id', employeeIds)
+      ? supabase.from('b2_register').select('id, full_name').in('id', employeeIds)
       : Promise.resolve({ data: [] }),
   ]);
 
@@ -180,59 +180,43 @@ export async function getConversations(options?: {
  * Menyimpan percakapan baru dari Modal REC ke tabel a2_record_conversations
  * dan menyisipkan lampiran ke a2_conversation_files bila ada.
  */
-export async function createConversation(payload: NewConversationPayload): Promise<{
+export async function createConversation(
+  payload: NewConversationPayload,
+  author?: { id?: string | null; email?: string | null }
+): Promise<{
   success: boolean;
   data?: RecordConversationItem;
   error?: string;
 }> {
   try {
-    // Dapatkan ID pegawai dari d3_employee (cocokkan nama jika ada)
-    let activeEmployeeId: string | null = null;
-    if (payload.sales_pic_name) {
-      const { data: matchedEmp } = await supabase
-        .from('d3_employee')
+    // a2_record_conversations.created_by references b2_register(id).
+    let authorId: string | null = null;
+
+    if (author?.email) {
+      const { data } = await supabase
+        .from('b2_register')
         .select('id')
-        .ilike('full_name', `%${payload.sales_pic_name.trim()}%`)
-        .limit(1);
-      if (matchedEmp && matchedEmp.length > 0 && matchedEmp[0]?.id) {
-        activeEmployeeId = matchedEmp[0].id;
-      }
+        .ilike('email', author.email.trim())
+        .maybeSingle();
+      if (data?.id) authorId = String(data.id);
     }
 
-    if (!activeEmployeeId) {
-      const { data: empData, error: empError } = await supabase
-        .from('d3_employee')
+    if (!authorId && author?.id) {
+      const { data } = await supabase
+        .from('b2_register')
         .select('id')
-        .limit(1);
-
-      if (empData && empData.length > 0 && empData[0]?.id) {
-        activeEmployeeId = empData[0].id;
-      } else {
-        if (empError) {
-          console.warn('Query ke d3_employee dibatasi RLS/permission:', empError.message);
-        }
-        // Fallback: ambil sales_pic_id valid yang sudah ada di a2_record_conversations (hindari dummy UUID)
-        const { data: convFallback } = await supabase
-          .from('a2_record_conversations')
-          .select('sales_pic_id')
-          .not('sales_pic_id', 'is', null)
-          .neq('sales_pic_id', 'a0000000-0000-0000-0000-000000000001')
-          .limit(1);
-
-        if (convFallback && convFallback.length > 0 && convFallback[0]?.sales_pic_id) {
-          activeEmployeeId = convFallback[0].sales_pic_id;
-        } else {
-          // Fallback default: ID karyawan yang terdaftar di d3_employee
-          activeEmployeeId = '9c274330-44f1-474d-91c0-523aac3ea9cf';
-        }
-      }
+        .eq('id', author.id)
+        .maybeSingle();
+      if (data?.id) authorId = String(data.id);
     }
 
-    if (!activeEmployeeId) {
-      return {
-        success: false,
-        error: 'Gagal mengambil sales_pic_id valid dari tabel d3_employee',
-      };
+    if (!authorId && payload.sales_pic_name) {
+      const { data } = await supabase
+        .from('b2_register')
+        .select('id')
+        .ilike('full_name', payload.sales_pic_name.trim())
+        .maybeSingle();
+      if (data?.id) authorId = String(data.id);
     }
 
     const conversationDate = payload.conversation_date || new Date().toISOString().split('T')[0];
@@ -259,7 +243,7 @@ export async function createConversation(payload: NewConversationPayload): Promi
       summary: payload.summary,
       need_assist: Boolean(payload.need_assistance),
       attachment_url: fileUrls.length > 0 ? fileUrls[0] : null,
-      created_by: activeEmployeeId,
+      created_by: authorId,
     };
 
     const { data: convData, error: convError } = await supabase
@@ -352,8 +336,8 @@ export async function updateConversation(payload: UpdateConversationPayload): Pr
 
     // Ambil data pendukung relasi untuk company_name dan sales_pic_name
     let companyName = '-';
-    let customerCode = data.customer_code || 'CUST-001';
-    let salesPicName = 'Adelia';
+    const customerCode = data.customer_code || null;
+    let salesPicName = 'Sales Executive';
 
     if (data.customer_id) {
       const { data: comp } = await supabase
@@ -366,13 +350,13 @@ export async function updateConversation(payload: UpdateConversationPayload): Pr
       }
     }
 
-    if (data.sales_pic_id) {
+    if (data.created_by) {
       const { data: emp } = await supabase
-        .from('d3_employee')
+        .from('b2_register')
         .select('full_name')
-        .eq('id', data.sales_pic_id)
-        .single();
-      if (emp) {
+        .eq('id', data.created_by)
+        .maybeSingle();
+      if (emp?.full_name) {
         salesPicName = emp.full_name;
       }
     }

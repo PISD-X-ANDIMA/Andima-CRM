@@ -20,6 +20,7 @@ export default function NeedBackupPage() {
   const { selectedExecutive } = useManagerFilter();
   const [tickets, setTickets] = useState<BackupTicket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedTicket, setSelectedTicket] = useState<BackupTicket | null>(null);
@@ -30,8 +31,10 @@ export default function NeedBackupPage() {
       const result = await response.json();
       if (!result?.success) {
         setTickets([]);
+        setLoadFailed(true);
         return;
       }
+      setLoadFailed(false);
       setTickets(
         (result.items || []).map((item: {
           id: string;
@@ -53,9 +56,16 @@ export default function NeedBackupPage() {
       );
     } catch {
       setTickets([]);
+      setLoadFailed(true);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const retryLoad = () => {
+    setIsLoading(true);
+    setLoadFailed(false);
+    void loadTickets();
   };
 
   useEffect(() => {
@@ -168,6 +178,19 @@ export default function NeedBackupPage() {
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
                   Loading backup tickets...
+                </td>
+              </tr>
+            ) : loadFailed ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-12 text-center text-slate-600">
+                  Gagal memuat need backup.
+                  <button
+                    type="button"
+                    onClick={retryLoad}
+                    className="ml-2 rounded-md border border-slate-200 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                  >
+                    Coba lagi
+                  </button>
                 </td>
               </tr>
             ) : filteredTickets.length === 0 ? (

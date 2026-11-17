@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
       ? supabase.from('a1_customers').select('id, company_name').in('id', customerIds)
       : Promise.resolve({ data: [] as CompanyRow[] }),
     employeeIds.length > 0
-      ? supabase.from('d3_employee').select('id, full_name').in('id', employeeIds)
+      ? supabase.from('b2_register').select('id, full_name').in('id', employeeIds)
       : Promise.resolve({ data: [] as EmployeeRow[] }),
   ]);
 
