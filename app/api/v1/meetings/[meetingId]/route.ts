@@ -21,8 +21,8 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     if (!supabase) return createErrorResponse("DATABASE_001", "Database client unavailable", undefined, 503);
 
     const { data: meeting, error } = await (supabase as any)
-      .from("a1_customer_meetings")
-      .select("*, a1_company_list(company_name, pic_phone_number, address)")
+      .from("a1_meetings")
+      .select("*, a1_customers(company_name, pic_phone, address)")
       .eq("id", meetingId)
       .is("deleted_at", null)
       .maybeSingle();
@@ -33,8 +33,8 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 
     return createSuccessResponse({
       id: meeting.id,
-      company_id: meeting.company_id,
-      company_name: meeting.a1_company_list?.company_name || null,
+      company_id: meeting.customer_id,
+      company_name: meeting.a1_customers?.company_name || null,
       meeting_day: meeting.meeting_day,
       schedule_type: meeting.schedule_type,
       meeting_date: meeting.meeting_date,
@@ -73,8 +73,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     if (!supabase) return createErrorResponse("DATABASE_001", "Database client unavailable", undefined, 503);
 
     const { data: existing, error: existingError } = await (supabase as any)
-      .from("a1_customer_meetings")
-      .select("company_id, status, meeting_type, location, meeting_link, start_time, end_time, schedule_type, meeting_day, meeting_date, effective_start_date, representative_name")
+      .from("a1_meetings")
+      .select("customer_id, status, meeting_type, location, meeting_link, start_time, end_time, schedule_type, meeting_day, meeting_date, effective_start_date, representative_name")
       .eq("id", meetingId)
       .maybeSingle();
 
@@ -122,7 +122,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       if (conflict.hasConflict) return createErrorResponse("MEET_001", `This time overlaps with a meeting for ${conflict.conflictWith}.`, undefined, 409);
     }
 
-    const result = await updateMeeting(existing.company_id, meetingId, input);
+    const result = await updateMeeting(existing.customer_id, meetingId, input);
     if (!result.success) {
       return createErrorResponse("UPDATE_001", result.error || "Failed to update the schedule", undefined, 500);
     }
@@ -144,8 +144,8 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
     if (!supabase) return createErrorResponse("DATABASE_001", "Database client unavailable", undefined, 503);
 
     const { data: existing, error } = await (supabase as any)
-      .from("a1_customer_meetings")
-      .select("company_id, status")
+      .from("a1_meetings")
+      .select("customer_id, status")
       .eq("id", meetingId)
       .maybeSingle();
 
@@ -154,7 +154,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
       return createErrorResponse("MEETING_LOCKED_001", "Completed meetings cannot be deleted.", undefined, 409);
     }
 
-    const result = await deleteMeeting(existing.company_id, meetingId);
+    const result = await deleteMeeting(existing.customer_id, meetingId);
     if (!result.success) {
       return createErrorResponse("DELETE_001", result.error || "Failed to delete the schedule", undefined, 500);
     }

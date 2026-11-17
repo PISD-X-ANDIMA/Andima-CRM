@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     if (stats.totalCustomers === null || stats.upcomingMeetings === null || stats.tasks === null) {
       return createErrorResponse("STAT_001", "Dashboard statistics are temporarily unavailable", undefined, 503);
     }
-    return createSuccessResponse({
+    const response = createSuccessResponse({
       total_customer: stats.totalCustomers,
       total_customers: stats.totalCustomers,
       customer_percentage: stats.customerPercentage ?? 0,
@@ -26,6 +26,8 @@ export async function GET(request: NextRequest) {
         task: stats.taskPercentage ?? 0,
       },
     });
+    response.headers.set("Cache-Control", "private, max-age=5, stale-while-revalidate=30");
+    return response;
   } catch {
     return createErrorResponse("STAT_001", "Gagal memuat data statistik, coba lagi nanti", undefined, 500);
   }

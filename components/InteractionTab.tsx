@@ -48,6 +48,7 @@ interface ConversationDisplayItem {
   status?: string;
   urgency_level?: string;
   need_assistance?: boolean;
+  alert_status?: 'Pending' | 'Reviewed' | null;
   document_urls?: string[];
   connected_job_numbers?: string[];
   evidence_attachments?: EvidenceAttachmentItem[];
@@ -242,6 +243,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
   // Create Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [linkedMeetingId, setLinkedMeetingId] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState('');
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
@@ -418,6 +420,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
             status: c.status || 'active',
             urgency_level: c.urgency_level || 'standard',
             need_assistance: c.need_assistance,
+            alert_status: c.alert_status ?? null,
             document_urls: c.document_urls || [],
             connected_job_numbers: displayJob !== '-' ? [displayJob] : [],
             evidence_attachments: attachments,
@@ -480,6 +483,46 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       .catch(() => {});
     return () => { active = false; };
   }, []);
+
+  // Handle URL query parameters from Meeting Schedule (+ Record Conversation) or Company List
+  useEffect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const meetingId = urlParams.get('meeting_id');
+      const customerId = urlParams.get('customer_id');
+      const customerName = urlParams.get('customer_name');
+
+      if (meetingId || customerId || customerName) {
+        if (meetingId) {
+          setLinkedMeetingId(meetingId);
+        }
+        setChannelSelection('Meeting');
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yyyy = now.getFullYear();
+        setRecordDate(`${dd}/${mm}/${yyyy}`);
+
+        if (customerList.length > 0) {
+          const matched = customerList.find(c =>
+            (customerId && (c.company_list_id === customerId || (c as any).id === customerId)) ||
+            (customerName && c.company_name.toLowerCase().includes(customerName.toLowerCase()))
+          );
+          if (matched) {
+            setSelectedAccount(`${matched.company_name} (${matched.customer_code || 'CUST-001'})`);
+          } else if (customerName) {
+            setSelectedAccount(customerName);
+          }
+        } else if (customerName) {
+          setSelectedAccount(customerName);
+        }
+
+        setIsCreateModalOpen(true);
+      }
+    } catch (e) {
+      console.error('Error handling URL query parameters for record conversation:', e);
+    }
+  }, [customerList]);
 
   const isManager = isManagerFromServer ?? (
     activeUserRole.toLowerCase().includes('manager') ||
@@ -819,6 +862,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       setSelectedAccount('');
     }
     setJobNumberInput('');
+    setLinkedMeetingId(null);
 
     const today = new Date();
     const dd = String(today.getDate()).padStart(2, '0');
@@ -989,6 +1033,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
     try {
       const res = await createApiConversation({
         customer_id: matchedCompany.company_list_id,
+        meeting_id: linkedMeetingId || undefined,
         customer_code: matchedCompany.customer_code || undefined,
         job_number: rawJob ? rawJob.replace(/^#/, '') : undefined,
         channel_type: channelSelection,
@@ -1010,6 +1055,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       setRecordSummary('');
       setNewUploadedFiles([]);
       setJobNumberInput('');
+      setLinkedMeetingId(null);
       setIsCreateModalOpen(false);
       setSaveSuccessNotif(true);
     } catch (err: any) {
@@ -1050,13 +1096,18 @@ Exported on: ${new Date().toLocaleString('id-ID')}
     }
   };
 
-  // Only a manager may close a need-backup conversation; the API enforces it too.
+  // Only a manager may close a need-backup alert; the API enforces it too.
   const handleResolveBackup = async () => {
     if (!selectedConversation || !isManager || isResolvingBackup) return;
     setIsResolvingBackup(true);
     setDetailSuccessMsg(null);
     try {
-      const res = await updateApiConversation({ id: selectedConversation.id, status: 'archived' });
+      const response = await fetch('/api/record-conversation/alerts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId: selectedConversation.id }),
+      });
+      const res = await response.json();
       if (res.success) {
         await loadData();
         setIsDetailModalOpen(false);
@@ -1583,7 +1634,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                               Need Assistance
                             </span>
                             <span className="bg-slate-100 text-slate-600 border border-slate-200 rounded-md px-2 py-0.5 text-[10px] font-medium">
-                              Menunggu respons Manager
+                              {selectedConversation.alert_status === 'Reviewed' ? 'Sudah ditangani Manager' : 'Menunggu respons Manager'}
                             </span>
                           </div>
                         </div>
@@ -1621,7 +1672,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
 
             {/* Footer Actions */}
             <div className="px-7 py-4 bg-white border-t border-slate-100 shrink-0">
-              {isManager && selectedConversation.need_assistance && selectedConversation.status !== 'archived' ? (
+              {isManager && selectedConversation.need_assistance && selectedConversation.alert_status !== 'Reviewed' ? (
                 <div className="flex gap-2">
                   <button
                     type="button"

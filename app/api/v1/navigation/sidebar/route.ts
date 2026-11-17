@@ -20,7 +20,7 @@ const managerCustomerSuccessMenu = [
   { label: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { label: "Record Conversation", href: "/dashboard/record-conversation" },
   { label: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
-  { label: "Manage Account", href: "/dashboard/manage-field-agent-account" },
+  { label: "Need Backup", href: "/dashboard/need-backup" },
   { label: "Manage User Roles", href: "/dashboard/manager-customer-success/role-management" },
 ];
 
@@ -28,11 +28,23 @@ const fieldAgentMenu = [
   { label: "Field Agent", href: "/dashboard/field-agent" },
 ];
 
+const sidebarCache = new Map<string, { data: any; expiresAt: number }>();
+
 export async function GET(_request: NextRequest) {
   const supabase = await createServerSupabaseClient();
   if (!supabase) return createErrorResponse("DATABASE_001", "Database client unavailable", undefined, 503);
 
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return createErrorResponse("AUTH_001", "Authentication is required", undefined, 401);
+
+    const cached = sidebarCache.get(user.id);
+    if (cached && Date.now() < cached.expiresAt) {
+      const response = createSuccessResponse(cached.data);
+      response.headers.set("Cache-Control", "private, max-age=30, stale-while-revalidate=120");
+      return response;
+    }
+
     const userScope = await getCurrentUserScope(supabase);
     if (!userScope) return createErrorResponse("AUTH_001", "Authentication is required", undefined, 401);
 
@@ -62,7 +74,7 @@ export async function GET(_request: NextRequest) {
       },
     ];
 
-    return createSuccessResponse({
+    const data = {
       role: userScope.role,
       roleTitle,
       isManager,
@@ -71,7 +83,13 @@ export async function GET(_request: NextRequest) {
       menu: [
         { label: isFieldAgent ? "Field Agent" : "CRM", href: null, children: crmChildren },
       ],
-    });
+    };
+
+    sidebarCache.set(user.id, { data, expiresAt: Date.now() + 60_000 });
+
+    const response = createSuccessResponse(data);
+    response.headers.set("Cache-Control", "private, max-age=30, stale-while-revalidate=120");
+    return response;
   } catch {
     return createErrorResponse("NAV_001", "Failed to load navigation menu", undefined, 500);
   }

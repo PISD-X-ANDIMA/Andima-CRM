@@ -21,12 +21,15 @@ export interface RecordConversationItem {
   id: string;
   job_number: string | null;
   customer_id: string;
+  meeting_id?: string | null;
   customer_code: string | null;
   sales_pic_id: string;
   channel_type: string;
   conversation_date: string;
   summary: string;
   need_assistance: boolean;
+  /** a2_conversation_alerts.status: Pending or Reviewed. Null when no alert row exists. */
+  alert_status?: 'Pending' | 'Reviewed' | null;
   urgency_level: 'high_priority' | 'average' | 'critical' | 'standard' | null;
   synced_to_ctrack: boolean;
   document_urls?: string[] | null;
@@ -139,6 +142,7 @@ export interface WorksheetItem {
 
 export interface NewConversationPayload {
   customer_id: string;
+  meeting_id?: string | null;
   customer_code?: string;
   channel_type: string;
   conversation_date?: string;

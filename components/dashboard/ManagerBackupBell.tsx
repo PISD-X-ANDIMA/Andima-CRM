@@ -6,10 +6,12 @@ import { Bell } from "lucide-react";
 
 interface BackupAlertItem {
   id: string;
+  conversation_id: string;
+  status: string;
+  alerted_at: string | null;
   company_name: string;
   sales_name: string;
   conversation_date: string | null;
-  urgency_level: string;
   summary: string;
 }
 
@@ -20,10 +22,6 @@ function formatDate(value: string | null): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
-}
-
-function isUrgent(level: string): boolean {
-  return level === "high_priority" || level === "critical";
 }
 
 export function ManagerBackupBell() {
@@ -127,17 +125,12 @@ export function ManagerBackupBell() {
               {items.slice(0, 5).map((item) => (
                 <li key={item.id}>
                   <Link
-                    href={`/dashboard/record-conversation?open_conv_id=${encodeURIComponent(item.id)}`}
+                    href={`/dashboard/record-conversation?open_conv_id=${encodeURIComponent(item.conversation_id)}`}
                     onClick={() => setIsOpen(false)}
                     className="block border-b border-slate-100 px-4 py-3 transition-colors last:border-b-0 hover:bg-slate-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-600"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate text-xs font-semibold text-slate-800">{item.company_name}</span>
-                      {isUrgent(item.urgency_level) && (
-                        <span className="shrink-0 rounded-md border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-700">
-                          Urgent
-                        </span>
-                      )}
                     </div>
                     <p className="mt-0.5 truncate text-[11px] text-slate-500">
                       {item.sales_name} · {formatDate(item.conversation_date)}

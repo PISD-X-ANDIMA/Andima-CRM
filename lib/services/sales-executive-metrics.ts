@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { cancelExpiredOneTimeMeetings } from "@/lib/services/meeting-service";
-import { getCurrentUserScope } from "@/lib/auth/roles";
+import { buildCustomerOwnerFilter } from "@/lib/services/access-scope";
 
 export interface SalesExecutiveMetrics {
   totalCustomers: number | null;
@@ -58,54 +58,60 @@ export async function getSalesExecutiveMetrics(executiveId?: string): Promise<Sa
   const supabase = await createServerSupabaseClient();
   if (!supabase) return EMPTY_METRICS;
   try {
-    await cancelExpiredOneTimeMeetings();
-    const userScope = await getCurrentUserScope(supabase);
+    // Non-blocking background cancellation to eliminate roundtrip latency from API response
+    cancelExpiredOneTimeMeetings().catch(() => {});
 
-    let custCountQuery = (supabase as any).from("a1_company_list").select("company_list_id", { count: "exact", head: true }).is("deleted_at", null);
-    let custIdQuery = (supabase as any).from("a1_company_list").select("company_list_id").is("deleted_at", null);
+    // For dashboard overview (no executiveId): show ALL data regardless of who is logged in
+    // Scope filtering only applies when fetching metrics for a specific executive (manager view)
+    let custCountQuery = (supabase as any).from("a1_customers").select("id", { count: "exact", head: true }).is("deleted_at", null);
 
-    const isFiltered = Boolean(executiveId) || (userScope && !userScope.isManager);
-    if (executiveId) {
-      custCountQuery = custCountQuery.eq("created_by", executiveId);
-      custIdQuery = custIdQuery.eq("created_by", executiveId);
-    } else if (userScope && !userScope.isManager) {
-      custCountQuery = custCountQuery.in("created_by", userScope.identifiers);
-      custIdQuery = custIdQuery.in("created_by", userScope.identifiers);
+    const ownerFilter = executiveId
+      ? buildCustomerOwnerFilter([executiveId], executiveId)
+      : "";
+
+    if (executiveId && ownerFilter) {
+      custCountQuery = custCountQuery.or(ownerFilter);
     }
 
-    const { data: userCompanies } = isFiltered ? await custIdQuery : { data: [] };
-    const userCompanyIds = (userCompanies || []).map((c: any) => c.company_list_id);
+    // For meeting filter: only scope if viewing a specific executive
+    let userCompanyIds: string[] = [];
+    if (executiveId && ownerFilter) {
+      const { data: userCompanies } = await (supabase as any)
+        .from("a1_customers")
+        .select("id")
+        .is("deleted_at", null)
+        .or(ownerFilter);
+      userCompanyIds = (userCompanies || []).map((c: any) => c.id);
+    }
 
     let meetQuery = (supabase as any)
-      .from("a1_customer_meetings")
+      .from("a1_meetings")
       .select("meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date")
       .eq("is_active", true)
       .is("deleted_at", null)
       .eq("status", "scheduled");
 
-    if (isFiltered) {
-      meetQuery = meetQuery.in("company_id", userCompanyIds.length ? userCompanyIds : ["00000000-0000-0000-0000-000000000000"]);
+    if (executiveId && userCompanyIds.length > 0) {
+      meetQuery = meetQuery.in("customer_id", userCompanyIds);
     }
 
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
     let recentCustQuery = (supabase as any)
-      .from("a1_company_list")
-      .select("company_list_id", { count: "exact", head: true })
+      .from("a1_customers")
+      .select("id", { count: "exact", head: true })
       .is("deleted_at", null)
       .gte("created_at", thirtyDaysAgo);
 
-    if (executiveId) {
-      recentCustQuery = recentCustQuery.eq("created_by", executiveId);
-    } else if (userScope && !userScope.isManager) {
-      recentCustQuery = recentCustQuery.in("created_by", userScope.identifiers);
+    if (executiveId && ownerFilter) {
+      recentCustQuery = recentCustQuery.or(ownerFilter);
     }
 
     const [customersResult, meetingsResult, tasksResult, recentCustResult] = await Promise.all([
       custCountQuery,
       meetQuery,
-      (supabase as any).from("a2_worksheets").select("*", { count: "exact", head: true }),
+      (supabase as any).from("a3_tasks").select("id", { count: "exact", head: true }),
       recentCustQuery,
     ]);
 

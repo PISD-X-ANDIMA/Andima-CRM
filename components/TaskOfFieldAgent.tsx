@@ -945,11 +945,34 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     setNotesModalTask(task);
   };
 
-  const handleSaveTaskNote = () => {
+  const handleSaveTaskNote = async () => {
     if (!notesModalTask) return;
     const updatedNote = editingNoteText.trim();
+    if (countWords(updatedNote) > 50) {
+      showToast('Catatan melebihi batas maksimal 50 kata. Harap ringkas catatan Anda.');
+      return;
+    }
     const updatedAgent = assignedAgentName.trim() || notesModalTask.field_agent_name;
     const currentTimestamp = formatCurrentWibDateTime();
+
+    try {
+      const res = await fetch('/api/record-conversation/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId: notesModalTask.id,
+          notes: updatedNote,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.error || 'Gagal menyimpan catatan ke database.');
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to save task note:', err);
+    }
+
     const updated = tasks.map(t => {
       if (t.id === notesModalTask.id) {
         return {
@@ -958,7 +981,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
           field_agent_name: updatedAgent,
           status: updatedAgent ? ('Assigned' as const) : t.status,
           notes_timestamp: currentTimestamp,
-          notes_author: activeUserName || 'Adelia',
+          notes_author: activeUserName || 'Sales Executive',
           notes_role: activeUserRole || 'Sales Executive'
         };
       }
@@ -971,7 +994,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       field_agent_name: updatedAgent,
       status: updatedAgent ? ('Assigned' as const) : prev.status,
       notes_timestamp: currentTimestamp,
-      notes_author: activeUserName || 'Adelia',
+      notes_author: activeUserName || 'Sales Executive',
       notes_role: activeUserRole || 'Sales Executive'
     } : null);
     showToast(`Penugasan & catatan untuk ${notesModalTask.job_number} berhasil disimpan.`);
@@ -985,17 +1008,40 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     setIssueModalTask(task);
   };
 
-  const handleSaveIssueModalNotes = () => {
+  const handleSaveIssueModalNotes = async () => {
     if (!issueModalTask) return;
     const updatedNote = issueModalNoteText.trim();
+    if (countWords(updatedNote) > 50) {
+      showToast('Catatan melebihi batas maksimal 50 kata. Harap ringkas catatan Anda.');
+      return;
+    }
     const currentTimestamp = formatCurrentWibDateTime();
+
+    try {
+      const res = await fetch('/api/record-conversation/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId: issueModalTask.id,
+          notes: updatedNote,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.error || 'Gagal menyimpan catatan ke database.');
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to save task note:', err);
+    }
+
     const updated = tasks.map(t => {
       if (t.id === issueModalTask.id) {
         return {
           ...t,
           notes: updatedNote,
           notes_timestamp: currentTimestamp,
-          notes_author: activeUserName || 'Adelia',
+          notes_author: activeUserName || 'Sales Executive',
           notes_role: activeUserRole || 'Sales Executive'
         };
       }
@@ -1006,7 +1052,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       ...prev,
       notes: updatedNote,
       notes_timestamp: currentTimestamp,
-      notes_author: activeUserName || 'Adelia',
+      notes_author: activeUserName || 'Sales Executive',
       notes_role: activeUserRole || 'Sales Executive'
     } : null);
     showToast(`Notes untuk ${issueModalTask.job_number} berhasil disimpan.`);

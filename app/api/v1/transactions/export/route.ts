@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import { getCurrentUserScope } from "@/lib/auth/roles";
+import { buildCustomerOwnerFilter } from "@/lib/services/access-scope";
 
 export async function GET(request: NextRequest) {
   const from = request.nextUrl.searchParams.get("from");
@@ -22,34 +23,38 @@ export async function GET(request: NextRequest) {
     const endExclusiveDate = `${endExclusive.getFullYear()}-${String(endExclusive.getMonth() + 1).padStart(2, "0")}-${String(endExclusive.getDate()).padStart(2, "0")}`;
 
     let companyQuery = (supabase as any)
-      .from("a1_company_list")
-      .select("company_list_id, company_name, name, pic_phone_number, customer_code, job_number, created_by, created_at")
+      .from("a1_customers")
+      .select("id, company_name, pic_name, pic_phone, created_by, created_by_name, created_at")
       .is("deleted_at", null)
       .gte("created_at", `${from}T00:00:00Z`)
       .lt("created_at", `${endExclusiveDate}T00:00:00Z`)
       .order("created_at", { ascending: false });
 
-    if (assignedTo) {
-      companyQuery = companyQuery.eq("created_by", assignedTo);
-    } else if (userScope && !userScope.isManager) {
-      companyQuery = companyQuery.in("created_by", userScope.identifiers);
+    const ownerFilter = assignedTo
+      ? buildCustomerOwnerFilter([assignedTo], assignedTo)
+      : userScope && !userScope.isManager
+        ? buildCustomerOwnerFilter(userScope.identifiers, userScope.user.id)
+        : "";
+
+    if (ownerFilter) {
+      companyQuery = companyQuery.or(ownerFilter);
     }
 
     if (search) {
-      companyQuery = companyQuery.or(`company_name.ilike.%${search}%,name.ilike.%${search}%,created_by.ilike.%${search}%`);
+      companyQuery = companyQuery.or(`company_name.ilike.%${search}%,pic_name.ilike.%${search}%,created_by_name.ilike.%${search}%`);
     }
 
     const companiesResult = await companyQuery;
     if (companiesResult.error) throw companiesResult.error;
 
     const companies = (companiesResult.data || []).map((company: any) => ({
-      id: company.company_list_id,
+      id: company.id,
       companyName: company.company_name,
-      customerCode: company.customer_code,
-      jobNumber: company.job_number,
+      customerCode: null,
+      jobNumber: null,
       createdDate: company.created_at,
-      createdBy: company.created_by,
-      primaryPic: company.name ? { fullName: company.name, phoneNumber: company.pic_phone_number || "" } : null,
+      createdBy: company.created_by_name || company.created_by,
+      primaryPic: company.pic_name ? { fullName: company.pic_name, phoneNumber: company.pic_phone || "" } : null,
     }));
     return createSuccessResponse(companies);
   } catch (error) {

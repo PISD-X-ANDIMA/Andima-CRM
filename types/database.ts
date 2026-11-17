@@ -20,185 +20,312 @@ export type ScheduleType = "weekly" | "one_day";
 export interface Database {
   public: {
     Tables: {
-      a1_company_list: {
-        Row: {
-          company_list_id: string;
-          customer_code: string | null;
-          company_name: string;
-          name: string;
-          pic_phone_number: string | null;
-          address: string | null;
-          job_number: string | null;
-          created_by: string;
-          created_at: string | null;
-          updated_at: string | null;
-          deleted_at: string | null;
-        };
-        Insert: {
-          company_list_id?: string;
-          customer_code?: string | null;
-          company_name: string;
-          name: string;
-          pic_phone_number?: string | null;
-          address?: string | null;
-          job_number?: string | null;
-          created_by: string;
-          created_at?: string;
-          updated_at?: string;
-          deleted_at?: string | null;
-        };
-        Update: {
-          company_list_id?: string;
-          customer_code?: string | null;
-          company_name?: string;
-          name?: string | null;
-          pic_phone_number?: string | null;
-          address?: string | null;
-          job_number?: string | null;
-          created_by?: string | null;
-          created_at?: string;
-          updated_at?: string;
-          deleted_at?: string | null;
-        };
-      };
-      a1_customer_meetings: {
+      a1_customers: {
         Row: {
           id: string;
-          company_id: string;
-          meeting_day: MeetingDay;
-          schedule_type: ScheduleType;
+          company_name: string;
+          address: string | null;
+          pic_name: string | null;
+          pic_phone: string | null;
+          created_by: string | null;
+          created_by_name: string | null;
+          deleted_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_name: string;
+          address?: string | null;
+          pic_name?: string | null;
+          pic_phone?: string | null;
+          created_by?: string | null;
+          created_by_name?: string | null;
+          deleted_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          company_name?: string;
+          address?: string | null;
+          pic_name?: string | null;
+          pic_phone?: string | null;
+          created_by?: string | null;
+          created_by_name?: string | null;
+          deleted_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      a1_meetings: {
+        Row: {
+          id: string;
+          customer_id: string;
+          created_by: string | null;
+          agenda: string;
           meeting_date: string | null;
           start_time: string;
-          end_time: string;
+          end_time: string | null;
+          meeting_day: string | null;
+          schedule_type: ScheduleType;
           effective_start_date: string | null;
-          is_active: boolean;
-          agenda: string;
-          pic_name: string;
-          representative_name: string;
+          pic_name: string | null;
+          representative_name: string | null;
           meeting_type: "offline" | "online";
           location: string | null;
           meeting_link: string | null;
           notes: string | null;
           status: "scheduled" | "completed" | "cancelled";
-          created_at: string;
-          updated_at: string;
+          is_active: boolean;
           deleted_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          company_id: string;
-          meeting_day: MeetingDay;
-          schedule_type: ScheduleType;
-          meeting_date?: string | null;
-          start_time?: string;
-          end_time?: string;
-          effective_start_date?: string | null;
-          is_active?: boolean;
-          agenda: string;
-          pic_name: string;
-          representative_name: string;
-          meeting_type?: "offline" | "online";
-          location?: string | null;
-          meeting_link?: string | null;
-          notes?: string | null;
-          status?: "scheduled" | "completed" | "cancelled";
-          created_at?: string;
-          updated_at?: string;
-          deleted_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          company_id?: string;
-          meeting_day?: MeetingDay;
-          schedule_type?: ScheduleType;
-          meeting_date?: string | null;
-          start_time?: string;
-          end_time?: string;
-          effective_start_date?: string | null;
-          is_active?: boolean;
-          agenda?: string;
-          pic_name?: string;
-          representative_name?: string;
-          meeting_type?: "offline" | "online";
-          location?: string | null;
-          meeting_link?: string | null;
-          notes?: string | null;
-          status?: "scheduled" | "completed" | "cancelled";
-          created_at?: string;
-          updated_at?: string;
-          deleted_at?: string | null;
-        };
-      };
-      a1_meeting_minutes: {
-        Row: {
-          id: string;
-          meeting_id: string | null;
-          company_id: string;
-          sales_id: string;
-          meeting_date: string;
-          notes: string;
-          status: "draft" | "sent_to_management";
-          sent_at: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
-          meeting_id?: string | null;
-          company_id: string;
-          sales_id: string;
-          meeting_date?: string;
-          notes: string;
-          status?: "draft" | "sent_to_management";
-          sent_at?: string | null;
+          customer_id: string;
+          created_by?: string | null;
+          agenda: string;
+          meeting_date?: string | null;
+          start_time: string;
+          end_time?: string | null;
+          meeting_day?: string | null;
+          schedule_type?: ScheduleType;
+          effective_start_date?: string | null;
+          pic_name?: string | null;
+          representative_name?: string | null;
+          meeting_type?: "offline" | "online";
+          location?: string | null;
+          meeting_link?: string | null;
+          notes?: string | null;
+          status?: "scheduled" | "completed" | "cancelled";
+          is_active?: boolean;
+          deleted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
-          meeting_id?: string | null;
-          company_id?: string;
-          sales_id?: string;
-          meeting_date?: string;
-          notes?: string;
-          status?: "draft" | "sent_to_management";
-          sent_at?: string | null;
+          customer_id?: string;
+          created_by?: string | null;
+          agenda?: string;
+          meeting_date?: string | null;
+          start_time?: string;
+          end_time?: string | null;
+          meeting_day?: string | null;
+          schedule_type?: ScheduleType;
+          effective_start_date?: string | null;
+          pic_name?: string | null;
+          representative_name?: string | null;
+          meeting_type?: "offline" | "online";
+          location?: string | null;
+          meeting_link?: string | null;
+          notes?: string | null;
+          status?: "scheduled" | "completed" | "cancelled";
+          is_active?: boolean;
+          deleted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
       };
-      a1_customer_jobs: {
+      a2_record_conversations: {
         Row: {
           id: string;
-          company_id: string;
-          transaction_no: string | null;
+          customer_id: string;
+          meeting_id: string | null;
+          created_by: string | null;
+          channel: string;
+          summary: string;
+          need_assist: boolean;
+          attachment_url: string | null;
+          conversation_date: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          customer_id: string;
+          meeting_id?: string | null;
+          created_by?: string | null;
+          channel?: string;
+          summary: string;
+          need_assist?: boolean;
+          attachment_url?: string | null;
+          conversation_date?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          customer_id?: string;
+          meeting_id?: string | null;
+          created_by?: string | null;
+          channel?: string;
+          summary?: string;
+          need_assist?: boolean;
+          attachment_url?: string | null;
+          conversation_date?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      a2_conversation_alerts: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          manager_id: string | null;
+          status: "Pending" | "Reviewed";
+          alerted_at: string;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          manager_id?: string | null;
+          status?: "Pending" | "Reviewed";
+          alerted_at?: string;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          manager_id?: string | null;
+          status?: "Pending" | "Reviewed";
+          alerted_at?: string;
+        };
+      };
+      corp_jobs: {
+        Row: {
+          id: string;
           job_number: string;
-          title: string;
-          status: string;
-          agent_id: string | null;
-          scheduled_date: string | null;
+          customer_id: string | null;
+          origin: string | null;
+          destination: string | null;
+          job_type: string | null;
           created_at: string;
         };
         Insert: {
           id?: string;
-          company_id: string;
-          transaction_no?: string | null;
           job_number: string;
-          title: string;
-          status?: string;
-          agent_id?: string | null;
-          scheduled_date?: string | null;
+          customer_id?: string | null;
+          origin?: string | null;
+          destination?: string | null;
+          job_type?: string | null;
           created_at?: string;
         };
         Update: {
           id?: string;
-          company_id?: string;
-          transaction_no?: string | null;
           job_number?: string;
-          title?: string;
-          status?: string;
-          agent_id?: string | null;
-          scheduled_date?: string | null;
+          customer_id?: string | null;
+          origin?: string | null;
+          destination?: string | null;
+          job_type?: string | null;
+          created_at?: string;
+        };
+      };
+      a3_tasks: {
+        Row: {
+          id: string;
+          job_id: string;
+          field_agent_id: string | null;
+          status: "Completed" | "Has Issue";
+          issue_description: string | null;
+          completed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          job_id: string;
+          field_agent_id?: string | null;
+          status?: "Completed" | "Has Issue";
+          issue_description?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          job_id?: string;
+          field_agent_id?: string | null;
+          status?: "Completed" | "Has Issue";
+          issue_description?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      a3_task_handovers: {
+        Row: {
+          id: string;
+          task_id: string;
+          latitude: number | null;
+          longitude: number | null;
+          actual_weight_kg: number | null;
+          total_koli: number | null;
+          handover_time: string;
+        };
+        Insert: {
+          id?: string;
+          task_id: string;
+          latitude?: number | null;
+          longitude?: number | null;
+          actual_weight_kg?: number | null;
+          total_koli?: number | null;
+          handover_time?: string;
+        };
+        Update: {
+          id?: string;
+          task_id?: string;
+          latitude?: number | null;
+          longitude?: number | null;
+          actual_weight_kg?: number | null;
+          total_koli?: number | null;
+          handover_time?: string;
+        };
+      };
+      a3_task_documents: {
+        Row: {
+          id: string;
+          task_id: string;
+          doc_type: "4_photos" | "main_doc" | "support_doc" | "msds";
+          file_url: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          task_id: string;
+          doc_type: "4_photos" | "main_doc" | "support_doc" | "msds";
+          file_url: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          task_id?: string;
+          doc_type?: "4_photos" | "main_doc" | "support_doc" | "msds";
+          file_url?: string;
+          created_at?: string;
+        };
+      };
+      a2_field_task_notes: {
+        Row: {
+          id: string;
+          task_id: string;
+          sales_id: string | null;
+          notes: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          task_id: string;
+          sales_id?: string | null;
+          notes: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          task_id?: string;
+          sales_id?: string | null;
+          notes?: string;
           created_at?: string;
         };
       };

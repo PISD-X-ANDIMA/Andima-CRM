@@ -138,3 +138,29 @@
 ### Perbaikan Bug & Optimasi Kode
 - Perbaikan error React *duplicate key* pada baris 214 tabel Record Conversation (`<tr key={item.id}>`) dengan menyimpan UUID asli (`rawId`), memformat ID unik berbasis suffix database (`CONV-${String(c.id).slice(-8).toUpperCase()}`), dan menggunakan key unik.
 - Peningkatan keandalan kalkulasi metrik Sales Executive (`sales-executive-metrics.ts`): penanganan fallback nilai `count ?? 0` untuk mencegah nilai `null` pada kartu KPI Task.
+
+## 11 November 2026
+### Penyelarasan Tiket Planka & Pembersihan Menu Sidebar
+- Penghapusan menu "Manage Account" dari sidebar peran Manager of Customer Success (`Sidebar.tsx`, API `/api/v1/navigation/sidebar`) sesuai batas kepemilikan modul FR/TR dan aturan otorisasi.
+- Pengembalian dan aktivasi modul pemantauan "Need Backup" pada sidebar dan rute `/dashboard/need-backup` untuk kebutuhan supervisi kendala lapangan oleh Manager Customer Success (Tiket MCS-05 / US-A1-036).
+- Penyelarasan dan pembersihan seluruh tiket Planka Squad A1 menjadi 20 Tiket Mandiri Terstruktur (14 Tiket Sales Executive + 6 Tiket Manager of Customer Success).
+
+### Pemulihan Indikator Overlap Pertemuan (Meeting Schedule)
+- Penambahan badge indikator pertemuan bertumpuk (`+N`) pada kalender mini bulanan jika terdapat lebih dari satu meeting pada tanggal yang sama.
+- Penambahan chip interaktif indikator jadwal bertumpuk (`+N meeting(s)`) pada 9 slot waktu harian (08:00–17:00).
+- Penambahan modal dialog agregasi multi-meeting (`multiMeetingSlot`) untuk menginspeksi seluruh agenda pertemuan yang berlangsung pada slot waktu yang sama (Tiket SE-11 & MCS-03).
+- Penerapan prioritas visual kartu slot: meeting milik Manager pribadi (`My meeting`) diprioritaskan tampil sebagai kartu utama saat opsi "All Sales Executives" aktif.
+
+### Integrasi Global Filter Sales Executive Lintas Halaman
+- Penyatuan komponen `ManagerGlobalFilterBar` dengan shared persistent state (`useManagerFilter`) di 4 modul utama Manager CS:
+  - **Company List:** Menampilkan daftar customer terfilter per Sales Executive dan menyajikan kolom "Sales Executive" saat opsi "All" aktif.
+  - **Record Conversation:** Menghubungkan filter tim dengan tampilan *Conversation Records* (Tiket MCS-04).
+  - **Task of Field Agent:** Mengaktifkan mode pengawasan tugas tim lapangan terfilter (Tiket MCS-05).
+  - **Need Backup:** Menghubungkan filter tim dengan kartu ringkasan KPI tiket dan tabel eskalasi kendala operasional.
+- Perbaikan kueri filter pencarian `executiveId` pada `customer-service.ts` menggunakan pencarian case-insensitive (`ilike`) agar tidak ada data customer yang terlewat.
+
+### Keamanan Database & Row Level Security (RLS) Supabase
+- Penambahan skrip migrasi database `supabase/migrations/202610110001_fix_a1_schema_and_rls.sql` untuk mengaktifkan Row-Level Security (RLS) pada tabel `a1_company_list` dan `a1_customer_meetings`.
+- Penerapan kebijakan keamanan ketat: memblokir total akses publik tidak terotentikasi (`anon`) dan membatasi operasi data hanya untuk sesi pengguna resmi (`authenticated`) serta backend internal (`service_role`).
+- Penyusunan dokumen Kamus Data ERD Terpadu (A1, A2, A3) dan ekspor laporan resmi dalam format PDF standar (`docs/Laporan_Status_Database_dan_ERD_Andima_CRM.pdf`).
+

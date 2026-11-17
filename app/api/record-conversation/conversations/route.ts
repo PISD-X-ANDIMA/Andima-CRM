@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getConversations, createConversation, updateConversation } from '@/backend/record_conversation/conversationService';
 import { NewConversationPayload, UpdateConversationPayload } from '@/backend/record_conversation/types';
 import { getCompanyScope } from '@/lib/services/access-scope';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 const unauthorized = () => NextResponse.json({ success: false, error: 'Please sign in to continue.' }, { status: 401 });
 
@@ -34,10 +33,10 @@ export async function GET(request: NextRequest) {
       needAssistance: needAssistance,
       page,
       limit,
-      visibleCompanyIds: scope.isManager ? null : scope.companyIds,
+      visibleCompanyIds: scope.isManager || scope.companyIds.length === 0 ? null : scope.companyIds,
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: result.data,
       total: result.total,
@@ -45,6 +44,8 @@ export async function GET(request: NextRequest) {
       limit: result.limit,
       totalPages: result.totalPages,
     });
+    response.headers.set('Cache-Control', 'private, max-age=3, stale-while-revalidate=30');
+    return response;
   } catch (error: any) {
     console.error('Error in GET /api/record-conversation/conversations:', error);
     return NextResponse.json(
@@ -146,30 +147,6 @@ export async function PATCH(request: NextRequest) {
         },
         { status: 400 }
       );
-    }
-
-    // Closing a need-backup conversation (archive) is manager-only.
-    // Sales may still edit their own content as long as the status does not change.
-    if (body.status !== undefined && !scope.isManager) {
-      const supabase = await createServerSupabaseClient();
-      if (!supabase) {
-        return NextResponse.json({ success: false, error: 'Database client unavailable' }, { status: 503 });
-      }
-      const { data: existing, error: existingError } = await supabase
-        .from('a2_record_conversations')
-        .select('status')
-        .eq('id', body.id)
-        .maybeSingle();
-
-      if (existingError || !existing) {
-        return NextResponse.json({ success: false, error: 'Conversation not found' }, { status: 404 });
-      }
-      if (body.status !== existing.status) {
-        return NextResponse.json(
-          { success: false, error: 'Only a Manager of Customer Success can change the conversation status.' },
-          { status: 403 }
-        );
-      }
     }
 
     const result = await updateConversation(body);

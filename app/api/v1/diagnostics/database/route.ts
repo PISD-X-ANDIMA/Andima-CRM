@@ -35,36 +35,41 @@ export async function GET() {
 
   const checks: Check[] = [];
   const companyColumns = [
-    "company_list_id", "company_name", "address", "name",
-    "pic_phone_number", "customer_code", "job_number", "created_by", "created_at", "deleted_at",
+    "id", "company_name", "address", "pic_name",
+    "pic_phone", "created_by", "created_by_name", "created_at", "deleted_at",
   ];
   const probes = [
     {
-      name: "Company List table and RLS access",
-      query: () => (supabase as any).from("a1_company_list")
-        .select("company_list_id", { count: "exact", head: true }),
+      name: "Customers table (a1_customers) and access",
+      query: () => (supabase as any).from("a1_customers")
+        .select("id", { count: "exact", head: true }),
     },
     ...companyColumns.map((column) => ({
-      name: `Company List column: ${column}`,
-      query: () => (supabase as any).from("a1_company_list")
+      name: `Customers column: ${column}`,
+      query: () => (supabase as any).from("a1_customers")
         .select(column, { count: "exact", head: true }),
     })),
     {
-      name: "Company List application projection",
-      query: () => (supabase as any).from("a1_company_list")
-        .select("company_list_id, company_name, address, name, pic_phone_number, customer_code, job_number, created_by, created_at, deleted_at", { count: "exact", head: true })
+      name: "Customers application projection",
+      query: () => (supabase as any).from("a1_customers")
+        .select("id, company_name, address, pic_name, pic_phone, created_by, created_by_name, created_at, deleted_at", { count: "exact", head: true })
         .is("deleted_at", null),
     },
     {
-      name: "Meeting Schedule schema and access",
-      query: () => (supabase as any).from("a1_customer_meetings")
-        .select("id, company_id, meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date, agenda, pic_name, representative_name, meeting_type, location, meeting_link, notes, status, is_active, deleted_at", { count: "exact", head: true })
+      name: "Meeting Schedule (a1_meetings) schema and access",
+      query: () => (supabase as any).from("a1_meetings")
+        .select("id, customer_id, meeting_day, schedule_type, meeting_date, start_time, end_time, effective_start_date, agenda, pic_name, representative_name, meeting_type, location, meeting_link, notes, status, is_active, deleted_at", { count: "exact", head: true })
         .eq("is_active", true).is("deleted_at", null),
     },
     {
-      name: "A2 worksheet access",
-      query: () => (supabase as any).from("a2_worksheets")
-        .select("transaction_no, job_no", { count: "exact", head: true }),
+      name: "Record Conversations (a2_record_conversations) access",
+      query: () => (supabase as any).from("a2_record_conversations")
+        .select("id, customer_id, meeting_id, channel, need_assist", { count: "exact", head: true }),
+    },
+    {
+      name: "A3 Tasks & Corp Jobs access",
+      query: () => (supabase as any).from("a3_tasks")
+        .select("id, job_id, status", { count: "exact", head: true }),
     },
   ];
 

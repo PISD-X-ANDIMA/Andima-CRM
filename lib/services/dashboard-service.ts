@@ -26,8 +26,8 @@ export async function getDashboardSummary(): Promise<DashboardSummaryData> {
 
   try {
     const [{ count, error: customerError }, { data: meetings, error: meetingError }] = await Promise.all([
-      (supabase as any).from("a1_company_list").select("company_list_id", { count: "exact", head: true }).is("deleted_at", null),
-      (supabase as any).from("a1_customer_meetings")
+      (supabase as any).from("a1_customers").select("id", { count: "exact", head: true }).is("deleted_at", null),
+      (supabase as any).from("a1_meetings")
         .select("id, schedule_type, meeting_date, meeting_day, effective_start_date, start_time, end_time, status")
         .eq("is_active", true).is("deleted_at", null).neq("status", "cancelled"),
     ]);

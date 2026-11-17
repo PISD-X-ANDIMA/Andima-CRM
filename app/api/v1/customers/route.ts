@@ -29,7 +29,8 @@ export async function GET(request: NextRequest) {
       return createErrorResponse("AUTH_001", "Please sign in to view customers.", undefined, 401);
     }
 
-    await cancelExpiredOneTimeMeetings();
+    // Non-blocking background cancellation to eliminate roundtrip latency from API response
+    cancelExpiredOneTimeMeetings().catch((err) => console.warn("[GET /api/v1/customers] background meeting cancel warning:", err));
     failedStage = "customer list query";
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search") || "";
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
       perPage: result.perPage,
       totalPages: result.totalPages,
     });
-    response.headers.set("Cache-Control", "no-store, max-age=0");
+    response.headers.set("Cache-Control", "private, max-age=3, stale-while-revalidate=30");
     return response;
   } catch (error) {
     const detail = describeDatabaseError(error);

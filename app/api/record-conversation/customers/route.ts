@@ -14,11 +14,15 @@ export async function GET() {
       return NextResponse.json({ success: false, error: 'Please sign in to continue.' }, { status: 401 });
     }
 
-    const customers = await getCustomers(scope.isManager ? null : scope.companyIds);
-    return NextResponse.json({
+    const customers = await getCustomers(
+      scope.isManager || scope.companyIds.length === 0 ? null : scope.companyIds
+    );
+    const response = NextResponse.json({
       success: true,
       data: customers,
     });
+    response.headers.set('Cache-Control', 'private, max-age=5, stale-while-revalidate=30');
+    return response;
   } catch (error: any) {
     console.error('Error in GET /api/record-conversation/customers:', error);
     return NextResponse.json(

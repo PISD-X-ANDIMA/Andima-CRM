@@ -19,15 +19,17 @@ export default async function SalesExecutiveDashboardPage() {
   let customerCount: number | null = null;
   let initialDataError: string | undefined;
 
-  try {
-    const result = await getCustomers({ perPage: 100 });
-    customers = result.customers;
-    customerCount = result.total;
-  } catch (error) {
-    initialDataError = error instanceof Error ? error.message : "Unable to load customer data from Supabase.";
-  }
+  const [customerResult, metrics] = await Promise.all([
+    getCustomers({ perPage: 100 }).catch((error) => {
+      initialDataError = error instanceof Error ? error.message : "Unable to load customer data from Supabase.";
+      return { customers: [], total: 0 };
+    }),
+    getSalesExecutiveMetrics(),
+  ]);
 
-  const metrics = await getSalesExecutiveMetrics();
+  customers = customerResult.customers || [];
+  customerCount = customerResult.total ?? null;
+
   if (customerCount !== null) metrics.totalCustomers = customerCount;
   return <SalesExecutiveDashboard initialCustomers={customers} metrics={metrics} initialDataError={initialDataError} />;
 }
