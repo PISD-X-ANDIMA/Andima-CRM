@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { ChevronRight } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 
 export function DashboardShell({ children }: { children: ReactNode }) {
@@ -26,9 +26,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           aria-label="Show sidebar"
           aria-controls="crm-sidebar"
           aria-expanded={false}
-          className="fixed left-0 top-1/2 z-40 grid h-11 w-7 -translate-y-1/2 place-items-center rounded-r-lg border border-l-0 border-slate-300 bg-white text-slate-600 shadow-md transition-colors hover:bg-blue-50 hover:text-blue-700"
+          className="fixed left-4 top-5 z-40 grid h-8 w-8 place-items-center rounded-md bg-[#1476f2] text-white shadow-md transition-colors hover:bg-[#0f6ae0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1476f2]/40"
         >
-          <ChevronRight className="h-5 w-5" />
+          <Menu className="h-[18px] w-[18px]" strokeWidth={2.5} />
         </button>
       )}
       <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-8 lg:px-12">
