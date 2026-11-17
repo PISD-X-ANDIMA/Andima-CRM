@@ -25,6 +25,10 @@ const defaultSalesExecutiveMenus: SubMenuItem[] = [
   { name: "Field Agent Management", href: "/dashboard/field-agent-management" },
 ];
 
+const defaultFieldAgentMenus: SubMenuItem[] = [
+  { name: "Field Agent", href: "/dashboard/field-agent" },
+];
+
 const defaultManagerMenus: SubMenuItem[] = [
   { name: "Dashboard", href: "/dashboard/manager-customer-success" },
   { name: "Company List", href: "/dashboard/company-list" },
@@ -42,6 +46,7 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
   const [crmOpen, setCrmOpen] = useState(true);
   const [sectionOpen, setSectionOpen] = useState(true);
   const [isManagerRole, setIsManagerRole] = useState(false);
+  const [menuLabel, setMenuLabel] = useState("CRM");
   const [roleTitle, setRoleTitle] = useState("Sales Executive");
   const [sectionHref, setSectionHref] = useState("/dashboard/sales-executive");
   const [submenuItems, setSubmenuItems] = useState(defaultSalesExecutiveMenus);
@@ -52,12 +57,21 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
       .then((response) => response.json())
       .then((result) => {
         if (!active || !result?.success) return;
-        const isMgr = Boolean(result.data?.isManager);
+        const isField = Boolean(result.data?.isFieldAgent);
+        const isMgr = !isField && Boolean(result.data?.isManager);
         setIsManagerRole(isMgr);
-        setRoleTitle(isMgr ? "Manager of Customer Success" : "Sales Executive");
-        setSectionHref(isMgr ? "/dashboard/manager-customer-success" : "/dashboard/sales-executive");
+        setMenuLabel(isField ? "Field Agent" : "CRM");
+        setRoleTitle(isField ? "Field Agent" : isMgr ? "Manager of Customer Success" : "Sales Executive");
+        setSectionHref(
+          isField
+            ? "/dashboard/field-agent"
+            : isMgr
+              ? "/dashboard/manager-customer-success"
+              : "/dashboard/sales-executive"
+        );
 
-        const crm = result.data?.menu?.find((item: { label?: string }) => item.label === "CRM");
+        const crm = result.data?.menu?.[0];
+        if (crm?.label) setMenuLabel(crm.label);
         const activeSection = crm?.children?.[0];
         if (Array.isArray(activeSection?.children) && activeSection.children.length > 0) {
           const items = activeSection.children
@@ -65,11 +79,16 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
             .map((item: { label: string; href: string }) => ({ name: item.label, href: item.href }));
           if (items.length) setSubmenuItems(items);
         } else {
-          setSubmenuItems(isMgr ? defaultManagerMenus : defaultSalesExecutiveMenus);
+          setSubmenuItems(isField ? defaultFieldAgentMenus : isMgr ? defaultManagerMenus : defaultSalesExecutiveMenus);
         }
       })
       .catch(() => {
-        if (pathname.includes("manager-customer-success")) {
+        if (pathname.startsWith("/dashboard/field-agent")) {
+          setMenuLabel("Field Agent");
+          setRoleTitle("Field Agent");
+          setSectionHref("/dashboard/field-agent");
+          setSubmenuItems(defaultFieldAgentMenus);
+        } else if (pathname.includes("manager-customer-success")) {
           setIsManagerRole(true);
           setRoleTitle("Manager of Customer Success");
           setSectionHref("/dashboard/manager-customer-success");
@@ -89,7 +108,11 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
     pathname.startsWith("/dashboard/task-of-field-agent") ||
     pathname.startsWith("/dashboard/field-agent-management") ||
     pathname.startsWith("/dashboard/manage-field-agent-account") ||
-    pathname.startsWith("/dashboard/field-agent-access");
+    pathname.startsWith("/dashboard/field-agent-access") ||
+    pathname.startsWith("/dashboard/field-agent") ||
+    pathname.startsWith("/dashboard/need-backup") ||
+    pathname.startsWith("/dashboard/profile") ||
+    pathname.startsWith("/dashboard/settings");
 
   return (
     <aside className="group relative flex h-screen h-dvh w-[260px] shrink-0 flex-col border-r border-[#1a3154] bg-[#102445]">
@@ -129,7 +152,7 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
                   isCrmActive ? "text-blue-400" : "text-slate-500"
                 }`}
               />
-              <span>CRM</span>
+              <span>{menuLabel}</span>
             </span>
 
             <ChevronDown

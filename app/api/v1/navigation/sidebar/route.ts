@@ -24,6 +24,10 @@ const managerCustomerSuccessMenu = [
   { label: "Manage User Roles", href: "/dashboard/manager-customer-success/role-management" },
 ];
 
+const fieldAgentMenu = [
+  { label: "Field Agent", href: "/dashboard/field-agent" },
+];
+
 export async function GET(_request: NextRequest) {
   const supabase = await createServerSupabaseClient();
   if (!supabase) return createErrorResponse("DATABASE_001", "Database client unavailable", undefined, 503);
@@ -32,10 +36,23 @@ export async function GET(_request: NextRequest) {
     const userScope = await getCurrentUserScope(supabase);
     if (!userScope) return createErrorResponse("AUTH_001", "Authentication is required", undefined, 401);
 
-    const isManager = userScope.isManager;
-    const roleTitle = isManager ? "Manager of Customer Success" : "Sales Executive";
-    const sectionHref = isManager ? "/dashboard/manager-customer-success" : "/dashboard/sales-executive";
-    const submenus = isManager ? managerCustomerSuccessMenu : salesExecutiveMenu;
+    const isFieldAgent = userScope.role === "field_agent";
+    const isManager = !isFieldAgent && userScope.isManager;
+    const roleTitle = isFieldAgent
+      ? "Field Agent"
+      : isManager
+        ? "Manager of Customer Success"
+        : "Sales Executive";
+    const sectionHref = isFieldAgent
+      ? "/dashboard/field-agent"
+      : isManager
+        ? "/dashboard/manager-customer-success"
+        : "/dashboard/sales-executive";
+    const submenus = isFieldAgent
+      ? fieldAgentMenu
+      : isManager
+        ? managerCustomerSuccessMenu
+        : salesExecutiveMenu;
 
     const crmChildren = [
       {
@@ -49,9 +66,10 @@ export async function GET(_request: NextRequest) {
       role: userScope.role,
       roleTitle,
       isManager,
+      isFieldAgent,
       name: userScope.name,
       menu: [
-        { label: "CRM", href: null, children: crmChildren },
+        { label: isFieldAgent ? "Field Agent" : "CRM", href: null, children: crmChildren },
       ],
     });
   } catch {

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { ManagerBackupBell } from "@/components/dashboard/ManagerBackupBell";
 
 const routeLabels: Record<string, string> = {
   "sales-executive": "Sales Executive",
@@ -67,6 +68,7 @@ export function DashboardHeader() {
         ))}
       </nav>
       <div className="flex shrink-0 items-center gap-2 text-slate-700" aria-label={`Signed in as ${username}`}>
+        <ManagerBackupBell />
         <span aria-hidden="true" className="grid h-8 w-8 place-items-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700">{username.slice(0, 1).toUpperCase()}</span>
         <span className="max-w-48 truncate text-xs font-semibold">{username}</span>
       </div>

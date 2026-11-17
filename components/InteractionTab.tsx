@@ -18,19 +18,6 @@ import {
   UploadedFileMetadata
 } from '../backend/record_conversation';
 
-// Local shape for the manager notification payload stored in localStorage.
-// The A1 DashboardHeader no longer exports this type after the integration merge.
-interface ManagerNotificationItem {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  conversation_id: string;
-  company_name: string;
-  timestamp: string;
-  read: boolean;
-}
-
 interface AuditLogItem {
   id: string;
   user: string;
@@ -249,6 +236,8 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   const [editAttachments, setEditAttachments] = useState<EvidenceAttachmentItem[]>([]);
   const [editAuditLogs, setEditAuditLogs] = useState<AuditLogItem[]>([]);
   const [isSavingDetail, setIsSavingDetail] = useState(false);
+  const [isResolvingBackup, setIsResolvingBackup] = useState(false);
+  const [isManagerFromServer, setIsManagerFromServer] = useState<boolean | null>(null);
   const [detailSuccessMsg, setDetailSuccessMsg] = useState<string | null>(null);
 
   // Create Modal States
@@ -460,11 +449,12 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const openConvId = urlParams.get('open_conv_id');
-      const needAssistParam = urlParams.get('need_assist');
+      const needAssistParam = urlParams.get('need_assist') || urlParams.get('need_backup');
+      const wantsNeedAssist = needAssistParam === 'true' || needAssistParam === 'yes';
 
-      if (openConvId || needAssistParam === 'true') {
+      if (openConvId || wantsNeedAssist) {
         let targetItem = conversations.find(c => c.id === openConvId || c.conversation_id === openConvId);
-        if (!targetItem && needAssistParam === 'true') {
+        if (!targetItem && wantsNeedAssist) {
           targetItem = conversations.find(c => c.need_assistance === true);
         }
 
@@ -479,10 +469,23 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     }
   }, [conversations]);
 
-  // Role Oversight & Privacy Isolation Check
-  const isManager = activeUserRole.toLowerCase().includes('manager') ||
+  // Role comes from the server; localStorage is only a first-render fallback.
+  useEffect(() => {
+    let active = true;
+    fetch('/api/v1/navigation/sidebar', { cache: 'no-store' })
+      .then((response) => response.json())
+      .then((result) => {
+        if (active && result?.success) setIsManagerFromServer(Boolean(result.data?.isManager));
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  const isManager = isManagerFromServer ?? (
+    activeUserRole.toLowerCase().includes('manager') ||
     activeUserRole.toLowerCase().includes('manajemen') ||
-    activeUserRole.toLowerCase().includes('director');
+    activeUserRole.toLowerCase().includes('director')
+  );
 
   // Export Text Summary Helper Function
   const handleExportTextSummary = (item: ConversationDisplayItem) => {
@@ -1003,32 +1006,6 @@ Exported on: ${new Date().toLocaleString('id-ID')}
         return;
       }
 
-      if (createNeedAssistance) {
-        try {
-          const newNotif: ManagerNotificationItem = {
-            id: `notif-${Date.now()}`,
-            type: 'need_assistance',
-            title: 'Permintaan Bantuan (Need Assistance)',
-            message: `${activeUserName} membutuhkan bantuan untuk ${matchedCompany.company_name}: "${recordSummary.slice(0, 60)}${recordSummary.length > 60 ? '...' : ''}"`,
-            conversation_id: res.data?.id || `conv-${Date.now()}`,
-            company_name: matchedCompany.company_name,
-            timestamp: 'Baru saja',
-            read: false,
-          };
-
-          const existingNotifsStr = localStorage.getItem('andima_manager_notifications');
-          let existingNotifs: ManagerNotificationItem[] = [];
-          if (existingNotifsStr) {
-            try { existingNotifs = JSON.parse(existingNotifsStr); } catch { }
-          }
-          const updatedNotifs = [newNotif, ...existingNotifs];
-          localStorage.setItem('andima_manager_notifications', JSON.stringify(updatedNotifs));
-          window.dispatchEvent(new Event('andima_notification_update'));
-        } catch (err) {
-          console.error('Failed to dispatch manager notification:', err);
-        }
-      }
-
       await loadData();
       setRecordSummary('');
       setNewUploadedFiles([]);
@@ -1070,6 +1047,29 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       alert(`Gagal menyimpan: ${err?.message || err}`);
     } finally {
       setIsSavingDetail(false);
+    }
+  };
+
+  // Only a manager may close a need-backup conversation; the API enforces it too.
+  const handleResolveBackup = async () => {
+    if (!selectedConversation || !isManager || isResolvingBackup) return;
+    setIsResolvingBackup(true);
+    setDetailSuccessMsg(null);
+    try {
+      const res = await updateApiConversation({ id: selectedConversation.id, status: 'archived' });
+      if (res.success) {
+        await loadData();
+        setIsDetailModalOpen(false);
+        setSaveSuccessNotif(true);
+      } else {
+        alert(`Gagal menyelesaikan need backup: ${res.error}`);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('Error resolving need backup:', err);
+      alert(`Gagal menyelesaikan: ${message}`);
+    } finally {
+      setIsResolvingBackup(false);
     }
   };
 
@@ -1619,15 +1619,36 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               </div>
             </div>
 
-            {/* Footer Close Button */}
+            {/* Footer Actions */}
             <div className="px-7 py-4 bg-white border-t border-slate-100 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsDetailModalOpen(false)}
-                className="w-full py-3 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs text-center"
-              >
-                Close
-              </button>
+              {isManager && selectedConversation.need_assistance && selectedConversation.status !== 'archived' ? (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleResolveBackup}
+                    disabled={isResolvingBackup}
+                    className="flex min-h-11 flex-1 items-center justify-center gap-2 py-3 rounded-xl bg-[#2563eb] hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
+                  >
+                    {isResolvingBackup ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <CheckCircle size={14} aria-hidden="true" />}
+                    {isResolvingBackup ? 'Menyimpan...' : 'Selesaikan Need Backup'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsDetailModalOpen(false)}
+                    className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-colors cursor-pointer text-center"
+                  >
+                    Close
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsDetailModalOpen(false)}
+                  className="w-full py-3 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs text-center"
+                >
+                  Close
+                </button>
+              )}
             </div>
           </div>
         </div>
