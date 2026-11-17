@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       await writeHistory({
         jobNumber,
         activity: targetAgentId ? `Reassigned to ${targetAgentName}` : "Returned to Unassigned Pool",
-        notes: `Alasan: ${reason}. Dialihkan oleh: ${performedBy}`,
+        notes: `Reason: ${reason}. Reassigned by: ${performedBy}`,
         performedBy,
       });
     } catch (histErr) {
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Tugas berhasil dialihkan ke ${targetAgentName}.`,
+      message: `Task successfully reassigned to ${targetAgentName}.`,
       data: {
         job_number: jobNumber,
         assigned_to_id: targetAgentId,

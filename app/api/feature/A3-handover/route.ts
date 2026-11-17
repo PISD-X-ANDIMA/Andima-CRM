@@ -96,12 +96,12 @@ export async function POST(request: Request) {
         .select("worksheet_id, field_agent_id");
 
       if (claimError) {
-        console.error(`[POST A3-handover] Gagal klaim job "${jobNumber}":`, claimError);
-        return apiError(new Error("Gagal mengklaim job karena kesalahan database."), 500);
+        console.error(`[POST A3-handover] Error claiming job "${jobNumber}":`, claimError);
+        return apiError(new Error("Failed to claim job due to database error."), 500);
       }
 
       if (!claimData || claimData.length === 0) {
-        return apiError(new Error("Job sudah diklaim oleh agen lain atau tidak dapat diklaim."), 409);
+        return apiError(new Error("Job has already been claimed by another agent or cannot be claimed."), 409);
       }
 
       didClaim = true;

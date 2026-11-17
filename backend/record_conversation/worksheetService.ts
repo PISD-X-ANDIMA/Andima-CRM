@@ -485,11 +485,11 @@ export async function getNeedBackupTickets(): Promise<NeedBackupTicket[] | null>
         ticket_id: item.ticket_id || `BCK-2026-001`,
         job_number: item.job_no?.startsWith('#') ? item.job_no : `#${item.job_no || 'AENAT/2609/0305'}`,
         customer_name: item.customer_name || '',
-        category: item.category || 'Selisih Koli',
+        category: item.category || 'Piece Count Discrepancy',
         priority,
         date: `${day}-${month}-${year}`,
         status,
-        sla_description: item.sla_description || 'SLA Respon < 4 Jam',
+        sla_description: item.sla_description || 'SLA Response < 4 Hours',
         description: item.description || '',
         requested_by: item.requested_by || 'Adelia',
         created_at: item.created_at

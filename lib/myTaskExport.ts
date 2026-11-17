@@ -31,19 +31,19 @@ export const escapeHtml = (str: string): string => {
  */
 function getFormattedPrintDate(): string {
   const now = new Date();
-  return now.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }) + " WIB";
+  return (
+    now.toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }) + " WIB"
+  );
 }
 
 /**
- * 1. EXPORT TO PDF (.pdf) menggunakan jsPDF & jspdf-autotable
- * Menghasilkan file PDF vektor resmi berformat A4 Landscape dengan tabel lengkap,
- * kop surat perusahaan, metadata, dan tanda tangan resmi.
+ * 1. EXPORT TO PDF (.pdf) using jsPDF & jspdf-autotable
  */
 export function exportMyTaskToPdfFile(
   jobs: MyTaskExportItem[],
@@ -51,11 +51,11 @@ export function exportMyTaskToPdfFile(
   activeFilter: string = "All Tasks"
 ): void {
   if (!jobs || jobs.length === 0) {
-    alert("Tidak ada data task untuk diekspor.");
+    alert("No task data available to export.");
     return;
   }
 
-  // Buat dokumen jsPDF ukuran A4 Landscape
+  // Create jsPDF document A4 Landscape
   const doc = new jsPDF({
     orientation: "landscape",
     unit: "mm",
@@ -67,11 +67,11 @@ export function exportMyTaskToPdfFile(
   const issueCount = jobs.filter((j) => j.has_issue || j.status === "Has Issue").length;
   const normalCount = totalTasks - issueCount;
 
-  // Header / Kop Surat
+  // Header
   doc.setFillColor(15, 23, 42); // slate-900
   doc.rect(0, 0, 297, 22, "F");
 
-  // Nama Perusahaan
+  // Company Name
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
@@ -82,7 +82,7 @@ export function exportMyTaskToPdfFile(
   doc.setTextColor(148, 163, 184); // slate-400
   doc.text("Operational Logistics CRM & Cargo Field Monitoring System", 14, 16);
 
-  // Status Badge di pojok kanan atas kop
+  // Status Badge
   doc.setFillColor(37, 99, 235); // blue-600
   doc.roundedRect(210, 6, 73, 10, 2, 2, "F");
   doc.setTextColor(255, 255, 255);
@@ -90,16 +90,16 @@ export function exportMyTaskToPdfFile(
   doc.setFont("helvetica", "bold");
   doc.text("OFFICIAL FIELD AGENT REPORT", 215, 12.5);
 
-  // Judul Dokumen
+  // Document Title
   doc.setTextColor(15, 23, 42);
   doc.setFontSize(15);
   doc.setFont("helvetica", "bold");
-  doc.text("DOKUMEN RIWAYAT MY TASK (FIELD AGENT)", 14, 32);
+  doc.text("MY TASK REPORT (FIELD AGENT)", 14, 32);
 
   doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 116, 139); // slate-500
-  doc.text("Daftar catatan riwayat penugasan kargo, serah terima, dan verifikasi fisik lapangan.", 14, 37);
+  doc.text("Record of cargo assignments, handover, and field physical verification.", 14, 37);
 
   // Metadata Panel
   doc.setFillColor(248, 250, 252); // slate-50
@@ -109,21 +109,21 @@ export function exportMyTaskToPdfFile(
   doc.setFontSize(8);
   doc.setTextColor(71, 85, 105);
   doc.setFont("helvetica", "bold");
-  doc.text("Tanggal Cetak:", 18, 47);
+  doc.text("Print Date:", 18, 47);
   doc.text("Field Agent:", 95, 47);
-  doc.text("Filter Aktif:", 180, 47);
-  doc.text("Ringkasan Data:", 230, 47);
+  doc.text("Active Filter:", 180, 47);
+  doc.text("Data Summary:", 230, 47);
 
   doc.setFont("helvetica", "normal");
   doc.setTextColor(15, 23, 42);
-  doc.text(printDate, 40, 47);
+  doc.text(printDate, 38, 47);
   doc.text(agentName, 115, 47);
   doc.text(activeFilter, 198, 47);
-  doc.text(`${totalTasks} Task (${normalCount} Normal, ${issueCount} Issue)`, 253, 47);
+  doc.text(`${totalTasks} Tasks (${normalCount} Normal, ${issueCount} Issue)`, 253, 47);
 
   doc.setFontSize(7.5);
   doc.setTextColor(148, 163, 184);
-  doc.text("Dokumen ini dihasilkan secara otomatis dan terverifikasi oleh sistem CRM Andima.", 18, 52);
+  doc.text("This document is automatically generated and verified by Andima CRM system.", 18, 52);
 
   // Table Data
   const tableHeaders = [
@@ -134,8 +134,8 @@ export function exportMyTaskToPdfFile(
       "Sales Executive",
       "Origin",
       "Destination",
-      "Komoditas / Cargo",
-      "Fisik (Koli / Berat)",
+      "Commodity / Cargo",
+      "Physical (Pieces / Weight)",
       "Problem / Issue",
       "Status",
     ],
@@ -154,7 +154,7 @@ export function exportMyTaskToPdfFile(
     const pieces = j.cargo_pieces || "-";
     const weight = j.gross_weight || "-";
     const fisik = pieces !== "-" || weight !== "-" ? `${pieces} / ${weight}` : "-";
-    const hasProblem = j.has_issue || j.status === "Has Issue" ? "Yes (Ada Issue)" : "No (Aman)";
+    const hasProblem = j.has_issue || j.status === "Has Issue" ? "Yes (Issue)" : "No (Normal)";
     const statusText = j.field_status || j.status || "Completed";
 
     return [
@@ -233,21 +233,21 @@ export function exportMyTaskToPdfFile(
     doc.setFont("helvetica", "normal");
     doc.setTextColor(148, 163, 184);
     doc.text(
-      `Andima CRM • Dokumen Laporan Riwayat My Task • Dicetak: ${printDate}`,
+      `Andima CRM • Field Agent My Task Report • Printed: ${printDate}`,
       14,
       201
     );
     doc.text(
-      `Halaman ${i} dari ${pageCount}`,
+      `Page ${i} of ${pageCount}`,
       283,
       201,
       { align: "right" }
     );
   }
 
-  // Unduh dokumen PDF secara otomatis
+  // Automatically download PDF document
   const safeDate = new Date().toISOString().split("T")[0];
-  const fileName = `Laporan_Riwayat_My_Task_${safeDate}.pdf`;
+  const fileName = `My_Task_Report_${safeDate}.pdf`;
   doc.save(fileName);
 
   // Buka juga di tab baru untuk preview instan
@@ -271,13 +271,13 @@ export function openMyTaskPrintReport(
   activeFilter: string = "All Tasks"
 ): void {
   if (!jobs || jobs.length === 0) {
-    alert("Tidak ada data task untuk dicetak.");
+    alert("No task data available to print.");
     return;
   }
 
   const printWindow = window.open("", "_blank");
   if (!printWindow) {
-    // Fallback langsung ke generator PDF jsPDF jika pop-up diblokir
+    // Fallback directly to jsPDF generator if pop-up blocked
     exportMyTaskToPdfFile(jobs, agentName, activeFilter);
     return;
   }
@@ -320,7 +320,7 @@ export function openMyTaskPrintReport(
               ? "background-color: #ffe4e6; color: #e11d48; border: 1px solid #fda4af;"
               : "background-color: #dcfce7; color: #15803d; border: 1px solid #86efac;"
           }">
-            ${hasProblem ? "Yes (Issue)" : "No (Aman)"}
+            ${hasProblem ? "Yes (Issue)" : "No (Normal)"}
           </span>
         </td>
         <td style="text-align: center; font-weight: 600; color: #0284c7; padding: 7px 8px; border: 1px solid #cbd5e1; font-size: 10px;">${statusText}</td>
@@ -331,10 +331,10 @@ export function openMyTaskPrintReport(
 
   printWindow.document.write(`
     <!DOCTYPE html>
-    <html lang="id">
+    <html lang="en">
       <head>
         <meta charset="utf-8" />
-        <title>Dokumen Riwayat My Task - ${printDate}</title>
+        <title>My Task Report Document - ${printDate}</title>
         <style>
           @page {
             size: A4 landscape;
@@ -519,9 +519,9 @@ export function openMyTaskPrintReport(
       </head>
       <body>
         <div class="no-print-bar">
-          <span>Pratinjau Dokumen PDF - Laporan Riwayat My Task</span>
+          <span>PDF Document Preview - My Task Report</span>
           <div>
-            <button onclick="window.print()">🖶 Simpan ke PDF / Cetak</button>
+            <button onclick="window.print()">🖶 Save to PDF / Print</button>
           </div>
         </div>
 
@@ -535,26 +535,26 @@ export function openMyTaskPrintReport(
           </div>
 
           <div class="title-section">
-            <h1>DOKUMEN DATA RIWAYAT MY TASK</h1>
-            <p>Daftar lengkap riwayat penugasan operasional kargo dan verifikasi fisik lapangan oleh Field Agent.</p>
+            <h1>MY TASK REPORT DOCUMENT</h1>
+            <p>Comprehensive record of cargo operational assignments and physical field verification by Field Agent.</p>
           </div>
 
           <div class="meta-box">
             <div class="meta-item">
-              <strong>Tanggal Cetak</strong>
+              <strong>Print Date</strong>
               <span>${printDate}</span>
             </div>
             <div class="meta-item">
-              <strong>Field Agent (Pemeriksa)</strong>
+              <strong>Field Agent (Inspector)</strong>
               <span>${escapeHtml(agentName)}</span>
             </div>
             <div class="meta-item">
-              <strong>Kategori Filter</strong>
+              <strong>Filter Category</strong>
               <span>${escapeHtml(activeFilter)}</span>
             </div>
             <div class="meta-item">
-              <strong>Ringkasan Data</strong>
-              <span>${totalTasks} Task (${normalCount} Normal, ${issueCount} Issue)</span>
+              <strong>Data Summary</strong>
+              <span>${totalTasks} Tasks (${normalCount} Normal, ${issueCount} Issue)</span>
             </div>
           </div>
 
@@ -567,8 +567,8 @@ export function openMyTaskPrintReport(
                 <th style="width: 100px;">Sales Executive</th>
                 <th>Origin</th>
                 <th>Destination</th>
-                <th>Komoditas / Cargo</th>
-                <th style="width: 95px;">Fisik (Koli / Berat)</th>
+                <th>Commodity / Cargo</th>
+                <th style="width: 95px;">Physical (Pieces / Weight)</th>
                 <th style="width: 80px; text-align: center;">Problem</th>
                 <th style="width: 80px; text-align: center;">Status</th>
               </tr>
@@ -580,14 +580,14 @@ export function openMyTaskPrintReport(
 
           <div class="signatures">
             <div class="sign-box">
-              <div style="font-weight: 600; color: #475569; margin-bottom: 4px;">Dibuat Oleh (Field Agent):</div>
+              <div style="font-weight: 600; color: #475569; margin-bottom: 4px;">Prepared By (Field Agent):</div>
               <div class="sign-line"></div>
               <div style="font-weight: 700; color: #0f172a;">${escapeHtml(agentName)}</div>
-              <div style="font-size: 9px; color: #94a3b8;">Field Inspector / Pelaksana</div>
+              <div style="font-size: 9px; color: #94a3b8;">Field Inspector / Officer</div>
             </div>
 
             <div class="sign-box">
-              <div style="font-weight: 600; color: #475569; margin-bottom: 4px;">Diverifikasi Oleh (Supervisor):</div>
+              <div style="font-weight: 600; color: #475569; margin-bottom: 4px;">Verified By (Supervisor):</div>
               <div class="sign-line"></div>
               <div style="font-weight: 700; color: #0f172a;">Ms. Wulan / Adelia</div>
               <div style="font-size: 9px; color: #94a3b8;">Sales Executive / Operations Lead</div>
@@ -595,7 +595,7 @@ export function openMyTaskPrintReport(
           </div>
 
           <div class="footer-note">
-            <span>Andima CRM • Dokumen Resmi Operasional Lapangan</span>
+            <span>Andima CRM • Official Field Operations Document</span>
             <span>Generated on ${printDate}</span>
           </div>
         </div>

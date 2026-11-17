@@ -72,6 +72,65 @@ export function normalizeStatus(rawStatus?: string): NeedBackupStatus {
   return 'Open';
 }
 
+export function normalizeCategory(cat?: string | null): string {
+  const c = String(cat || '').trim();
+  if (!c) return 'General Issue';
+  const lower = c.toLowerCase();
+
+  // Selisih Koli / Gross Weight / Piece Count Discrepancy
+  if (lower.includes('selisih') || lower.includes('koli')) {
+    if (lower.includes('gross') || lower.includes('weight') || lower.includes('berat')) {
+      return 'Piece Count / Gross Weight Discrepancy';
+    }
+    return 'Piece Count Discrepancy';
+  }
+  if (lower.includes('surat jalan') || lower.includes('delivery order')) {
+    return 'Delivery Order Issue';
+  }
+  if (lower.includes('gross weight') || (lower.includes('berat') && lower.includes('aktual'))) {
+    return 'Gross Weight';
+  }
+  if (lower.includes('kerusakan') || lower.includes('kemasan') || lower.includes('damage') || lower.includes('rusak')) {
+    return 'Cargo Damage';
+  }
+  if (lower.includes('segel') || lower.includes('seal')) {
+    return 'Broken Container Seal';
+  }
+  if (lower.includes('bea cukai') || lower.includes('customs') || lower.includes('pelabuhan') || lower.includes('port doc')) {
+    return 'Port & Customs Documentation Issue';
+  }
+  if (lower.includes('armada') || lower.includes('kendaraan') || lower.includes('fleet') || lower.includes('transport') || lower.includes('vehicle')) {
+    return 'Fleet Breakdown / Replacement Required';
+  }
+  if (lower.includes('tertahan') || lower.includes('held')) {
+    return 'Held Documents';
+  }
+  if (lower.includes('force majeure') || lower.includes('lainnya') || lower.includes('other')) {
+    return 'Other Issues';
+  }
+
+  return c;
+}
+
+export function normalizeSla(sla?: string | null): string {
+  const s = String(sla || '').trim();
+  if (!s) return 'Standard SLA';
+  const lower = s.toLowerCase();
+  if (lower.includes('respon') && (lower.includes('4 jam') || lower.includes('4 hours'))) {
+    return 'SLA Response < 4 Hours';
+  }
+  if (lower.includes('tindakan segera') || lower.includes('30 menit') || lower.includes('30 mins')) {
+    return 'Immediate Action SLA (< 30 Mins)';
+  }
+  if (lower.includes('jam')) {
+    return s.replace(/jam/gi, 'Hours').replace(/respon/gi, 'Response');
+  }
+  if (lower.includes('menit')) {
+    return s.replace(/menit/gi, 'Mins').replace(/tindakan segera/gi, 'Immediate Action');
+  }
+  return s;
+}
+
 export const STATUS_CONFIG: Record<
   string,
   {
@@ -169,7 +228,7 @@ export const STATUS_CONFIG: Record<
     darkBorder: 'dark:border-emerald-900/60',
     dotBg: 'bg-[#059669]',
     icon: 'check',
-    detailLabel: 'Completed / Selesai',
+    detailLabel: 'Completed',
     btnClass: 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-slate-800 dark:text-emerald-300 dark:border-emerald-900/60 dark:hover:bg-slate-700',
     btnActiveClass: 'bg-emerald-600 text-white border-emerald-700 shadow-sm',
   },
@@ -182,14 +241,14 @@ const SEED_TICKETS: NeedBackupTicket[] = [
     ticket_id: 'BCK-2026-001',
     job_number: '#AENAT/2609/0305',
     customer_name: 'PT. JPG TransIndonesia',
-    category: 'Selisih Koli',
+    category: 'Piece Count Discrepancy',
     priority: 'Medium',
     date: '03-03-2026',
     time: '09:15 WIB',
     status: 'Open',
     connected_job: 'DSVEXP/2605/2550',
-    sla_description: 'SLA Respon < 4 Jam',
-    description: 'Terdapat selisih 2 koli saat serah terima di dermaga 3. Butuh koordinasi segera dengan pihak shipper & supervisi dokumen.',
+    sla_description: 'SLA Response < 4 Hours',
+    description: 'Discrepancy of 2 pieces observed during handover at pier 3. Immediate shipper coordination & documentation supervision needed.',
     requested_by: 'Adelia (Sales Executive)',
     created_at: '2026-03-03T09:15:00Z',
     logs: [
@@ -197,7 +256,7 @@ const SEED_TICKETS: NeedBackupTicket[] = [
         id: 'log-1-1',
         author: 'Adelia (Sales Executive)',
         timestamp: '03-03-2026 09:15',
-        message: 'Tiket diajukan ke tim Operasional & Senior Manager.',
+        message: 'Ticket submitted to Operations & Senior Management.',
         is_active: true,
       },
     ],
@@ -213,8 +272,8 @@ const SEED_TICKETS: NeedBackupTicket[] = [
     time: '10:00 WIB',
     status: 'To do',
     connected_job: 'DSVEXP/2605/2551',
-    sla_description: 'SLA Respon < 4 Jam',
-    description: 'Menunggu penugasan personil lapangan untuk verifikasi timbangan ulang kargo sebelum stuffing kontainer.',
+    sla_description: 'SLA Response < 4 Hours',
+    description: 'Awaiting field personnel assignment for cargo re-weighing verification prior to container stuffing.',
     requested_by: 'Adelia (Sales Executive)',
     created_at: '2026-03-03T10:00:00Z',
     logs: [
@@ -222,7 +281,7 @@ const SEED_TICKETS: NeedBackupTicket[] = [
         id: 'log-2-1',
         author: 'Dispatcher Ops',
         timestamp: '03-03-2026 10:05',
-        message: 'Tiket masuk antrean To do jadwal inspeksi shift siang.',
+        message: 'Ticket queued in To do list for afternoon inspection shift.',
         is_active: true,
       },
     ],
@@ -232,14 +291,14 @@ const SEED_TICKETS: NeedBackupTicket[] = [
     ticket_id: 'BCK-2026-003',
     job_number: '#AENAT/2609/0307',
     customer_name: 'PT. Bahtera Nusa Logistik',
-    category: 'Kendala Surat Jalan',
+    category: 'Delivery Order Issue',
     priority: 'High',
     date: '03-03-2026',
     time: '10:35 WIB',
     status: 'Pending',
     connected_job: 'DSVEXP/2605/2552',
-    sla_description: 'SLA Tindakan Segera (< 30 Menit)',
-    description: 'Pending konfirmasi stempel bea cukai dari consignee. Menunggu upload berkas legalisir resmi.',
+    sla_description: 'Immediate Action SLA (< 30 Mins)',
+    description: 'Pending customs stamp verification from consignee. Awaiting certified documentation upload.',
     requested_by: 'Budi (Ops Senior)',
     created_at: '2026-03-03T10:35:00Z',
     logs: [
@@ -247,7 +306,7 @@ const SEED_TICKETS: NeedBackupTicket[] = [
         id: 'log-3-1',
         author: 'Budi (Ops Senior)',
         timestamp: '03-03-2026 10:45',
-        message: 'Status dipending sementara menunggu dokumen revisi shipper.',
+        message: 'Status set to Pending while awaiting shipper revised document.',
         is_active: true,
       },
     ],
@@ -257,14 +316,14 @@ const SEED_TICKETS: NeedBackupTicket[] = [
     ticket_id: 'BCK-2026-004',
     job_number: '#AENAT/2609/0308',
     customer_name: 'PT. Multi Logistik Sentosa',
-    category: 'Kerusakan barang',
+    category: 'Cargo Damage',
     priority: 'Medium',
     date: '03-03-2026',
     time: '11:45 WIB',
     status: 'In progres',
     connected_job: 'DSVEXP/2605/2553',
-    sla_description: 'SLA Respon < 4 Jam',
-    description: 'Kemasan karton sobek di bagian sudut saat forklift bongkar muat. Sedang dilakukan pembuatan Berita Acara Kerusakan bersama tim gudang.',
+    sla_description: 'SLA Response < 4 Hours',
+    description: 'Corner carton packaging torn during forklift loading. Damage report currently being prepared with warehouse team.',
     requested_by: 'Adelia (Sales Executive)',
     created_at: '2026-03-03T11:45:00Z',
     logs: [
@@ -272,7 +331,7 @@ const SEED_TICKETS: NeedBackupTicket[] = [
         id: 'log-4-1',
         author: 'Budi Santoso (Field Lead)',
         timestamp: '03-03-2026 12:10',
-        message: 'Sedang dilakukan pembuatan Berita Acara Kerusakan bersama petugas kargo.',
+        message: 'Damage report documentation is in progress with cargo officer.',
         is_active: true,
       },
     ],
@@ -282,14 +341,14 @@ const SEED_TICKETS: NeedBackupTicket[] = [
     ticket_id: 'BCK-2026-005',
     job_number: '#AENAT/2609/0309',
     customer_name: 'PT. Trans Sejahtera Abadi',
-    category: 'Dokumen Tertahan',
+    category: 'Held Documents',
     priority: 'High',
     date: '03-03-2026',
     time: '13:20 WIB',
     status: 'In riview',
     connected_job: 'DSVEXP/2605/2554',
-    sla_description: 'SLA Respon < 4 Jam',
-    description: 'Dokumen revisi koli dan manifest baru telah diunggah. Menunggu approval review dari Operation Lead.',
+    sla_description: 'SLA Response < 4 Hours',
+    description: 'Revised piece count documentation and new manifest uploaded. Awaiting Operations Lead review approval.',
     requested_by: 'Siti Rahmawati',
     created_at: '2026-03-03T13:20:00Z',
     logs: [
@@ -297,7 +356,7 @@ const SEED_TICKETS: NeedBackupTicket[] = [
         id: 'log-5-1',
         author: 'Siti Rahmawati',
         timestamp: '03-03-2026 13:50',
-        message: 'Dokumen lengkap telah diserahkan untuk proses in riview supervisi.',
+        message: 'Full documentation submitted for supervisory review.',
         is_active: true,
       },
     ],
@@ -307,14 +366,14 @@ const SEED_TICKETS: NeedBackupTicket[] = [
     ticket_id: 'BCK-2026-006',
     job_number: '#AENAT/2609/0310',
     customer_name: 'PT. Global Kargo Mandiri',
-    category: 'Selisih Koli',
+    category: 'Piece Count Discrepancy',
     priority: 'Low',
     date: '03-03-2026',
     time: '14:10 WIB',
     status: 'Completed',
     connected_job: 'DSVEXP/2605/2555',
-    sla_description: 'SLA Respon Standard 24 Jam',
-    description: 'Selisih koli terselesaikan setelah pengecekan fisik di gudang transit kargo internasional. Serah terima tuntas.',
+    sla_description: 'Standard 24-Hour SLA',
+    description: 'Discrepancy resolved after physical check at international cargo transit warehouse. Handover finalized.',
     requested_by: 'Dewi Lestari',
     created_at: '2026-03-03T14:10:00Z',
     logs: [
@@ -322,7 +381,7 @@ const SEED_TICKETS: NeedBackupTicket[] = [
         id: 'log-6-1',
         author: 'Dewi Lestari',
         timestamp: '03-03-2026 15:30',
-        message: 'Semua koli telah diverifikasi lengkap di transit bay. Tiket ditutup (Completed).',
+        message: 'All pieces fully verified in transit bay. Ticket marked as Completed.',
         is_active: true,
       },
     ],
@@ -376,7 +435,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
   // New Ticket Form State
   const [newJobNumber, setNewJobNumber] = useState('#AENAT/2609/0308');
   const [newCustomer, setNewCustomer] = useState('');
-  const [newCategory, setNewCategory] = useState('Selisih Koli');
+  const [newCategory, setNewCategory] = useState('Piece Count Discrepancy');
   const [newPriority, setNewPriority] = useState<string>('Normal');
   const [newStatus, setNewStatus] = useState<NeedBackupStatus>('Open');
   const [newDescription, setNewDescription] = useState('');
@@ -410,8 +469,11 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
             } else {
               localData = parsed.map((t: any) => ({
                 ...t,
+                category: normalizeCategory(t.category),
                 status: normalizeStatus(t.status),
+                sla_description: normalizeSla(t.sla_description),
               }));
+              localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localData));
             }
           }
         }
@@ -422,13 +484,21 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
     try {
       const dbTickets = await getNeedBackupTickets();
       if (dbTickets && dbTickets.length > 0) {
-        const combined = [...dbTickets];
+        const combined = dbTickets.map((t: any) => ({
+          ...t,
+          category: normalizeCategory(t.category),
+          status: normalizeStatus(t.status),
+          sla_description: normalizeSla(t.sla_description),
+        }));
         SEED_TICKETS.forEach(seed => {
-          if (!combined.some(c => c.job_number === seed.job_number && c.category === seed.category)) {
+          if (!combined.some(c => c.job_number === seed.job_number && normalizeCategory(c.category) === seed.category)) {
             combined.push(seed);
           }
         });
         setTickets(combined);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(combined));
+        }
         return;
       }
     } catch {}
@@ -495,6 +565,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
         t.job_number.toLowerCase().includes(q) ||
         (t.customer_name && t.customer_name.toLowerCase().includes(q)) ||
         t.ticket_id.toLowerCase().includes(q) ||
+        normalizeCategory(t.category).toLowerCase().includes(q) ||
         t.category.toLowerCase().includes(q) ||
         norm.toLowerCase().includes(q) ||
         (t.status && t.status.toLowerCase().includes(q))
@@ -535,7 +606,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
       id: `log-${Date.now()}`,
       author: 'Adelia (Dispatcher)',
       timestamp: `${dateStr} ${timeStr}`,
-      message: `Status tiket diubah menjadi "${newStatus}".`,
+      message: `Ticket status updated to "${newStatus}".`,
       is_active: true,
     };
 
@@ -568,7 +639,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
     } catch {}
 
     setIsUpdating(false);
-    showToast(`Status tiket berhasil diubah menjadi "${newStatus}"!`);
+    showToast(`Ticket status successfully changed to "${newStatus}"!`);
   };
 
   // Add Comment / Response to Audit Log
@@ -598,14 +669,14 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
     const updatedTickets = tickets.map(t => (t.id === selectedTicket.id ? updatedTicket : t));
     persistTickets(updatedTickets);
     setNewComment('');
-    showToast('Tanggapan berhasil ditambahkan ke riwayat audit log!');
+    showToast('Response successfully added to audit log!');
   };
 
   // Handle create new ticket
   const handleCreateTicket = (e: React.FormEvent) => {
     e.preventDefault();
     if (countWords(newDescription) > 200) {
-      showToast('Deskripsi kendala melebihi batas maksimal 200 kata.');
+      showToast('Issue description exceeds maximum 200 words limit.');
       return;
     }
     const now = new Date();
@@ -623,8 +694,8 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
       time: timeStr,
       status: newStatus || 'Open',
       connected_job: 'DSVEXP/2605/2552',
-      sla_description: newPriority === 'Urgent' || newPriority === 'High' ? 'SLA Tindakan Segera (< 30 Menit)' : 'SLA Respon < 4 Jam',
-      description: newDescription || 'Permohonan bantuan operasional dari agen lapangan.',
+      sla_description: newPriority === 'Urgent' || newPriority === 'High' ? 'Immediate Action SLA (< 30 Mins)' : 'SLA Response < 4 Hours',
+      description: newDescription || 'Operational assistance request from field agent.',
       requested_by: 'Adelia (Sales Executive)',
       created_at: now.toISOString(),
       logs: [
@@ -632,7 +703,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
           id: `log-${Date.now()}`,
           author: 'Adelia (Sales Executive)',
           timestamp: `${dateStr} ${timeStr}`,
-          message: `Tiket dibuat dengan status "${newStatus || 'Open'}".`,
+          message: `Ticket created with status "${newStatus || 'Open'}".`,
           is_active: true,
         },
       ],
@@ -643,7 +714,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
     setNewDescription('');
     setNewCustomer('');
     setNewStatus('Open');
-    showToast(`Tiket ${newTicket.job_number} berhasil dibuat!`);
+    showToast(`Ticket ${newTicket.job_number} created successfully!`);
   };
 
   return (
@@ -668,7 +739,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
               Need Backup Monitoring
             </h1>
             <p className="text-xs text-slate-400 dark:text-slate-400 font-normal">
-              Pantau dan kelola tiket eskalasi bantuan operasional untuk transaksi terkendala.
+              Monitor and manage operational assistance escalation tickets for flagged transactions.
             </p>
           </div>
 
@@ -679,7 +750,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
               className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
             >
               <Plus size={14} />
-              <span>Buat Tiket Baru</span>
+              <span>Create New Ticket</span>
             </button>
             <button
               onClick={loadTickets}
@@ -697,13 +768,13 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
           <div className="bg-white rounded-xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-3 flex items-start justify-between dark:bg-[#0f172a] dark:border-slate-800">
             <div>
               <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 tracking-tight block">
-                Total Tiket
+                Total Tickets
               </span>
               <div className="text-xl font-bold text-slate-900 dark:text-white mt-0.5 tracking-tight">
-                {totalCount} Tiket
+                {totalCount} Tickets
               </div>
               <div className="text-[10px] font-medium text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1">
-                <span>→ Semua status aktif</span>
+                <span>→ All active statuses</span>
               </div>
             </div>
             <div className="w-8 h-8 rounded-lg bg-blue-50/90 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -718,7 +789,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 Open &amp; To do
               </span>
               <div className="text-xl font-bold text-slate-900 dark:text-white mt-0.5 tracking-tight">
-                {openCount + todoCount} Tiket
+                {openCount + todoCount} Tickets
               </div>
               <div className="text-[10px] font-medium text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
                 <span>! {openCount} Open, {todoCount} To do</span>
@@ -733,14 +804,14 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
           <div className="bg-white rounded-xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-3 flex items-start justify-between dark:bg-[#0f172a] dark:border-slate-800">
             <div>
               <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 tracking-tight block">
-                In progres &amp; Pending
+                In Progress &amp; Pending
               </span>
               <div className="text-xl font-bold text-slate-900 dark:text-white mt-0.5 tracking-tight">
-                {inprogressCount + pendingCount} Tiket
+                {inprogressCount + pendingCount} Tickets
               </div>
               <div className="text-[10px] font-medium text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1">
                 <RefreshCw size={10} className="inline mr-0.5" />
-                <span>{inprogressCount} Aktif, {pendingCount} Pending</span>
+                <span>{inprogressCount} Active, {pendingCount} Pending</span>
               </div>
             </div>
             <div className="w-8 h-8 rounded-lg bg-blue-50/90 text-blue-500 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -755,10 +826,10 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 Completed &amp; Review
               </span>
               <div className="text-xl font-bold text-slate-900 dark:text-white mt-0.5 tracking-tight">
-                {resolvedCount + inreviewCount} Tiket
+                {resolvedCount + inreviewCount} Tickets
               </div>
               <div className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
-                <span>✓ {resolvedCount} Selesai, {inreviewCount} Riview</span>
+                <span>✓ {resolvedCount} Completed, {inreviewCount} Review</span>
               </div>
             </div>
             <div className="w-8 h-8 rounded-lg bg-emerald-50/90 text-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-400 flex items-center justify-center shrink-0">
@@ -781,7 +852,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 : 'bg-white text-slate-600 border-slate-200/80 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800 dark:hover:bg-slate-800'
             }`}
           >
-            Semua ({totalCount})
+            All ({totalCount})
           </button>
           {STATUS_LIST.map(st => {
             const cfg = STATUS_CONFIG[st];
@@ -843,11 +914,11 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
           <table className="w-full text-left border-collapse min-w-[760px]">
             <thead className="sticky top-0 z-10 bg-[#f0f4f9] dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 shadow-2xs">
               <tr className="text-slate-800 text-xs font-bold dark:text-slate-200">
-                <th className="py-3 px-5 text-left pl-6 w-[150px]">Tiket ID</th>
+                <th className="py-3 px-5 text-left pl-6 w-[150px]">Ticket ID</th>
                 <th className="py-3 px-5 text-left w-[220px]">Job Number</th>
-                <th className="py-4.5 px-6 text-center w-[180px]">Kategori Kendala</th>
-                <th className="py-4.5 px-6 text-center w-[140px]">Prioritas</th>
-                <th className="py-4.5 px-6 text-center w-[140px]">Tanggal</th>
+                <th className="py-4.5 px-6 text-center w-[180px]">Issue Category</th>
+                <th className="py-4.5 px-6 text-center w-[140px]">Priority</th>
+                <th className="py-4.5 px-6 text-center w-[140px]">Date</th>
                 <th className="py-4.5 px-6 text-center w-[140px]">Status</th>
                 <th className="py-4.5 px-6 text-center w-[120px] pr-8">Action</th>
               </tr>
@@ -881,10 +952,10 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                       </div>
                     </td>
 
-                    {/* Kategori Kendala */}
+                    {/* Issue Category */}
                     <td className="py-5 px-6 text-center align-middle">
                       <span className="inline-flex items-center justify-center px-4 py-1 rounded-full text-xs font-semibold bg-[#eef2ff] text-[#4f46e5] dark:bg-indigo-950/40 dark:text-indigo-300">
-                        {item.category}
+                        {normalizeCategory(item.category)}
                       </span>
                     </td>
 
@@ -935,7 +1006,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                               type="button"
                               onClick={() => setStatusDropdownOpenId(isOpen ? null : item.id)}
                               className={`group inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer shadow-2xs hover:brightness-95 active:scale-95 ${cfg.bg} ${cfg.text} ${cfg.border} ${cfg.darkBg} ${cfg.darkText} ${cfg.darkBorder}`}
-                              title="Klik untuk ubah status"
+                              title="Click to change status"
                             >
                               {cfg.icon === 'check' ? (
                                 <Check size={12} className={cfg.text} />
@@ -956,7 +1027,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                             {isOpen && (
                               <div className="absolute left-1/2 -translate-x-1/2 mt-1.5 w-44 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-1.5 z-40 animate-in fade-in zoom-in-95 duration-150">
                                 <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 mb-1">
-                                  Ubah Status
+                                  Change Status
                                 </div>
                                 {STATUS_LIST.map(st => {
                                   const itemCfg = STATUS_CONFIG[st];
@@ -1005,7 +1076,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
               ) : (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400 dark:text-slate-500 text-sm">
-                    Tidak ada tiket yang sesuai dengan pencarian &quot;{searchQuery}&quot;
+                    No tickets matching search &quot;{searchQuery}&quot;
                   </td>
                 </tr>
               )}
@@ -1073,7 +1144,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
             <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between">
               <div>
                 <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
-                  Detail Tiket Need Backup
+                  Need Backup Ticket Details
                 </h2>
                 <div className="text-xs font-medium font-mono text-slate-400 dark:text-slate-400 mt-0.5 tracking-wider">
                   {selectedTicket.ticket_id}
@@ -1098,7 +1169,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                   return (
                     <div className="bg-white rounded-2xl border border-slate-200/70 p-3.5 sm:p-4 shadow-2xs dark:bg-slate-900/90 dark:border-slate-800">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-400 dark:text-slate-400">Status Tiket</span>
+                        <span className="text-xs font-medium text-slate-400 dark:text-slate-400">Ticket Status</span>
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${cfg.bg} ${cfg.text} ${cfg.border} ${cfg.darkBg} ${cfg.darkText} ${cfg.darkBorder}`}>
                           {cfg.icon === 'check' ? (
                             <Check size={11} className={cfg.text} />
@@ -1124,7 +1195,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 {/* Prioritas Card */}
                 <div className="bg-white rounded-2xl border border-slate-200/70 p-3.5 sm:p-4 shadow-2xs dark:bg-slate-900/90 dark:border-slate-800">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-400 dark:text-slate-400">Prioritas</span>
+                    <span className="text-xs font-medium text-slate-400 dark:text-slate-400">Priority</span>
                     {selectedTicket.priority === 'High' ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#fef2f2] text-[#dc2626] border border-[#fee2e2] dark:bg-red-950/40 dark:text-red-300 dark:border-red-900/60">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#dc2626]" />
@@ -1168,13 +1239,13 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
 
                 <div className="pt-2 border-t border-slate-200/50 dark:border-slate-800 grid grid-cols-2 gap-4">
                   <div>
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500 block">Pelapor:</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 block">Reporter:</span>
                     <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
                       {selectedTicket.requested_by || 'Adelia (Sales Executive)'}
                     </div>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500 block">Tanggal &amp; Waktu:</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 block">Date &amp; Time:</span>
                     <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
                       {selectedTicket.date}, {selectedTicket.time || '10:35 WIB'}
                     </div>
@@ -1182,10 +1253,10 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 </div>
               </div>
 
-              {/* CONNECTED JOB / KATEGORI */}
+              {/* CONNECTED JOB / CATEGORY */}
               <div>
                 <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">
-                  CONNECTED JOB / KATEGORI
+                  CONNECTED JOB / CATEGORY
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#eff6ff] text-[#2563eb] border border-[#dbeafe] dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60">
@@ -1194,30 +1265,30 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                   </span>
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fffbeb] text-[#b45309] border border-[#fde68a] dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/60">
                     <Tag size={12} className="rotate-90 text-amber-500 dark:text-amber-400" />
-                    <span>{selectedTicket.category || 'Gross Weight'}</span>
+                    <span>{normalizeCategory(selectedTicket.category || 'Gross Weight')}</span>
                   </span>
                 </div>
               </div>
 
-              {/* DESKRIPSI KENDALA & BANTUAN */}
+              {/* ISSUE DESCRIPTION & ASSISTANCE */}
               <div>
                 <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">
-                  DESKRIPSI KENDALA &amp; BANTUAN
+                  ISSUE DESCRIPTION &amp; ASSISTANCE
                 </span>
                 <div className="bg-[#f8fafc] border border-slate-200/70 rounded-2xl p-3.5 text-xs font-normal text-slate-700 leading-relaxed dark:bg-slate-900/60 dark:border-slate-800 dark:text-slate-300">
                   {selectedTicket.description ||
-                    'Jumlah koli fisik yang diterima di lokasi (8 koli) tidak sesuai dengan data dokumen awal (10 koli). Mohon koordinasi tim warehouse Cikarang untuk pengecekan 2 koli tertinggal.'}
+                    'Physical piece count received on site (8 pieces) does not match initial documentation (10 pieces). Need Cikarang warehouse team coordination to check 2 missing pieces.'}
                 </div>
               </div>
 
-              {/* RIWAYAT TINDAK LANJUT / AUDIT LOG */}
+              {/* ACTION HISTORY / AUDIT LOG */}
               <div>
                 <div className="flex items-center justify-between mb-2.5">
                   <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                    RIWAYAT TINDAK LANJUT / AUDIT LOG
+                    ACTION HISTORY / AUDIT LOG
                   </span>
                   <span className="bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 rounded-full px-2 py-0.5 text-[10px] font-semibold">
-                    {selectedTicket.logs?.length || 2} Log
+                    {selectedTicket.logs?.length || 2} Logs
                   </span>
                 </div>
 
@@ -1245,21 +1316,21 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                       <div className="relative">
                         <span className="absolute -left-5 top-1 w-2.5 h-2.5 rounded-full ring-4 ring-white dark:ring-slate-900 bg-blue-600" />
                         <div className="flex items-baseline gap-2">
-                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Ditanggapi oleh Budi (Ops Senior)</span>
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Responded by Budi (Ops Senior)</span>
                           <span className="text-[11px] text-slate-400 dark:text-slate-500">at 24-09-2026 10:45</span>
                         </div>
                         <div className="mt-1 bg-[#f8fafc] border border-slate-200/70 rounded-xl p-2.5 text-xs text-slate-600 leading-normal dark:bg-slate-900/60 dark:border-slate-800 dark:text-slate-300">
-                          Tim warehouse Cikarang sedang melakukan audit fisik 2 koli...
+                          Cikarang warehouse team is conducting physical audit of 2 pieces...
                         </div>
                       </div>
                       <div className="relative">
                         <span className="absolute -left-5 top-1 w-2.5 h-2.5 rounded-full ring-4 ring-white dark:ring-slate-900 bg-slate-400" />
                         <div className="flex items-baseline gap-2">
-                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Diajukan oleh Adelia</span>
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Submitted by Adelia</span>
                           <span className="text-[11px] text-slate-400 dark:text-slate-500">at 24-09-2026 10:35</span>
                         </div>
                         <div className="mt-1 bg-[#f8fafc] border border-slate-200/70 rounded-xl p-2.5 text-xs text-slate-600 leading-normal dark:bg-slate-900/60 dark:border-slate-800 dark:text-slate-300">
-                          Tiket diajukan ke tim Operasional &amp; Senior Manager.
+                          Ticket submitted to Operations &amp; Senior Management.
                         </div>
                       </div>
                     </>
@@ -1272,9 +1343,9 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                     <PenLine size={13} className="text-slate-600 dark:text-slate-400" />
-                    <span>Tulis Tanggapan / Catatan Tambahan</span>
+                    <span>Write Response / Additional Notes</span>
                   </span>
-                  <span className="text-[11px] text-slate-400 dark:text-slate-500">Markdown didukung</span>
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500">Markdown supported</span>
                 </div>
 
                 {normalizeStatus(selectedTicket.status) === 'Completed' ? (
@@ -1282,10 +1353,10 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                     <div className="p-3 bg-emerald-50/80 border border-emerald-200/90 rounded-2xl text-emerald-800 text-xs font-semibold flex items-center justify-between dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        <span>Status: Completed (Terselesaikan)</span>
+                        <span>Status: Completed (Resolved)</span>
                       </div>
                       <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal">
-                        Dapat diaktifkan kembali kapan saja
+                        Can be reactivated at any time
                       </span>
                     </div>
 
@@ -1294,7 +1365,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                         rows={3}
                         value={newComment}
                         onChange={e => setNewComment(e.target.value)}
-                        placeholder="Tulis catatan tindak lanjut tambahan..."
+                        placeholder="Write additional follow-up notes..."
                         className="w-full p-3 text-xs text-slate-700 outline-none resize-none placeholder:text-slate-400 dark:text-slate-200 dark:placeholder:text-slate-500 bg-transparent"
                       />
                       <div className="px-3.5 py-2 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between dark:bg-slate-900/90 dark:border-slate-800">
@@ -1302,14 +1373,14 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                           <button
                             type="button"
                             className="hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
-                            title="Lampirkan Dokumen"
+                            title="Attach Document"
                           >
                             <Paperclip size={15} />
                           </button>
                           <button
                             type="button"
                             className="hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
-                            title="Mention Rekan Kerja"
+                            title="Mention Colleague"
                           >
                             <AtSign size={15} />
                           </button>
@@ -1320,7 +1391,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                             onClick={() => handleAddComment()}
                             className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-2xs transition-colors cursor-pointer"
                           >
-                            Kirim Tanggapan
+                            Send Response
                           </button>
                         )}
                       </div>
@@ -1332,7 +1403,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                       rows={3}
                       value={newComment}
                       onChange={e => setNewComment(e.target.value)}
-                      placeholder="Tulis tanggapan / catatan tambahan..."
+                      placeholder="Write response / additional notes..."
                       className="w-full p-3 text-xs text-slate-700 outline-none resize-none placeholder:text-slate-400 dark:text-slate-200 dark:placeholder:text-slate-500 bg-transparent"
                     />
                     <div className="px-3.5 py-2 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between dark:bg-slate-900/90 dark:border-slate-800">
@@ -1340,14 +1411,14 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                         <button
                           type="button"
                           className="hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
-                          title="Lampirkan Dokumen"
+                          title="Attach Document"
                         >
                           <Paperclip size={15} />
                         </button>
                         <button
                           type="button"
                           className="hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
-                          title="Mention Rekan Kerja"
+                          title="Mention Colleague"
                         >
                           <AtSign size={15} />
                         </button>
@@ -1358,7 +1429,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                           onClick={() => handleAddComment()}
                           className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-2xs transition-colors cursor-pointer"
                         >
-                          Kirim Tanggapan
+                          Send Response
                         </button>
                       )}
                     </div>
@@ -1369,7 +1440,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
               {/* STATUS TRANSITION BUTTONS */}
               <div className="border-t border-slate-100 dark:border-slate-800 pt-3.5">
                 <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-2">
-                  Ubah Status Tiket:
+                  Change Ticket Status:
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {STATUS_LIST.map(st => {
@@ -1410,7 +1481,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 onClick={() => setSelectedTicket(null)}
                 className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer dark:bg-slate-800 dark:hover:bg-slate-700"
               >
-                Tutup
+                Close
               </button>
             </div>
           </div>
@@ -1428,19 +1499,13 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                    Buat Tiket Need Backup
+                    Create Need Backup Ticket
                   </h2>
                   <p className="text-xs text-slate-400 dark:text-slate-400">
-                    Eskalasikan kendala operasional lapangan baru
+                    Escalate new field operational issue
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setIsCreateModalOpen(false)}
-                className="p-1.5 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
-              >
-                <X size={18} />
-              </button>
             </div>
 
             <form onSubmit={handleCreateTicket} className="p-6 space-y-4">
@@ -1461,7 +1526,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                    Customer / Perusahaan
+                    Customer / Company
                   </label>
                   <input
                     type="text"
@@ -1476,7 +1541,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                    Kategori Kendala *
+                    Issue Category *
                   </label>
                   <select
                     value={newCategory}
@@ -1484,17 +1549,17 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                     className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 dark:bg-slate-900 outline-none focus:border-blue-500 bg-white"
                   >
                     <option value="Gross Weight" className="dark:bg-slate-900 dark:text-white">Gross Weight</option>
-                    <option value="Selisih Koli" className="dark:bg-slate-900 dark:text-white">Selisih Koli</option>
-                    <option value="Kerusakan barang" className="dark:bg-slate-900 dark:text-white">Kerusakan barang</option>
-                    <option value="Kendala Surat Jalan" className="dark:bg-slate-900 dark:text-white">Kendala Surat Jalan</option>
-                    <option value="Dokumen Tertahan" className="dark:bg-slate-900 dark:text-white">Dokumen Tertahan</option>
-                    <option value="Others/Lainnya" className="dark:bg-slate-900 dark:text-white">Others/Lainnya</option>
+                    <option value="Piece Count Discrepancy" className="dark:bg-slate-900 dark:text-white">Piece Count Discrepancy</option>
+                    <option value="Cargo Damage" className="dark:bg-slate-900 dark:text-white">Cargo Damage</option>
+                    <option value="Delivery Order Issue" className="dark:bg-slate-900 dark:text-white">Delivery Order Issue</option>
+                    <option value="Held Documents" className="dark:bg-slate-900 dark:text-white">Held Documents</option>
+                    <option value="Other Issues" className="dark:bg-slate-900 dark:text-white">Other Issues</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                    Prioritas *
+                    Priority *
                   </label>
                   <select
                     value={newPriority}
@@ -1510,7 +1575,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                    Status Awal *
+                    Initial Status *
                   </label>
                   <select
                     value={newStatus}
@@ -1529,10 +1594,10 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Deskripsi Kendala &amp; Bantuan yang Dibutuhkan *
+                    Issue Description &amp; Assistance Needed *
                   </label>
                   <span className={`text-[10px] font-bold ${countWords(newDescription) > 200 ? 'text-red-500' : 'text-slate-400 dark:text-slate-500'}`}>
-                    {countWords(newDescription)} / 200 kata
+                    {countWords(newDescription)} / 200 words
                   </span>
                 </div>
                 <textarea
@@ -1540,7 +1605,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                   rows={3}
                   value={newDescription}
                   onChange={e => setNewDescription(e.target.value)}
-                  placeholder="Jelaskan kendala di lapangan dan bantuan yang dibutuhkan (maksimal 200 kata)..."
+                  placeholder="Describe the field issue and required assistance (maximum 200 words)..."
                   className={`w-full border rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-200 dark:bg-slate-900 outline-none resize-none transition-colors ${
                     countWords(newDescription) > 200
                       ? 'border-red-500 focus:border-red-600 bg-red-50/20'
@@ -1549,7 +1614,7 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                 />
                 {countWords(newDescription) > 200 && (
                   <p className="text-[11px] text-red-500 font-medium mt-1">
-                    Deskripsi melebihi batas maksimal 200 kata. Harap ringkas deskripsi kendala Anda.
+                    Description exceeds maximum 200 words. Please shorten your description.
                   </p>
                 )}
               </div>
@@ -1560,14 +1625,14 @@ export default function NeedBackupTab({}: NeedBackupProps = {}) {
                   onClick={() => setIsCreateModalOpen(false)}
                   className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
                 >
-                  Batal
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Plus size={14} />
-                  Simpan Tiket
+                  Save Ticket
                 </button>
               </div>
             </form>

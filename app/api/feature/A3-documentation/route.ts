@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       .limit(1);
 
     if ((!a3Data || a3Data.length === 0) && (!wsData || wsData.length === 0)) {
-      return apiError(new Error(`Job ${jobNumber} tidak ditemukan.`), 404);
+      return apiError(new Error(`Job ${jobNumber} not found.`), 404);
     }
 
     const { data, error } = await client

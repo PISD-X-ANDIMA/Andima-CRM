@@ -10,6 +10,7 @@ import {
   Headphones,
   Users,
   ChevronDown,
+  ChevronUp,
   ChevronRight,
   Contact,
   LogOut,
@@ -66,7 +67,7 @@ export function Sidebar(): React.ReactElement {
   }>({
     myTasks: 5,
     fieldReports: 3,
-    needBackup: 2,
+    needBackup: 5,
   })
 
   const isFieldAgentActive =
@@ -170,7 +171,7 @@ export function Sidebar(): React.ReactElement {
   const renderNavContent = (isMobile = false): React.ReactElement => (
     <>
       {/* Brand Header */}
-      <div className='flex h-20 items-center justify-between px-5 border-b border-white/[0.06]'>
+      <div className='flex h-20 items-center justify-between px-5 border-b border-white/[0.08]'>
         <div className='flex items-center gap-3'>
           <Image
             src='/andima-logo.png'
@@ -182,8 +183,10 @@ export function Sidebar(): React.ReactElement {
           />
           <div className='leading-tight'>
             <h1 className='text-[14px] font-extrabold tracking-wider text-white'>ANDIMA</h1>
-            <p className='text-[10px] font-bold tracking-wide text-slate-200'>TRANSPORTINDO</p>
-            <p className='mt-0.5 text-[5px] tracking-[0.2em] text-blue-400'>ENTERPRISE DIGITAL ECOSYSTEM</p>
+            <p className='text-[10px] font-bold tracking-wide text-white'>TRANSPORTINDO</p>
+            <p className='mt-0.5 text-[6px] font-bold tracking-[0.2em] text-cyan-400 uppercase'>
+              ENTERPRISE DIGITAL ECOSYSTEM
+            </p>
           </div>
         </div>
         {isMobile && (
@@ -191,7 +194,7 @@ export function Sidebar(): React.ReactElement {
             type='button'
             onClick={() => setMobileOpen(false)}
             className='grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer'
-            aria-label='Tutup Menu'
+            aria-label='Close Menu'
           >
             <X className='h-5 w-5' />
           </button>
@@ -199,71 +202,68 @@ export function Sidebar(): React.ReactElement {
       </div>
 
       {/* Main Nav */}
-      <nav className='flex-1 space-y-1.5 overflow-y-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3.5 pt-5 pb-4'>
+      <nav className='flex-1 space-y-2 overflow-y-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3.5 pt-5 pb-4'>
         {/* Dashboard */}
         <Link
           href='/dashboard'
-          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
-            pathname === '/dashboard'
-              ? 'bg-[#1d63ff] text-white shadow-sm'
-              : 'text-white hover:bg-white/[0.06]'
+          className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-white/[0.06] ${
+            pathname === '/dashboard' && !pathname.startsWith('/dashboard/field-agent')
+              ? 'bg-white/[0.08] text-white'
+              : 'text-white'
           }`}
         >
-          <LayoutDashboard className='h-4 w-4 text-white shrink-0' />
+          <LayoutDashboard className='h-4.5 w-4.5 text-white shrink-0' />
           <span>Dashboard</span>
         </Link>
 
         {/* CCR */}
         <button
           type='button'
-          className='flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/[0.06] cursor-pointer'
+          className='flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-white/[0.06] cursor-pointer'
         >
-          <Headphones className='h-4 w-4 text-white shrink-0' />
+          <Headphones className='h-4.5 w-4.5 text-white shrink-0' />
           <span>CCR</span>
         </button>
 
         {/* CRM Section */}
-        <div className='pt-1'>
-          <div className='flex items-center gap-2'>
-            <span className='grid h-8 w-8 place-items-center rounded-lg text-white shrink-0'>
-              <Contact className='h-4.5 w-4.5 text-white' />
-            </span>
-            <button
-              type='button'
-              onClick={() => setCrmOpen((prev) => !prev)}
-              className='flex flex-1 items-center justify-between rounded-xl bg-[#1d63ff] px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-blue-600 cursor-pointer'
-            >
+        <div className='pt-0.5'>
+          {/* Highlighted CRM Button */}
+          <button
+            type='button'
+            onClick={() => setCrmOpen((prev) => !prev)}
+            className='flex w-full items-center justify-between rounded-xl bg-[#1d63ff] hover:bg-blue-600 px-3.5 py-2.5 text-xs font-bold text-white shadow-sm transition-colors cursor-pointer'
+          >
+            <div className='flex items-center gap-3'>
+              <Contact className='h-4.5 w-4.5 text-white shrink-0' />
               <span>CRM</span>
-              <ChevronDown
-                className={`h-4 w-4 transition-transform duration-200 ${
-                  crmOpen ? 'rotate-180' : ''
-                }`}
-              />
-            </button>
-          </div>
+            </div>
+            {crmOpen ? (
+              <ChevronUp className='h-4 w-4 text-white shrink-0' />
+            ) : (
+              <ChevronDown className='h-4 w-4 text-white shrink-0' />
+            )}
+          </button>
 
           {/* Submenu Tree List */}
           {crmOpen && (
-            <div className='mt-2.5 ml-4 space-y-1 border-l border-slate-600/40 pl-3'>
+            <div className='mt-2 ml-5 space-y-1.5 border-l border-slate-600/50 pl-3'>
               {/* Field Agent Item */}
               <div>
                 <button
                   type='button'
                   onClick={() => setFieldAgentOpen((prev) => !prev)}
-                  className={`flex w-full items-center justify-between rounded-lg px-2 py-1 text-xs font-semibold transition-colors cursor-pointer ${
-                    isFieldAgentActive ? 'text-white' : 'text-slate-300 hover:text-white'
-                  }`}
+                  className='flex w-full items-center justify-between rounded-lg py-1.5 pr-2 text-xs font-semibold text-white transition-colors cursor-pointer hover:text-white'
                 >
                   <span>Field Agent</span>
-                  <ChevronRight
-                    className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 ${
-                      fieldAgentOpen ? 'rotate-90' : ''
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 text-white transition-transform duration-200 ${
+                      fieldAgentOpen ? 'rotate-0' : '-rotate-90'
                     }`}
                   />
                 </button>
 
                 {fieldAgentOpen && (
-                  <div className='mt-1 space-y-1 pl-2 border-l border-slate-600/30'>
+                  <div className='mt-1.5 space-y-1.5'>
                     {fieldAgentMenus.map((item) => {
                       const itemTab = item.href.includes('tab=')
                         ? item.href.split('tab=')[1]
@@ -278,16 +278,18 @@ export function Sidebar(): React.ReactElement {
                         <Link
                           key={item.href}
                           href={item.href}
-                          className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition-colors ${
+                          className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs transition-all ${
                             isActive
                               ? 'bg-[#9cb8cd] text-slate-800 font-bold shadow-xs'
-                              : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                              : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] font-medium'
                           }`}
                         >
-                          <div className='flex items-center gap-2 min-w-0'>
+                          <div className='flex items-center gap-2.5 min-w-0'>
                             <span
-                              className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                                isActive ? 'bg-[#06b6d4]' : 'bg-slate-500'
+                              className={`rounded-full shrink-0 ${
+                                isActive
+                                  ? 'h-2 w-2 bg-[#06b6d4]'
+                                  : 'h-1.5 w-1.5 bg-slate-500/70'
                               }`}
                             />
                             <span className='truncate'>{item.name}</span>
@@ -295,12 +297,14 @@ export function Sidebar(): React.ReactElement {
 
                           {badgeVal !== undefined && (
                             <span
-                              className={`shrink-0 text-[11px] font-bold ${
-                                item.badgeType === 'success'
-                                  ? 'text-emerald-400 font-extrabold pr-0.5'
+                              className={`shrink-0 ${
+                                isActive && item.key === 'needBackup'
+                                  ? 'text-rose-500 font-extrabold text-[12px] pr-1'
+                                  : item.badgeType === 'success'
+                                  ? 'text-emerald-400 font-bold text-[11px] pr-1'
                                   : item.badgeType === 'danger'
-                                  ? 'text-rose-400 font-extrabold pr-0.5'
-                                  : 'px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700/60 text-[10px]'
+                                  ? 'text-rose-400 font-bold text-[11px] pr-1'
+                                  : 'px-2 py-0.5 rounded bg-slate-800 text-white border border-slate-700/60 text-[10px] font-bold'
                               }`}
                             >
                               {badgeVal}
@@ -314,16 +318,15 @@ export function Sidebar(): React.ReactElement {
               </div>
             </div>
           )}
-
         </div>
 
         {/* HRMS */}
         <div className='pt-1'>
           <button
             type='button'
-            className='flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/[0.06] cursor-pointer'
+            className='flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-white/[0.06] cursor-pointer'
           >
-            <Users className='h-4 w-4 text-white shrink-0' />
+            <Users className='h-4.5 w-4.5 text-white shrink-0' />
             <span>HRMS</span>
           </button>
         </div>
@@ -340,7 +343,7 @@ export function Sidebar(): React.ReactElement {
           }`}
         >
           <Settings className='h-4 w-4' />
-          <span>Pengaturan</span>
+          <span>Settings</span>
         </Link>
 
         <button
@@ -358,7 +361,7 @@ export function Sidebar(): React.ReactElement {
   return (
     <>
       {/* Desktop Persistent Sidebar */}
-      <aside className='hidden lg:flex sticky top-0 h-screen w-[240px] shrink-0 flex-col bg-[#0b1a34] text-slate-300 select-none'>
+      <aside className='hidden lg:flex sticky top-0 h-screen w-[240px] shrink-0 flex-col bg-[#0b1a34] text-slate-300 select-none font-sans'>
         {renderNavContent(false)}
       </aside>
 
@@ -371,7 +374,7 @@ export function Sidebar(): React.ReactElement {
             onClick={() => setMobileOpen(false)}
           />
           {/* Sliding Panel */}
-          <aside className='fixed inset-y-0 left-0 z-[999] flex h-full w-[280px] max-w-[85vw] flex-col bg-[#0b1a34] text-slate-300 shadow-2xl animate-in slide-in-from-left duration-200 select-none'>
+          <aside className='fixed inset-y-0 left-0 z-[999] flex h-full w-[280px] max-w-[85vw] flex-col bg-[#0b1a34] text-slate-300 shadow-2xl animate-in slide-in-from-left duration-200 select-none font-sans'>
             {renderNavContent(true)}
           </aside>
         </div>

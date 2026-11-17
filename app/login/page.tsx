@@ -143,8 +143,8 @@ export default function LoginPage() {
 
       if (error) {
         const message = error.message.toLowerCase().includes('email not confirmed')
-          ? 'Email belum dikonfirmasi. Selesaikan konfirmasi melalui email terlebih dahulu.'
-          : 'Email atau password salah.';
+          ? 'Email not confirmed. Please verify your email first.'
+          : 'Incorrect email or password.';
         handleFailedAttempt(message);
         return;
       }
@@ -202,11 +202,11 @@ export default function LoginPage() {
         console.error(err);
       }
 
-      setSuccessMessage(`Login berhasil! Selamat datang, ${displayName}. Mengalihkan ke Dashboard...`);
+      setSuccessMessage(`Login successful! Welcome, ${displayName}. Redirecting to Dashboard...`);
       window.setTimeout(() => { router.push('/dashboard'); }, 1000);
 
     } catch {
-      setErrorMessage('Tidak dapat menghubungi server login. Silakan coba lagi.');
+      setErrorMessage('Unable to connect to login server. Please try again.');
     } finally {
       setIsSigningIn(false);
     }

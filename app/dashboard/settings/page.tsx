@@ -117,33 +117,33 @@ export default function SettingsPage() {
 
   const handleUpdatePreference = <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => {
     setPreferences((prev) => ({ ...prev, [key]: value }))
-    setSaveStatus('Preferensi berhasil disimpan')
+    setSaveStatus('Preferences saved successfully')
     window.setTimeout(() => setSaveStatus(null), 2500)
   }
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newPassword || newPassword.length < 6) {
-      setPasswordStatus({ type: 'error', message: 'Kata sandi minimal harus 6 karakter.' })
+      setPasswordStatus({ type: 'error', message: 'Password must be at least 6 characters long.' })
       return
     }
     if (newPassword !== confirmPassword) {
-      setPasswordStatus({ type: 'error', message: 'Konfirmasi kata sandi tidak cocok.' })
+      setPasswordStatus({ type: 'error', message: 'Password confirmation does not match.' })
       return
     }
 
-    setPasswordStatus({ type: 'loading', message: 'Memperbarui kata sandi...' })
+    setPasswordStatus({ type: 'loading', message: 'Updating password...' })
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword })
       if (error) {
-        setPasswordStatus({ type: 'error', message: error.message || 'Gagal memperbarui kata sandi.' })
+        setPasswordStatus({ type: 'error', message: error.message || 'Failed to update password.' })
         return
       }
-      setPasswordStatus({ type: 'success', message: 'Kata sandi berhasil diperbarui.' })
+      setPasswordStatus({ type: 'success', message: 'Password updated successfully.' })
       setNewPassword('')
       setConfirmPassword('')
     } catch {
-      setPasswordStatus({ type: 'error', message: 'Terjadi kendala saat memperbarui kata sandi.' })
+      setPasswordStatus({ type: 'error', message: 'An error occurred while updating the password.' })
     }
   }
 
@@ -160,12 +160,12 @@ export default function SettingsPage() {
               className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-blue-600 transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Kembali ke Dashboard</span>
+              <span>Back to Dashboard</span>
             </Link>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Pengaturan & Preferensi</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Settings & Preferences</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Atur preferensi visual, format data aplikasi, dan konfigurasi keamanan akun Anda
+            Manage visual preferences, application data formats, and account security settings
           </p>
         </div>
 
@@ -194,12 +194,12 @@ export default function SettingsPage() {
                 {userRole}
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{userEmail || 'Terhubung via Supabase Auth'}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{userEmail || 'Connected via Supabase Auth'}</p>
           </div>
         </div>
         <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
           <Info className="h-4 w-4" />
-          <span>Informasi profil dikelola terpusat oleh sistem</span>
+          <span>Profile information is centrally managed by the system</span>
         </div>
       </div>
 
@@ -228,7 +228,7 @@ export default function SettingsPage() {
           }`}
         >
           <Sliders className="h-4 w-4" />
-          <span>Preferensi Sistem</span>
+          <span>System Preferences</span>
         </button>
 
         <button
@@ -241,7 +241,7 @@ export default function SettingsPage() {
           }`}
         >
           <ShieldCheck className="h-4 w-4" />
-          <span>Keamanan</span>
+          <span>Security</span>
         </button>
       </div>
 
@@ -252,10 +252,10 @@ export default function SettingsPage() {
           <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-2xs">
             <div className="flex items-center gap-2 mb-1">
               <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Tema Warna Avatar Badge</h2>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Avatar Badge Color Theme</h2>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              Pilih palet warna yang akan digunakan untuk lingkaran inisial profil Anda di header dan menu.
+              Choose the color palette used for your profile initial badge in headers and menus.
             </p>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
@@ -281,7 +281,7 @@ export default function SettingsPage() {
                     {isSelected && (
                       <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400">
                         <Check className="h-3 w-3" />
-                        <span>Aktif</span>
+                        <span>Active</span>
                       </span>
                     )}
                   </button>
@@ -292,9 +292,9 @@ export default function SettingsPage() {
 
           {/* Avatar Style Option */}
           <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-2xs">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-1">Gaya Tampilan Badge</h2>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-1">Badge Display Style</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              Tentukan apakah avatar menampilkan huruf inisial nama atau ikon netral.
+              Choose whether the avatar displays your initial letter or a generic user icon.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg">
@@ -311,8 +311,8 @@ export default function SettingsPage() {
                   {username.slice(0, 1).toLowerCase()}
                 </div>
                 <div className="text-left">
-                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Huruf Inisial</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Karakter pertama dari nama akun Anda</p>
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Initial Letter</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">First character of your account name</p>
                 </div>
               </button>
 
@@ -329,8 +329,8 @@ export default function SettingsPage() {
                   <User className="h-4 w-4" />
                 </div>
                 <div className="text-left">
-                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Ikon Pengguna</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Ikon profil standar</p>
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100">User Icon</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Standard profile icon</p>
                 </div>
               </button>
             </div>
@@ -345,10 +345,10 @@ export default function SettingsPage() {
           <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-2xs">
             <div className="flex items-center gap-2 mb-1">
               <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Format Tanggal Standar</h2>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Default Date Format</h2>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              Pilih format penanggalan yang nyaman digunakan pada tabel dan jadwal meeting.
+              Choose the date format used across tables and schedule views.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg">
@@ -362,8 +362,8 @@ export default function SettingsPage() {
                 }`}
               >
                 <div>
-                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100">DD/MM/YYYY (Standar Indonesia)</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Contoh: 09/10/2026</p>
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100">DD/MM/YYYY (Day / Month / Year)</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Example: 09/10/2026</p>
                 </div>
                 {preferences.dateFormat === 'DD/MM/YYYY' && (
                   <Check className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -380,8 +380,8 @@ export default function SettingsPage() {
                 }`}
               >
                 <div>
-                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100">YYYY-MM-DD (Standar ISO)</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Contoh: 2026-10-09</p>
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100">YYYY-MM-DD (ISO Standard)</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Example: 2026-10-09</p>
                 </div>
                 {preferences.dateFormat === 'YYYY-MM-DD' && (
                   <Check className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -394,10 +394,10 @@ export default function SettingsPage() {
           <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-2xs">
             <div className="flex items-center gap-2 mb-1">
               <TableProperties className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Kepadatan Baris Tabel (Density)</h2>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Table Row Density</h2>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              Atur kenyamanan ruang baca pada daftar data (Company List, Tasks, dsb).
+              Adjust spacing for data tables (Company List, Tasks, etc.).
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg">
@@ -411,8 +411,8 @@ export default function SettingsPage() {
                 }`}
               >
                 <div>
-                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Comfortable (Nyaman)</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Jarak padding lega untuk kemudahan visual</p>
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Comfortable</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Relaxed padding for visual clarity</p>
                 </div>
                 {preferences.tableDensity === 'comfortable' && (
                   <Check className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -429,8 +429,8 @@ export default function SettingsPage() {
                 }`}
               >
                 <div>
-                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Compact (Rapat)</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Muat lebih banyak baris data dalam satu layar</p>
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Compact</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Fit more data rows on screen</p>
                 </div>
                 {preferences.tableDensity === 'compact' && (
                   <Check className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -449,10 +449,10 @@ export default function SettingsPage() {
                   ) : (
                     <VolumeX className="h-4 w-4 text-slate-400" />
                   )}
-                  <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Suara Notifikasi</h2>
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Notification Audio</h2>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Bunyikan nada singkat ketika ada notifikasi rapat atau tugas penting yang masuk
+                  Play a short chime when important notifications or tasks arrive
                 </p>
               </div>
 
@@ -480,22 +480,22 @@ export default function SettingsPage() {
           <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-2xs max-w-lg">
             <div className="flex items-center gap-2 mb-1">
               <Lock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Perbarui Kata Sandi Akun</h2>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Update Account Password</h2>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              Ganti kata sandi akun Supabase Anda secara aman. Minimal 6 karakter.
+              Update your Supabase account password securely. Minimum 6 characters.
             </p>
 
             <form onSubmit={handleUpdatePassword} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Kata Sandi Baru
+                  New Password
                 </label>
                 <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Masukkan kata sandi baru"
+                  placeholder="Enter new password"
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 px-3.5 py-2 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   required
                 />
@@ -503,13 +503,13 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Konfirmasi Kata Sandi Baru
+                  Confirm New Password
                 </label>
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Ulangi kata sandi baru"
+                  placeholder="Repeat new password"
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 px-3.5 py-2 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   required
                 />
@@ -534,7 +534,7 @@ export default function SettingsPage() {
                 disabled={passwordStatus.type === 'loading'}
                 className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors cursor-pointer shadow-xs"
               >
-                {passwordStatus.type === 'loading' ? 'Menyimpan...' : 'Perbarui Kata Sandi'}
+                {passwordStatus.type === 'loading' ? 'Saving...' : 'Update Password'}
               </button>
             </form>
           </div>

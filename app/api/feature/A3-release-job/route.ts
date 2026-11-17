@@ -30,7 +30,7 @@ export async function POST(request: Request) {
         docError,
         issueError,
       });
-      return apiError(new Error("Gagal memverifikasi riwayat aktivitas lapangan."), 500);
+      return apiError(new Error("Failed to verify field activity history."), 500);
     }
 
     const hasHandover = Boolean(handoverData && handoverData.length > 0);
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     const hasIssue = Boolean(issueData && issueData.length > 0);
 
     if (hasHandover || hasDoc || hasIssue) {
-      return apiError(new Error("Job sudah ada aktivitas lapangan, tidak bisa dilepas."), 409);
+      return apiError(new Error("Job already has active field operations, cannot be released."), 409);
     }
 
     // 2. Lepas job jika fieldAgentId cocok
@@ -51,23 +51,23 @@ export async function POST(request: Request) {
 
     if (updateError) {
       console.error("[POST A3-release-job] Database error updating a2_worksheets:", updateError);
-      return apiError(new Error("Gagal mengosongkan penugasan lapangan."), 500);
+      return apiError(new Error("Failed to clear field agent assignment."), 500);
     }
 
     if (!updateData || updateData.length === 0) {
-      return apiError(new Error("Gagal melepas job: Anda bukan pemilik job ini atau job tidak ditemukan."), 409);
+      return apiError(new Error("Failed to release job: You are not assigned to this job or job not found."), 409);
     }
 
     await writeHistory({
       jobNumber,
       activity: "Job Released",
-      notes: `Job dilepas oleh agen ${fieldAgentId}`,
+      notes: `Job released by agent ${fieldAgentId}`,
       performedBy: typeof body.performedBy === "string" ? body.performedBy : undefined,
     });
 
     return NextResponse.json({
       success: true,
-      message: "Job berhasil dilepas.",
+      message: "Job successfully released.",
     });
   } catch (error) {
     console.error("[POST A3-release-job] Catch error:", error);

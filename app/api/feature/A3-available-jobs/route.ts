@@ -15,7 +15,7 @@ export async function GET() {
 
     if (error) {
       console.error("[GET A3-available-jobs] Error querying available jobs:", error);
-      throw new Error("Gagal memuat daftar job yang tersedia.");
+      throw new Error("Failed to load available jobs list.");
     }
 
     const availableJobs = (data || []).map((row: any) => ({

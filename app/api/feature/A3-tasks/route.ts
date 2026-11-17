@@ -184,7 +184,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       if (!mappedTask) {
         return NextResponse.json({
           success: false,
-          error: `Pekerjaan dengan Job Number ${cleanJob} tidak ditemukan.`,
+          error: `Job with Job Number ${cleanJob} was not found.`,
         }, { status: 404 })
       }
 
@@ -227,7 +227,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       if (fbError || !fallbackTasks) {
         return NextResponse.json({
           success: false,
-          error: 'Gagal mengambil data tugas lapangan dari database.',
+          error: 'Failed to retrieve field tasks data from database.',
         }, { status: 500 })
       }
 
@@ -346,7 +346,7 @@ export async function PATCH(request: Request): Promise<NextResponse> {
 
     return NextResponse.json({
       success: true,
-      message: `Status pekerjaan ${jobNumber} berhasil diperbarui di database.`,
+      message: `Job status for ${jobNumber} successfully updated in database.`,
       data,
     })
   } catch (error) {
@@ -449,12 +449,12 @@ export async function POST(request: Request): Promise<NextResponse> {
       jobNumber,
       activity: 'Task Created by Field Agent',
       performedBy: fieldAgentName,
-      notes: `Input New Task. Customer: ${customerName}, Origin: ${origin}, Destination: ${destination}, Komoditas: ${cargoDesc}, Koli: ${pieces} Pcs, Berat: ${weight} Kg`,
+      notes: `Input New Task. Customer: ${customerName}, Origin: ${origin}, Destination: ${destination}, Commodity: ${cargoDesc}, Pieces: ${pieces} Pcs, Weight: ${weight} Kg`,
     }).catch(() => null)
 
     return NextResponse.json({
       success: true,
-      message: `Task ${jobNumber} berhasil dibuat dan disimpan ke database.`,
+      message: `Task ${jobNumber} successfully created and saved to database.`,
       data: {
         job_number: jobNumber,
         task: newTask,

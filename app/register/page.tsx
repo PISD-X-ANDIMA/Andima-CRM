@@ -103,7 +103,7 @@ export default function RegisterPage() {
       .select('employee_id')
       .like('employee_id', 'AND-%');
 
-    if (error) throw new Error('Gagal menyiapkan ID registrasi: ' + error.message);
+    if (error) throw new Error('Failed to prepare registration ID: ' + error.message);
     if (!data?.length) return 'AND-001';
 
     let maxNum = 0;
@@ -226,12 +226,12 @@ export default function RegisterPage() {
         } else if (authError) {
           throw new Error('Registration failed: ' + authError.message);
         } else {
-          throw new Error('Email sudah terdaftar. Silakan langsung login.');
+          throw new Error('Email is already registered. Please log in directly.');
         }
       }
 
       if (!userId) {
-        throw new Error('User ID tidak ditemukan setelah pendaftaran auth.');
+        throw new Error('User ID not found after authentication registration.');
       }
 
       // 3. Simpan data ke b2_register (upsert agar aman jika id sudah tercatat)
@@ -251,7 +251,7 @@ export default function RegisterPage() {
         ]);
 
       if (dbError) {
-        throw new Error('Gagal menyimpan ke b2_register: ' + dbError.message);
+        throw new Error('Failed to save registration data: ' + dbError.message);
       }
 
       // 4. Berhasil
@@ -267,7 +267,7 @@ export default function RegisterPage() {
       setGeneralError(
         err instanceof Error
           ? err.message
-          : 'Terjadi kesalahan saat menyimpan. Silakan coba lagi.'
+          : 'An error occurred while saving. Please try again.'
       );
     } finally {
       submitting.current = false;
@@ -486,7 +486,7 @@ export default function RegisterPage() {
                   : 'bg-[#3B6FF5] hover:bg-[#2B5CE5] active:scale-[0.99] cursor-pointer'
                 }`}
             >
-              {successMessage ? 'Tersimpan' : isLoading ? 'Processing...' : 'Register'}
+              {successMessage ? 'Saved' : isLoading ? 'Processing...' : 'Register'}
             </button>
           </form>
 

@@ -216,7 +216,7 @@ export default function FieldAgentDashboard({
           Field Agent Dashboard
         </h1>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          Selamat datang di modul operasional lapangan. Kelola tugas worksheet, koordinasi rute logistik, dan laporan kunjungan Anda di sini.
+          Welcome to the field operations module. Manage worksheet tasks, coordinate logistics routes, and track visit reports here.
         </p>
       </section>
 
@@ -227,7 +227,7 @@ export default function FieldAgentDashboard({
           <div>
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                Total Task Selesai
+                Total Completed Tasks
               </span>
               <div className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
                 <FileText size={16} />
@@ -238,18 +238,18 @@ export default function FieldAgentDashboard({
                 {totalTasks}
               </span>
               <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                tugas tercatat
+                recorded tasks
               </span>
             </div>
           </div>
           <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
-            <span className="text-slate-400 dark:text-slate-500">Worksheet Aktif</span>
+            <span className="text-slate-400 dark:text-slate-500">Active Worksheet</span>
             <button
               type="button"
               onClick={handleTasksClick}
               className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold flex items-center gap-1 cursor-pointer transition-colors"
             >
-              <span>Detail task</span>
+              <span>Task details</span>
               <span>&rarr;</span>
             </button>
           </div>
@@ -260,7 +260,7 @@ export default function FieldAgentDashboard({
           <div>
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                Completed (Tuntas)
+                Completed
               </span>
               <div className="h-8 w-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                 <Check size={16} strokeWidth={2.5} />
@@ -271,18 +271,18 @@ export default function FieldAgentDashboard({
                 {completedCount}
               </span>
               <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                {completedPct}% keberhasilan
+                {completedPct}% success rate
               </span>
             </div>
           </div>
           <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
-            <span className="text-slate-400 dark:text-slate-500">Kunjungan Tuntas</span>
+            <span className="text-slate-400 dark:text-slate-500">Completed Visits</span>
             <button
               type="button"
               onClick={() => router.push('/dashboard/field-agent?tab=history')}
               className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 font-semibold flex items-center gap-1 cursor-pointer transition-colors"
             >
-              <span>Lihat laporan</span>
+              <span>View reports</span>
               <span>&rarr;</span>
             </button>
           </div>
@@ -293,7 +293,7 @@ export default function FieldAgentDashboard({
           <div>
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                Has Issue (Perlu Tindak Lanjut)
+                Has Issue (Needs Action)
               </span>
               <div className="h-8 w-8 rounded-lg bg-rose-50 dark:bg-rose-950/40 flex items-center justify-center text-rose-500 dark:text-rose-400">
                 <AlertTriangle size={16} />
@@ -304,18 +304,18 @@ export default function FieldAgentDashboard({
                 {issueCount}
               </span>
               <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                {issuePct}% butuh eskalasi
+                {issuePct}% needs escalation
               </span>
             </div>
           </div>
           <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
-            <span className="text-slate-400 dark:text-slate-500">Perlu Tindak Lanjut</span>
+            <span className="text-slate-400 dark:text-slate-500">Needs Action</span>
             <button
               type="button"
               onClick={() => router.push('/dashboard/need-backup')}
               className="text-rose-500 dark:text-rose-400 hover:text-rose-600 font-semibold flex items-center gap-1 cursor-pointer transition-colors"
             >
-              <span>Eskalasi tim</span>
+              <span>Escalate issue</span>
               <span>&rarr;</span>
             </button>
           </div>
@@ -369,16 +369,16 @@ export default function FieldAgentDashboard({
                 <div className="flex items-center gap-2">
                   <div className="h-3.5 w-3.5 rounded-full border-2 border-slate-700 dark:border-slate-300" />
                   <h2 className="text-sm sm:text-base font-bold tracking-tight text-slate-900 dark:text-white">
-                    Proporsi Status Pekerjaan
+                    Task Status Proportion
                   </h2>
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  Ringkasan status tugas operasional
+                  Summary of operational task statuses
                 </p>
               </div>
 
               <span className="rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap">
-                2 Status Aktif
+                2 Active Statuses
               </span>
             </div>
 
@@ -389,7 +389,7 @@ export default function FieldAgentDashboard({
                 style={{
                   background: `conic-gradient(#10b981 0% ${completedPct}%, #f43f5e ${completedPct}% 100%)`,
                 }}
-                aria-label="Grafik proporsi status task"
+                aria-label="Task status proportion chart"
               >
                 <div className="grid h-[120px] w-[120px] place-items-center rounded-full bg-white dark:bg-[#0f172a] text-center shadow-inner">
                   <div>
@@ -397,7 +397,7 @@ export default function FieldAgentDashboard({
                       {totalTasks}
                     </b>
                     <span className="mt-1 block text-[9px] font-bold tracking-widest text-slate-400 dark:text-slate-500 uppercase">
-                      TOTAL TASK
+                      TOTAL TASKS
                     </span>
                   </div>
                 </div>
@@ -418,7 +418,7 @@ export default function FieldAgentDashboard({
                 <div className="flex items-center justify-between rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/40 px-3 py-2 text-xs">
                   <div className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-[#f43f5e] shrink-0" />
-                    <span className="font-semibold text-slate-700 dark:text-slate-200 text-[11px]">Has issue</span>
+                    <span className="font-semibold text-slate-700 dark:text-slate-200 text-[11px]">Has Issue</span>
                   </div>
                   <span className="font-bold text-[#f43f5e] text-[11px]">
                     {issueCount} ({issuePct}%)
@@ -431,7 +431,7 @@ export default function FieldAgentDashboard({
                 <div className="flex items-center justify-between text-xs mb-1.5">
                   <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 text-[11px]">
                     <TrendingUp size={13} className="text-slate-500" />
-                    <span>Tingkat Keberhasilan</span>
+                    <span>Success Rate</span>
                   </span>
                   <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs">
                     {completedPct}%
@@ -449,22 +449,22 @@ export default function FieldAgentDashboard({
           <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2 text-xs">
             <div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Tuntas Normal: <strong className="font-bold text-slate-800 dark:text-slate-100">{completedCount}</strong>
+                Normal Completed: <strong className="font-bold text-slate-800 dark:text-slate-100">{completedCount}</strong>
               </p>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
-                Petugas: <strong className="font-bold text-slate-800 dark:text-slate-100">Budi P (Squad A3)</strong>
+                Officer: <strong className="font-bold text-slate-800 dark:text-slate-100">Budi P (Squad A3)</strong>
               </p>
             </div>
             <div className="text-right flex flex-col justify-between items-end">
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Isu Logistik: <strong className="font-bold text-rose-500 dark:text-rose-400">{issueCount}</strong>
+                Logistics Issues: <strong className="font-bold text-rose-500 dark:text-rose-400">{issueCount}</strong>
               </p>
               <button
                 type="button"
                 onClick={handleTasksClick}
                 className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
               >
-                <span>Detail Rekap</span>
+                <span>Summary Details</span>
                 <span>&rarr;</span>
               </button>
             </div>
@@ -476,10 +476,10 @@ export default function FieldAgentDashboard({
           <div>
             <div>
               <h2 className="text-sm sm:text-base font-bold tracking-tight text-slate-900 dark:text-white">
-                Recent Jobs (Tugas Terbaru)
+                Recent Jobs
               </h2>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                Tugas dialokasikan dari tim CRM • Klik salah satu baris tugas untuk melihat rincian aktivitas lapangan.
+                Tasks allocated by CRM team • Click on any task row to view field activity details.
               </p>
             </div>
 
@@ -499,7 +499,7 @@ export default function FieldAgentDashboard({
                   {pagedJobs.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="py-8 text-center text-xs text-slate-400">
-                        Tidak ada tugas yang sesuai dengan filter.
+                        No tasks match the filter.
                       </td>
                     </tr>
                   ) : (

@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import FieldAgentDashboard from "./FieldAgentDashboard";
+import CameraCaptureModal from "./CameraCaptureModal";
 import { exportMyTaskToPdfFile, openMyTaskPrintReport } from "@/lib/myTaskExport";
+import { searchCountryLocations } from "@/lib/countryLocations";
 import {
   AlertTriangle,
   ArrowDown,
@@ -253,7 +255,7 @@ function StatusBadge({
   status?: Status;
   onClick?: () => void;
 }) {
-  const label = status || "Belum Selesai";
+  const label = status || "Pending";
   const badgeClass = status ? statusClass[status] : pendingBadgeClass;
 
   const className = `
@@ -274,7 +276,7 @@ function StatusBadge({
       <button
         type="button"
         onClick={onClick}
-        title="Buka detail job"
+        title="Open job details"
         className={`${className} cursor-pointer transition hover:brightness-95`}
       >
         {label}
@@ -382,7 +384,7 @@ export default function FieldAgentApp() {
   const loadA3Tasks = async () => {
     try {
       setApiError(null);
-      setNotice("Memuat data task...");
+      setNotice("Loading task data...");
 
       const response = await fetch(
         "/api/feature/A3-tasks",
@@ -394,7 +396,7 @@ export default function FieldAgentApp() {
 
       if (!response.ok) {
         throw new Error(
-          `Gagal mengambil data task dari server (HTTP ${response.status})`
+          `Failed to fetch task data from server (HTTP ${response.status})`
         );
       }
 
@@ -405,7 +407,7 @@ export default function FieldAgentApp() {
         !Array.isArray(result.data)
       ) {
         throw new Error(
-          result.error || "Format response API A3 tidak valid."
+          result.error || "Invalid A3 API response format."
         );
       }
 
@@ -421,7 +423,7 @@ export default function FieldAgentApp() {
       }
 
       setNotice(
-        `${mappedJobs.length} task berhasil dimuat.`
+        `${mappedJobs.length} tasks successfully loaded.`
       );
 
       setTimeout(() => {
@@ -436,11 +438,11 @@ export default function FieldAgentApp() {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : "Data dari API gagal dimuat.";
+          : "Failed to load data from API.";
 
       setApiError(errorMessage);
       setNotice(
-        "Data task gagal dimuat dari database."
+        "Failed to load tasks from database."
       );
     }
   };
@@ -459,11 +461,11 @@ export default function FieldAgentApp() {
   const handleReleaseJob = async (jobToRelease: Job) => {
     if (!jobToRelease) return;
     const jobNumberStr = no(jobToRelease);
-    const confirmed = window.confirm(`Apakah Anda yakin ingin melepas pekerjaan ${jobNumberStr}?`);
+    const confirmed = window.confirm(`Are you sure you want to release job ${jobNumberStr}?`);
     if (!confirmed) return;
 
     setSaving(true);
-    setNotice("Memproses pelepasan job...");
+    setNotice("Processing job release...");
 
     try {
       const res = await fetch("/api/feature/A3-release-job", {
@@ -479,16 +481,16 @@ export default function FieldAgentApp() {
       const resJson = await res.json().catch(() => null);
 
       if (!res.ok) {
-        const errorMsg = resJson?.error || "Gagal melepas job.";
+        const errorMsg = resJson?.error || "Failed to release job.";
         throw new Error(errorMsg);
       }
 
-      setNotice("Job berhasil dilepas.");
+      setNotice("Job released successfully.");
       await loadA3Tasks();
       setScreen("tasks");
     } catch (err) {
       console.error("Error releasing job:", err);
-      setNotice(err instanceof Error ? err.message : "Gagal melepas job.");
+      setNotice(err instanceof Error ? err.message : "Failed to release job.");
     } finally {
       setSaving(false);
     }
@@ -503,7 +505,7 @@ export default function FieldAgentApp() {
     const jobNumberStr = no(jobToReassign);
 
     setSaving(true);
-    setNotice(`Mengalihkan job ke ${targetAgent.name}...`);
+    setNotice(`Reassigning job to ${targetAgent.name}...`);
 
     try {
       const res = await fetch("/api/feature/A3-reassign-job", {
@@ -521,7 +523,7 @@ export default function FieldAgentApp() {
       const resJson = await res.json().catch(() => null);
 
       if (!res.ok) {
-        const errorMsg = resJson?.error || "Gagal mengalihkan job.";
+        const errorMsg = resJson?.error || "Failed to reassign job.";
         throw new Error(errorMsg);
       }
 
@@ -550,13 +552,13 @@ export default function FieldAgentApp() {
         }
       }
 
-      setNotice(`Job berhasil dialihkan ke ${targetAgent.name}.`);
+      setNotice(`Job successfully reassigned to ${targetAgent.name}.`);
       setReassignModalJob(null);
       await loadA3Tasks();
       setScreen("tasks");
     } catch (err) {
       console.error("Error reassigning job:", err);
-      setNotice(err instanceof Error ? err.message : "Gagal mengalihkan job.");
+      setNotice(err instanceof Error ? err.message : "Failed to reassign job.");
     } finally {
       setSaving(false);
     }
@@ -670,7 +672,7 @@ export default function FieldAgentApp() {
     }
 
     if (!description.trim()) {
-      setNotice("Deskripsi issue wajib diisi.");
+      setNotice("Issue description is required.");
       return;
     }
 
@@ -695,14 +697,14 @@ export default function FieldAgentApp() {
 
       if (!response.ok) {
         throw new Error(
-          "Issue gagal disimpan."
+          "Failed to save issue."
         );
       }
 
       setIssueOpen(false);
 
       setNotice(
-        "Issue berhasil disimpan."
+        "Issue saved successfully."
       );
 
       setJobs((current) =>
@@ -728,7 +730,7 @@ export default function FieldAgentApp() {
       console.error(error);
 
       setNotice(
-        "Issue belum dapat disimpan."
+        "Unable to save issue."
       );
     } finally {
       setSaving(false);
@@ -761,7 +763,7 @@ export default function FieldAgentApp() {
     }
 
     setSaving(true);
-    setNotice("Menyimpan seluruh data pengerjaan lapangan...");
+    setNotice("Saving all field task data...");
 
     try {
       const jobNumberStr = no(selected);
@@ -786,7 +788,7 @@ export default function FieldAgentApp() {
           accuracy: data.gps?.accuracy ?? null,
           serverTimestamp: data.serverTimestamp || null,
           notes: data.gps
-            ? `GPS: ${data.gps.latitude.toFixed(6)}, ${data.gps.longitude.toFixed(6)} (Akurasi: ±${Math.round(data.gps.accuracy)}m) | Wilayah: ${data.location} | Waktu Server: ${data.serverTimestamp || new Date().toISOString()} | Task: ${taskIdStr}`
+            ? `GPS: ${data.gps.latitude.toFixed(6)}, ${data.gps.longitude.toFixed(6)} (Accuracy: ±${Math.round(data.gps.accuracy)}m) | Area: ${data.location} | Server Timestamp: ${data.serverTimestamp || new Date().toISOString()} | Task: ${taskIdStr}`
             : null,
           claimJob: isClaimingJob,
           fieldAgentId: currentAgent.id,
@@ -796,7 +798,7 @@ export default function FieldAgentApp() {
 
       if (!handoverRes.ok) {
         const errJson = await handoverRes.json().catch(() => null);
-        throw new Error(errJson?.error || "Gagal menyimpan serah terima fisik kargo.");
+        throw new Error(errJson?.error || "Failed to save physical cargo handover.");
       }
 
       if (isClaimingJob) {
@@ -819,7 +821,7 @@ export default function FieldAgentApp() {
 
       if (!docRes.ok) {
         const errJson = await docRes.json().catch(() => null);
-        throw new Error(errJson?.error || "Gagal menyimpan berkas dokumentasi.");
+        throw new Error(errJson?.error || "Failed to save documentation files.");
       }
 
       // 3. Simpan Issue jika ada kendala
@@ -832,13 +834,13 @@ export default function FieldAgentApp() {
           body: JSON.stringify({
             jobNumber: jobNumberStr,
             category: "Others/Lainnya",
-            description: data.issueDescription?.trim() || "Kendala dicatat pada form lapangan",
+            description: data.issueDescription?.trim() || "Issue recorded on field form",
           }),
         });
 
         if (!issueRes.ok) {
           const errJson = await issueRes.json().catch(() => null);
-          throw new Error(errJson?.error || "Gagal mencatat laporan kendala.");
+          throw new Error(errJson?.error || "Failed to record issue report.");
         }
       }
 
@@ -862,7 +864,7 @@ export default function FieldAgentApp() {
 
       if (!updateTaskRes.ok) {
         const errJson = await updateTaskRes.json().catch(() => null);
-        throw new Error(errJson?.error || "Gagal memperbarui status pengerjaan task di database.");
+        throw new Error(errJson?.error || "Failed to update task status in database.");
       }
 
       const newStatus: Status = data.hasIssue
@@ -956,12 +958,12 @@ export default function FieldAgentApp() {
       await loadA3Tasks();
       setNotice(
         data.hasIssue
-          ? "Form pengerjaan lapangan dan kendala berhasil disimpan."
-          : "Form pengerjaan lapangan berhasil disimpan dan dikirim untuk verifikasi Sales."
+          ? "Field task form and issues saved successfully."
+          : "Field task form saved successfully and submitted for Sales verification."
       );
     } catch (error: any) {
       console.error(error);
-      setNotice(error?.message || "Gagal menyimpan data ke database. Silakan coba lagi.");
+      setNotice(error?.message || "Failed to save data to database. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -980,7 +982,7 @@ export default function FieldAgentApp() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 px-4 py-2.5 text-xs">
               <div className="flex items-center gap-2">
                 <Users size={14} className="text-blue-600 dark:text-blue-400" />
-                <span className="font-semibold text-slate-700 dark:text-slate-200">Saya sebagai:</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-200">Operating as:</span>
                 <select
                   value={currentAgent.id}
                   onChange={(e) => handleSelectAgent(e.target.value)}
@@ -994,7 +996,7 @@ export default function FieldAgentApp() {
                 </select>
               </div>
               <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                ID: <code className="font-mono text-slate-600 dark:text-slate-300">{currentAgent.id}</code> (Tahap 3 Client-side Identity)
+                ID: <code className="font-mono text-slate-600 dark:text-slate-300">{currentAgent.id}</code> (Client-side Identity)
               </span>
             </div>
           )}
@@ -1003,7 +1005,7 @@ export default function FieldAgentApp() {
             <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/40 p-4 text-sm text-red-700 dark:text-red-300">
               <AlertTriangle className="h-5 w-5 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
               <div>
-                <h3 className="font-semibold text-sm">Gagal Memuat Data Task dari API</h3>
+                <h3 className="font-semibold text-sm">Failed to Load Task Data from API</h3>
                 <p className="mt-0.5 text-xs text-red-600 dark:text-red-400">{apiError}</p>
               </div>
             </div>
@@ -1114,7 +1116,7 @@ export default function FieldAgentApp() {
             setIsClaimingJob(false);
             setIsAddTaskOpen(false);
             setScreen("tasks");
-            setNotice(`Dokumentasi dan Task ${no(newJob)} berhasil dicatat ke sistem dan diselesaikan!`);
+            setNotice("");
           }}
         />
       )}
@@ -1132,7 +1134,7 @@ export default function FieldAgentApp() {
         />
       )}
 
-      {notice && (
+      {notice && !isAddTaskOpen && !completionOpen && (
         <div className="fixed bottom-6 right-6 z-50 rounded-lg border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-lg">
           {notice}
         </div>
@@ -1158,10 +1160,10 @@ function NotificationsPage({
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Notifikasi
+          Notifications
         </h1>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          Daftar pembaruan tugas dan issue terkini.
+          List of task updates and latest issues.
         </p>
       </div>
 
@@ -1183,7 +1185,7 @@ function NotificationsPage({
 
           {activeAlerts.length === 0 && (
             <div className="py-8 text-center text-xs text-slate-400">
-              Tidak ada notifikasi baru.
+              No new notifications.
             </div>
           )}
         </div>
@@ -1210,7 +1212,7 @@ function Dashboard({
   showTasks: () => void;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [jenisFilter, setJenisFilter] = useState<"All" | "Ekspor" | "Impor">("All");
+  const [jenisFilter, setJenisFilter] = useState<"All" | "Export" | "Import">("All");
   const [statusFilter, setStatusFilter] = useState<"All" | "Complete" | "Issue">("All");
 
   const filteredJobs = useMemo(() => {
@@ -1227,9 +1229,8 @@ function Dashboard({
         }
       }
 
-      // 2. Jenis Filter (Ekspor / Impor)
+      // 2. Jenis Filter (Export / Import)
       if (jenisFilter !== "All") {
-        const targetJenis = jenisFilter.toLowerCase();
         const textToSearch = [
           j.task_title || "",
           j.job_number || "",
@@ -1242,8 +1243,8 @@ function Dashboard({
         const isEkspor = textToSearch.includes("ekspor") || textToSearch.includes("export") || (j.destination && !j.destination.toLowerCase().includes("indonesia") && !j.destination.toLowerCase().includes("priok") && !j.destination.toLowerCase().includes("cengkareng"));
         const isImpor = textToSearch.includes("impor") || textToSearch.includes("import") || (j.origin && !j.origin.toLowerCase().includes("indonesia") && !j.origin.toLowerCase().includes("priok") && !j.origin.toLowerCase().includes("cengkareng"));
 
-        if (jenisFilter === "Ekspor" && !isEkspor) return false;
-        if (jenisFilter === "Impor" && !isImpor) return false;
+        if (jenisFilter === "Export" && !isEkspor) return false;
+        if (jenisFilter === "Import" && !isImpor) return false;
       }
 
       // 3. Status Filter (All, Complete, Issue)
@@ -1270,21 +1271,21 @@ function Dashboard({
 
   const cards = [
     {
-      title: "Total Task",
+      title: "Total Tasks",
       value: jobs.length,
-      sub: "Total tugas di lapangan",
+      sub: "Total field tasks",
       color: "text-blue-600",
     },
     {
       title: "Completed",
       value: jobs.filter((j) => j.status === "Completed").length,
-      sub: "Tugas selesai (Done)",
+      sub: "Completed tasks",
       color: "text-emerald-600",
     },
     {
       title: "Has Issue",
       value: jobs.filter((j) => j.status === "Has Issue" || j.has_issue).length,
-      sub: "Tugas memiliki kendala",
+      sub: "Tasks with issues",
       color: "text-red-500",
     },
   ];
@@ -1355,14 +1356,11 @@ function Dashboard({
           </span>
 
           <h1 className="mt-6 text-[14px] font-extrabold text-[#15213a] dark:text-white">
-            Belum Ada Tugas Ditugaskan
+            No Tasks Assigned Yet
           </h1>
 
           <p className="mt-3 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
-            Saat ini belum ada jadwal
-            serah terima kargo dari
-            Sales Executive untuk akun
-            Anda.
+            There is currently no cargo handover schedule assigned to your account by the Sales Executive.
           </p>
 
           <button
@@ -1372,7 +1370,7 @@ function Dashboard({
             }
             className="mt-5 rounded-md bg-[#111827] dark:bg-blue-600 px-5 py-2.5 text-[11px] font-extrabold text-white cursor-pointer hover:bg-slate-800 dark:hover:bg-blue-700 transition"
           >
-            Muat Ulang / Cek Pembaruan
+            Reload / Check for Updates
           </button>
         </section>
       </div>
@@ -1383,11 +1381,11 @@ function Dashboard({
     <>
       <section className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Dashboard Field Agent
+          Field Agent Dashboard
         </h1>
 
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          Ringkasan pekerjaan dan status Anda hari ini.
+          Summary of your assignments and statuses today.
         </p>
       </section>
 
@@ -1431,21 +1429,21 @@ function Dashboard({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari Job Number, Customer, PIC..."
+            placeholder="Search Job Number, Customer, PIC..."
             className="w-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl py-2 pl-9 pr-3.5 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-blue-500 shadow-2xs transition-colors"
           />
         </div>
 
-        {/* Jenis Filter: Ekspor / Impor */}
+        {/* Jenis Filter: Export / Import */}
         <div className="relative">
           <select
             value={jenisFilter}
             onChange={(e) => setJenisFilter(e.target.value as any)}
             className="appearance-none bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl py-2 px-3.5 pr-8 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-2xs outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
           >
-            <option value="All">Jenis: Semua (Ekspor/Impor)</option>
-            <option value="Ekspor">Ekspor</option>
-            <option value="Impor">Impor</option>
+            <option value="All">Type: All (Export/Import)</option>
+            <option value="Export">Export</option>
+            <option value="Import">Import</option>
           </select>
           <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
         </div>
@@ -1457,7 +1455,7 @@ function Dashboard({
             onChange={(e) => setStatusFilter(e.target.value as any)}
             className="appearance-none bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl py-2 px-3.5 pr-8 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-2xs outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
           >
-            <option value="All">Semua Status</option>
+            <option value="All">All Statuses</option>
             <option value="Complete">Complete</option>
             <option value="Issue">Issue</option>
           </select>
@@ -1473,15 +1471,15 @@ function Dashboard({
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
-                  Status Task
+                  Task Status
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Proporsi penyelesaian tugas kargo lapangan
+                  Proportion of field cargo task completions
                 </p>
               </div>
 
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50">
-                <span>{filteredJobs.length} Ditampilkan</span>
+                <span>{filteredJobs.length} Displayed</span>
               </span>
             </div>
 
@@ -1491,7 +1489,7 @@ function Dashboard({
                 style={{
                   background: `conic-gradient(${statusGradient})`,
                 }}
-                aria-label="Grafik proporsi status task"
+                aria-label="Task status proportion chart"
               >
                 <div className="grid h-[116px] w-[116px] place-items-center rounded-full bg-white dark:bg-[#0f172a] text-center shadow-inner">
                   <div>
@@ -1500,7 +1498,7 @@ function Dashboard({
                     </b>
 
                     <span className="mt-1.5 block text-xs font-semibold text-slate-400 dark:text-slate-500">
-                      Total Task
+                      Total Tasks
                     </span>
                   </div>
                 </div>
@@ -1558,10 +1556,10 @@ function Dashboard({
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
-                  Recent Jobs (Tugas Terbaru)
+                  Recent Jobs
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Daftar penugasan lapangan aktif dan terkini
+                  List of active and recent field assignments
                 </p>
               </div>
 
@@ -1569,7 +1567,7 @@ function Dashboard({
                 onClick={showTasks}
                 className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline cursor-pointer flex items-center gap-1"
               >
-                <span>Lihat Semua</span>
+                <span>View All</span>
                 <ChevronRight size={14} />
               </button>
             </div>
@@ -1587,7 +1585,7 @@ function Dashboard({
                     </th>
 
                     <th className="px-3.5 py-3">
-                      Lokasi / Rute
+                      Location / Route
                     </th>
 
                     <th className="px-3.5 py-3 text-center">
@@ -1600,7 +1598,7 @@ function Dashboard({
                   {filteredJobs.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="py-8 text-center text-xs text-slate-400">
-                        Tidak ada tugas yang sesuai dengan filter.
+                        No tasks match the filter.
                       </td>
                     </tr>
                   ) : (
@@ -1741,7 +1739,7 @@ function Tabs({
             type="button"
             onClick={() => setShowExportMenu((prev) => !prev)}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer"
-            title="Cetak atau Unduh Dokumen Riwayat My Task dalam format PDF"
+            title="Print or Download My Task Report Document in PDF format"
           >
             <Printer size={15} className="text-blue-600 dark:text-blue-400" />
             <span>Print / Export Report</span>
@@ -1754,7 +1752,7 @@ function Tabs({
           {showExportMenu && (
             <div className="absolute right-0 top-full mt-1.5 w-72 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1.5 shadow-xl z-50 animate-in fade-in slide-in-from-top-1">
               <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800">
-                Format Dokumen Laporan PDF
+                PDF Report Document Format
               </div>
 
               <button
@@ -1772,10 +1770,10 @@ function Tabs({
                 </div>
                 <div>
                   <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                    Unduh File PDF (.pdf)
+                    Download PDF (.pdf)
                   </div>
                   <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">
-                    Download file PDF A4 Landscape vektor resmi & kop perusahaan
+                    Download official A4 Landscape vector PDF with company letterhead
                   </div>
                 </div>
               </button>
@@ -1795,10 +1793,10 @@ function Tabs({
                 </div>
                 <div>
                   <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                    Cetak / Microsoft Print to PDF
+                    Print / Microsoft Print to PDF
                   </div>
                   <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">
-                    Buka dialog cetak bersih (bebas navbar & tombol web app)
+                    Open clean print dialog (without web app navigation & buttons)
                   </div>
                 </div>
               </button>
@@ -1841,7 +1839,7 @@ function Searchbar({
           onChange={(e) =>
             setQuery(e.target.value)
           }
-          placeholder="Cari Job Number, Customer, atau MAWB/HAWB..."
+          placeholder="Search Job Number, Customer, or MAWB/HAWB..."
           className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-1.5 pl-9 pr-3 text-xs text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         />
       </label>
@@ -1879,7 +1877,7 @@ function TaskList({
           </h1>
 
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Daftar task yang ditugaskan kepada Anda.
+            List of tasks assigned to you.
           </p>
         </div>
       </section>
@@ -1940,7 +1938,7 @@ function JobsTable({
             {history ? (
               <tr>
                 <th className="px-4 py-3.5">
-                  Nama Field Agent
+                  Field Agent Name
                 </th>
 
                 <th className="px-4 py-3.5">
@@ -1986,7 +1984,7 @@ function JobsTable({
                 </th>
 
                 <th className="px-4 py-3.5">
-                  Rute (Origin &rarr; Destination)
+                  Route (Origin &rarr; Destination)
                 </th>
 
                 <th className="px-4 py-3.5 text-center">
@@ -2066,10 +2064,10 @@ function JobsTable({
                           type="button"
                           onClick={() => action(job)}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-900/60 border border-blue-200/80 dark:border-blue-800/80 transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
-                          title="Buka detail laporan lapangan"
+                          title="Open field report details"
                         >
                           <Eye size={13} />
-                          <span>Detail Laporan</span>
+                          <span>Report Details</span>
                         </button>
                       )}
                     </td>
@@ -2097,7 +2095,7 @@ function JobsTable({
                     </td>
 
                     <td className="px-4 py-3.5 text-xs text-slate-700 dark:text-slate-300 font-semibold whitespace-nowrap">
-                      {job.sales_executive || "Bu Wulan"}
+                      {job.sales_executive || "Ms. Wulan"}
                     </td>
 
                     <td className="px-4 py-3.5 text-xs text-slate-600 dark:text-slate-400">
@@ -2117,11 +2115,11 @@ function JobsTable({
                     <td className="px-4 py-3.5 text-center whitespace-nowrap">
                       {job.has_issue || job.status === "Has Issue" ? (
                         <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/40 px-2.5 py-0.5 text-[11px] font-semibold text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/60">
-                          Yes (Ada Isu)
+                          Yes (Has Issue)
                         </span>
                       ) : (
                         <span className="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
-                          No (Aman)
+                          No (All Good)
                         </span>
                       )}
                     </td>
@@ -2146,7 +2144,7 @@ function JobsTable({
 
       {jobs.length === 0 && (
         <div className="p-10 text-center text-xs text-slate-500 dark:text-slate-400">
-          Tidak ada task yang sesuai.
+          No tasks match the filter.
         </div>
       )}
 
@@ -2230,7 +2228,7 @@ function JobDetail({
   if (!job) {
     return (
       <div className="w-full rounded-xl border border-slate-100 p-8">
-        Job tidak ditemukan.
+        Job not found.
       </div>
     );
   }
@@ -2269,7 +2267,7 @@ function JobDetail({
       mawb(job),
     ],
     [
-      "Lokasi",
+      "Location",
       job.location || "-",
     ],
     [
@@ -2277,7 +2275,7 @@ function JobDetail({
       job.assigned_to || "-",
     ],
     [
-      "Status Handover",
+      "Handover Status",
       job.handover_status || "PENDING",
     ],
     [
@@ -2307,15 +2305,15 @@ function JobDetail({
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition cursor-pointer"
             >
               <ArrowLeft size={14} />
-              <span>Kembali</span>
+              <span>Back</span>
             </button>
           )}
           <div>
             <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Detail Job
+              Job Details
             </h1>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-              Informasi lengkap penugasan kargo dan akses pengerjaan lapangan.
+              Complete cargo assignment details and field execution access.
             </p>
           </div>
         </div>
@@ -2327,7 +2325,7 @@ function JobDetail({
 
       <section className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-xs">
         <h2 className="mb-4 text-base font-bold text-slate-900 dark:text-white tracking-tight">
-          Informasi Job
+          Job Information
         </h2>
 
         <div className="grid gap-x-10 gap-y-1 lg:grid-cols-2">
@@ -2361,7 +2359,7 @@ function JobDetail({
                 className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/30 px-3.5 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition cursor-pointer disabled:opacity-50"
               >
                 <Trash2 size={14} />
-                <span>{releasing ? "Melepas Job..." : "Lepas Job"}</span>
+                <span>{releasing ? "Releasing Job..." : "Release Job"}</span>
               </button>
             )}
 
@@ -2372,7 +2370,7 @@ function JobDetail({
                 className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 px-3.5 py-2 text-xs font-semibold text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition cursor-pointer"
               >
                 <Users size={14} />
-                <span>Alihkan Tugas (Re-assign)</span>
+                <span>Reassign Task</span>
               </button>
             )}
           </div>
@@ -2382,7 +2380,7 @@ function JobDetail({
               onClick={onHandover}
               className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer"
             >
-              <span>{job.handover_status === "COMPLETED" ? "Lanjutkan Form Lapangan" : "Mulai Kerjakan Form Lapangan"}</span>
+              <span>{job.handover_status === "COMPLETED" ? "Continue Field Form" : "Start Field Form"}</span>
               <ChevronRight
                 size={14}
               />
@@ -2456,7 +2454,7 @@ function UnifiedJobForm({
     setGpsErrorMessage("");
 
     if (typeof window === "undefined" || !navigator.geolocation) {
-      setGpsErrorMessage("Fitur GPS / Geolocation tidak didukung oleh browser atau perangkat ini.");
+      setGpsErrorMessage("GPS / Geolocation feature is not supported by this browser or device.");
       setGpsStatus("error");
       return;
     }
@@ -2490,7 +2488,7 @@ function UnifiedJobForm({
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 3500);
           const rRes = await fetch(
-            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=id`,
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`,
             { signal: controller.signal }
           );
           clearTimeout(timeoutId);
@@ -2534,7 +2532,7 @@ function UnifiedJobForm({
         }
 
         if (!region) {
-          region = `Koordinat GPS (${lat.toFixed(6)}, ${lon.toFixed(6)})`;
+          region = `GPS Coordinates (${lat.toFixed(6)}, ${lon.toFixed(6)})`;
         }
 
         setGpsData({
@@ -2549,13 +2547,13 @@ function UnifiedJobForm({
         setGpsStatus("success");
       },
       (err) => {
-        let msg = "Gagal mengambil lokasi GPS perangkat.";
+        let msg = "Failed to retrieve device GPS location.";
         if (err.code === err.PERMISSION_DENIED) {
-          msg = "Izin lokasi ditolak oleh pengguna/perangkat. Silakan izinkan akses lokasi pada browser Anda.";
+          msg = "Location permission denied by user/device. Please allow location access in your browser.";
         } else if (err.code === err.POSITION_UNAVAILABLE) {
-          msg = "Lokasi tidak dapat ditemukan atau sinyal GPS perangkat lemah.";
+          msg = "Location cannot be found or device GPS signal is weak.";
         } else if (err.code === err.TIMEOUT) {
-          msg = "Waktu pengambilan lokasi habis (timeout). Silakan coba kembali.";
+          msg = "Location request timed out. Please try again.";
         }
         setGpsErrorMessage(msg);
         setGpsStatus("error");
@@ -2568,18 +2566,31 @@ function UnifiedJobForm({
     );
   };
 
-  // 4 Foto Wajib Kargo
+  // 4 Mandatory Cargo Photos
   const photoLabels = [
-    "Keseluruhan Barang",
+    "Overall Cargo",
     "Marking & Shipping Label",
-    "Seal / Segel Kontainer",
-    "Area Kerusakan / Detail",
+    "Container Seal",
+    "Damage Area / Detail",
   ];
 
   const [photos, setPhotos] = useState<(string | null)[]>([null, null, null, null]);
   const [photoUrls, setPhotoUrls] = useState<(string | null)[]>([null, null, null, null]);
+  const [cameraModalConfig, setCameraModalConfig] = useState<{
+    isOpen: boolean;
+    angleIndex: number;
+    title: string;
+    subtitle: string;
+    angleKey: string;
+  }>({
+    isOpen: false,
+    angleIndex: 0,
+    title: "",
+    subtitle: "",
+    angleKey: "cargo",
+  });
 
-  // 2 Dokumen Wajib
+  // 2 Mandatory Documents
   const [docs, setDocs] = useState<{
     main: string | null;
     supporting: string | null;
@@ -2605,7 +2616,7 @@ function UnifiedJobForm({
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      setUploadError("Ukuran foto maksimal 5 MB.");
+      setUploadError("Maximum photo size is 5 MB.");
       return;
     }
 
@@ -2625,7 +2636,7 @@ function UnifiedJobForm({
 
       const json = await res.json();
       if (!res.ok) {
-        throw new Error(json.error || "Gagal mengunggah foto.");
+        throw new Error(json.error || "Failed to upload photo.");
       }
 
       const uploadedUrl = json.data.file_url;
@@ -2638,7 +2649,7 @@ function UnifiedJobForm({
       );
     } catch (err: any) {
       console.error(err);
-      setUploadError(err.message || "Gagal mengunggah foto ke storage.");
+      setUploadError(err.message || "Failed to upload photo to storage.");
     } finally {
       setUploadingItem(null);
     }
@@ -2648,7 +2659,7 @@ function UnifiedJobForm({
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      setUploadError("Ukuran dokumen maksimal 5 MB.");
+      setUploadError("Maximum document size is 5 MB.");
       return;
     }
 
@@ -2668,7 +2679,7 @@ function UnifiedJobForm({
 
       const json = await res.json();
       if (!res.ok) {
-        throw new Error(json.error || "Gagal mengunggah dokumen.");
+        throw new Error(json.error || "Failed to upload document.");
       }
 
       const uploadedUrl = json.data.file_url;
@@ -2692,7 +2703,7 @@ function UnifiedJobForm({
       }));
     } catch (err: any) {
       console.error(err);
-      setUploadError(err.message || "Gagal mengunggah dokumen ke storage.");
+      setUploadError(err.message || "Failed to upload document to storage.");
     } finally {
       setUploadingItem(null);
     }
@@ -2735,11 +2746,11 @@ function UnifiedJobForm({
             className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition cursor-pointer"
           >
             <ArrowLeft size={14} />
-            <span>Kembali</span>
+            <span>Back</span>
           </button>
           <div>
             <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Pelaksanaan Serah Terima Lapangan
+              Field Handover Execution
             </h1>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
               <span className="font-semibold text-slate-700 dark:text-slate-300 font-mono">Job #{no(job)}</span>
@@ -2752,7 +2763,7 @@ function UnifiedJobForm({
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80">
             <span className="h-2 w-2 rounded-full bg-blue-500" />
-            <span>Formulir Terpadu</span>
+            <span>Unified Form</span>
           </span>
         </div>
       </div>
@@ -2768,18 +2779,18 @@ function UnifiedJobForm({
       <section className="mb-5">
         <h2 className="text-sm font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-3 flex items-center gap-2">
           <span className="grid h-5 w-5 place-items-center rounded-full bg-blue-600 text-[11px] text-white font-bold">1</span>
-          Pihak Penyerah &amp; Penerima
+          Delivering &amp; Receiving Parties
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <PersonCard
-            title="Data Penyerah"
+            title="Delivering Party"
             dot="bg-blue-600"
             name={deliveringParty}
             company={job?.customer}
             onChangeName={setDeliveringParty}
           />
           <PersonCard
-            title="Data Penerima"
+            title="Receiving Party"
             dot="bg-emerald-500"
             name={receivingParty}
             company={job?.customer}
@@ -2795,10 +2806,10 @@ function UnifiedJobForm({
             <span className="grid h-6 w-6 place-items-center rounded-full bg-blue-600 text-xs text-white font-bold">2</span>
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-                Lokasi Handover
+                Handover Location
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Pengambilan koordinat satelit GPS dan verifikasi waktu resmi server
+                GPS satellite coordinate capture and official server time verification
               </p>
             </div>
           </div>
@@ -2808,25 +2819,25 @@ function UnifiedJobForm({
             {gpsStatus === "idle" && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                 <span className="h-2 w-2 rounded-full bg-slate-400" />
-                <span>Status GPS: Belum Diambil</span>
+                <span>GPS Status: Not Captured</span>
               </span>
             )}
             {gpsStatus === "loading" && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
                 <RefreshCw size={12} className="animate-spin text-sky-600" />
-                <span>Status GPS: Mengambil Lokasi</span>
+                <span>GPS Status: Capturing Location</span>
               </span>
             )}
             {gpsStatus === "success" && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                 <CheckCircle size={13} className="text-emerald-600 dark:text-emerald-400" />
-                <span>Status GPS: Lokasi Berhasil Direkam</span>
+                <span>GPS Status: Location Recorded</span>
               </span>
             )}
             {gpsStatus === "error" && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                 <AlertCircle size={13} className="text-rose-600 dark:text-rose-400" />
-                <span>Status GPS: Gagal Mengambil Lokasi</span>
+                <span>GPS Status: Failed to Capture Location</span>
               </span>
             )}
           </div>
@@ -2840,10 +2851,10 @@ function UnifiedJobForm({
             </div>
             <div>
               <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                Lokasi handover belum direkam
+                Handover location not yet recorded
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
-                Silakan tekan tombol di bawah untuk meminta akses lokasi perangkat dan merekam koordinat aktual.
+                Please click the button below to allow device location access and record actual coordinates.
               </p>
             </div>
             <div>
@@ -2853,7 +2864,7 @@ function UnifiedJobForm({
                 className="inline-flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition cursor-pointer"
               >
                 <MapPin size={15} />
-                <span>Ambil Lokasi GPS</span>
+                <span>Capture GPS Location</span>
               </button>
             </div>
           </div>
@@ -2867,10 +2878,10 @@ function UnifiedJobForm({
             </div>
             <div>
               <h4 className="text-sm font-bold text-sky-900 dark:text-sky-100">
-                Sedang mengambil lokasi perangkat...
+                Capturing device location...
               </h4>
               <p className="text-xs text-sky-700/80 dark:text-sky-300/80 mt-1">
-                Menghubungkan ke satelit GPS dan sinkronisasi timestamp resmi server...
+                Connecting to GPS satellites and syncing official server timestamp...
               </p>
             </div>
           </div>
@@ -2887,10 +2898,10 @@ function UnifiedJobForm({
                 </div>
                 <div>
                   <span className="font-bold text-emerald-900 dark:text-emerald-100 block">
-                    Lokasi Berhasil Direkam
+                    Location Recorded Successfully
                   </span>
                   <span className="text-[11px] text-emerald-700 dark:text-emerald-300">
-                    Akurasi satelit: ±{gpsData.accuracy} meter
+                    Satellite accuracy: ±{gpsData.accuracy} meters
                   </span>
                 </div>
               </div>
@@ -2900,7 +2911,7 @@ function UnifiedJobForm({
                 className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 transition cursor-pointer"
               >
                 <RefreshCw size={12} />
-                <span>Perbarui Lokasi GPS</span>
+                <span>Update GPS Location</span>
               </button>
             </div>
 
@@ -2910,39 +2921,39 @@ function UnifiedJobForm({
               <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/60 p-3.5">
                 <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1 flex items-center gap-1.5">
                   <Clock size={12} className="text-blue-600 dark:text-blue-400" />
-                  <span>Waktu Handover</span>
+                  <span>Handover Time</span>
                 </label>
                 <div className="font-mono font-bold text-xs text-slate-900 dark:text-white select-all">
                   {gpsData.serverTimestamp}
                 </div>
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-1">
-                  Otomatis berdasarkan timestamp server (Read-only)
+                  Automatic based on server timestamp (Read-only)
                 </span>
               </div>
 
               {/* Koordinat GPS: Latitude */}
               <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/60 p-3.5">
                 <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">
-                  Latitude (Lintang)
+                  Latitude
                 </label>
                 <div className="font-mono font-bold text-xs text-slate-900 dark:text-white select-all">
                   {gpsData.latitude.toFixed(6)}
                 </div>
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-1">
-                  Koordinat desimal read-only
+                  Read-only decimal coordinates
                 </span>
               </div>
 
               {/* Koordinat GPS: Longitude */}
               <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/60 p-3.5">
                 <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">
-                  Longitude (Bujur)
+                  Longitude
                 </label>
                 <div className="font-mono font-bold text-xs text-slate-900 dark:text-white select-all">
                   {gpsData.longitude.toFixed(6)}
                 </div>
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-1">
-                  Koordinat desimal read-only
+                  Read-only decimal coordinates
                 </span>
               </div>
             </div>
@@ -2951,13 +2962,13 @@ function UnifiedJobForm({
             <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/60 p-3.5">
               <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1 flex items-center gap-1.5">
                 <MapPin size={12} className="text-blue-600 dark:text-blue-400" />
-                <span>Nama Wilayah / Alamat Perkiraan</span>
+                <span>Region / Estimated Address</span>
               </label>
               <div className="font-medium text-xs text-slate-900 dark:text-slate-100">
                 {gpsData.regionName}
               </div>
               <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-1">
-                Diperoleh berdasarkan layanan reverse geocoding koordinat GPS
+                Retrieved from reverse geocoding of GPS coordinates
               </span>
             </div>
           </div>
@@ -2972,13 +2983,13 @@ function UnifiedJobForm({
               </div>
               <div className="flex-1">
                 <h4 className="text-xs font-bold text-rose-900 dark:text-rose-100">
-                  Gagal Mengambil Lokasi
+                  Failed to Capture Location
                 </h4>
                 <p className="text-xs text-rose-700 dark:text-rose-300 mt-1">
-                  {gpsErrorMessage || "Pengambilan lokasi GPS perangkat tidak dapat diselesaikan."}
+                  {gpsErrorMessage || "Device GPS location retrieval could not be completed."}
                 </p>
                 <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80 mt-1">
-                  Seluruh input data yang sudah Anda ketik (Jumlah Koli, Berat Aktual, dll.) tetap aman dan tidak hilang.
+                  All input data you entered (Piece Count, Actual Weight, etc.) remains safe and preserved.
                 </p>
               </div>
             </div>
@@ -2990,7 +3001,7 @@ function UnifiedJobForm({
                 className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 px-4 py-2 text-xs font-bold text-white shadow-xs transition cursor-pointer"
               >
                 <RefreshCw size={13} />
-                <span>Coba Lagi</span>
+                <span>Try Again</span>
               </button>
             </div>
           </div>
@@ -3007,14 +3018,14 @@ function UnifiedJobForm({
                 Actual Cargo
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Input fisik aktual kargo di lokasi serah terima (Data tetap tersimpan saat GPS dicoba lagi)
+                Actual physical cargo input at handover location (Data is preserved when GPS is retried)
               </p>
             </div>
           </div>
           {isWeightDiscrepancy && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60">
               <AlertTriangle size={13} />
-              <span>Ada Selisih Berat: {weightDiff > 0 ? `+${weightDiff}` : weightDiff} kg</span>
+              <span>Weight Discrepancy: {weightDiff > 0 ? `+${weightDiff}` : weightDiff} kg</span>
             </span>
           )}
         </div>
@@ -3023,15 +3034,15 @@ function UnifiedJobForm({
           {/* Sisi Kiri: Data Dokumen (Read-only) */}
           <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 p-4">
             <span className="inline-block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
-              Data Dokumen Bawaan (Manifest)
+              Manifest Cargo Data (Read-only)
             </span>
             <div className="space-y-3">
               <div>
-                <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400">Jumlah Koli Dokumen</span>
-                <b className="text-sm font-bold text-slate-800 dark:text-slate-100">{docPieces} Koli</b>
+                <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400">Document Piece Count</span>
+                <b className="text-sm font-bold text-slate-800 dark:text-slate-100">{docPieces} Pcs</b>
               </div>
               <div className="border-t border-slate-200/60 dark:border-slate-800 pt-2.5">
-                <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400">Berat Dokumen</span>
+                <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400">Document Weight</span>
                 <b className="text-sm font-bold text-slate-800 dark:text-slate-100">{docWeight} kg</b>
               </div>
             </div>
@@ -3040,11 +3051,11 @@ function UnifiedJobForm({
           {/* Sisi Kanan: Input Fisik Aktual Kargo (Wajib Validasi) */}
           <div className="rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/30 dark:bg-blue-950/20 p-4 space-y-3.5">
             <span className="inline-block text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
-              Input Fisik Aktual Kargo *
+              Actual Physical Cargo Input *
             </span>
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Jumlah Koli <span className="text-rose-500">*</span>
+                Piece Count <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -3057,14 +3068,14 @@ function UnifiedJobForm({
                     if (!val.trim()) {
                       setPiecesError(null);
                     } else if (/[a-zA-Z]/.test(val) || /[^0-9]/.test(val)) {
-                      setPiecesError("Hanya boleh diisi angka saja");
+                      setPiecesError("Numbers only");
                     } else if (Number(val) <= 0) {
-                      setPiecesError("Jumlah koli harus lebih dari 0");
+                      setPiecesError("Piece count must be greater than 0");
                     } else {
                       setPiecesError(null);
                     }
                   }}
-                  placeholder="Contoh: 10 (Bilangan bulat positif)"
+                  placeholder="Example: 10 (Positive integer)"
                   className={`w-full rounded-xl border ${
                     piecesError
                       ? "border-rose-500 ring-1 ring-rose-500 bg-rose-50/20 text-rose-700 dark:text-rose-300"
@@ -3082,14 +3093,14 @@ function UnifiedJobForm({
                 </p>
               ) : (
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-                  Hanya menerima bilangan bulat positif (minimal 1)
+                  Accepts positive integers only (minimum 1)
                 </p>
               )}
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Berat Aktual (kg) <span className="text-rose-500">*</span>
+                Actual Weight (kg) <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -3102,16 +3113,16 @@ function UnifiedJobForm({
                     if (!val.trim()) {
                       setWeightError(null);
                     } else if (/[a-zA-Z]/.test(val)) {
-                      setWeightError("Hanya boleh diisi angka saja");
+                      setWeightError("Numbers only");
                     } else if (!/^\d+(\.\d+)?$/.test(val.trim())) {
-                      setWeightError("Format angka tidak valid (contoh: 200.5)");
+                      setWeightError("Invalid number format (example: 200.5)");
                     } else if (Number(val) <= 0) {
-                      setWeightError("Berat aktual harus lebih dari 0");
+                      setWeightError("Actual weight must be greater than 0");
                     } else {
                       setWeightError(null);
                     }
                   }}
-                  placeholder="Contoh: 200.5 (Angka positif / desimal)"
+                  placeholder="Example: 200.5 (Positive / decimal)"
                   className={`w-full rounded-xl border ${
                     weightError
                       ? "border-rose-500 ring-1 ring-rose-500 bg-rose-50/20 text-rose-700 dark:text-rose-300"
@@ -3129,7 +3140,7 @@ function UnifiedJobForm({
                 </p>
               ) : (
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-                  Hanya menerima angka positif (termasuk desimal)
+                  Accepts positive numbers only (including decimals)
                 </p>
               )}
             </div>
@@ -3143,10 +3154,10 @@ function UnifiedJobForm({
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
               <span className="grid h-5 w-5 place-items-center rounded-full bg-blue-600 text-[11px] text-white font-bold">4</span>
-              Dokumentasi Foto Kargo Wajib (4 Foto)
+              Mandatory Cargo Photo Documentation (4 Photos)
             </h2>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-              Bisa langsung jepret kamera ponsel/perangkat atau upload file galeri.
+              Capture directly using device camera or upload from gallery.
             </p>
           </div>
 
@@ -3155,7 +3166,7 @@ function UnifiedJobForm({
               ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
               : "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/60"
           }`}>
-            {filledPhotos}/4 Terisi
+            {filledPhotos}/4 Completed
           </span>
         </div>
 
@@ -3183,7 +3194,7 @@ function UnifiedJobForm({
                         );
                       }}
                       className="text-red-500 hover:text-red-700 transition cursor-pointer p-0.5"
-                      title="Hapus foto"
+                      title="Delete photo"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -3200,7 +3211,7 @@ function UnifiedJobForm({
                   {uploadingItem === `photo-${index}` ? (
                     <div className="flex flex-col items-center gap-1.5 p-2 text-center">
                       <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                      <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold">Mengunggah (Maks 5 MB)...</span>
+                      <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold">Uploading (Max 5 MB)...</span>
                     </div>
                   ) : photos[index] ? (
                     photoUrls[index] ? (
@@ -3220,7 +3231,7 @@ function UnifiedJobForm({
                   ) : (
                     <div className="text-center p-2">
                       <Camera size={26} className="mx-auto text-slate-400 mb-1" />
-                      <span className="text-[11px] text-slate-400 font-medium">Belum ada foto</span>
+                      <span className="text-[11px] text-slate-400 font-medium">No photo yet</span>
                     </div>
                   )}
                 </div>
@@ -3229,33 +3240,36 @@ function UnifiedJobForm({
               {/* ACTION BUTTONS: KAMERA & GALERI */}
               <div className="mt-3 flex items-center gap-2">
                 {/* 1. Ambil Kamera Device Langsung */}
-                <label
-                  title="Ambil foto langsung dengan kamera"
-                  className={`flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold cursor-pointer transition shadow-2xs ${
+                <button
+                  type="button"
+                  title="Capture photo directly with camera"
+                  onClick={() =>
+                    setCameraModalConfig({
+                      isOpen: true,
+                      angleIndex: index,
+                      title: `Take Photo: ${label}`,
+                      subtitle: "Field Task Documentation",
+                      angleKey: `angle_${index + 1}`,
+                    })
+                  }
+                  disabled={Boolean(uploadingItem)}
+                  className={`flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-[11px] font-bold cursor-pointer transition shadow-2xs ${
                     uploadingItem === `photo-${index}` ? "opacity-50 pointer-events-none" : ""
                   }`}
                 >
                   <Camera size={13} />
-                  <span>Kamera</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    disabled={Boolean(uploadingItem)}
-                    className="sr-only"
-                    onChange={(event) => setPhoto(index, event.target.files?.[0])}
-                  />
-                </label>
+                  <span>Camera</span>
+                </button>
 
                 {/* 2. Pilih Dari File / Galeri */}
                 <label
-                  title="Pilih file dari galeri atau komputer"
+                  title="Choose file from gallery or computer"
                   className={`flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-bold cursor-pointer transition ${
                     uploadingItem === `photo-${index}` ? "opacity-50 pointer-events-none" : ""
                   }`}
                 >
                   <Upload size={13} />
-                  <span>Galeri</span>
+                  <span>Gallery</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -3275,16 +3289,16 @@ function UnifiedJobForm({
         <div className="mb-3 border-b border-slate-100 dark:border-slate-800 pb-2">
           <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             <span className="grid h-5 w-5 place-items-center rounded-full bg-blue-600 text-[11px] text-white font-bold">5</span>
-            Dokumen Wajib Pekerjaan (2 Dokumen)
+            Mandatory Job Documents (2 Documents)
           </h2>
           <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-            Upload Surat Jalan / DO dan Berita Acara / Serah Terima (keduanya wajib).
+            Upload Delivery Order / Waybill and Handover Minutes (both mandatory).
           </p>
         </div>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <DocumentUpload
-            title="Surat Jalan / Delivery Order (DO)"
+            title="Delivery Order (DO) / Waybill"
             value={docs.main}
             isUploading={uploadingItem === "doc-main"}
             onChange={(file) => setDoc("main", file)}
@@ -3295,7 +3309,7 @@ function UnifiedJobForm({
           />
 
           <DocumentUpload
-            title="Berita Acara / Serah Terima"
+            title="Handover Minutes / Official Report"
             value={docs.supporting}
             isUploading={uploadingItem === "doc-supporting"}
             onChange={(file) => setDoc("supporting", file)}
@@ -3311,10 +3325,10 @@ function UnifiedJobForm({
       <section className="mb-5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] p-5 shadow-xs">
         <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
           <span className="grid h-5 w-5 place-items-center rounded-full bg-blue-600 text-[11px] text-white font-bold">6</span>
-          Problem / Kendala Lapangan
+          Field Issues / Problems
         </h2>
         <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-          Apakah ada temuan kendala, kerusakan barang, atau komplain di lapangan?
+          Are there any issues, damage, or complaints found in the field?
         </p>
 
         <div className="mt-4 flex items-center gap-6">
@@ -3327,7 +3341,7 @@ function UnifiedJobForm({
               onChange={() => setHasProblem("no")}
               className="h-4 w-4 text-blue-600 focus:ring-blue-500"
             />
-            No (Tidak Ada Kendala)
+            No (No Issues)
           </label>
 
           <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-200">
@@ -3339,20 +3353,20 @@ function UnifiedJobForm({
               onChange={() => setHasProblem("yes")}
               className="h-4 w-4 text-blue-600 focus:ring-blue-500"
             />
-            Yes (Ada Kendala)
+            Yes (Issue Found)
           </label>
         </div>
 
         {hasProblem === "yes" && (
           <div className="mt-4">
             <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-slate-300">
-              Deskripsi Singkat Kendala *
+              Brief Issue Description *
             </label>
             <textarea
               value={problemDescription}
               onChange={(e) => setProblemDescription(e.target.value)}
               rows={3}
-              placeholder="Jelaskan kendala/kerusakan/issue yang ditemukan di lapangan..."
+              placeholder="Describe the issue, cargo damage, or problem found on site..."
               className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
           </div>
@@ -3367,14 +3381,14 @@ function UnifiedJobForm({
           className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer"
         >
           <ArrowLeft size={14} />
-          <span>Kembali ke Detail</span>
+          <span>Back to Details</span>
         </button>
 
         <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
           {!isGpsRecorded && (
             <span className="inline-flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800/60 font-medium">
               <AlertTriangle size={13} />
-              <span>Lokasi GPS wajib direkam sebelum menyimpan</span>
+              <span>GPS location must be recorded before saving</span>
             </span>
           )}
 
@@ -3404,7 +3418,7 @@ function UnifiedJobForm({
                 receivingParty: receivingParty.trim(),
                 actualPieces: Number(actualPieces),
                 actualGrossWeight: Number(actualGrossWeight),
-                location: gpsData.regionName || location.trim() || `Koordinat GPS (${gpsData.latitude.toFixed(6)}, ${gpsData.longitude.toFixed(6)})`,
+                location: gpsData.regionName || location.trim() || `GPS Coordinates (${gpsData.latitude.toFixed(6)}, ${gpsData.longitude.toFixed(6)})`,
                 gps: {
                   latitude: gpsData.latitude,
                   longitude: gpsData.longitude,
@@ -3423,11 +3437,23 @@ function UnifiedJobForm({
             disabled={!canSubmit}
             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:shadow-none"
           >
-            <span>{saving ? "Menyimpan Handover..." : "Simpan Handover"}</span>
+            <span>{saving ? "Saving Handover..." : "Save Handover"}</span>
             <Send size={14} />
           </button>
         </div>
       </div>
+
+      {/* CAMERA CAPTURE MODAL */}
+      <CameraCaptureModal
+        isOpen={cameraModalConfig.isOpen}
+        onClose={() => setCameraModalConfig((prev) => ({ ...prev, isOpen: false }))}
+        title={cameraModalConfig.title}
+        subtitle={cameraModalConfig.subtitle}
+        angleKey={cameraModalConfig.angleKey}
+        onCapture={(file) => {
+          setPhoto(cameraModalConfig.angleIndex, file);
+        }}
+      />
     </div>
   );
 }
@@ -3498,13 +3524,13 @@ function HistoryList({
           </h1>
 
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Daftar laporan pekerjaan kargo yang telah selesai dikerjakan oleh Field Agent.
+            List of completed cargo task reports submitted by Field Agents.
           </p>
         </div>
 
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
           <Check size={13} className="stroke-[2.5]" />
-          <span>{completedJobs.length} Tugas Selesai</span>
+          <span>{completedJobs.length} Completed Tasks</span>
         </span>
       </section>
 
@@ -3512,7 +3538,7 @@ function HistoryList({
         <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 dark:border-red-800/80 bg-red-50 dark:bg-red-950/40 p-4 text-xs text-red-700 dark:text-red-300">
           <div className="flex items-center gap-2">
             <AlertCircle size={16} className="shrink-0" />
-            <span>Gagal memuat data laporan dari database: {apiError}</span>
+            <span>Failed to load report data from database: {apiError}</span>
           </div>
           {onRetry && (
             <button
@@ -3520,7 +3546,7 @@ function HistoryList({
               onClick={onRetry}
               className="rounded-lg bg-red-600 px-3 py-1 font-semibold text-white hover:bg-red-700 cursor-pointer shadow-2xs"
             >
-              Coba Lagi
+              Try Again
             </button>
           )}
         </div>
@@ -3655,12 +3681,12 @@ function FieldReportDetailModal({
       }
       const json = await res.json();
       if (!json.success || !json.data) {
-        throw new Error(json.error || "Gagal mengambil data detail pekerjaan.");
+        throw new Error(json.error || "Failed to retrieve task detail data.");
       }
       setDetailData(json.data);
     } catch (err: any) {
       console.warn("Error fetching report detail:", err);
-      setFetchError(err.message || "Gagal mengambil data dari server.");
+      setFetchError(err.message || "Failed to retrieve data from server.");
     } finally {
       setLoading(false);
     }
@@ -3676,46 +3702,46 @@ function FieldReportDetailModal({
   const currentDoc = detailData?.documentation;
   const currentIssues = detailData?.issues || [];
 
-  const customerName = currentTask?.customer || job.customer || "Data belum tersedia";
-  const salesName = currentTask?.sales_executive || job.sales_executive || "Data belum tersedia";
+  const customerName = currentTask?.customer || job.customer || "Not available yet";
+  const salesName = currentTask?.sales_executive || job.sales_executive || "Not available yet";
   const agentName =
     currentTask?.field_agent_name ||
     currentTask?.assigned_to ||
     job.field_agent_name ||
     job.assigned_to ||
-    "Data belum tersedia";
+    "Not available yet";
 
-  const originVal = currentTask?.origin || job.origin || "Data belum tersedia";
-  const destVal = currentTask?.destination || job.destination || "Data belum tersedia";
+  const originVal = currentTask?.origin || job.origin || "Not available yet";
+  const destVal = currentTask?.destination || job.destination || "Not available yet";
 
-  let cargoDisplay = "Data belum tersedia";
+  let cargoDisplay = "Not available yet";
   if (currentHandover?.actual_pieces != null && currentHandover?.actual_gross_weight != null) {
     cargoDisplay = `${currentHandover.actual_pieces} Pcs · ${currentHandover.actual_gross_weight} Kg`;
   } else if (currentTask?.actual_cargo || job.actual_cargo) {
-    cargoDisplay = currentTask?.actual_cargo || job.actual_cargo || "Data belum tersedia";
+    cargoDisplay = currentTask?.actual_cargo || job.actual_cargo || "Not available yet";
   }
 
-  const mawbDisplay = currentTask?.mawb_hawb || job.mawb_hawb || "Data belum tersedia";
+  const mawbDisplay = currentTask?.mawb_hawb || job.mawb_hawb || "Not available yet";
 
   // Informasi Handover
-  const handoverGpsLocation = currentHandover?.location || currentTask?.location || "Data belum tersedia";
+  const handoverGpsLocation = currentHandover?.location || currentTask?.location || "Not available yet";
   const handoverTimestamp = currentHandover?.created_at || currentTask?.updated_at || currentTask?.created_at;
   const formattedHandoverTime = handoverTimestamp
-    ? new Date(handoverTimestamp).toLocaleString("id-ID", {
+    ? new Date(handoverTimestamp).toLocaleString("en-US", {
         dateStyle: "medium",
         timeStyle: "short",
-      }) + " WIB"
-    : "Data belum tersedia";
+      })
+    : "Not available yet";
 
   // Foto aktual dari Supabase
   const uploadedPhotos = Array.isArray(currentDoc?.photos) ? currentDoc.photos : [];
   const uploadedDocuments = Array.isArray(currentDoc?.documents) ? currentDoc.documents : [];
 
   const angleLabels = [
-    { title: "Angle 1 (Depan)", desc: "Depan / Keseluruhan Kargo" },
-    { title: "Angle 2 (Samping)", desc: "Samping / Label & Marking" },
-    { title: "Angle 3 (Belakang)", desc: "Belakang / Segel Kontainer" },
-    { title: "Angle 4 (Atas)", desc: "Atas / Detail Permukaan" },
+    { title: "Angle 1 (Front)", desc: "Front / Overall Cargo" },
+    { title: "Angle 2 (Side)", desc: "Side / Label & Marking" },
+    { title: "Angle 3 (Rear)", desc: "Rear / Container Seal" },
+    { title: "Angle 4 (Top)", desc: "Top / Surface Detail" },
   ];
 
   // Helper untuk resolve URL berkas dari Supabase Storage atau endpoint publik
@@ -3782,12 +3808,12 @@ function FieldReportDetailModal({
               {hasIssueYes && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500/15 border border-red-500/30 px-3 py-0.5 text-xs font-semibold text-red-400">
                   <AlertTriangle size={12} />
-                  <span>Ada Issue</span>
+                  <span>Has Issue</span>
                 </span>
               )}
             </div>
             <h2 className="mt-2.5 text-lg sm:text-xl font-extrabold tracking-tight text-white">
-              Detail Laporan Pekerjaan Lapangan
+              Field Task Report Details
             </h2>
           </div>
 
@@ -3795,7 +3821,7 @@ function FieldReportDetailModal({
             type="button"
             onClick={onClose}
             className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/80 transition-colors cursor-pointer"
-            title="Tutup Modal"
+            title="Close Modal"
           >
             <X size={20} />
           </button>
@@ -3807,16 +3833,16 @@ function FieldReportDetailModal({
             <div className="py-20 text-center text-slate-500 dark:text-slate-400">
               <RefreshCw className="animate-spin mx-auto mb-3 text-blue-600" size={28} />
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                Mengambil detail laporan pekerjaan dari server...
+                Fetching task report details from server...
               </p>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                Memuat data pekerjaan, handover, dokumentasi, dan issue aktual.
+                Loading task, handover, documentation, and actual issue records.
               </p>
             </div>
           ) : fetchError ? (
             <div className="rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-6 text-center text-red-700 dark:text-red-300">
               <AlertCircle size={28} className="mx-auto mb-2 text-red-500" />
-              <p className="text-sm font-bold">Gagal memuat detail laporan</p>
+              <p className="text-sm font-bold">Failed to load report details</p>
               <p className="text-xs text-red-600 dark:text-red-400 mt-1 max-w-md mx-auto">{fetchError}</p>
               <button
                 type="button"
@@ -3824,7 +3850,7 @@ function FieldReportDetailModal({
                 className="mt-4 inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-red-600 text-white hover:bg-red-700 cursor-pointer shadow-sm active:scale-95 transition"
               >
                 <RefreshCw size={13} />
-                <span>Coba Lagi</span>
+                <span>Try Again</span>
               </button>
             </div>
           ) : (
@@ -3834,7 +3860,7 @@ function FieldReportDetailModal({
                 <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
                   <Package size={16} className="text-blue-600 dark:text-blue-400" />
                   <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                    Informasi Pekerjaan
+                    Task Information
                   </h3>
                 </div>
 
@@ -3854,7 +3880,7 @@ function FieldReportDetailModal({
                   </div>
 
                   <div className="space-y-1">
-                    <span className="text-slate-400 dark:text-slate-500 font-medium">Nama Field Agent:</span>
+                    <span className="text-slate-400 dark:text-slate-500 font-medium">Field Agent Name:</span>
                     <p className="font-bold text-slate-800 dark:text-white truncate" title={agentName}>
                       {agentName}
                     </p>
@@ -3868,21 +3894,21 @@ function FieldReportDetailModal({
                   </div>
 
                   <div className="space-y-1 pt-3 border-t border-slate-100 dark:border-slate-800/60">
-                    <span className="text-slate-400 dark:text-slate-500 font-medium">Origin (Asal):</span>
+                    <span className="text-slate-400 dark:text-slate-500 font-medium">Origin:</span>
                     <p className="font-semibold text-slate-700 dark:text-slate-200 truncate" title={originVal}>
                       {originVal}
                     </p>
                   </div>
 
                   <div className="space-y-1 pt-3 border-t border-slate-100 dark:border-slate-800/60">
-                    <span className="text-slate-400 dark:text-slate-500 font-medium">Destination (Tujuan):</span>
+                    <span className="text-slate-400 dark:text-slate-500 font-medium">Destination:</span>
                     <p className="font-semibold text-slate-700 dark:text-slate-200 truncate" title={destVal}>
                       {destVal}
                     </p>
                   </div>
 
                   <div className="space-y-1 pt-3 border-t border-slate-100 dark:border-slate-800/60">
-                    <span className="text-slate-400 dark:text-slate-500 font-medium">Data Cargo &amp; Berat:</span>
+                    <span className="text-slate-400 dark:text-slate-500 font-medium">Cargo &amp; Weight Data:</span>
                     <p className="font-semibold text-slate-700 dark:text-slate-200 truncate" title={cargoDisplay}>
                       {cargoDisplay}
                     </p>
@@ -3902,14 +3928,14 @@ function FieldReportDetailModal({
                 <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
                   <MapPin size={16} className="text-emerald-600 dark:text-emerald-400" />
                   <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                    Informasi Handover
+                    Handover Information
                   </h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                   <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800">
                     <span className="block text-slate-400 dark:text-slate-500 font-medium mb-1">
-                      Lokasi Serah Terima (Berdasarkan GPS):
+                      Handover Location (GPS-Based):
                     </span>
                     <p className="text-sm font-extrabold text-slate-800 dark:text-white" title={handoverGpsLocation}>
                       {handoverGpsLocation}
@@ -3918,7 +3944,7 @@ function FieldReportDetailModal({
 
                   <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800">
                     <span className="block text-slate-400 dark:text-slate-500 font-medium mb-1">
-                      Tanggal &amp; Waktu Serah Terima (Timestamp Otomatis):
+                      Handover Date &amp; Time (Server Timestamp):
                     </span>
                     <p className="text-sm font-extrabold text-slate-800 dark:text-white">
                       {formattedHandoverTime}
@@ -3928,7 +3954,7 @@ function FieldReportDetailModal({
 
                 {currentHandover?.notes && (
                   <div className="mt-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 text-xs">
-                    <span className="text-slate-400 dark:text-slate-500 font-medium block mb-1">Catatan Handover:</span>
+                    <span className="text-slate-400 dark:text-slate-500 font-medium block mb-1">Handover Notes:</span>
                     <p className="font-mono text-[11px] text-slate-700 dark:text-slate-300">
                       {currentHandover.notes}
                     </p>
@@ -3942,12 +3968,12 @@ function FieldReportDetailModal({
                   <div className="flex items-center gap-2">
                     <Camera size={16} className="text-blue-600 dark:text-blue-400" />
                     <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                      Dokumentasi Barang
+                      Cargo Documentation
                     </h3>
                   </div>
                   {uploadedPhotos.length > 0 && (
                     <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                      Klik foto untuk melihat ukuran penuh
+                      Click photo to view full size
                     </span>
                   )}
                 </div>
@@ -3955,7 +3981,7 @@ function FieldReportDetailModal({
                 {/* GALERI 4 SUDUT FOTO BARANG */}
                 <div>
                   <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-3">
-                    Empat Foto dari Empat Sudut Barang:
+                    Four Mandatory Cargo Angle Photos:
                   </h4>
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
                     {angleLabels.map((angle, idx) => {
@@ -3974,9 +4000,9 @@ function FieldReportDetailModal({
                             <div
                               onClick={() =>
                                 setPreviewPhoto({
-                                  url: resolved.url,
-                                  title: angle.title,
-                                  desc: angle.desc,
+                                   url: resolved.url,
+                                   title: angle.title,
+                                   desc: angle.desc,
                                 })
                               }
                               className="w-full h-26 rounded-xl overflow-hidden relative cursor-pointer border border-slate-200 dark:border-slate-700 shadow-inner group-hover:ring-2 group-hover:ring-blue-500 transition-all"
@@ -4006,7 +4032,7 @@ function FieldReportDetailModal({
                                 {angle.desc}
                               </span>
                               <span className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5">
-                                Data belum tersedia
+                                Not available yet
                               </span>
                             </div>
                           )}
@@ -4021,7 +4047,7 @@ function FieldReportDetailModal({
                   {/* Dokumen Utama */}
                   <div className="space-y-2">
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                      Dokumen Utama (Surat Jalan / Air Waybill):
+                      Primary Document (Delivery Order / Air Waybill):
                     </span>
                     {mainDoc ? (
                       <div className="rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/40 dark:bg-blue-950/20 p-3.5 flex items-center justify-between gap-3">
@@ -4034,7 +4060,7 @@ function FieldReportDetailModal({
                               {mainDoc.name}
                             </p>
                             <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold">
-                              Dokumen Utama Resmi
+                              Official Primary Document
                             </span>
                           </div>
                         </div>
@@ -4042,16 +4068,16 @@ function FieldReportDetailModal({
                           type="button"
                           onClick={() => window.open(mainDoc.url, "_blank")}
                           className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition flex items-center gap-1.5 shrink-0 shadow-2xs cursor-pointer"
-                          title="Buka Dokumen Utama"
+                          title="Open Primary Document"
                         >
                           <ExternalLink size={12} />
-                          <span>Buka</span>
+                          <span>Open</span>
                         </button>
                       </div>
                     ) : (
                       <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-3.5 text-center text-xs text-slate-400 dark:text-slate-500">
                         <FileText size={18} className="mx-auto mb-1 text-slate-300 dark:text-slate-600" />
-                        <span>Data belum tersedia</span>
+                        <span>Not available yet</span>
                       </div>
                     )}
                   </div>
@@ -4059,7 +4085,7 @@ function FieldReportDetailModal({
                   {/* Dokumen Pendukung */}
                   <div className="space-y-2">
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                      Dokumen Pendukung:
+                      Supporting Documents:
                     </span>
                     {supportingDocs.length > 0 ? (
                       <div className="space-y-2">
@@ -4078,10 +4104,10 @@ function FieldReportDetailModal({
                               type="button"
                               onClick={() => window.open(doc.url, "_blank")}
                               className="px-2.5 py-1 rounded-md text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 transition flex items-center gap-1 shrink-0 cursor-pointer"
-                              title="Buka Dokumen Pendukung"
+                              title="Open Supporting Document"
                             >
                               <ExternalLink size={12} />
-                              <span>Lihat</span>
+                              <span>View</span>
                             </button>
                           </div>
                         ))}
@@ -4089,7 +4115,7 @@ function FieldReportDetailModal({
                     ) : (
                       <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-3.5 text-center text-xs text-slate-400 dark:text-slate-500">
                         <FileText size={18} className="mx-auto mb-1 text-slate-300 dark:text-slate-600" />
-                        <span>Data belum tersedia</span>
+                        <span>Not available yet</span>
                       </div>
                     )}
                   </div>
@@ -4119,7 +4145,7 @@ function FieldReportDetailModal({
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                        <span>Status: Data belum tersedia</span>
+                        <span>Status: Not available yet</span>
                       </span>
                     )}
                   </div>
@@ -4128,7 +4154,7 @@ function FieldReportDetailModal({
                 {hasIssueYes ? (
                   <div className="space-y-3">
                     <span className="text-xs font-bold text-red-800 dark:text-red-300 block">
-                      Rincian Deskripsi Masalah:
+                      Issue Description Details:
                     </span>
                     {issueList.length > 0 ? (
                       issueList.map((iss) => (
@@ -4138,7 +4164,7 @@ function FieldReportDetailModal({
                         >
                           <div className="flex items-center justify-between gap-2 flex-wrap">
                             <span className="font-extrabold text-red-900 dark:text-red-200 text-sm">
-                              {iss.issue_type || iss.category || "Kendala Lapangan"}
+                              {iss.issue_type || iss.category || "Field Issue"}
                             </span>
                             <div className="flex items-center gap-2">
                               {iss.severity && (
@@ -4152,18 +4178,18 @@ function FieldReportDetailModal({
                             </div>
                           </div>
                           <p className="text-slate-800 dark:text-slate-200 leading-relaxed font-medium">
-                            {iss.description || "Tidak ada rincian deskripsi masalah."}
+                            {iss.description || "No issue description details provided."}
                           </p>
                           {iss.reported_at && (
                             <p className="text-[11px] text-slate-500 dark:text-slate-400 pt-1">
-                              Dilaporkan: {new Date(iss.reported_at).toLocaleString("id-ID")}
+                              Reported: {new Date(iss.reported_at).toLocaleString("en-US")}
                             </p>
                           )}
                         </div>
                       ))
                     ) : (
                       <div className="rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50/50 dark:bg-red-950/20 p-3 text-xs text-red-700 dark:text-red-300">
-                        <span>Pekerjaan ini ditandai memiliki kendala operasional dalam catatan database.</span>
+                        <span>This task was flagged with an operational issue in the database records.</span>
                       </div>
                     )}
                   </div>
@@ -4171,12 +4197,12 @@ function FieldReportDetailModal({
                   <div className="rounded-xl border border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 p-4 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2.5">
                     <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
                     <span className="font-medium">
-                      Tidak ada masalah atau kendala yang dilaporkan pada pekerjaan ini. Kargo terverifikasi aman.
+                      No issues or defects reported for this task. Cargo verified in good condition.
                     </span>
                   </div>
                 ) : (
                   <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 p-4 text-xs text-slate-600 dark:text-slate-400">
-                    <span>Status kendala belum dapat dipastikan dari catatan pekerjaan saat ini.</span>
+                    <span>Issue status could not be verified from current records.</span>
                   </div>
                 )}
               </div>
@@ -4191,7 +4217,7 @@ function FieldReportDetailModal({
             onClick={onClose}
             className="rounded-xl bg-[#0f172a] hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 px-7 py-2.5 text-xs font-bold text-white shadow-sm transition-all cursor-pointer active:scale-95"
           >
-            Tutup
+            Close
           </button>
         </div>
       </div>
@@ -4256,11 +4282,11 @@ function IssueModal({
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-6 py-5">
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-white">
-              Laporkan Issue
+              Report Issue
             </h2>
 
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-              Catat finding atau hambatan dari lapangan.
+              Log finding or operational obstacle from the field.
             </p>
           </div>
 
@@ -4275,7 +4301,7 @@ function IssueModal({
         <div className="space-y-4 p-6">
           <div>
             <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-slate-300">
-              Deskripsi Kendala / Issue *
+              Issue / Problem Description *
             </label>
 
             <textarea
@@ -4286,7 +4312,7 @@ function IssueModal({
                 )
               }
               rows={4}
-              placeholder="Jelaskan issue yang ditemukan..."
+              placeholder="Describe the issue found on site..."
               className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
           </div>
@@ -4306,8 +4332,8 @@ function IssueModal({
             className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed"
           >
             {saving
-              ? "Menyimpan..."
-              : "Simpan Issue"}
+              ? "Saving..."
+              : "Save Issue"}
           </button>
         </div>
       </div>
@@ -4364,11 +4390,11 @@ function ReportConfirmModal({
 
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                Penyelesaian Task
+                Task Completion
               </p>
 
               <h2 className="mt-0.5 text-lg font-bold text-slate-900 dark:text-white">
-                Konfirmasi Pengiriman Laporan
+                Confirm Report Submission
               </h2>
             </div>
           </div>
@@ -4385,21 +4411,21 @@ function ReportConfirmModal({
             {hasIssue ? (
               <>
                 <h3 className="text-sm font-bold text-red-800 dark:text-red-300">
-                  Task memiliki Issue
+                  Task Has Issues
                 </h3>
 
                 <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
-                  Terdapat{" "}
+                  There are{" "}
                   <b className="font-semibold text-red-700 dark:text-red-400">
-                    {issueCount} finding
+                    {issueCount} findings
                   </b>{" "}
-                  yang perlu ditindaklanjuti oleh Sales Executive.
+                  that require follow-up from the Sales Executive.
                 </p>
               </>
             ) : (
               <>
                 <h3 className="text-sm font-bold text-blue-800 dark:text-blue-300">
-                  Laporan Final
+                  Final Report
                 </h3>
 
                 <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
@@ -4407,7 +4433,7 @@ function ReportConfirmModal({
                   <b className="font-semibold text-slate-800 dark:text-slate-100">
                     {no(job)}
                   </b>{" "}
-                  akan dikirim ke Sales Executive sebagai Completed.
+                  will be submitted to the Sales Executive as Completed.
                 </p>
               </>
             )}
@@ -4428,7 +4454,7 @@ function ReportConfirmModal({
             </div>
 
             <div className="mt-2 flex justify-between text-xs">
-              <span className="text-slate-500 dark:text-slate-400">Status setelah submit</span>
+              <span className="text-slate-500 dark:text-slate-400">Status after submission</span>
               <b className={`font-semibold ${hasIssue ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}>
                 {hasIssue
                   ? "Has Issue"
@@ -4454,8 +4480,8 @@ function ReportConfirmModal({
             <Send size={14} />
 
             {saving
-              ? "Mengirim..."
-              : "Kirim & Selesaikan Task"}
+              ? "Submitting..."
+              : "Submit & Complete Task"}
           </button>
         </div>
       </div>
@@ -4483,13 +4509,13 @@ function ReportProcessingModal({
         </span>
 
         <h2 className="mt-4 text-lg font-bold text-slate-900 dark:text-white">
-          Memproses Laporan
+          Processing Report
         </h2>
 
         <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
           {issueCount > 0
-            ? "Menyimpan finding dan mengirim laporan Has Issue..."
-            : "Menyimpan laporan final dan memperbarui status job..."}
+            ? "Saving findings and submitting Has Issue report..."
+            : "Saving final report and updating job status..."}
         </p>
       </div>
     </div>
@@ -4533,8 +4559,8 @@ function CompleteTaskModal({
 
         <h2 className="mt-4 text-lg font-bold text-slate-900 dark:text-white">
           {hasIssue
-            ? "Laporan Terkirim (Ada Temuan/Issue)"
-            : "Laporan Terkirim untuk Verifikasi"}
+            ? "Report Submitted (Issues Logged)"
+            : "Report Submitted for Verification"}
         </h2>
 
         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
@@ -4542,16 +4568,16 @@ function CompleteTaskModal({
           <b className="font-semibold text-slate-800 dark:text-slate-100">
             {no(job)}
           </b>{" "}
-          berhasil dikirim. Tim Sales Executive akan memverifikasi hasil sebelum dinyatakan selesai.
+          has been submitted successfully. Sales Executive will verify the report before final sign-off.
         </p>
 
         {hasIssue ? (
           <p className="mt-1.5 text-xs font-bold text-red-600 dark:text-red-400">
-            {issueCount} temuan/kendala telah dicatat untuk ditinjau oleh Sales.
+            {issueCount} issues/findings have been recorded for Sales review.
           </p>
         ) : (
           <p className="mt-1.5 text-xs font-medium text-blue-600 dark:text-blue-400">
-            Menunggu verifikasi Sales di modul Monitoring Task.
+            Pending Sales verification in Task Monitoring.
           </p>
         )}
 
@@ -4562,7 +4588,7 @@ function CompleteTaskModal({
             }}
             className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer"
           >
-            Lihat Job History
+            View Job History
           </button>
 
           <button
@@ -4571,7 +4597,7 @@ function CompleteTaskModal({
             }}
             className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer"
           >
-            Selesai
+            Done
           </button>
         </div>
       </div>
@@ -4810,27 +4836,6 @@ const CUSTOMER_22_COMPANIES = [
   "22. PT Kamadjaja Logistics",
 ];
 
-const PORT_ORIGIN_OPTIONS = [
-  "Cengkareng, Banten, Indonesia",
-  "Tanjung Priok, Jakarta, Indonesia",
-  "Tanjung Perak, Surabaya, Indonesia",
-  "Soekarno-Hatta (CGK), Tangerang",
-  "Halim Perdanakusuma (HLP), Jakarta",
-  "Pelabuhan Belawan, Medan",
-  "Bandara Juanda (SUB), Surabaya",
-];
-
-const PORT_DESTINATION_OPTIONS = [
-  "Singapore (SIN)",
-  "Kuala Lumpur (KUL)",
-  "Bangkok (BKK)",
-  "Hong Kong (HKG)",
-  "Tokyo (NRT)",
-  "Shanghai (PVG)",
-  "Dubai (DXB)",
-  "Rotterdam (RTM)",
-];
-
 function formatTimestampWib(date: Date = new Date()): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -4865,6 +4870,9 @@ function AddTaskModal({
   const [actualGrossWeight, setActualGrossWeight] = useState("");
   const [piecesError, setPiecesError] = useState<string | null>(null);
   const [weightError, setWeightError] = useState<string | null>(null);
+  const [showWarningModal, setShowWarningModal] = useState(false);
+  const [warningMessage, setWarningMessage] = useState("Job Number wajib diisi terlebih dahulu.");
+  const [targetFocusId, setTargetFocusId] = useState<string | null>("input-jobNumber");
 
   const handlePiecesChange = (val: string) => {
     setActualPieces(val);
@@ -4873,9 +4881,9 @@ function AddTaskModal({
       return;
     }
     if (/[a-zA-Z]/.test(val) || /[^0-9]/.test(val)) {
-      setPiecesError("Hanya boleh diisi angka saja");
+      setPiecesError("Numbers only");
     } else if (Number(val) <= 0) {
-      setPiecesError("Jumlah koli harus lebih dari 0");
+      setPiecesError("Piece count must be greater than 0");
     } else {
       setPiecesError(null);
     }
@@ -4888,11 +4896,11 @@ function AddTaskModal({
       return;
     }
     if (/[a-zA-Z]/.test(val)) {
-      setWeightError("Hanya boleh diisi angka saja");
+      setWeightError("Numbers only");
     } else if (!/^\d+(\.\d+)?$/.test(val.trim())) {
-      setWeightError("Format angka tidak valid (contoh: 360.0)");
+      setWeightError("Invalid number format (example: 360.0)");
     } else if (Number(val) <= 0) {
-      setWeightError("Berat aktual harus lebih dari 0");
+      setWeightError("Actual weight must be greater than 0");
     } else {
       setWeightError(null);
     }
@@ -4927,6 +4935,20 @@ function AddTaskModal({
   const [step2PhotoNames, setStep2PhotoNames] = useState<(string | null)[]>([null, null, null, null]);
   const [step2PhotoUrls, setStep2PhotoUrls] = useState<(string | null)[]>([null, null, null, null]);
   const [uploadingAngle, setUploadingAngle] = useState<number | null>(null);
+
+  const [cameraModalConfig, setCameraModalConfig] = useState<{
+    isOpen: boolean;
+    angleIndex: number;
+    title: string;
+    subtitle: string;
+    angleKey: string;
+  }>({
+    isOpen: false,
+    angleIndex: 0,
+    title: "",
+    subtitle: "",
+    angleKey: "cargo",
+  });
 
   const [primaryDoc, setPrimaryDoc] = useState<{ name: string; size: string; url?: string } | null>(null);
   const [supportingDoc, setSupportingDoc] = useState<{ name: string; size: string; url?: string } | null>(null);
@@ -5020,12 +5042,12 @@ function AddTaskModal({
       "https://images.unsplash.com/photo-1508873696983-2df5293cb395?w=800&auto=format&fit=crop",
     ]);
     setPrimaryDoc({
-      name: "Surat_Jalan_DO_AINAT01.pdf",
+      name: "Delivery_Order_AINAT01.pdf",
       size: "2.4 MB",
       url: "/documents/Dokumen_Utama_Reimbursement_AENAT.pdf",
     });
     setSupportingDoc({
-      name: "Berita_Acara_Serah_Terima_01.pdf",
+      name: "Handover_Minutes_01.pdf",
       size: "1.8 MB",
       url: "/documents/Dokumen_Utama_Reimbursement_AENAT.pdf",
     });
@@ -5036,13 +5058,9 @@ function AddTaskModal({
   const [originFocused, setOriginFocused] = useState(false);
   const [destinationFocused, setDestinationFocused] = useState(false);
 
-  // Matching origins for Origin search
+  // Matching origins for Origin search (searches all world countries & major logistics ports)
   const matchingOrigins = useMemo(() => {
-    const q = origin.trim().toLowerCase();
-    if (!q) return PORT_ORIGIN_OPTIONS;
-    return PORT_ORIGIN_OPTIONS.filter((p) =>
-      p.toLowerCase().includes(q)
-    );
+    return searchCountryLocations(origin, true);
   }, [origin]);
 
   const handleSelectOrigin = (p: string) => {
@@ -5051,13 +5069,9 @@ function AddTaskModal({
     setOriginFocused(false);
   };
 
-  // Matching destinations for Destination search
+  // Matching destinations for Destination search (searches all world countries & major logistics ports)
   const matchingDestinations = useMemo(() => {
-    const q = destination.trim().toLowerCase();
-    if (!q) return PORT_DESTINATION_OPTIONS;
-    return PORT_DESTINATION_OPTIONS.filter((p) =>
-      p.toLowerCase().includes(q)
-    );
+    return searchCountryLocations(destination, false);
   }, [destination]);
 
   const handleSelectDestination = (p: string) => {
@@ -5134,7 +5148,7 @@ function AddTaskModal({
     if (origin.trim()) {
       const targetOrigin = origin.trim();
       setPortLocation(targetOrigin);
-      setGpsNotification(`📍 Lokasi origin pengiriman terverifikasi GPS: ${targetOrigin} (Sesuai Tempat Asal Pengiriman)`);
+      setGpsNotification(`📍 Delivery origin location GPS verified: ${targetOrigin} (Matches origin place)`);
       setIsPinningGps(false);
       setTimeout(() => setGpsNotification(null), 4000);
       return;
@@ -5154,7 +5168,7 @@ function AddTaskModal({
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 3000);
             const res = await fetch(
-              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=id`,
+              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`,
               { signal: controller.signal }
             );
             clearTimeout(timeoutId);
@@ -5204,7 +5218,7 @@ function AddTaskModal({
 
           setOrigin(detectedLocation);
           setPortLocation(detectedLocation);
-          setGpsNotification(`📍 Lokasi origin terdeteksi via GPS: ${detectedLocation} (Akurasi: ±${accuracy}m)`);
+          setGpsNotification(`📍 Origin location detected via GPS: ${detectedLocation} (Accuracy: ±${accuracy}m)`);
           setIsPinningGps(false);
           setTimeout(() => setGpsNotification(null), 4000);
         },
@@ -5213,7 +5227,7 @@ function AddTaskModal({
           const fallback = origin.trim() || "Cengkareng, Banten, Indonesia";
           setOrigin(fallback);
           setPortLocation(fallback);
-          setGpsNotification(`📍 Lokasi origin pengiriman diset: ${fallback} (Simulasi Satelit)`);
+          setGpsNotification(`📍 Delivery origin location set: ${fallback} (Satellite Simulation)`);
           setIsPinningGps(false);
           setTimeout(() => setGpsNotification(null), 4000);
         },
@@ -5223,35 +5237,92 @@ function AddTaskModal({
       const fallback = origin.trim() || "Cengkareng, Banten, Indonesia";
       setOrigin(fallback);
       setPortLocation(fallback);
-      setGpsNotification(`📍 Lokasi origin pengiriman diset: ${fallback}`);
+      setGpsNotification(`📍 Delivery origin location set: ${fallback}`);
       setIsPinningGps(false);
       setTimeout(() => setGpsNotification(null), 4000);
     }
   };
 
   const handleProceed = () => {
-    const trimmedJob = jobNumber.trim();
-    if (!trimmedJob) {
-      alert("Job Number wajib diisi terlebih dahulu.");
+    if (!jobNumber.trim()) {
+      setWarningMessage("Job Number is required.");
+      setTargetFocusId("input-jobNumber");
+      setShowWarningModal(true);
       return;
     }
-    let hasErr = false;
-    if (actualPieces.trim()) {
-      if (/[a-zA-Z]/.test(actualPieces) || /[^0-9]/.test(actualPieces)) {
-        setPiecesError("Hanya boleh diisi angka saja");
-        hasErr = true;
-      }
-    }
-    if (actualGrossWeight.trim()) {
-      if (/[a-zA-Z]/.test(actualGrossWeight) || !/^\d+(\.\d+)?$/.test(actualGrossWeight.trim())) {
-        setWeightError("Hanya boleh diisi angka saja");
-        hasErr = true;
-      }
-    }
-    if (hasErr) {
+
+    if (!customer.trim()) {
+      setWarningMessage("Customer is required.");
+      setTargetFocusId("input-customer");
+      setShowWarningModal(true);
       return;
     }
+
+    if (!origin.trim() && !portLocation.trim()) {
+      setWarningMessage("Origin is required.");
+      setTargetFocusId("input-origin");
+      setShowWarningModal(true);
+      return;
+    }
+
+    if (!destination.trim()) {
+      setWarningMessage("Destination is required.");
+      setTargetFocusId("input-destination");
+      setShowWarningModal(true);
+      return;
+    }
+
+    if (!cargo.trim()) {
+      setWarningMessage("Commodity is required.");
+      setTargetFocusId("input-cargo");
+      setShowWarningModal(true);
+      return;
+    }
+
+    if (!actualPieces.trim()) {
+      setWarningMessage("Piece Count is required.");
+      setTargetFocusId("input-actualPieces");
+      setShowWarningModal(true);
+      return;
+    }
+    if (/[a-zA-Z]/.test(actualPieces) || /[^0-9]/.test(actualPieces) || Number(actualPieces) <= 0) {
+      setWarningMessage("Piece Count must be a positive number.");
+      setTargetFocusId("input-actualPieces");
+      setShowWarningModal(true);
+      return;
+    }
+
+    if (!actualGrossWeight.trim()) {
+      setWarningMessage("Actual Weight is required.");
+      setTargetFocusId("input-actualGrossWeight");
+      setShowWarningModal(true);
+      return;
+    }
+    if (
+      /[a-zA-Z]/.test(actualGrossWeight) ||
+      !/^\d+(\.\d+)?$/.test(actualGrossWeight.trim()) ||
+      Number(actualGrossWeight) <= 0
+    ) {
+      setWarningMessage("Actual Weight must be a positive decimal number.");
+      setTargetFocusId("input-actualGrossWeight");
+      setShowWarningModal(true);
+      return;
+    }
+
     setStep(2);
+  };
+
+  const handleCloseWarning = () => {
+    setShowWarningModal(false);
+    if (targetFocusId) {
+      setTimeout(() => {
+        const el = document.getElementById(targetFocusId);
+        if (el) {
+          el.focus();
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 50);
+    }
   };
 
   const handleFinishSuccess = () => {
@@ -5263,6 +5334,58 @@ function AddTaskModal({
   };
 
   const handleDoneCompleteTask = async () => {
+    // 1. Mandatory 4 Cargo Angle Photos Validation
+    if (!step2PhotoUrls[0] && !step2PhotoNames[0]) {
+      setWarningMessage("Photo Angle 1: Front is required.");
+      setTargetFocusId("step2-angle-0");
+      setShowWarningModal(true);
+      return;
+    }
+
+    if (!step2PhotoUrls[1] && !step2PhotoNames[1]) {
+      setWarningMessage("Photo Angle 2: Side is required.");
+      setTargetFocusId("step2-angle-1");
+      setShowWarningModal(true);
+      return;
+    }
+
+    if (!step2PhotoUrls[2] && !step2PhotoNames[2]) {
+      setWarningMessage("Photo Angle 3: Rear / Back is required.");
+      setTargetFocusId("step2-angle-2");
+      setShowWarningModal(true);
+      return;
+    }
+
+    if (!step2PhotoUrls[3] && !step2PhotoNames[3]) {
+      setWarningMessage("Photo Angle 4: Top is required.");
+      setTargetFocusId("step2-angle-3");
+      setShowWarningModal(true);
+      return;
+    }
+
+    // 2. Mandatory Documents Validation
+    if (!primaryDoc) {
+      setWarningMessage("Primary Document is required.");
+      setTargetFocusId("step2-primary-doc");
+      setShowWarningModal(true);
+      return;
+    }
+
+    if (!supportingDoc) {
+      setWarningMessage("Supporting Document is required.");
+      setTargetFocusId("step2-supporting-doc");
+      setShowWarningModal(true);
+      return;
+    }
+
+    // 3. Issue Notes Validation
+    if (hasIssue === "yes" && !issueNotes.trim()) {
+      setWarningMessage("Issue Notes are required.");
+      setTargetFocusId("input-issueNotes");
+      setShowWarningModal(true);
+      return;
+    }
+
     const trimmedJob = displayJobNumber;
     setSubmitting(true);
     const cleanCustomerName = displayCustomer;
@@ -5280,12 +5403,12 @@ function AddTaskModal({
 
     const validDocDetails = [
       primaryDoc || {
-        name: "Surat_Jalan_DO.pdf",
+        name: "Delivery_Order.pdf",
         size: "2.4 MB",
         url: "/documents/Dokumen_Utama_Reimbursement_AENAT.pdf",
       },
       supportingDoc || {
-        name: "Berita_Acara_Serah_Terima.pdf",
+        name: "Handover_Minutes.pdf",
         size: "1.8 MB",
         url: "/documents/Dokumen_Utama_Reimbursement_AENAT.pdf",
       },
@@ -5328,7 +5451,7 @@ function AddTaskModal({
           actualGrossWeight: parsedGrossWeight,
           location: portLocation || origin || "Cengkareng, Banten, Indonesia",
           serverTimestamp: timestamp,
-          notes: `Task & Dokumentasi Lengkap: 4/4 Foto Sudut Kargo, 2 Dokumen | Handover Auto-sync GPS`,
+          notes: `Complete Task & Documentation: 4/4 Cargo Angle Photos, 2 Documents | Handover Auto-sync GPS`,
           claimJob: false,
           fieldAgentId: currentAgent?.id,
           performedBy: salesExecutive || currentAgent?.name,
@@ -5350,8 +5473,8 @@ function AddTaskModal({
           issueFlag: hasIssue === "yes",
           issueNotes:
             issueNotes.trim() ||
-            (hasIssue === "yes" ? "Kendala dilaporkan di lapangan" : undefined),
-          notes: `Dokumentasi 4 sudut foto & 2 dokumen diupload pada ${timestamp}`,
+            (hasIssue === "yes" ? "Issue reported on site" : undefined),
+          notes: `Documentation 4 angle photos & 2 documents uploaded on ${timestamp}`,
           performedBy: salesExecutive || currentAgent?.name,
         }),
       }).catch((err) => {
@@ -5369,12 +5492,12 @@ function AddTaskModal({
         destination: destination || "Singapore (SIN)",
         location: portLocation || origin || "Cengkareng, Banten, Indonesia",
         field_stage: "Completed",
-        field_status: "Selesai",
+        field_status: "Completed",
         status: undefined,
         actual_cargo: cargo.trim() || undefined,
         cargo_pieces: actualPieces ? `${actualPieces} Pcs` : undefined,
         gross_weight: actualGrossWeight ? `${actualGrossWeight} Kg` : undefined,
-        date: new Date().toLocaleString("id-ID", {
+        date: new Date().toLocaleString("en-US", {
           day: "2-digit",
           month: "short",
           year: "numeric",
@@ -5400,7 +5523,7 @@ function AddTaskModal({
         destination: destination || "Singapore (SIN)",
         location: portLocation || origin || "Cengkareng, Banten, Indonesia",
         field_stage: "Completed",
-        field_status: "Selesai",
+        field_status: "Completed",
         status: undefined,
       };
       setCompletedJob(fallbackJob);
@@ -5412,9 +5535,10 @@ function AddTaskModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 backdrop-blur-xs p-4 sm:p-6 overflow-y-auto">
-      <div
-        className={`relative w-full ${
+    <>
+      <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 backdrop-blur-xs p-4 sm:p-6 overflow-y-auto">
+        <div
+          className={`relative w-full ${
           step === 3
             ? "max-w-[490px] sm:max-w-[520px]"
             : step === 2
@@ -5425,7 +5549,7 @@ function AddTaskModal({
         {step === 1 ? (
           <>
         {/* Header */}
-        <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
             <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
               Input New Task
@@ -5434,21 +5558,6 @@ function AddTaskModal({
               Step 1 of 2
             </span>
           </div>
-        </div>
-
-        {/* Quick Mode Header Banner */}
-        <div className="flex items-center justify-between gap-3 border-b border-sky-100 dark:border-sky-900/40 bg-sky-50 dark:bg-sky-950/30 px-6 py-2.5 text-[11px] text-sky-900 dark:text-sky-200 -mx-6 sm:-mx-7 mb-4">
-          <span className="font-medium flex items-center gap-1.5">
-            <span className="text-sky-600 dark:text-sky-400">⚡</span>
-            <span>Mode Cepat Lapangan (Target Mas Bram: Selesai &lt; 1 Menit)</span>
-          </span>
-          <button
-            type="button"
-            onClick={fillQuickSimulation}
-            className="shrink-0 font-bold text-sky-700 dark:text-sky-300 underline underline-offset-2 hover:text-sky-800 dark:hover:text-sky-100 transition cursor-pointer"
-          >
-            Isi Otomatis Cepat (Simulasi 1-Klik)
-          </button>
         </div>
 
         {/* Form Body */}
@@ -5463,10 +5572,11 @@ function AddTaskModal({
               <div className="relative">
                 <Search size={14} className="pointer-events-none absolute left-3.5 top-3 text-slate-400" />
                 <input
+                  id="input-jobNumber"
                   type="text"
                   value={jobNumber}
                   onChange={(e) => setJobNumber(e.target.value)}
-                  placeholder="Ketik no. job manual (misal: AINAT01)..."
+                  placeholder="Enter manual job number (e.g. AINAT01)..."
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2.5 pl-9 pr-8 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono"
                 />
                 {jobNumber && (
@@ -5480,7 +5590,7 @@ function AddTaskModal({
                 )}
               </div>
               <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                Diinput manual oleh Field Agent / Sales Admin
+                Entered manually by Field Agent / Sales Admin
               </p>
             </div>
 
@@ -5495,7 +5605,7 @@ function AddTaskModal({
                   type="text"
                   value={salesExecutive}
                   onChange={(e) => setSalesExecutive(e.target.value)}
-                  placeholder="Ketik nama Sales Executive (misal: Ms. Wulan)..."
+                  placeholder="Enter Sales Executive name (e.g. Ms. Wulan)..."
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2.5 pl-9 pr-8 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
                 {salesExecutive && (
@@ -5509,7 +5619,7 @@ function AddTaskModal({
                 )}
               </div>
               <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                Diinput manual nama Sales Executive HQ
+                Entered manually by HQ Sales Executive
               </p>
             </div>
           </div>
@@ -5522,10 +5632,11 @@ function AddTaskModal({
             <div className="relative">
               <Building2 size={14} className="pointer-events-none absolute left-3.5 top-3 text-slate-400" />
               <input
+                id="input-customer"
                 type="text"
                 value={customer}
                 onChange={(e) => setCustomer(e.target.value)}
-                placeholder="Ketik nama customer / perusahaan (misal: PT Indofood CBP Sukses Makmur Tbk)..."
+                placeholder="Enter customer / company name (e.g. PT Indofood CBP Sukses Makmur Tbk)..."
                 className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2.5 pl-9 pr-8 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
               {customer && (
@@ -5539,14 +5650,14 @@ function AddTaskModal({
               )}
             </div>
             <p className="text-[11px] text-slate-400 dark:text-slate-500">
-              Diinput manual nama perusahaan / pemilik kargo
+              Entered manually for cargo owner / company
             </p>
           </div>
 
           {/* Job Type (Jenis Pekerjaan) */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              Jenis Pekerjaan <span className="text-rose-500">*</span>
+              Job Type <span className="text-rose-500">*</span>
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -5560,7 +5671,7 @@ function AddTaskModal({
               >
                 <div className="flex items-center gap-2">
                   <ArrowUp size={15} className={jobType === "Export" ? "text-blue-600 dark:text-blue-400" : "text-slate-400"} />
-                  <span>Ekspor</span>
+                  <span>Export</span>
                 </div>
                 <div
                   className={`flex h-4 w-4 items-center justify-center rounded-full border transition ${
@@ -5586,7 +5697,7 @@ function AddTaskModal({
               >
                 <div className="flex items-center gap-2">
                   <ArrowDown size={15} className={jobType === "Import" ? "text-blue-600 dark:text-blue-400" : "text-slate-400"} />
-                  <span>Impor</span>
+                  <span>Import</span>
                 </div>
                 <div
                   className={`flex h-4 w-4 items-center justify-center rounded-full border transition ${
@@ -5608,11 +5719,12 @@ function AddTaskModal({
             {/* Origin */}
             <div className="space-y-1 relative">
               <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                Origin (Port Asal)
+                Origin (Port / City) <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <Search size={14} className="pointer-events-none absolute left-3.5 top-3 text-slate-400" />
                 <input
+                  id="input-origin"
                   type="text"
                   value={origin}
                   onChange={(e) => {
@@ -5621,7 +5733,7 @@ function AddTaskModal({
                   }}
                   onFocus={() => setOriginFocused(true)}
                   onBlur={() => setTimeout(() => setOriginFocused(false), 200)}
-                  placeholder="Ketik port asal atau klik PIN GPS..."
+                  placeholder="Type Indonesian city / origin port..."
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2.5 pl-9 pr-8 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
                 {origin && (
@@ -5660,11 +5772,12 @@ function AddTaskModal({
             {/* Destination */}
             <div className="space-y-1 relative">
               <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                Destination (Tujuan)
+                Destination <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <Search size={14} className="pointer-events-none absolute left-3.5 top-3 text-slate-400" />
                 <input
+                  id="input-destination"
                   type="text"
                   value={destination}
                   onChange={(e) => {
@@ -5672,7 +5785,7 @@ function AddTaskModal({
                   }}
                   onFocus={() => setDestinationFocused(true)}
                   onBlur={() => setTimeout(() => setDestinationFocused(false), 200)}
-                  placeholder="Ketik / cari port tujuan pengiriman..."
+                  placeholder="Type / search delivery destination port..."
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2.5 pl-9 pr-8 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
                 {destination && (
@@ -5713,7 +5826,7 @@ function AddTaskModal({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-                  Waktu &amp; Lokasi Serah Terima (Otomatis Satelit GPS)
+                  Handover Date &amp; Location (GPS Satellite Auto-Sync)
                 </h4>
               </div>
               <button
@@ -5727,7 +5840,7 @@ function AddTaskModal({
                 ) : (
                   <MapPin size={13} />
                 )}
-                <span>{isPinningGps ? "Mendeteksi..." : "PIN GPS"}</span>
+                <span>{isPinningGps ? "Detecting..." : "PIN GPS"}</span>
               </button>
             </div>
 
@@ -5757,9 +5870,10 @@ function AddTaskModal({
             {/* Komoditas */}
             <div className="space-y-1">
               <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
-                Komoditas
+                Commodity <span className="text-rose-500">*</span>
               </label>
               <input
+                id="input-cargo"
                 type="text"
                 value={cargo}
                 onChange={(e) => setCargo(e.target.value)}
@@ -5771,61 +5885,43 @@ function AddTaskModal({
             {/* Jumlah Koli */}
             <div className="space-y-1">
               <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
-                Jumlah Koli <span className="text-rose-500">*</span>
+                Piece Count <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <input
+                  id="input-actualPieces"
                   type="text"
                   inputMode="numeric"
                   value={actualPieces}
                   onChange={(e) => handlePiecesChange(e.target.value)}
                   placeholder="24"
-                  className={`w-full rounded-xl border ${
-                    piecesError
-                      ? "border-rose-500 ring-1 ring-rose-500 bg-rose-50/20 text-rose-700 dark:text-rose-300"
-                      : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  } py-2 pl-3 pr-10 text-xs outline-none transition font-mono`}
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2 pl-3 pr-10 text-xs text-slate-800 dark:text-slate-100 outline-none transition font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
                 <span className="pointer-events-none absolute right-3 top-2 text-[11px] font-semibold text-slate-400">
                   Pcs
                 </span>
               </div>
-              {piecesError && (
-                <p className="text-[10px] font-semibold text-rose-500 dark:text-rose-400 flex items-center gap-1 mt-1 leading-tight">
-                  <AlertCircle size={11} className="shrink-0" />
-                  <span>{piecesError}</span>
-                </p>
-              )}
             </div>
 
             {/* Berat Aktual */}
             <div className="space-y-1">
               <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
-                Berat Aktual <span className="text-rose-500">*</span>
+                Actual Weight <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <input
+                  id="input-actualGrossWeight"
                   type="text"
                   inputMode="decimal"
                   value={actualGrossWeight}
                   onChange={(e) => handleWeightChange(e.target.value)}
                   placeholder="360.0"
-                  className={`w-full rounded-xl border ${
-                    weightError
-                      ? "border-rose-500 ring-1 ring-rose-500 bg-rose-50/20 text-rose-700 dark:text-rose-300"
-                      : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  } py-2 pl-3 pr-9 text-xs outline-none transition font-mono`}
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2 pl-3 pr-9 text-xs text-slate-800 dark:text-slate-100 outline-none transition font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
                 <span className="pointer-events-none absolute right-3 top-2 text-[11px] font-semibold text-slate-400">
                   Kg
                 </span>
               </div>
-              {weightError && (
-                <p className="text-[10px] font-semibold text-rose-500 dark:text-rose-400 flex items-center gap-1 mt-1 leading-tight">
-                  <AlertCircle size={11} className="shrink-0" />
-                  <span>{weightError}</span>
-                </p>
-              )}
             </div>
           </div>
         </div>
@@ -5879,20 +5975,6 @@ function AddTaskModal({
             {/* Blue Dotted Line Separator */}
             <div className="border-b-2 border-dotted border-sky-400/80 dark:border-sky-500/80 my-3.5 -mx-6 sm:-mx-7" />
 
-            {/* Step 2 Simulation Helper Banner */}
-            <div className="flex items-center justify-between gap-3 bg-sky-50 dark:bg-sky-950/30 px-3.5 py-1.5 rounded-xl text-[11px] text-sky-900 dark:text-sky-200 mb-3.5 border border-sky-100 dark:border-sky-900/40">
-              <span className="font-medium text-slate-600 dark:text-slate-300">
-                Pekerjaan: <b className="text-slate-900 dark:text-white font-mono">{jobNumber}</b> • {customer || "Customer"}
-              </span>
-              <button
-                type="button"
-                onClick={fillQuickStep2Simulation}
-                className="font-bold text-sky-700 dark:text-sky-300 underline hover:text-sky-800 cursor-pointer text-[11px]"
-              >
-                ⚡ Isi Otomatis Contoh 4 Foto &amp; Dokumen
-              </button>
-            </div>
-
             {/* Body Step 2 (Scrollable container matching Image 1) */}
             <div className="space-y-4 max-h-[68vh] overflow-y-auto pr-1">
               {/* 1. MANDATORY PHOTOS: 4 CARGO ANGLES */}
@@ -5913,6 +5995,7 @@ function AddTaskModal({
                   {photoAngles.map((angle, idx) => (
                     <div
                       key={angle.key}
+                      id={`step2-angle-${idx}`}
                       className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-3.5 shadow-2xs"
                     >
                       <div className="flex items-center justify-between mb-2">
@@ -5925,15 +6008,33 @@ function AddTaskModal({
                       </div>
 
                       {step2PhotoUrls[idx] ? (
-                        <div className="relative rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-100 dark:bg-slate-800 group h-28">
+                        <div className="relative rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-100 dark:bg-slate-800 group h-32">
                           <img
                             src={step2PhotoUrls[idx]!}
                             alt={angle.title}
                             className="w-full h-full object-cover"
                           />
-                          <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                            <label className="p-1.5 rounded-lg bg-white/90 text-slate-800 text-[10px] font-bold cursor-pointer hover:bg-white transition">
-                              Ganti
+                          <div className="absolute inset-0 bg-slate-950/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setCameraModalConfig({
+                                  isOpen: true,
+                                  angleIndex: idx,
+                                  title: `Retake: ${angle.title}`,
+                                  subtitle: angle.tag,
+                                  angleKey: angle.key,
+                                })
+                              }
+                              className="px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer transition shadow-xs"
+                              title="Retake photo using camera"
+                            >
+                              <Camera size={12} />
+                              <span>Retake</span>
+                            </button>
+                            <label className="px-2.5 py-1.5 rounded-lg bg-white/95 hover:bg-white text-slate-800 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition shadow-xs">
+                              <Upload size={12} />
+                              <span>Replace</span>
                               <input
                                 type="file"
                                 accept="image/*"
@@ -5948,41 +6049,65 @@ function AddTaskModal({
                                 setStep2PhotoUrls((prev) => prev.map((u, i) => (i === idx ? null : u)));
                                 setStep2Photos((prev) => prev.map((f, i) => (i === idx ? null : f)));
                               }}
-                              className="p-1.5 rounded-lg bg-rose-600 text-white text-[10px] font-bold hover:bg-rose-700 transition cursor-pointer"
+                              className="p-1.5 rounded-lg bg-rose-600 text-white text-[11px] font-bold hover:bg-rose-700 transition cursor-pointer shadow-xs"
+                              title="Delete photo"
                             >
-                              Hapus
+                              <Trash2 size={13} />
                             </button>
                           </div>
-                          <div className="absolute bottom-1 left-2 right-2 bg-slate-900/80 rounded px-2 py-0.5 flex items-center justify-between text-[10px] text-white">
+                          <div className="absolute bottom-1 left-2 right-2 bg-slate-900/85 backdrop-blur-xs rounded-lg px-2 py-0.5 flex items-center justify-between text-[10px] text-white">
                             <span className="truncate max-w-[130px] font-medium">{step2PhotoNames[idx]}</span>
                             <CheckCircle size={12} className="text-emerald-400 shrink-0" />
                           </div>
                         </div>
                       ) : (
-                        <label className="block rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 p-4 text-center cursor-pointer transition bg-slate-50/50 dark:bg-slate-900/40">
+                        <div className="rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 p-3 sm:p-3.5 text-center transition bg-slate-50/50 dark:bg-slate-900/40">
                           {uploadingAngle === idx ? (
-                            <div className="py-2">
-                              <RefreshCw size={20} className="mx-auto text-blue-600 animate-spin mb-1" />
-                              <span className="text-[11px] text-blue-600 font-semibold">Mengunggah...</span>
+                            <div className="py-5">
+                              <RefreshCw size={20} className="mx-auto text-blue-600 animate-spin mb-1.5" />
+                              <span className="text-xs text-blue-600 font-semibold">Uploading photo...</span>
                             </div>
                           ) : (
                             <>
-                              <Camera size={18} className="mx-auto text-slate-700 dark:text-slate-300 mb-1" />
-                              <span className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline block">
-                                Take Photo / Upload
+                              <Camera size={20} className="mx-auto text-slate-500 dark:text-slate-400 mb-1.5" />
+                              <div className="flex items-center gap-2 mb-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setCameraModalConfig({
+                                      isOpen: true,
+                                      angleIndex: idx,
+                                      title: `Take Photo: ${angle.title}`,
+                                      subtitle: angle.tag,
+                                      angleKey: angle.key,
+                                    })
+                                  }
+                                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold transition shadow-xs cursor-pointer"
+                                  title="Take photo directly with camera"
+                                >
+                                  <Camera size={13} />
+                                  <span>Take Photo</span>
+                                </button>
+                                <label
+                                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer transition shadow-2xs"
+                                  title="Choose file from gallery or computer"
+                                >
+                                  <Upload size={13} />
+                                  <span>Upload File</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="sr-only"
+                                    onChange={(e) => handlePhotoUpload(idx, e.target.files?.[0])}
+                                  />
+                                </label>
+                              </div>
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
+                                JPG, PNG up to 10MB • Camera &amp; Gallery
                               </span>
-                              <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">
-                                JPG, PNG up to 10MB
-                              </span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="sr-only"
-                                onChange={(e) => handlePhotoUpload(idx, e.target.files?.[0])}
-                              />
                             </>
                           )}
-                        </label>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -5997,7 +6122,7 @@ function AddTaskModal({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   {/* Primary Document */}
-                  <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-3.5 shadow-2xs">
+                  <div id="step2-primary-doc" className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-3.5 shadow-2xs">
                     <div>
                       <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
                         1. Primary Document <span className="text-rose-500">*</span>
@@ -6021,7 +6146,7 @@ function AddTaskModal({
                           onClick={() => setPrimaryDoc(null)}
                           className="text-[10px] font-bold text-rose-600 hover:text-rose-700 shrink-0 cursor-pointer"
                         >
-                          Hapus
+                          Delete
                         </button>
                       </div>
                     ) : (
@@ -6029,7 +6154,7 @@ function AddTaskModal({
                         {uploadingDoc === "primary" ? (
                           <div className="py-2">
                             <RefreshCw size={20} className="mx-auto text-blue-600 animate-spin mb-1" />
-                            <span className="text-[11px] text-blue-600 font-semibold">Mengunggah...</span>
+                            <span className="text-[11px] text-blue-600 font-semibold">Uploading...</span>
                           </div>
                         ) : (
                           <>
@@ -6055,7 +6180,7 @@ function AddTaskModal({
                   </div>
 
                   {/* Supporting Document */}
-                  <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-3.5 shadow-2xs">
+                  <div id="step2-supporting-doc" className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-3.5 shadow-2xs">
                     <div>
                       <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
                         2. Supporting Document <span className="text-rose-500">*</span>
@@ -6079,7 +6204,7 @@ function AddTaskModal({
                           onClick={() => setSupportingDoc(null)}
                           className="text-[10px] font-bold text-rose-600 hover:text-rose-700 shrink-0 cursor-pointer"
                         >
-                          Hapus
+                          Delete
                         </button>
                       </div>
                     ) : (
@@ -6087,7 +6212,7 @@ function AddTaskModal({
                         {uploadingDoc === "supporting" ? (
                           <div className="py-2">
                             <RefreshCw size={20} className="mx-auto text-blue-600 animate-spin mb-1" />
-                            <span className="text-[11px] text-blue-600 font-semibold">Mengunggah...</span>
+                            <span className="text-[11px] text-blue-600 font-semibold">Uploading...</span>
                           </div>
                         ) : (
                           <>
@@ -6170,10 +6295,11 @@ function AddTaskModal({
                 {hasIssue === "yes" && (
                   <div className="mt-2.5">
                     <textarea
+                      id="input-issueNotes"
                       value={issueNotes}
                       onChange={(e) => setIssueNotes(e.target.value)}
                       rows={2}
-                      placeholder="Tuliskan catatan singkat kendala / issue yang ditemukan di lapangan..."
+                      placeholder="Write brief notes on the issues/problems found on site..."
                       className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
@@ -6215,10 +6341,10 @@ function AddTaskModal({
               </div>
               <div className="min-w-0">
                 <h3 className="text-[15px] font-bold text-slate-900 dark:text-white leading-tight">
-                  Pemberitahuan: Sukses Selesai
+                  Notification: Successfully Completed
                 </h3>
                 <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                  Dokumentasi dan task berhasil dicatat ke sistem
+                  Documentation and task recorded to system successfully
                 </p>
               </div>
             </div>
@@ -6239,21 +6365,21 @@ function AddTaskModal({
               {/* Pill Badge */}
               <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#dcfce7] dark:bg-emerald-950/60 text-[#15803d] dark:text-emerald-300 text-[11px] font-bold tracking-wide border border-[#86efac]/80 dark:border-emerald-800/80 mb-2.5">
                 <Check size={12} className="stroke-[3]" />
-                <span>SUCCESS INDICATOR: DOKUMENTASI SELESAI</span>
+                <span>SUCCESS INDICATOR: DOCUMENTATION COMPLETED</span>
               </div>
 
               {/* Headline */}
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
-                Dokumentasi Berhasil Disimpan &amp; Diselesaikan!
+                Documentation Successfully Saved &amp; Completed!
               </h2>
 
               {/* Subtitle */}
               <p className="text-xs sm:text-[13px] text-slate-600 dark:text-slate-400 mt-2 max-w-sm sm:max-w-md mx-auto leading-relaxed">
-                Seluruh bukti foto 4 sudut kargo, dokumen wajib, dan rekap pekerjaan untuk Job{" "}
+                All 4 cargo angle photos, mandatory documents, and task summary for Job{" "}
                 <strong className="font-bold text-slate-900 dark:text-white">
                   {displayJobNumber}
                 </strong>{" "}
-                telah sukses tersimpan ke database logistik
+                have been successfully saved to the logistics database
               </p>
             </div>
 
@@ -6275,7 +6401,7 @@ function AddTaskModal({
 
               {/* Status Pekerjaan */}
               <div className="flex items-center justify-between py-2.5">
-                <span className="text-slate-500 dark:text-slate-400 font-medium">Status Pekerjaan</span>
+                <span className="text-slate-500 dark:text-slate-400 font-medium">Job Status</span>
                 <span className="inline-flex items-center px-3.5 py-0.5 rounded-full bg-[#dcfce7] dark:bg-emerald-950/60 text-[#15803d] dark:text-emerald-300 font-bold text-xs border border-[#86efac]/70 dark:border-emerald-800">
                   Completed
                 </span>
@@ -6286,29 +6412,29 @@ function AddTaskModal({
                 <span className="text-slate-500 dark:text-slate-400 font-medium">Problem / Issue</span>
                 <span className="font-medium text-slate-800 dark:text-slate-200">
                   {hasIssue === "yes"
-                    ? `Yes (${issueNotes.trim() || "Kendala di Lapangan"})`
-                    : "No (Nihil Kendala)"}
+                    ? `Yes (${issueNotes.trim() || "Field Issue"})`
+                    : "No (No Issues)"}
                 </span>
               </div>
 
               {/* Kepatuhan Dokumentasi */}
               <div className="flex items-center justify-between py-2.5">
-                <span className="text-slate-500 dark:text-slate-400 font-medium">Kepatuhan Dokumentasi</span>
+                <span className="text-slate-500 dark:text-slate-400 font-medium">Documentation Compliance</span>
                 <span className="inline-flex items-center gap-1.5 font-semibold text-[#15803d] dark:text-emerald-400">
                   <CheckCircle2 size={15} className="shrink-0 stroke-[2.5]" />
                   <span>
                     {completedPhotoCount >= 4 || completedPhotoCount === 0
-                      ? "4/4 Foto + Dokumen Lengkap (100%)"
-                      : `${completedPhotoCount}/4 Foto + Dokumen Lengkap (${Math.round((completedPhotoCount / 4) * 100)}%)`}
+                      ? "4/4 Photos + Documents Complete (100%)"
+                      : `${completedPhotoCount}/4 Photos + Documents Complete (${Math.round((completedPhotoCount / 4) * 100)}%)`}
                   </span>
                 </span>
               </div>
 
               {/* Waktu Pengerjaan */}
               <div className="flex items-center justify-between py-2.5">
-                <span className="text-slate-500 dark:text-slate-400 font-medium">Waktu Pengerjaan</span>
+                <span className="text-slate-500 dark:text-slate-400 font-medium">Completion Time</span>
                 <span className="font-mono font-semibold text-blue-600 dark:text-blue-400 text-xs sm:text-sm">
-                  {durationSeconds} Detik (Target SOP &lt; 1 Menit)
+                  {durationSeconds} Seconds (SOP Target &lt; 1 Minute)
                 </span>
               </div>
             </div>
@@ -6321,13 +6447,57 @@ function AddTaskModal({
                 className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 py-3 px-5 text-sm font-bold text-white shadow-md transition cursor-pointer"
               >
                 <Check size={16} className="stroke-[2.5]" />
-                <span>Selesai</span>
+                <span>Done</span>
               </button>
             </div>
           </div>
         )}
       </div>
     </div>
+
+    {/* WARNING POPUP: PERHATIAN (Compact Horizontal Rectangle, fullscreen backdrop with z-[100]) */}
+    {showWarningModal && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="relative w-full max-w-[420px] sm:max-w-[440px] rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 px-6 py-4.5 sm:px-8 sm:py-5 shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-150">
+          {/* Red Circle with Exclamation Mark */}
+          <div className="w-10 h-10 rounded-full bg-[#ef4444] text-white flex items-center justify-center shadow-xs mb-2">
+            <span className="font-sans font-black text-xl leading-none">!</span>
+          </div>
+
+          {/* Title: Perhatian! */}
+          <h3 className="text-xl font-black text-[#881337] dark:text-red-400 tracking-tight mb-1.5">
+            Attention!
+          </h3>
+
+          {/* Message */}
+          <p className="text-xs sm:text-sm font-normal text-slate-700 dark:text-slate-300 mb-4 leading-relaxed px-2">
+            {warningMessage || "Job Number is required."}
+          </p>
+
+          {/* OK Button */}
+          <button
+            type="button"
+            onClick={handleCloseWarning}
+            className="w-full py-2.5 px-6 rounded-xl sm:rounded-2xl bg-[#991b1b] hover:bg-[#7f1d1d] active:scale-95 text-white font-bold text-xs sm:text-sm tracking-wide shadow-md transition cursor-pointer"
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    )}
+
+    {/* CAMERA CAPTURE MODAL */}
+    <CameraCaptureModal
+      isOpen={cameraModalConfig.isOpen}
+      onClose={() => setCameraModalConfig((prev) => ({ ...prev, isOpen: false }))}
+      title={cameraModalConfig.title}
+      subtitle={cameraModalConfig.subtitle}
+      angleKey={cameraModalConfig.angleKey}
+      onCapture={(file) => {
+        handlePhotoUpload(cameraModalConfig.angleIndex, file);
+      }}
+    />
+  </>
   );
 }
 
@@ -6355,16 +6525,16 @@ function ReassignModal({
     const firstOther = availableAgents.find((a) => a.id !== currentAgent.id);
     return firstOther ? firstOther.id : "";
   });
-  const [reasonCategory, setReasonCategory] = useState("Kendala Kendaraan / Transport");
+  const [reasonCategory, setReasonCategory] = useState("Vehicle / Transportation Issue");
   const [notes, setNotes] = useState("");
 
   const reasonCategories = [
-    "Kendala Kendaraan / Transport",
-    "Kesehatan / Sakit di Lapangan",
-    "Bentrokan Jadwal / Overload Tugas",
-    "Akses Lokasi / Izin Masuk Ditolak",
-    "Kebutuhan Khusus / Kargo Memerlukan Peralatan Khusus",
-    "Lainnya",
+    "Vehicle / Transportation Issue",
+    "Health / Medical Issue on Site",
+    "Schedule Conflict / Task Overload",
+    "Site Access / Entry Permit Denied",
+    "Special Equipment Required for Cargo",
+    "Others",
   ];
 
   const handleSave = () => {
@@ -6374,7 +6544,7 @@ function ReassignModal({
     } else {
       const found = availableAgents.find((a) => a.id === selectedAgentId);
       if (!found) {
-        alert("Pilih agen pengganti.");
+        alert("Please select a replacement agent.");
         return;
       }
       targetAgent = { id: found.id, name: found.name };
@@ -6397,7 +6567,7 @@ function ReassignModal({
             </span>
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                Alihkan Tugas (Re-assign)
+                Reassign Task
               </h2>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 Job #{no(job)} • {job?.customer || "-"}
@@ -6417,7 +6587,7 @@ function ReassignModal({
         <div className="mt-4 space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-              Tujuan Pengalihan
+              Reassignment Target
             </label>
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -6429,7 +6599,7 @@ function ReassignModal({
                     : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300"
                 }`}
               >
-                Serahkan ke Rekan Agen
+                Assign to Peer Agent
               </button>
               <button
                 type="button"
@@ -6440,7 +6610,7 @@ function ReassignModal({
                     : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300"
                 }`}
               >
-                Kembalikan ke Pool (Tersedia)
+                Return to Available Pool
               </button>
             </div>
           </div>
@@ -6448,7 +6618,7 @@ function ReassignModal({
           {targetType === "peer" && (
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                Pilih Agen Pengganti *
+                Select Replacement Agent *
               </label>
               <select
                 value={selectedAgentId}
@@ -6468,7 +6638,7 @@ function ReassignModal({
 
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-              Kategori Kendala *
+              Issue Category *
             </label>
             <select
               value={reasonCategory}
@@ -6485,13 +6655,13 @@ function ReassignModal({
 
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-              Catatan Penjelasan Kendala (Opsional)
+              Issue Explanation Notes (Optional)
             </label>
             <textarea
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Contoh: Ban motor kempes di jalan menuju gudang Marunda, dokumen fisik sudah diserahkan ke agen..."
+              placeholder="Example: Flat tire en route to warehouse, physical documents handed over to agent..."
               className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2.5 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
@@ -6512,7 +6682,7 @@ function ReassignModal({
             disabled={saving}
             className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition cursor-pointer disabled:opacity-50"
           >
-            {saving ? "Mengalihkan..." : "Konfirmasi Alihkan"}
+            {saving ? "Reassigning..." : "Confirm Reassignment"}
           </button>
         </div>
       </div>
@@ -6547,15 +6717,15 @@ function PersonCard({
       </h2>
 
       <Field
-        label="Nama *"
+        label="Name *"
         value={name}
         onChange={onChangeName}
-        placeholder="Masukkan nama..."
+        placeholder="Enter name..."
       />
 
       {company ? (
         <Field
-          label="Perusahaan"
+          label="Company"
           value={company}
           readOnly
         />
@@ -6661,7 +6831,7 @@ function DocumentUpload({
       {isUploading ? (
         <div className="mb-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 p-2.5 text-xs font-semibold text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800/60 flex items-center gap-2">
           <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <span>Mengunggah berkas ke storage...</span>
+          <span>Uploading file to storage...</span>
         </div>
       ) : value ? (
         <div className="mb-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 p-2.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-800/60">
@@ -6680,10 +6850,10 @@ function DocumentUpload({
         />
 
         {isUploading
-          ? "Sedang Mengunggah..."
+          ? "Uploading..."
           : value
-          ? "Ganti File"
-          : "Upload File (Maks. 5 MB)"}
+          ? "Replace File"
+          : "Upload File (Max. 5 MB)"}
 
         <input
           type="file"

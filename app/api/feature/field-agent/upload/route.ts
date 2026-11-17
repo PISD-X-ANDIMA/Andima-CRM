@@ -29,18 +29,18 @@ export async function POST(request: Request) {
 
     if (!file) {
       return NextResponse.json(
-        { success: false, error: 'Berkas tidak ditemukan. Parameter "file" wajib disertakan.' },
+        { success: false, error: 'File not found. Parameter "file" is required.' },
         { status: 400 }
       );
     }
 
-    // 1. Validasi Batas Ukuran File (Maksimal 5 MB)
+    // 1. File Size Limit Validation (Max 5 MB)
     if (file.size > MAX_FILE_SIZE_BYTES) {
       const fileSizeMb = (file.size / (1024 * 1024)).toFixed(2);
       return NextResponse.json(
         {
           success: false,
-          error: `Ukuran berkas "${file.name}" (${fileSizeMb} MB) melebihi batas maksimal 5 MB.`,
+          error: `File size of "${file.name}" (${fileSizeMb} MB) exceeds maximum limit of 5 MB.`,
         },
         { status: 413 }
       );
@@ -108,14 +108,14 @@ export async function POST(request: Request) {
         fileUrl = `/uploads/${localFileName}`;
       } catch (localErr) {
         console.error('[FieldAgent Upload] Local fallback failed:', localErr);
-        throw new Error('Gagal menyimpan berkas ke storage maupun penyimpanan server.');
+        throw new Error('Failed to save file to cloud storage or server filesystem.');
       }
     }
 
     return NextResponse.json(
       {
         success: true,
-        message: 'Berkas berhasil diunggah.',
+        message: 'File successfully uploaded.',
         data: {
           file_name: file.name,
           file_url: fileUrl,
@@ -133,7 +133,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('[FieldAgent Upload] Handler error:', error);
     return NextResponse.json(
-      { success: false, error: error?.message || 'Terjadi kesalahan server saat memproses upload berkas.' },
+      { success: false, error: error?.message || 'Server error occurred while processing file upload.' },
       { status: 500 }
     );
   }
