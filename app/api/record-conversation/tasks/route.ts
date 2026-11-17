@@ -17,7 +17,8 @@ export async function GET() {
   }
 
   try {
-    const tasks = await getFieldAgentTasks(scope.isManager ? null : scope.companyIds);
+    // Return all field agent tasks so they are synchronized across Manager and Sales Executive
+    const tasks = await getFieldAgentTasks(null);
     const response = NextResponse.json({ success: true, data: tasks ?? [] });
     response.headers.set('Cache-Control', 'private, max-age=3, stale-while-revalidate=30');
     return response;

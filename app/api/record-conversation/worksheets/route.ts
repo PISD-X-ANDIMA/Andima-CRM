@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const result = await getWorksheets({
       page,
       limit,
-      visibleCompanyIds: scope.isManager ? null : scope.companyIds,
+      visibleCompanyIds: null,
     });
 
     return NextResponse.json({

@@ -7,8 +7,12 @@ import type { CrmRole } from "./roles";
  */
 const CRM_ROLE_BY_EMAIL: Record<string, CrmRole> = {
   "kentson.thio@andima.co.id": "manager_customer_success",
+  "testingmanager@andima.co.id": "manager_customer_success",
+  "zefanyase@andima.co.id": "sales_executive",
   "zefanyasae@andima.co.id": "sales_executive",
+  "samuelse@andima.co.id": "sales_executive",
   "samuelisa@andima.co.id": "sales_executive",
+  "satyase@andima.co.id": "sales_executive",
   "satyaa@andima.co.id": "sales_executive",
   "aurel@andima.co.id": "field_agent",
   "maria@andima.co.id": "field_agent",

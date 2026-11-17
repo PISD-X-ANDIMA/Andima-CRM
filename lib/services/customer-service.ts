@@ -2,7 +2,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createSupabaseOperationError } from "@/lib/supabase/errors";
 import { isValidPicPhoneNumber } from "@/lib/validation/pic-phone";
 import { getCurrentUserScope } from "@/lib/auth/roles";
-import { getCompanyScope, buildCustomerOwnerFilter } from "@/lib/services/access-scope";
+import { getCompanyScope, buildCustomerOwnerFilter, invalidateCompanyScope } from "@/lib/services/access-scope";
 import {
   CustomerListItem,
   CustomerDetailItem,
@@ -73,6 +73,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
     sortOrder = "asc",
     requireMeetings = false,
     requireTransactions = false,
+    forceAll = false,
   } = options;
 
   const validPerPage = Math.min(Math.max(perPage, 1), 100);
@@ -109,7 +110,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
       .select("id, company_name, address, pic_name, pic_phone, created_by, created_by_name, created_at")
       .is("deleted_at", null);
 
-    if (!scope.isManager) {
+    if (!scope.isManager && !forceAll) {
       if (scope.companyIds.length === 0) {
         return { customers: [], total: 0, page, perPage: validPerPage, totalPages: 1 };
       }
@@ -447,11 +448,12 @@ export async function createCustomer(
         address: input.address.trim(),
         pic_name: input.pic_full_name.trim(),
         pic_phone: input.pic_phone_number.trim(),
-        created_by: regUser?.id ?? null,
+        created_by: regUser?.id || userScope.user.id,
         created_by_name: createdByName,
       });
     if (companyInsertErr) return { success: false, error: companyInsertErr.message.includes("duplicate") ? "DUPLICATE_COMPANY: This company is already on the company list" : companyInsertErr.message };
 
+    invalidateCompanyScope(userScope.user.id);
     return { success: true, companyId: newCompanyId };
   } catch (error: unknown) {
     return {
@@ -565,6 +567,7 @@ export async function deleteCustomer(
 
     if (companyErr) return { success: false, error: companyErr.message };
 
+    invalidateCompanyScope(userScope.user.id);
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };

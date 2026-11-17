@@ -61,32 +61,10 @@ export function validateMeetingScheduleDateAndSlot(input: Pick<MeetingInput, "me
   return null;
 }
 
-/** Mark missed one-time meetings as canceled when schedules are read. Weekly records represent an ongoing series. */
+/** Safely retained for backwards compatibility; does not destructively cancel user meetings. */
 export async function cancelExpiredOneTimeMeetings() {
-  const supabase = await createServerSupabaseClient();
-  if (!supabase) return;
-  const { date, minutes } = jakartaDateAndMinutes();
-  const { error: pastDateError } = await (supabase as any)
-    .from("a1_meetings")
-    .update({ status: "cancelled", updated_at: new Date().toISOString() })
-    .eq("schedule_type", "one_day")
-    .eq("status", "scheduled")
-    .eq("is_active", true)
-    .is("deleted_at", null)
-    .lt("meeting_date", date);
-  if (pastDateError) throw pastDateError;
-
-  const currentTime = `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}:00`;
-  const { error: elapsedTodayError } = await (supabase as any)
-    .from("a1_meetings")
-    .update({ status: "cancelled", updated_at: new Date().toISOString() })
-    .eq("schedule_type", "one_day")
-    .eq("meeting_date", date)
-    .eq("status", "scheduled")
-    .eq("is_active", true)
-    .is("deleted_at", null)
-    .lte("end_time", currentTime);
-  if (elapsedTodayError) throw elapsedTodayError;
+  // Meetings are managed explicitly by users (scheduled, completed, cancelled).
+  // Automatic cancellation of one-time meetings was causing newly created meetings to disappear.
 }
 
 /**

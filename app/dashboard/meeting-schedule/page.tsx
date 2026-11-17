@@ -158,7 +158,7 @@ export default function MeetingSchedulePage() {
   const agenda = customers.flatMap((customer) => (customer.meetings || []).flatMap((meeting) => {
     if (meeting.effectiveStartDate && selected < meeting.effectiveStartDate) return [];
     const isScheduled = meeting.scheduleType === "one_day" ? meeting.meetingDate === selected : meeting.meetingDay === dayKeys[selectedDate.getDay()];
-    return isScheduled && meeting.status !== "cancelled" ? [{ customer, meeting }] : [];
+    return isScheduled ? [{ customer, meeting }] : [];
   })).sort((a, b) => (a.meeting.startTime || "").localeCompare(b.meeting.startTime || ""));
   const availableCustomers = customers;
 
@@ -372,7 +372,7 @@ export default function MeetingSchedulePage() {
           const apiSlot = selectedDaySlots[selected]?.[hour - 8];
           const apiMeeting = apiSlot?.meeting;
           const matchedMeeting = apiMeeting ? agenda.find(({ meeting }) => meeting.id === apiMeeting.id) : null;
-          if (apiSlot && !apiMeeting) return <div key={hour} className="flex min-h-[70px] items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-slate-500"><span className="flex items-center gap-4"><i className="h-3 w-3 rounded-full bg-slate-400" />Available</span><span className="whitespace-nowrap">{String(hour).padStart(2, "0")}:00 - {String(hour + 1).padStart(2, "0")}:00</span><button type="button" disabled={apiSlot.status === "past" || isSelectedDateSlotPast(hour) || Boolean(error) || loading || customers.length === 0} onClick={() => beginAdd(`${String(hour).padStart(2, "0")}:00`)} className="rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40">+Add</button></div>;
+          if (apiSlot && !apiMeeting) return <div key={hour} className="flex min-h-[70px] items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-slate-500"><span className="flex items-center gap-4"><i className="h-3 w-3 rounded-full bg-slate-400" />Available</span><span className="whitespace-nowrap">{String(hour).padStart(2, "0")}:00 - {String(hour + 1).padStart(2, "0")}:00</span><button type="button" disabled={apiSlot.status === "past" || isSelectedDateSlotPast(hour) || Boolean(error) || loading} onClick={() => beginAdd(`${String(hour).padStart(2, "0")}:00`)} className="rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40">+Add</button></div>;
           if (apiSlot && apiMeeting && !matchedMeeting) return <div key={hour} className="flex min-h-[70px] items-center justify-between gap-4 rounded-xl border border-blue-200 bg-blue-50/60 px-5 py-4 text-blue-800"><span>{apiMeeting.company_name || "Scheduled meeting"}</span><span className="whitespace-nowrap">{apiMeeting.start_time} - {apiMeeting.end_time}</span></div>;
           if (slotMeetings.length > 0) {
             const hasMultiple = slotMeetings.length > 1;
@@ -414,7 +414,7 @@ export default function MeetingSchedulePage() {
                       {meetingStatus === "cancelled" && (
                         <button
                           type="button"
-                          disabled={Boolean(error) || loading || customers.length === 0}
+                          disabled={Boolean(error) || loading}
                           onClick={() => beginAdd(meeting.startTime?.slice(0, 5) || `${String(hour).padStart(2, "0")}:00`)}
                           className="shrink-0 rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40"
                         >
@@ -427,13 +427,18 @@ export default function MeetingSchedulePage() {
               </div>
             );
           }
-          return <div key={hour} className="flex min-h-[70px] items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-slate-500"><span className="flex items-center gap-4"><i className="h-3 w-3 rounded-full bg-slate-400" />Available</span><span className="whitespace-nowrap">{String(hour).padStart(2, "0")}:00 - {String(hour + 1).padStart(2, "0")}:00</span><button type="button" disabled={isSelectedDateSlotPast(hour) || Boolean(error) || loading || customers.length === 0} onClick={() => beginAdd(`${String(hour).padStart(2, "0")}:00`)} className="rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40">+Add</button></div>;
+          return <div key={hour} className="flex min-h-[70px] items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-slate-500"><span className="flex items-center gap-4"><i className="h-3 w-3 rounded-full bg-slate-400" />Available</span><span className="whitespace-nowrap">{String(hour).padStart(2, "0")}:00 - {String(hour + 1).padStart(2, "0")}:00</span><button type="button" disabled={isSelectedDateSlotPast(hour) || Boolean(error) || loading} onClick={() => beginAdd(`${String(hour).padStart(2, "0")}:00`)} className="rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40">+Add</button></div>;
         })}
       </section>
     </div>
 
     {slotToBook && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/75 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setSlotToBook(null); }}><form onSubmit={handleSaveMeeting} className="my-auto w-full max-w-5xl rounded-2xl bg-white px-6 py-6 shadow-2xl sm:px-8"><div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4"><h2 className="text-2xl font-bold text-slate-900">Add Meeting</h2><button type="button" aria-label="Close" onClick={() => setSlotToBook(null)} className="text-slate-400 hover:text-slate-700"><X className="h-6 w-6" /></button></div>
       <div className="space-y-4">
+        {availableCustomers.length === 0 && (
+          <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 border border-amber-200">
+            No assigned companies found. Please add a company in Company List first before scheduling meetings.
+          </div>
+        )}
         <MeetingField label="Company" required><select required value={form.companyId} onChange={(event) => { const customer = customers.find((item) => item.id === event.target.value); updateForm("companyId", event.target.value); if (customer) updateForm("picName", customer.primaryPic?.fullName || ""); }} className={inputClass}><option value="">Select company</option>{availableCustomers.map((customer) => <option key={customer.id} value={customer.id}>{customer.companyName}</option>)}</select></MeetingField>
         <MeetingField label="Date" required><input required type="date" min={jakartaDateKey()} value={form.date} onChange={(event) => updateForm("date", event.target.value)} className={inputClass} /></MeetingField>
         <MeetingField label="Time" required><select required value={form.startTime} onChange={(event) => updateForm("startTime", event.target.value)} className={inputClass}><option value="" disabled>Select a time slot</option>{selectableSlots.map((slot) => <option key={slot.start} value={slot.start}>{slot.start} - {slot.end}</option>)}</select></MeetingField>

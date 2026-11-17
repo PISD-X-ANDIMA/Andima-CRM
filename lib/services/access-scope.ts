@@ -35,10 +35,18 @@ export function buildCustomerOwnerFilter(identifiers: string[], userId?: string)
 
 const scopeCache = new Map<string, { scope: CompanyScope; expiresAt: number }>();
 
+export function invalidateCompanyScope(userId?: string): void {
+  if (userId) {
+    scopeCache.delete(userId);
+  } else {
+    scopeCache.clear();
+  }
+}
+
 /**
  * Resolves which companies the signed-in user may read from `a1_customers`.
  * Managers see every company. Everyone else sees only companies owned by them.
- * Results are cached in-memory for 30 seconds per user to eliminate redundant DB roundtrips.
+ * Results are cached in-memory for 5 seconds per user to eliminate redundant DB roundtrips.
  */
 export async function getCompanyScope(): Promise<CompanyScope | null> {
   const supabase = await createServerSupabaseClient();
@@ -55,7 +63,7 @@ export async function getCompanyScope(): Promise<CompanyScope | null> {
 
   if (userScope.isManager) {
     const scope: CompanyScope = { userId: userScope.user.id, isManager: true, companyIds: [] };
-    scopeCache.set(cacheKey, { scope, expiresAt: Date.now() + 30_000 });
+    scopeCache.set(cacheKey, { scope, expiresAt: Date.now() + 5_000 });
     return scope;
   }
 
@@ -81,7 +89,7 @@ export async function getCompanyScope(): Promise<CompanyScope | null> {
     isManager: false,
     companyIds: Array.from(new Set(companyIds)),
   };
-  scopeCache.set(cacheKey, { scope, expiresAt: Date.now() + 30_000 });
+  scopeCache.set(cacheKey, { scope, expiresAt: Date.now() + 5_000 });
 
   return scope;
 }
