@@ -2,11 +2,9 @@
 
 import React, { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { hasSupabaseConfig, supabase } from '@/lib/supabaseClient';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -18,8 +16,9 @@ export default function LoginPage() {
   const [isPermanentlyBlocked, setIsPermanentlyBlocked] = useState<boolean>(false);
   const [countdown, setCountdown] = useState<number>(0);
   const [greeting, setGreeting] = useState<string>('Good Morning');
+  const [existingSessionEmail, setExistingSessionEmail] = useState<string | null>(null);
 
-  // Reuse an existing authenticated session; anonymous users stay on login.
+  // Show the current session but keep the form usable, so another account can sign in.
   useEffect(() => {
     if (!hasSupabaseConfig) return;
     let active = true;
@@ -38,10 +37,17 @@ export default function LoginPage() {
         return;
       }
 
-      if (user) router.replace('/dashboard');
+      if (user) setExistingSessionEmail(user.email ?? 'akun aktif');
     })();
     return () => { active = false; };
-  }, [router]);
+  }, []);
+
+  const handleSignOutExisting = async () => {
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+    try { localStorage.removeItem('andima_user'); } catch {}
+    setExistingSessionEmail(null);
+    setErrorMessage('');
+  };
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -116,6 +122,11 @@ export default function LoginPage() {
     setIsSigningIn(true);
 
     try {
+      // Drop the previous browser session before switching accounts.
+      if (existingSessionEmail && existingSessionEmail.toLowerCase() !== email.trim().toLowerCase()) {
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+      }
+
       // Login via Supabase Auth
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: email.toLowerCase().trim(),
@@ -285,6 +296,21 @@ export default function LoginPage() {
                 Please sign in with your registered account to access the dashboard.
               </p>
             </div>
+
+            {existingSessionEmail && (
+              <div className="relative z-10 mb-6 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+                <span>
+                  Masih masuk sebagai <strong>{existingSessionEmail}</strong>. Isi form di bawah untuk masuk sebagai akun lain.
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSignOutExisting}
+                  className="cursor-pointer rounded-md border border-amber-300 bg-white px-3 py-1 font-semibold text-amber-800 hover:bg-amber-100"
+                >
+                  Keluar
+                </button>
+              </div>
+            )}
 
             {/* Form Fields */}
             <form onSubmit={handleSubmit} className="space-y-6 font-[family-name:var(--font-montserrat)] relative z-10" noValidate>
