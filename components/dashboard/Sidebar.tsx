@@ -83,7 +83,7 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
         }
       })
       .catch(() => {
-        if (pathname.startsWith("/dashboard/field-agent")) {
+        if (pathname === "/dashboard/field-agent" || pathname.startsWith("/dashboard/field-agent/")) {
           setMenuLabel("Field Agent");
           setRoleTitle("Field Agent");
           setSectionHref("/dashboard/field-agent");

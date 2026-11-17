@@ -38,15 +38,17 @@ export async function GET(_request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return createErrorResponse("AUTH_001", "Authentication is required", undefined, 401);
 
-    const cached = sidebarCache.get(user.id);
-    if (cached && Date.now() < cached.expiresAt) {
-      const response = createSuccessResponse(cached.data);
-      response.headers.set("Cache-Control", "private, max-age=30, stale-while-revalidate=120");
-      return response;
-    }
-
     const userScope = await getCurrentUserScope(supabase);
     if (!userScope) return createErrorResponse("AUTH_001", "Authentication is required", undefined, 401);
+
+    // Keyed by role too: a position change must not serve the previous role's menu.
+    const cacheKey = `${user.id}:${userScope.role}`;
+    const cached = sidebarCache.get(cacheKey);
+    if (cached && Date.now() < cached.expiresAt) {
+      const response = createSuccessResponse(cached.data);
+      response.headers.set("Cache-Control", "private, no-store");
+      return response;
+    }
 
     const isFieldAgent = userScope.role === "field_agent";
     const isManager = !isFieldAgent && userScope.isManager;
@@ -85,10 +87,10 @@ export async function GET(_request: NextRequest) {
       ],
     };
 
-    sidebarCache.set(user.id, { data, expiresAt: Date.now() + 60_000 });
+    sidebarCache.set(cacheKey, { data, expiresAt: Date.now() + 60_000 });
 
     const response = createSuccessResponse(data);
-    response.headers.set("Cache-Control", "private, max-age=30, stale-while-revalidate=120");
+    response.headers.set("Cache-Control", "private, no-store");
     return response;
   } catch {
     return createErrorResponse("NAV_001", "Failed to load navigation menu", undefined, 500);
