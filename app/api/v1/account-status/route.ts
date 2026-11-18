@@ -29,44 +29,49 @@ export async function GET() {
   const { manageableRoles } = resolved;
   const db = getA3Client();
 
-  // Fetch COM department IDs first (code 'COM' or name containing 'Commercial'/'Customer Success')
-  const { data: departments } = await db
-    .from('d3_departments')
-    .select('id, code, name');
+  // Department ID for COM (Commercial & Customer Success)
+  const COM_DEPARTMENT_ID = "97ac5d35-5da2-4f5d-9d36-78500f403cc7";
 
-  const comDeptIds = new Set<string>(
-    (departments || [])
-      .filter((d: any) => {
-        const code = String(d.code || '').toUpperCase();
-        const name = String(d.name || '').toLowerCase();
-        return code === 'COM' || name.includes('commercial') || name.includes('customer success');
+  // Fetch positions from d3_positions
+  const { data: positions } = await db
+    .from('d3_positions')
+    .select('id, code, title, department_id');
+
+  const comDeptIds = new Set<string>([COM_DEPARTMENT_ID]);
+
+  // Position IDs that belong to COM
+  const comPositionIds = new Set<string>(
+    (positions || [])
+      .filter((p: any) => {
+        const code = String(p.code || '').toUpperCase();
+        const deptId = p.department_id;
+        return code.startsWith('COM-') || (deptId && comDeptIds.has(deptId));
       })
-      .map((d: any) => d.id)
+      .map((p: any) => p.id)
   );
 
-  // Fetch positions limited to COM department (or fallback: all positions if no dept data)
-  const comDeptPositionIds = new Set<string>();
-  if (comDeptIds.size > 0) {
-    const { data: comPositions } = await db
-      .from('d3_positions')
-      .select('id, code, title')
-      .in('department_id', Array.from(comDeptIds));
-    (comPositions || []).forEach((p: any) => comDeptPositionIds.add(p.id));
+  // Query b2_register: filter by COM department or COM positions
+  let regQuery = db
+    .from('b2_register')
+    .select('id, employee_id, full_name, email, phone, position_id, is_active, departement_id')
+    .order('full_name');
+
+  const comDeptArray = Array.from(comDeptIds);
+  const comPosArray = Array.from(comPositionIds);
+
+  if (comDeptArray.length > 0 && comPosArray.length > 0) {
+    regQuery = regQuery.or(`departement_id.in.(${comDeptArray.join(',')}),position_id.in.(${comPosArray.join(',')})`);
+  } else if (comDeptArray.length > 0) {
+    regQuery = regQuery.in('departement_id', comDeptArray);
   }
 
-  const [{ data: registers, error }, { data: positions }] = await Promise.all([
-    // Filter b2_register by departement_id in COM departments (note: typo 'departement' is in DB schema)
-    comDeptIds.size > 0
-      ? db.from('b2_register').select('id, employee_id, full_name, email, phone, position_id, is_active').in('departement_id', Array.from(comDeptIds)).order('full_name')
-      : db.from('b2_register').select('id, employee_id, full_name, email, phone, position_id, is_active').order('full_name'),
-    db.from('d3_positions').select('id, code, title'),
-  ]);
+  const { data: registers, error } = await regQuery;
 
   if (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 
-  const positionMap = new Map((positions || []).map((p: any) => [p.id, p]));
+  const positionMap = new Map<string, any>((positions || []).map((p: any) => [p.id, p]));
   const items = (registers || [])
     .map((row: any) => {
       const position = row.position_id ? positionMap.get(row.position_id) : null;

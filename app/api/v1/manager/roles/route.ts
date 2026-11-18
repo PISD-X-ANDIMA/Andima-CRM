@@ -23,35 +23,43 @@ export async function GET(_request: NextRequest) {
       return createErrorResponse("AUTH_003", "Only the Manager of Customer Success has permission to manage team roles.", undefined, 403);
     }
 
-    // 1. Fetch COM department IDs (code 'COM' or name containing 'Commercial'/'Customer Success')
-    const { data: departments } = await (supabase as any)
-      .from("d3_departments")
-      .select("id, code, name");
-
-    const comDeptIds = ((departments || []) as any[])
-      .filter((d: any) => {
-        const code = String(d.code || "").toUpperCase();
-        const name = String(d.name || "").toLowerCase();
-        return code === "COM" || name.includes("commercial") || name.includes("customer success");
-      })
-      .map((d: any) => d.id);
-
-    // 2. Fetch registered users from b2_register — scoped to COM department when available
-    const registerQuery = (supabase as any)
-      .from("b2_register")
-      .select("id, employee_id, full_name, email, phone, position_id, is_active, created_at")
-      .order("created_at", { ascending: false });
-
-    const { data: registers, error: regError } = await (
-      comDeptIds.length > 0 ? registerQuery.in("departement_id", comDeptIds) : registerQuery
-    );
-
-    if (regError) throw regError;
+    // 1. Department ID for COM (Commercial & Customer Success)
+    const COM_DEPARTMENT_ID = "97ac5d35-5da2-4f5d-9d36-78500f403cc7";
 
     // 2. Fetch positions from d3_positions
     const { data: positions } = await (supabase as any)
       .from("d3_positions")
-      .select("id, code, title");
+      .select("id, code, title, department_id");
+
+    const comDeptIds = new Set<string>([COM_DEPARTMENT_ID]);
+    const comPositionIds = new Set<string>(
+      (positions || [])
+        .filter((p: any) => {
+          const code = String(p.code || "").toUpperCase();
+          const deptId = p.department_id;
+          return code.startsWith("COM-") || (deptId && comDeptIds.has(deptId));
+        })
+        .map((p: any) => p.id)
+    );
+
+    // 3. Fetch registered users from b2_register — scoped to COM department or COM positions
+    let registerQuery = (supabase as any)
+      .from("b2_register")
+      .select("id, employee_id, full_name, email, phone, position_id, is_active, created_at, departement_id")
+      .order("created_at", { ascending: false });
+
+    const comDeptArray = Array.from(comDeptIds);
+    const comPosArray = Array.from(comPositionIds);
+
+    if (comDeptArray.length > 0 && comPosArray.length > 0) {
+      registerQuery = registerQuery.or(`departement_id.in.(${comDeptArray.join(",")}),position_id.in.(${comPosArray.join(",")})`);
+    } else if (comDeptArray.length > 0) {
+      registerQuery = registerQuery.in("departement_id", comDeptArray);
+    }
+
+    const { data: registers, error: regError } = await registerQuery;
+
+    if (regError) throw regError;
 
     const positionMap = new Map<string, { id: string; code: string; title: string }>();
     for (const p of positions || []) {
