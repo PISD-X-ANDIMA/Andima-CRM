@@ -23,11 +23,28 @@ export async function GET(_request: NextRequest) {
       return createErrorResponse("AUTH_003", "Only the Manager of Customer Success has permission to manage team roles.", undefined, 403);
     }
 
-    // 1. Fetch registered users from b2_register
-    const { data: registers, error: regError } = await (supabase as any)
+    // 1. Fetch COM department IDs (code 'COM' or name containing 'Commercial'/'Customer Success')
+    const { data: departments } = await (supabase as any)
+      .from("d3_departments")
+      .select("id, code, name");
+
+    const comDeptIds = ((departments || []) as any[])
+      .filter((d: any) => {
+        const code = String(d.code || "").toUpperCase();
+        const name = String(d.name || "").toLowerCase();
+        return code === "COM" || name.includes("commercial") || name.includes("customer success");
+      })
+      .map((d: any) => d.id);
+
+    // 2. Fetch registered users from b2_register — scoped to COM department when available
+    const registerQuery = (supabase as any)
       .from("b2_register")
       .select("id, employee_id, full_name, email, phone, position_id, is_active, created_at")
       .order("created_at", { ascending: false });
+
+    const { data: registers, error: regError } = await (
+      comDeptIds.length > 0 ? registerQuery.in("departement_id", comDeptIds) : registerQuery
+    );
 
     if (regError) throw regError;
 

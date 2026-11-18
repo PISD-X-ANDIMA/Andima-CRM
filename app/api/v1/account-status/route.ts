@@ -29,8 +29,36 @@ export async function GET() {
   const { manageableRoles } = resolved;
   const db = getA3Client();
 
+  // Fetch COM department IDs first (code 'COM' or name containing 'Commercial'/'Customer Success')
+  const { data: departments } = await db
+    .from('d3_departments')
+    .select('id, code, name');
+
+  const comDeptIds = new Set<string>(
+    (departments || [])
+      .filter((d: any) => {
+        const code = String(d.code || '').toUpperCase();
+        const name = String(d.name || '').toLowerCase();
+        return code === 'COM' || name.includes('commercial') || name.includes('customer success');
+      })
+      .map((d: any) => d.id)
+  );
+
+  // Fetch positions limited to COM department (or fallback: all positions if no dept data)
+  const comDeptPositionIds = new Set<string>();
+  if (comDeptIds.size > 0) {
+    const { data: comPositions } = await db
+      .from('d3_positions')
+      .select('id, code, title')
+      .in('department_id', Array.from(comDeptIds));
+    (comPositions || []).forEach((p: any) => comDeptPositionIds.add(p.id));
+  }
+
   const [{ data: registers, error }, { data: positions }] = await Promise.all([
-    db.from('b2_register').select('id, employee_id, full_name, email, phone, position_id, is_active').order('full_name'),
+    // Filter b2_register by departement_id in COM departments (note: typo 'departement' is in DB schema)
+    comDeptIds.size > 0
+      ? db.from('b2_register').select('id, employee_id, full_name, email, phone, position_id, is_active').in('departement_id', Array.from(comDeptIds)).order('full_name')
+      : db.from('b2_register').select('id, employee_id, full_name, email, phone, position_id, is_active').order('full_name'),
     db.from('d3_positions').select('id, code, title'),
   ]);
 
@@ -53,6 +81,7 @@ export async function GET() {
         is_active: row.is_active ?? true,
       };
     })
+    // If no COM dept data, still filter by role; COM dept filter already pre-scopes the results
     .filter((row: any) => (manageableRoles as readonly string[]).includes(row.role));
 
   return NextResponse.json({ success: true, viewer_role: resolved.scope.role, data: items });
