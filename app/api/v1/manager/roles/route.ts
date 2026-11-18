@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentUserScope, resolveCrmRoleFromPosition } from "@/lib/auth/roles";
 
 export const dynamic = "force-dynamic";
@@ -23,11 +23,14 @@ export async function GET(_request: NextRequest) {
       return createErrorResponse("AUTH_003", "Only the Manager of Customer Success has permission to manage team roles.", undefined, 403);
     }
 
+    // Use admin client if available to bypass RLS on b2_register
+    const db = (createAdminSupabaseClient() || supabase) as any;
+
     // 1. Department ID for COM (Commercial & Customer Success)
     const COM_DEPARTMENT_ID = "97ac5d35-5da2-4f5d-9d36-78500f403cc7";
 
     // 2. Fetch positions from d3_positions
-    const { data: positions } = await (supabase as any)
+    const { data: positions } = await db
       .from("d3_positions")
       .select("id, code, title, department_id");
 
@@ -43,7 +46,7 @@ export async function GET(_request: NextRequest) {
     );
 
     // 3. Fetch registered users from b2_register — scoped to COM department or COM positions
-    let registerQuery = (supabase as any)
+    let registerQuery = db
       .from("b2_register")
       .select("id, employee_id, full_name, email, phone, position_id, is_active, created_at, departement_id")
       .order("created_at", { ascending: false });

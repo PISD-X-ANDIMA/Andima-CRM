@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getA3Client } from '@/lib/a3';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { getA3Client, getA3WriteClient } from '@/lib/a3';
+import { createServerSupabaseClient, createAdminSupabaseClient } from '@/lib/supabase/server';
 import { getCurrentUserScope, resolveCrmRoleFromPosition } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +27,7 @@ export async function GET() {
   if ('error' in resolved) return resolved.error;
 
   const { manageableRoles } = resolved;
-  const db = getA3Client();
+  const db = createAdminSupabaseClient() || getA3Client();
 
   // Department ID for COM (Commercial & Customer Success)
   const COM_DEPARTMENT_ID = "97ac5d35-5da2-4f5d-9d36-78500f403cc7";
@@ -109,7 +109,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'id and is_active are required' }, { status: 400 });
   }
 
-  const db = getA3Client();
+  const db = createAdminSupabaseClient() || getA3Client();
 
   const { data: target, error: targetError } = await db
     .from('b2_register')
