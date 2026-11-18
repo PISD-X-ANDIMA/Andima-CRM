@@ -23,13 +23,13 @@ function dateFromDatabase(value: string) {
 }
 
 function downloadExport(customers: CustomerListItem[], format: "xlsx" | "pdf", pdfWindow: Window | null = null) {
-  const headers = ["Job Number", "Company", "PIC", "PIC Phone Number"];
+  const headers = ["Company", "PIC", "PIC Phone Number"];
   const values = customers.map((customer) => [
-    customer.jobNumber || "", customer.companyName,
+    customer.companyName,
     customer.primaryPic?.fullName || "", customer.primaryPic?.phoneNumber || "",
   ]);
   if (format === "xlsx") {
-    downloadXlsx("sales-executive-company-records.xlsx", "Company Records", headers, values, [24, 38, 24, 22]);
+    downloadXlsx("sales-executive-company-records.xlsx", "Company Records", headers, values, [45, 30, 25]);
     return;
   }
   printTableAsPdf("Sales Executive Company Records", "Transaction and company records", headers, values, pdfWindow || undefined);
@@ -279,10 +279,9 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
       <table className="w-full min-w-[1000px] table-fixed text-left">
         <thead className="border-b border-slate-200 bg-[#edf4f8] text-slate-700">
           <tr>
-            <th className="w-[20%] px-4 py-3.5 text-center text-sm font-semibold">Job Number</th>
-            <th className="w-[32%] px-4 py-3.5 text-left text-sm font-semibold">Company</th>
-            <th className="w-[18%] px-4 py-3.5 text-center text-sm font-semibold">PIC</th>
-            <th className="w-[18%] px-4 py-3.5 text-center text-sm font-semibold">PIC Number</th>
+            <th className="w-[42%] px-4 py-3.5 text-left text-sm font-semibold">Company</th>
+            <th className="w-[24%] px-4 py-3.5 text-center text-sm font-semibold">PIC</th>
+            <th className="w-[22%] px-4 py-3.5 text-center text-sm font-semibold">PIC Number</th>
             <th className="w-[12%] px-4 py-3.5 text-center text-sm font-semibold">Detail</th>
           </tr>
         </thead>
@@ -290,16 +289,14 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
           {isSearching ? (
             Array.from({ length: 5 }, (_, row) => (
               <tr key={row} className="border-t border-slate-100">
+                <td className="px-4 py-3.5 text-left"><div className="h-4 w-44 animate-pulse rounded bg-slate-200/70" /></td>
                 <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-28 animate-pulse rounded bg-slate-200/70" /></td>
-                <td className="px-4 py-3.5 text-left"><div className="h-4 w-36 animate-pulse rounded bg-slate-200/70" /></td>
-                <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-20 animate-pulse rounded bg-slate-200/70" /></td>
-                <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-24 animate-pulse rounded bg-slate-200/70" /></td>
+                <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-32 animate-pulse rounded bg-slate-200/70" /></td>
                 <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-12 animate-pulse rounded bg-slate-200/70" /></td>
               </tr>
             ))
           ) : customers.map((customer) => (
             <tr key={customer.id} className="transition-colors hover:bg-slate-50/70">
-              <td className="break-words px-4 py-3.5 text-center font-mono text-xs font-semibold text-slate-800">{customer.jobNumber || "—"}</td>
               <td className="truncate px-4 py-3.5 text-left font-medium text-slate-900 leading-tight" title={customer.companyName}>{customer.companyName}</td>
               <td className="truncate px-4 py-3.5 text-center text-slate-800" title={customer.primaryPic?.fullName || ""}>{customer.primaryPic?.fullName || "—"}</td>
               <td className="break-words px-4 py-3.5 text-center font-mono text-xs text-slate-700">{customer.primaryPic?.phoneNumber || "—"}</td>
@@ -327,8 +324,8 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
     {detailOpen && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="transaction-detail-title" className="my-auto w-full max-w-7xl rounded-xl bg-white p-6 shadow-2xl sm:px-12 sm:py-10">
       <div className="flex items-start justify-between gap-4"><h2 id="transaction-detail-title" className="text-3xl font-bold tracking-tight text-black sm:text-4xl">Company Details</h2><button type="button" aria-label="Close" onClick={() => setDetailOpen(false)} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X className="h-6 w-6" /></button></div>
       {detailLoading ? <div role="status" className="grid min-h-72 place-items-center text-slate-500">Loading company details...</div> : detailError ? <p role="alert" className="mt-8 rounded-lg bg-rose-50 p-4 text-sm text-rose-700">{detailError}</p> : detailCustomer && <>
-        <div className="mt-7 grid gap-5 border-b border-slate-100 pb-6 sm:grid-cols-2 lg:grid-cols-3">{[["Job Number", detailCustomer.jobNumber], ["Company", detailCustomer.companyName], ["PIC", detailCustomer.primaryPic?.fullName]].map(([label, value]) => <div key={label}><h3 className="text-base text-[#707070] sm:text-lg">{label}</h3><p className="mt-1 break-words text-sm font-medium text-[#303030] sm:text-base">{value || "—"}</p></div>)}</div>
-        <div className="mt-6 grid gap-5 lg:grid-cols-2"><DetailInfoCard title="Company Information" rows={[["Address", detailCustomer.address], ["Job Number", detailCustomer.jobNumber], ["PIC", detailCustomer.primaryPic?.fullName], ["PIC Phone Number", detailCustomer.primaryPic?.phoneNumber], ["Created By", detailCustomer.createdBy], ["Created Date", detailCustomer.createdAt]]} /><DetailInfoCard title="Meeting Schedule" rows={detailCustomer.meetings.length ? detailCustomer.meetings.map((meeting) => [meeting.formattedSchedule, [meeting.agenda, meeting.status].filter(Boolean).join(" · ")]) : [["No meeting scheduled", ""]]} /></div>
+        <div className="mt-7 grid gap-5 border-b border-slate-100 pb-6 sm:grid-cols-2 lg:grid-cols-3">{[["Company", detailCustomer.companyName], ["PIC", detailCustomer.primaryPic?.fullName], ["PIC Phone Number", detailCustomer.primaryPic?.phoneNumber]].map(([label, value]) => <div key={label}><h3 className="text-base text-[#707070] sm:text-lg">{label}</h3><p className="mt-1 break-words text-sm font-medium text-[#303030] sm:text-base">{value || "—"}</p></div>)}</div>
+        <div className="mt-6 grid gap-5 lg:grid-cols-2"><DetailInfoCard title="Company Information" rows={[["Address", detailCustomer.address], ["PIC", detailCustomer.primaryPic?.fullName], ["PIC Phone Number", detailCustomer.primaryPic?.phoneNumber], ["Created By", detailCustomer.createdBy], ["Created Date", detailCustomer.createdAt]]} /><DetailInfoCard title="Meeting Schedule" rows={detailCustomer.meetings.length ? detailCustomer.meetings.map((meeting) => [meeting.formattedSchedule, [meeting.agenda, meeting.status].filter(Boolean).join(" · ")]) : [["No meeting scheduled", ""]]} /></div>
       </>}
       <div className="mt-7 flex flex-wrap items-center justify-end gap-3">
         {detailCustomer && (
