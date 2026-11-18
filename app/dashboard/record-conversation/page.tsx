@@ -245,7 +245,7 @@ export default function RecordConversationPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search company or ID..."
+            placeholder="Search company..."
             className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-xs placeholder:text-slate-400 focus:border-blue-500 focus:outline-hidden"
           />
         </div>
@@ -256,7 +256,6 @@ export default function RecordConversationPage() {
         <table className="w-full text-left text-xs text-slate-600">
           <thead className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
             <tr>
-              <th className="px-4 py-3.5">Conversation ID</th>
               <th className="px-4 py-3.5">Company</th>
               <th className="px-4 py-3.5">Sales Executive</th>
               <th className="px-4 py-3.5">Source</th>
@@ -269,20 +268,19 @@ export default function RecordConversationPage() {
           <tbody className="divide-y divide-slate-100">
             {isLoading ? (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
+                <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
                   Loading conversations...
                 </td>
               </tr>
             ) : filteredRecords.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
+                <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
                   No conversation records found for this selection.
                 </td>
               </tr>
             ) : (
               filteredRecords.map((r) => (
                 <tr key={r.id} className={r.backupStatus && r.backupStatus !== "Reviewed" ? "bg-amber-50/50 hover:bg-amber-50" : "hover:bg-slate-50/70"}>
-                  <td className="px-4 py-3.5 font-semibold text-slate-900">{r.id}</td>
                   <td className="px-4 py-3.5 font-medium text-slate-900">{r.company}</td>
                   <td className="px-4 py-3.5">{r.salesExecutive}</td>
                   <td className="px-4 py-3.5">
@@ -348,7 +346,7 @@ export default function RecordConversationPage() {
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Detail Conversation</h2>
-                <p className="text-xs text-slate-400">{selectedRecord.id}</p>
+                <p className="text-xs text-slate-400">{selectedRecord.company}</p>
               </div>
               <button
                 type="button"

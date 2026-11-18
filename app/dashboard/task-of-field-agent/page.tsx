@@ -177,7 +177,7 @@ export default function TaskOfFieldAgentPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by job number, customer, or field agent..."
+          placeholder="Search by customer or field agent..."
           className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-xs placeholder:text-slate-400 focus:border-blue-500 focus:outline-hidden"
         />
       </div>
@@ -263,7 +263,6 @@ export default function TaskOfFieldAgentPage() {
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Job Detail Summary</h2>
-                <p className="text-xs text-blue-600 font-semibold">{selectedTask.jobNumber}</p>
               </div>
               <button
                 type="button"
