@@ -1,0 +1,39 @@
+name: Auto Sync Upstream to Fork and Deploy Vercel
+
+on:
+  schedule:
+    # Berjalan otomatis setiap 10 menit
+    - cron: '*/10 * * * *'
+  # Memungkinkan untuk dijalankan secara manual via tombol "Run workflow" di GitHub Actions
+  workflow_dispatch:
+
+jobs:
+  sync-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Fork Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch Upstream Repository
+        run: |
+          git remote add upstream https://github.com/PISD-X-ANDIMA/Andima-CRM.git || true
+          git fetch upstream week9
+
+      - name: Sync week9 branch
+        run: |
+          git checkout week9
+          git merge upstream/week9 -m "chore(sync): auto-merge upstream week9 changes" || git merge --abort
+          git push origin week9 || echo "Already up to date or push skipped."
+
+      - name: Sync and deploy to main branch for Vercel
+        run: |
+          git checkout -B main origin/week9
+          git push origin main --force || echo "Failed to push to main."
