@@ -45,7 +45,7 @@ function DetailInfoCard({ title, rows }: { title: string; rows: [string, string 
 
 export function SalesExecutiveDashboard({ initialCustomers, metrics, initialDataError }: Props) {
   const router = useRouter();
-  const initialTransactions = initialCustomers;
+  const initialTransactions = initialCustomers.slice(0, 5);
   const [customers, setCustomers] = useState(initialTransactions);
   const [weeklyMeetings, setWeeklyMeetings] = useState<WeeklyMeeting[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(true);
@@ -55,8 +55,8 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
   const [searchError, setSearchError] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(initialTransactions.length);
-  const [totalPages, setTotalPages] = useState(Math.max(1, Math.ceil(initialTransactions.length / 5)));
+  const [total, setTotal] = useState(initialCustomers.length);
+  const [totalPages, setTotalPages] = useState(Math.max(1, Math.ceil(initialCustomers.length / 5)));
   const [displayName, setDisplayName] = useState("User");
   const today = new Date();
   const initialEndDate = new Date(today);
