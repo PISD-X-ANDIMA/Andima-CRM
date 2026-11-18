@@ -208,6 +208,13 @@ export default function LoginPage() {
               ) {
                 displayRole = 'Sales Executive';
                 targetDashboard = '/dashboard/sales-executive';
+              } else if (
+                code === 'com-fa' ||
+                title.includes('field agent') ||
+                title.includes('agent lapangan')
+              ) {
+                displayRole = 'Field Agent';
+                targetDashboard = '/dashboard/field-agent';
               } else {
                 displayRole = positionName || displayRole;
               }
