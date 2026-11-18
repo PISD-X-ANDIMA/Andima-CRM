@@ -80,8 +80,8 @@ export function ManagerCustomerSuccessDashboard() {
         </p>
       </div>
 
-      {/* 4 KPI Cards */}
-      <section aria-label="Team KPI Summary" className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* 3 KPI Cards */}
+      <section aria-label="Team KPI Summary" className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* Total Sales Executive */}
         <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs transition-shadow hover:shadow-sm">
           <p className="text-xs font-medium text-slate-500">Total Sales Executive</p>
@@ -107,15 +107,6 @@ export function ManagerCustomerSuccessDashboard() {
             {data.meetings_this_week}
           </p>
           <p className="mt-2 text-xs text-slate-400">All Sales Executives</p>
-        </div>
-
-        {/* Need Backup */}
-        <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs transition-shadow hover:shadow-sm">
-          <p className="text-xs font-medium text-slate-500">Need Backup</p>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-            {data.need_backup}
-          </p>
-          <p className="mt-2 text-xs text-slate-400">Open issues</p>
         </div>
       </section>
 

@@ -21,7 +21,6 @@ const managerCustomerSuccessMenu = [
   { label: "Record Conversation", href: "/dashboard/record-conversation" },
   { label: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
   { label: "Manage Accounts", href: "/dashboard/field-agent-management" },
-  { label: "Need Backup", href: "/dashboard/need-backup" },
 ];
 
 const fieldAgentMenu = [

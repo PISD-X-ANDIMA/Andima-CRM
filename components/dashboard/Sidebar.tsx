@@ -37,7 +37,6 @@ const defaultManagerMenus: SubMenuItem[] = [
   { name: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { name: "Record Conversation", href: "/dashboard/record-conversation" },
   { name: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
-  { name: "Need Backup", href: "/dashboard/need-backup" },
   { name: "Manage Accounts", href: "/dashboard/field-agent-management" },
 ];
 

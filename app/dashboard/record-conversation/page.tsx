@@ -52,6 +52,28 @@ export default function RecordConversationPage() {
   }, []);
 
   useEffect(() => {
+    if (conversations.length === 0) return;
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const openConvId = urlParams.get("open_conv_id") || urlParams.get("conversation_id") || urlParams.get("id");
+      const needBackupParam = urlParams.get("need_backup") || urlParams.get("need_assist");
+      if (needBackupParam === "yes" || needBackupParam === "true") {
+        setBackupFilter("need");
+      }
+      if (openConvId) {
+        const found = conversations.find(
+          (c) => c.rawId === openConvId || c.id.toLowerCase() === openConvId.toLowerCase()
+        );
+        if (found) {
+          setSelectedRecord(found);
+        }
+      }
+    } catch {
+      // Ignore URL parse errors
+    }
+  }, [conversations]);
+
+  useEffect(() => {
     if (isManager !== true) return;
     let active = true;
     async function loadConversations() {
