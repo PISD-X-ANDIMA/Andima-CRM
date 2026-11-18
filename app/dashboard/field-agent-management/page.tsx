@@ -105,7 +105,6 @@ export default function FieldAgentManagementPage() {
         <table className="w-full text-left text-xs text-slate-600">
           <thead className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
             <tr>
-              <th className="px-4 py-3.5">Employee ID</th>
               <th className="px-4 py-3.5">Name</th>
               <th className="px-4 py-3.5">Email</th>
               <th className="px-4 py-3.5">Role</th>
@@ -116,13 +115,13 @@ export default function FieldAgentManagementPage() {
           <tbody className="divide-y divide-slate-100">
             {isLoading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
+                <td colSpan={5} className="px-4 py-12 text-center text-slate-400">
                   Loading accounts...
                 </td>
               </tr>
             ) : loadFailed ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-slate-500">
+                <td colSpan={5} className="px-4 py-12 text-center text-slate-500">
                   Gagal memuat daftar akun.
                   <button
                     type="button"
@@ -135,14 +134,13 @@ export default function FieldAgentManagementPage() {
               </tr>
             ) : filteredAccounts.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
+                <td colSpan={5} className="px-4 py-12 text-center text-slate-400">
                   No accounts found.
                 </td>
               </tr>
             ) : (
               filteredAccounts.map((account) => (
                 <tr key={account.id} className="hover:bg-slate-50/70">
-                  <td className="px-4 py-3.5 font-medium text-slate-700">{account.employee_id}</td>
                   <td className="px-4 py-3.5 font-semibold text-slate-900">{account.name}</td>
                   <td className="px-4 py-3.5">{account.email || "-"}</td>
                   <td className="px-4 py-3.5">

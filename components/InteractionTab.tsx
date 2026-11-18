@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Search, ChevronDown, ChevronRight, Plus, Download, Video, MessageCircle,
   X, UploadCloud, FileText, Check, Loader2, Calendar,
-  ExternalLink, AlertCircle, Save, Tag, Trash2, HelpCircle,
+  ExternalLink, AlertCircle, Save, Trash2, HelpCircle,
   ShieldCheck, Lock as LockIcon, CheckCircle, XCircle
 } from 'lucide-react';
 import {
@@ -538,7 +538,6 @@ RECORD CUSTOMER CONVERSATION SUMMARY
 PT. ANDIMA TRANSPORTINDO
 ================================================
 
-Conversation ID : ${item.conversation_id}
 Company / Client: ${item.company}
 Channel Type    : ${item.source}
 Date            : ${item.date || '-'}
@@ -558,7 +557,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `Summary_${item.conversation_id}_${item.company.replace(/[^a-zA-Z0-9]/g, '_')}.txt`);
+      link.setAttribute('download', `Summary_${item.company.replace(/[^a-zA-Z0-9]/g, '_')}.txt`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -572,8 +571,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
   const handleDownloadSummaryPdf = (item: ConversationDisplayItem) => {
     try {
       const summaryText = item.summary || 'Discussed recent shipment delays. Customer requested schedule adjustment for container #2 and re-verification of documentation at Tanjung Priok Port.';
-      const convId = item.conversation_id || 'CONV';
-      const fileName = `Summary_${convId}.pdf`;
+      const fileName = `Summary_${item.company.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
 
       // Format summaryText into wrapped lines of max 65 chars
       const rawLines = summaryText.split(/\r?\n/);
@@ -604,7 +602,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
         str.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
 
       // Build PDF Stream (Only Summary)
-      let streamText = `BT\n/F1 16 Tf\n50 780 Td\n0 0 0 rg\n(${pdfEscape(`CONVERSATION SUMMARY - ${convId}`)}) Tj\nET\n`;
+      let streamText = `BT\n/F1 16 Tf\n50 780 Td\n0 0 0 rg\n(${pdfEscape(`CONVERSATION SUMMARY - ${item.company}`)}) Tj\nET\n`;
       streamText += `BT\n/F1 12 Tf\n0.2 0.2 0.2 rg\n50 740 Td\n18 TL\n`;
       streamText += `(SUMMARY) Tj\nT*\nT*\n`;
 
@@ -785,10 +783,8 @@ Exported on: ${new Date().toLocaleString('id-ID')}
   // Export CSV
   const handleExportCSV = () => {
     try {
-      const headers = ['Conversation ID', 'Job Number', 'Company', 'Source', 'Date', 'PIC', 'Summary', 'Status'];
+      const headers = ['Company', 'Source', 'Date', 'PIC', 'Summary', 'Status'];
       const rows = filteredRows.map(r => [
-        `"${r.conversation_id}"`,
-        `"${r.job_number}"`,
         `"${r.company.replace(/"/g, '""')}"`,
         `"${r.source}"`,
         `"${r.date}"`,
@@ -1177,7 +1173,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              placeholder="Search by ID, Company, Summary..."
+              placeholder="Search by Company, Summary..."
               className="w-full bg-[#f4f6fa] border border-slate-200/70 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:bg-white focus:border-blue-400 transition-colors"
             />
           </div>
@@ -1273,19 +1269,16 @@ Exported on: ${new Date().toLocaleString('id-ID')}
             {/* TABLE HEADER */}
             <thead className="bg-[#F5F7FF] border-b border-slate-200/80">
               <tr>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[22%] first:rounded-tl-2xl">
-                  Conversation ID
-                </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[28%]">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[34%] first:rounded-tl-2xl">
                   Company
                 </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[18%]">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[22%]">
                   Channel
                 </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[18%]">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[22%]">
                   Date
                 </th>
-                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[14%] last:rounded-tr-2xl">
+                <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[22%] last:rounded-tr-2xl">
                   Detail
                 </th>
               </tr>
@@ -1296,7 +1289,6 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               {loading ? (
                 Array.from({ length: 5 }).map((_, idx) => (
                   <tr key={`conv-skeleton-${idx}`} className="animate-pulse border-b border-slate-100">
-                    <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-24 mx-auto" /></td>
                     <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-44 mx-auto" /></td>
                     <td className="py-4.5 px-6"><div className="h-6 bg-slate-200/70 rounded-full w-24 mx-auto" /></td>
                     <td className="py-4.5 px-6"><div className="h-4 bg-slate-200/70 rounded-md w-24 mx-auto" /></td>
@@ -1305,7 +1297,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 ))
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-14 text-center">
+                  <td colSpan={4} className="py-14 text-center">
                     <div className="flex flex-col items-center justify-center max-w-sm mx-auto text-center">
                       <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
                         <Search size={20} />
@@ -1333,11 +1325,6 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     key={`${row.id || 'row'}-${idx}`}
                     className="hover:bg-blue-50/20 transition-colors"
                   >
-                    {/* Conversation ID */}
-                    <td className="py-4.5 px-6 text-center text-sm font-semibold text-slate-800 whitespace-nowrap">
-                      {row.conversation_id}
-                    </td>
-
                     {/* Company */}
                     <td className="py-4.5 px-6 text-center text-sm font-semibold text-slate-800 max-w-[280px] leading-snug">
                       {row.company}
@@ -1438,7 +1425,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 Detail Conversation
               </h3>
               <p className="text-xs font-semibold text-slate-500 mt-1">
-                {selectedConversation.conversation_id}
+                {selectedConversation.company}
               </p>
             </div>
 
@@ -1490,37 +1477,6 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                       {formatDateDisplay(selectedConversation.date) || '03/03/2026'}
                     </span>
                   </div>
-                </div>
-              </div>
-
-              {/* 2. CONNECTED JOB NUMBERS */}
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
-                  CONNECTED JOB NUMBERS
-                </span>
-                <div className="flex flex-wrap items-center gap-2">
-                  {selectedConversation.connected_job_numbers && selectedConversation.connected_job_numbers.length > 0 ? (
-                    selectedConversation.connected_job_numbers.map((job, jIdx) => (
-                      <div
-                        key={jIdx}
-                        className="bg-[#f1f5f9] border border-slate-200/90 text-slate-700 rounded-full px-3.5 py-1 text-xs font-semibold flex items-center gap-1.5"
-                      >
-                        <Tag size={13} className="text-blue-500" />
-                        <span>{job.replace(/^#/, '')}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <>
-                      <div className="bg-[#f1f5f9] border border-slate-200/90 text-slate-700 rounded-full px-3.5 py-1 text-xs font-semibold flex items-center gap-1.5">
-                        <Tag size={13} className="text-blue-500" />
-                        <span>DSVEXP/2605/2551</span>
-                      </div>
-                      <div className="bg-[#f1f5f9] border border-slate-200/90 text-slate-700 rounded-full px-3.5 py-1 text-xs font-semibold flex items-center gap-1.5">
-                        <Tag size={13} className="text-blue-500" />
-                        <span>DSVEXP/2605/2552</span>
-                      </div>
-                    </>
-                  )}
                 </div>
               </div>
 

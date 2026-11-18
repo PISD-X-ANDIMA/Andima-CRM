@@ -29,7 +29,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
   const { customerId } = await params;
   const customer = await getCustomerById(customerId);
 
-  if (!customer) return <section className="mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white p-8"><Link href="/dashboard/company-list" className="text-sm text-blue-600">← Back to Company List</Link><h1 className="mt-5 text-2xl font-bold">Customer data unavailable</h1><p className="mt-2 text-slate-500">Customer {customerId} could not be found or loaded.</p><Link href={`/dashboard/company-list/${customerId}/jobs`} className="mt-5 inline-block text-blue-600">View Jobs</Link></section>;
+  if (!customer) return <section className="mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white p-8"><Link href="/dashboard/company-list" className="text-sm text-blue-600">← Back to Company List</Link><h1 className="mt-5 text-2xl font-bold">Customer data unavailable</h1><p className="mt-2 text-slate-500">Customer data could not be found or loaded.</p><Link href={`/dashboard/company-list/${customerId}/jobs`} className="mt-5 inline-block text-blue-600">View Jobs</Link></section>;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -65,9 +65,6 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                 {customer.address}
               </p>
             )}
-            <p className="text-[11px] text-slate-400 mt-0.5 font-mono">
-              ID: {customer.id}
-            </p>
           </div>
         </div>
 
@@ -176,9 +173,6 @@ export default async function CustomerDetailPage({ params }: PageProps) {
               <thead>
                 <tr className="border-b border-slate-100">
                   <th className="pb-2.5 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Job No
-                  </th>
-                  <th className="pb-2.5 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                     Title
                   </th>
                   <th className="pb-2.5 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
@@ -192,11 +186,6 @@ export default async function CustomerDetailPage({ params }: PageProps) {
               <tbody className="divide-y divide-slate-50">
                 {customer.jobs.slice(0, 5).map((job) => (
                   <tr key={job.id} className="hover:bg-slate-50/50">
-                    <td className="py-3 pr-4">
-                      <span className="font-mono text-[12px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
-                        {job.jobNumber}
-                      </span>
-                    </td>
                     <td className="py-3 pr-4">
                       <p className="text-slate-800 text-xs">{job.title}</p>
                     </td>

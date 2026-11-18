@@ -26,7 +26,7 @@ export default async function CustomerJobsPage({ params }: PageProps) {
   const { customerId } = await params;
   const customer = await getCustomerById(customerId);
 
-  if (!customer) return <section className="mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white p-8"><Link href="/dashboard/company-list" className="text-sm text-blue-600">← Back to Company List</Link><h1 className="mt-5 text-2xl font-bold">Job data unavailable</h1><p className="mt-2 text-slate-500">Customer ID: {customerId}. Customer details could not be loaded.</p></section>;
+  if (!customer) return <section className="mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white p-8"><Link href="/dashboard/company-list" className="text-sm text-blue-600">← Back to Company List</Link><h1 className="mt-5 text-2xl font-bold">Job data unavailable</h1><p className="mt-2 text-slate-500">Customer details could not be loaded.</p></section>;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -106,7 +106,7 @@ export default async function CustomerJobsPage({ params }: PageProps) {
             <table className="w-full text-sm">
               <thead className="border-b border-slate-100">
                 <tr>
-                  {["NO", "JOB NO", "TITLE", "STATUS", "SCHEDULED DATE", "CREATED DATE"].map(
+                  {["NO", "TITLE", "STATUS", "SCHEDULED DATE", "CREATED DATE"].map(
                     (h, i) => (
                       <th
                         key={i}
@@ -130,17 +130,7 @@ export default async function CustomerJobsPage({ params }: PageProps) {
                         {idx + 1}
                       </td>
                       <td className="py-3.5 px-5">
-                        <span className="font-mono text-[12px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
-                          {job.jobNumber}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-5">
                         <p className="text-slate-800 text-xs font-medium">{job.title}</p>
-                        {job.transactionNo && (
-                          <p className="text-[11px] text-slate-400 font-mono mt-0.5">
-                            {job.transactionNo}
-                          </p>
-                        )}
                       </td>
                       <td className="py-3.5 px-5">
                         <span
