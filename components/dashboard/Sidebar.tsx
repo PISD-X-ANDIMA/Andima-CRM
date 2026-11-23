@@ -45,12 +45,48 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Instant role detection from localStorage or pathname to eliminate the 1-2s delay
+  const initialRole = (() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("andima_user");
+        if (stored) {
+          const user = JSON.parse(stored);
+          const role = String(user.role || "").toLowerCase();
+          if (role.includes("field") || role.includes("agent")) return "field_agent";
+          if (role.includes("manager")) return "manager";
+        }
+      } catch {}
+    }
+    if (pathname.includes("manager-customer-success")) return "manager";
+    if (pathname.includes("field-agent")) return "field_agent";
+    return "sales_executive";
+  })();
+
   const [crmOpen, setCrmOpen] = useState(true);
-  const [isManagerRole, setIsManagerRole] = useState(false);
-  const [menuLabel, setMenuLabel] = useState("CRM");
-  const [roleTitle, setRoleTitle] = useState("Sales Executive");
-  const [sectionHref, setSectionHref] = useState("/dashboard/sales-executive");
-  const [submenuItems, setSubmenuItems] = useState(defaultSalesExecutiveMenus);
+  const [isManagerRole, setIsManagerRole] = useState(() => initialRole === "manager");
+  const [menuLabel, setMenuLabel] = useState(() => initialRole === "field_agent" ? "Field Agent" : "CRM");
+  const [roleTitle, setRoleTitle] = useState(() =>
+    initialRole === "field_agent"
+      ? "Field Agent"
+      : initialRole === "manager"
+        ? "Manager of Customer Success"
+        : "Sales Executive"
+  );
+  const [sectionHref, setSectionHref] = useState(() =>
+    initialRole === "field_agent"
+      ? "/dashboard/field-agent"
+      : initialRole === "manager"
+        ? "/dashboard/manager-customer-success"
+        : "/dashboard/sales-executive"
+  );
+  const [submenuItems, setSubmenuItems] = useState(() =>
+    initialRole === "field_agent"
+      ? defaultFieldAgentMenus
+      : initialRole === "manager"
+        ? defaultManagerMenus
+        : defaultSalesExecutiveMenus
+  );
 
   useEffect(() => {
     let active = true;
@@ -108,7 +144,7 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
     !submenuItems.some((item) => item.href === currentUrl);
 
   return (
-    <aside className="group relative flex h-screen h-dvh w-[260px] shrink-0 flex-col bg-gradient-to-b from-[#0a1c31] via-[#15406a] to-[#2a6294]">
+    <aside className="group relative flex h-screen h-dvh w-[260px] shrink-0 flex-col bg-[#0F2342]">
       {/* Header Logo */}
       <div className="flex items-start justify-between gap-2 px-4 pb-5 pt-5">
         <div className="flex items-center gap-2.5">
@@ -202,7 +238,7 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
             try { localStorage.removeItem('andima_user'); } catch {}
             router.push('/login');
           }}
-          className="flex h-10 w-full items-center justify-center rounded-full border-2 border-[#f32650] bg-transparent px-4 text-base font-bold text-[#f32650] transition-colors hover:bg-[#f32650] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f32650] focus-visible:ring-offset-2 focus-visible:ring-offset-[#102445]"
+          className="flex h-10 w-full items-center justify-center rounded-full border-2 border-[#f32650] bg-transparent px-4 text-base font-bold text-[#f32650] transition-colors hover:bg-[#f32650] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f32650] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F2342]"
         >
           <span>Logout</span>
         </button>
