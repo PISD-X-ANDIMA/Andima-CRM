@@ -23,13 +23,14 @@ function dateFromDatabase(value: string) {
 }
 
 function downloadExport(customers: CustomerListItem[], format: "xlsx" | "pdf", pdfWindow: Window | null = null) {
-  const headers = ["Company", "PIC", "PIC Phone Number"];
+  const headers = ["Company", "Company Code", "PIC", "PIC Phone Number"];
   const values = customers.map((customer) => [
     customer.companyName,
+    customer.customerCode || "",
     customer.primaryPic?.fullName || "", customer.primaryPic?.phoneNumber || "",
   ]);
   if (format === "xlsx") {
-    downloadXlsx("sales-executive-company-records.xlsx", "Company Records", headers, values, [45, 30, 25]);
+    downloadXlsx("sales-executive-company-records.xlsx", "Company Records", headers, values, [35, 18, 25, 22]);
     return;
   }
   printTableAsPdf("Sales Executive Company Records", "Transaction and company records", headers, values, pdfWindow || undefined);
@@ -279,9 +280,10 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
       <table className="w-full min-w-[1000px] table-fixed text-left">
         <thead className="border-b border-slate-200 bg-[#edf4f8] text-slate-700">
           <tr>
-            <th className="w-[42%] px-4 py-3.5 text-left text-sm font-semibold">Company</th>
-            <th className="w-[24%] px-4 py-3.5 text-center text-sm font-semibold">PIC</th>
-            <th className="w-[22%] px-4 py-3.5 text-center text-sm font-semibold">PIC Number</th>
+            <th className="w-[34%] px-4 py-3.5 text-center text-sm font-semibold">Company</th>
+            <th className="w-[16%] px-4 py-3.5 text-center text-sm font-semibold">Company Code</th>
+            <th className="w-[18%] px-4 py-3.5 text-center text-sm font-semibold">PIC</th>
+            <th className="w-[20%] px-4 py-3.5 text-center text-sm font-semibold">PIC Number</th>
             <th className="w-[12%] px-4 py-3.5 text-center text-sm font-semibold">Detail</th>
           </tr>
         </thead>
@@ -289,7 +291,8 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
           {isSearching ? (
             Array.from({ length: 5 }, (_, row) => (
               <tr key={row} className="border-t border-slate-100">
-                <td className="px-4 py-3.5 text-left"><div className="h-4 w-44 animate-pulse rounded bg-slate-200/70" /></td>
+                <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-44 animate-pulse rounded bg-slate-200/70" /></td>
+                <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-20 animate-pulse rounded bg-slate-200/70" /></td>
                 <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-28 animate-pulse rounded bg-slate-200/70" /></td>
                 <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-32 animate-pulse rounded bg-slate-200/70" /></td>
                 <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-12 animate-pulse rounded bg-slate-200/70" /></td>
@@ -297,15 +300,17 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
             ))
           ) : customers.map((customer) => (
             <tr key={customer.id} className="transition-colors hover:bg-slate-50/70">
-              <td className="truncate px-4 py-3.5 text-left font-medium text-slate-900 leading-tight" title={customer.companyName}>
-                <div className="flex items-center gap-2">
-                  <span>{customer.companyName}</span>
-                  {customer.customerCode && (
-                    <span className="inline-block rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-mono font-medium text-blue-700 border border-blue-200/60">
-                      {customer.customerCode}
-                    </span>
-                  )}
-                </div>
+              <td className="truncate px-4 py-3.5 text-center font-medium text-slate-900 leading-tight" title={customer.companyName}>
+                {customer.companyName}
+              </td>
+              <td className="break-words px-4 py-3.5 text-center font-mono text-xs font-semibold text-slate-800">
+                {customer.customerCode ? (
+                  <span className="inline-block rounded bg-blue-50 px-2 py-0.5 text-xs font-mono font-medium text-blue-700 border border-blue-200/60">
+                    {customer.customerCode}
+                  </span>
+                ) : (
+                  "—"
+                )}
               </td>
               <td className="truncate px-4 py-3.5 text-center text-slate-800" title={customer.primaryPic?.fullName || ""}>{customer.primaryPic?.fullName || "—"}</td>
               <td className="break-words px-4 py-3.5 text-center font-mono text-xs text-slate-700">{customer.primaryPic?.phoneNumber || "—"}</td>

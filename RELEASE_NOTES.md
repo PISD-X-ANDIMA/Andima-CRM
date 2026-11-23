@@ -164,3 +164,36 @@
 - Penerapan kebijakan keamanan ketat: memblokir total akses publik tidak terotentikasi (`anon`) dan membatasi operasi data hanya untuk sesi pengguna resmi (`authenticated`) serta backend internal (`service_role`).
 - Penyusunan dokumen Kamus Data ERD Terpadu (A1, A2, A3) dan ekspor laporan resmi dalam format PDF standar (`docs/Laporan_Status_Database_dan_ERD_Andima_CRM.pdf`).
 
+## 16–17 November 2026
+### Penyelarasan Workflow Terpadu & Skema ERD Resmi
+- Penyelarasan skema database ke tabel fisik resmi ERD (`a1_customers`, `a1_meetings`, `a2_record_conversations`, `a2_conversation_alerts`, dan `b2_register`).
+- Migrasi alur eskalasi kendala lapangan *Need Backup* ke tabel `a2_conversation_alerts` dengan status alert (`Pending` dan `Reviewed`) yang dapat ditinjau dan diselesaikan langsung oleh Manager Customer Success.
+- Penyelarasan identitas pembuat percakapan (*author*) dan alert dengan tabel akun kepegawaian `b2_register` guna mencegah pelanggaran constraint Foreign Key.
+- Optimalisasi latensi data-fetching pada Vercel melalui penambahan index database, in-memory caching, dan eksekusi kueri paralel.
+- Pembaruan tampilan sidebar navigasi agar presisi sesuai desain Figma, serta perbaikan penanganan sesi aktif pada halaman login.
+
+## 18 November 2026
+### Penyesuaian Kolom & Isolasi Data Tabel Dashboard
+- Penghapusan kolom `Transaction ID` dan penyelarasan pembacaan nomor pekerjaan dari tabel `corp_jobs`.
+- Penghapusan kolom `Job Number` dari tabel ringkasan di halaman Dashboard Sales Executive agar tampilan tabel lebih ringkas dan berfokus pada data perusahaan (Company, PIC, PIC Number, dan Detail).
+- Perbaikan isolasi data (*scoping*) pada endpoint `/api/v1/transactions/summary`: menghilangkan bypass `forceAll: !assignedTo` sehingga tabel dashboard Sales Executive otomatis difilter hanya menampilkan daftar perusahaan yang ditugaskan kepada Sales Executive yang sedang login (misal Samuel Mulyadinata dengan 4 perusahaan), konsisten dengan kartu metrik *Total Customer*.
+- Penyesuaian ekspor transaksi (Excel dan PDF) serta modal *Company Details* agar selaras tanpa atribut yang telah dihapus.
+- Penyesuaian filter akun pada modul kelola akun (`/api/v1/account-status` dan manajemen role) agar mencakup departemen Commercial & Customer Success (`COM`) pada `b2_register`.
+
+## 23 November 2026
+### Pembaruan Grid Kalender Mingguan (Meeting Schedule)
+- Penerapan tampilan grid kalender mingguan baru bergaya Cakap (*Cakap-style weekly calendar grid*) pada halaman Meeting Schedule.
+- Penyesuaian slot waktu pertemuan menjadi 1 jam per slot (mulai pukul 08:00–09:00 hingga 17:00–18:00).
+- Penambahan efek visual interaktif: highlight badge jam secara dinamis saat kursor melayang (*hover*) pada baris slot waktu.
+- Penataan border kalender secara rapi, penyesuaian sel tanggal terpilih agar mengisi penuh header, dan penyelarasan warna tombol pembuatan meeting.
+- Optimasi performa pemuatan data kalender: batch fetching data customer dan meeting dengan limit 500 perPage, pemanggilan halaman secara paralel, serta peniadaan kueri redundan ke tabel `corp_jobs`.
+
+### Integrasi Company Code & Tata Letak Tabel Dashboard
+- Penambahan atribut kode unik perusahaan `company_code` berformat `CMP-XXX` secara sekuensial pada tabel `a1_customers` melalui skrip migrasi database.
+- Pembersihan data perusahaan duplikat serta penerapan indeks keunikan nama perusahaan pada basis data Supabase.
+- Penambahan kolom mandiri `Company Code` pada tabel di halaman Dashboard Sales Executive dengan susunan: **Company**, **Company Code**, **PIC**, **PIC Number**, dan **Detail**.
+- Penghapusan badge kode dari dalam kolom nama perusahaan sehingga nama perusahaan tampil bersih.
+- Penyesuaian tata letak teks pada kolom **Company** menjadi rata tengah (*center-aligned*) selaras dengan kolom-kolom lainnya pada tabel.
+- Penyelarasan format ekspor (Excel dan PDF) untuk menyertakan atribut Company Code.
+
+
