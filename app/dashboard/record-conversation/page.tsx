@@ -6,6 +6,7 @@ import { ManagerGlobalFilterBar } from "@/components/dashboard/ManagerGlobalFilt
 import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
 import InteractionTab from "@/components/InteractionTab";
 import { supabase } from "@/lib/supabaseClient";
+import { DashboardSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
 
 type BackupStatus = "Pending" | "In Progress" | "Reviewed";
 
@@ -180,11 +181,7 @@ export default function RecordConversationPage() {
 
   // Jika masih loading role check, render loading skeleton ringan
   if (isManager === null) {
-    return (
-      <div className="py-8 text-center text-sm text-slate-500">
-        Loading...
-      </div>
-    );
+    return <DashboardSkeleton rows={4} />;
   }
 
   // Jika pengguna adalah Sales Executive, render antarmuka form/tabel operasional A2
@@ -267,11 +264,7 @@ export default function RecordConversationPage() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
-                  Loading conversations...
-                </td>
-              </tr>
+              <TableSkeleton rows={5} columns={7} />
             ) : filteredRecords.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
@@ -291,7 +284,7 @@ export default function RecordConversationPage() {
                   <td className="px-4 py-3.5">
                     {r.date} <span className="text-slate-400">{r.time}</span>
                   </td>
-                  <td className="max-w-xs truncate px-4 py-3.5">{r.summary}</td>
+                  <td className="px-4 py-3.5"><div className="line-clamp-2 max-w-[280px] break-words">{r.summary}</div></td>
                   <td className="px-4 py-3.5">
                     {r.backupStatus === "Pending" ? (
                       <span className="rounded-full bg-amber-100 px-2.5 py-0.5 font-semibold text-amber-800">
@@ -381,7 +374,7 @@ export default function RecordConversationPage() {
 
               <div>
                 <p className="font-semibold uppercase tracking-wider text-slate-400">Summary</p>
-                <p className="mt-1 text-sm text-slate-700 leading-relaxed">{selectedRecord.summary}</p>
+                <p className="mt-1 max-h-48 overflow-y-auto whitespace-pre-wrap break-words text-sm text-slate-700 leading-relaxed">{selectedRecord.summary}</p>
               </div>
 
               {selectedRecord.alertId && (

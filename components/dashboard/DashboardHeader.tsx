@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+import { Menu } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { ManagerBackupBell } from "@/components/dashboard/ManagerBackupBell";
+import { useSidebarToggle } from "@/components/dashboard/DashboardShell";
 
 const routeLabels: Record<string, string> = {
   "sales-executive": "Sales Executive",
@@ -18,8 +20,9 @@ const routeLabels: Record<string, string> = {
   jobs: "Jobs",
 };
 
-export function DashboardHeader() {
+export function DashboardHeader({ isManager = false }: { isManager?: boolean }) {
   const pathname = usePathname();
+  const { sidebarVisible, toggleSidebar } = useSidebarToggle();
   const [username, setUsername] = useState("User");
 
   useEffect(() => {
@@ -63,16 +66,28 @@ export function DashboardHeader() {
   }, [pathname]);
 
   return (
-    <header className="mb-8 flex min-h-10 items-center justify-between gap-4 border-b border-slate-100 pb-4">
-      <nav aria-label="Breadcrumb" className="flex min-w-0 flex-wrap items-center gap-1 text-xs uppercase text-slate-500">
-        {breadcrumbs.map((label, index) => (
-          <span key={`${label}-${index}`} className={index === breadcrumbs.length - 1 ? "font-medium text-blue-600" : ""}>
-            {index > 0 && <span className="px-1 text-slate-300">/</span>}{label}
-          </span>
-        ))}
-      </nav>
+    <header className="mb-8 flex min-h-10 items-center justify-between gap-3 border-b border-slate-100 pb-4">
+      <div className="flex min-w-0 items-center gap-3">
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label={sidebarVisible ? "Hide sidebar" : "Show sidebar"}
+          aria-controls="crm-sidebar"
+          aria-expanded={sidebarVisible}
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-[#1476f2] text-white shadow-md transition-colors hover:bg-[#0f6ae0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1476f2]/40"
+        >
+          <Menu className="h-[18px] w-[18px]" strokeWidth={2.5} />
+        </button>
+        <nav aria-label="Breadcrumb" className="flex min-w-0 flex-wrap items-center gap-1 text-xs uppercase text-slate-500">
+          {breadcrumbs.map((label, index) => (
+            <span key={`${label}-${index}`} className={index === breadcrumbs.length - 1 ? "font-medium text-blue-600" : ""}>
+              {index > 0 && <span className="px-1 text-slate-300">/</span>}{label}
+            </span>
+          ))}
+        </nav>
+      </div>
       <div className="flex shrink-0 items-center gap-2 text-slate-700" aria-label={`Signed in as ${username}`}>
-        <ManagerBackupBell />
+        {isManager && <ManagerBackupBell />}
         <span aria-hidden="true" className="grid h-8 w-8 place-items-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700">{username.slice(0, 1).toUpperCase()}</span>
         <span className="max-w-48 truncate text-xs font-semibold">{username}</span>
       </div>

@@ -6,6 +6,7 @@ import { ManagerGlobalFilterBar } from "@/components/dashboard/ManagerGlobalFilt
 import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
 import TaskOfFieldAgent from "@/components/TaskOfFieldAgent";
 import { supabase } from "@/lib/supabaseClient";
+import { DashboardSkeleton, Skeleton, TableSkeleton } from "@/components/ui/Skeleton";
 
 interface TaskItem {
   jobNumber: string;
@@ -36,6 +37,31 @@ export default function TaskOfFieldAgentPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
+  const [detailDocs, setDetailDocs] = useState<Array<{ id: string; doc_type: string; file_url: string }>>([]);
+  const [detailPhotos, setDetailPhotos] = useState<string[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const openDetail = (task: TaskItem) => {
+    setSelectedTask(task);
+    setDetailDocs([]);
+    setDetailPhotos([]);
+    if (!task.taskId || task.taskId === "-") return;
+    setDetailLoading(true);
+    fetch(`/api/record-conversation/worksheets/${encodeURIComponent(task.taskId)}`, { cache: "no-store" })
+      .then((res) => res.json())
+      .then((json) => {
+        const detail = json?.data;
+        if (!detail) return;
+        setDetailDocs(Array.isArray(detail.documents) ? detail.documents : []);
+        setDetailPhotos(
+          Array.isArray(detail.photos)
+            ? detail.photos.map((photo: { photo_url?: string }) => photo.photo_url).filter((url: string | undefined): url is string => Boolean(url))
+            : []
+        );
+      })
+      .catch(() => undefined)
+      .finally(() => setDetailLoading(false));
+  };
 
   useEffect(() => {
     let active = true;
@@ -139,11 +165,7 @@ export default function TaskOfFieldAgentPage() {
   }, [tasks, selectedExecutive, search]);
 
   if (isManager === null) {
-    return (
-      <div className="py-8 text-center text-sm text-slate-500">
-        Loading...
-      </div>
-    );
+    return <DashboardSkeleton rows={4} />;
   }
 
   // Jika Sales Executive, tampilkan antarmuka operasional TaskOfFieldAgent A2
@@ -197,11 +219,7 @@ export default function TaskOfFieldAgentPage() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
-                  Loading field agent tasks...
-                </td>
-              </tr>
+              <TableSkeleton rows={5} columns={6} />
             ) : filteredTasks.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
@@ -229,7 +247,7 @@ export default function TaskOfFieldAgentPage() {
                   <td className="px-4 py-3.5 text-center">
                     <button
                       type="button"
-                      onClick={() => setSelectedTask(t)}
+                      onClick={() => openDetail(t)}
                       className="rounded-md border border-slate-200 px-3 py-1 font-semibold text-blue-600 hover:bg-slate-50"
                     >
                       Detail
@@ -297,6 +315,52 @@ export default function TaskOfFieldAgentPage() {
                 <div className="rounded-lg border border-rose-200 bg-rose-50/80 p-3">
                   <p className="font-semibold text-rose-800">Issue Details:</p>
                   <p className="mt-1 text-rose-700 leading-relaxed">{selectedTask.issueDetails}</p>
+                </div>
+              )}
+
+              <div>
+                <p className="font-semibold text-slate-700 mb-1.5">Dokumen</p>
+                {detailLoading ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : detailDocs.length === 0 ? (
+                  <p className="text-slate-400">Belum ada dokumen diunggah.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {detailDocs.map((doc) => {
+                      const fileName = decodeURIComponent(doc.file_url.split("?")[0].split("/").pop() || "document");
+                      return (
+                        <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-white p-2">
+                          <span className="min-w-0 truncate font-medium text-slate-700">{fileName}</span>
+                          <a
+                            href={`/api/record-conversation/download?url=${encodeURIComponent(doc.file_url)}&filename=${encodeURIComponent(fileName)}`}
+                            download={fileName}
+                            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[11px] font-semibold text-blue-600 hover:bg-slate-50"
+                          >
+                            <Download className="h-3.5 w-3.5" /> Unduh
+                          </a>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {detailPhotos.length > 0 && (
+                <div>
+                  <p className="font-semibold text-slate-700 mb-1.5">Foto</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {detailPhotos.slice(0, 4).map((url, index) => (
+                      <a
+                        key={`${url}-${index}`}
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
+                      >
+                        <img src={url} alt={`Foto ${index + 1}`} className="h-full w-full object-cover" />
+                      </a>
+                    ))}
+                  </div>
                 </div>
               )}
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
+import { TableSkeleton } from "@/components/ui/Skeleton";
 
 interface AccountItem {
   id: string;
@@ -114,11 +115,7 @@ export default function FieldAgentManagementPage() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-slate-400">
-                  Loading accounts...
-                </td>
-              </tr>
+              <TableSkeleton rows={5} columns={5} />
             ) : loadFailed ? (
               <tr>
                 <td colSpan={5} className="px-4 py-12 text-center text-slate-500">

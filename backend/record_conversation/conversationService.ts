@@ -1,6 +1,22 @@
 import { supabase } from './supabaseClient';
 import { CompanyItem, RecordConversationItem, NewConversationPayload, UpdateConversationPayload, PaginatedResult } from './types';
 
+const MAX_SUMMARY_WORDS = 50;
+const MAX_SUMMARY_CHARS = 500;
+
+/** Validasi server: 50 kata / 500 karakter. Batas karakter menutup spam satu kata panjang. */
+function summaryLimitError(summary: string): string | null {
+  const trimmed = summary.trim();
+  const words = trimmed ? trimmed.split(/\s+/).filter(Boolean).length : 0;
+  if (words > MAX_SUMMARY_WORDS) {
+    return `Ringkasan melebihi batas maksimum ${MAX_SUMMARY_WORDS} kata (saat ini ${words} kata). Mohon persingkat.`;
+  }
+  if (trimmed.length > MAX_SUMMARY_CHARS) {
+    return `Ringkasan melebihi batas maksimum ${MAX_SUMMARY_CHARS} karakter. Mohon persingkat.`;
+  }
+  return null;
+}
+
 /**
  * Mengambil daftar seluruh akun pelanggan dari a1_company_list
  * untuk dropdown pada modal "Select Customer Account"
@@ -190,6 +206,15 @@ export async function createConversation(
   error?: string;
 }> {
   try {
+    const summaryError = summaryLimitError(payload.summary);
+    if (summaryError) return { success: false, error: summaryError };
+
+    const submittedDate = payload.conversation_date ? String(payload.conversation_date).slice(0, 10) : '';
+    const todayJakarta = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date());
+    if (submittedDate && submittedDate > todayJakarta) {
+      return { success: false, error: 'Tanggal Record Conversation tidak boleh di masa mendatang.' };
+    }
+
     // a2_record_conversations.created_by references b2_register(id).
     let authorId: string | null = null;
 
@@ -302,7 +327,11 @@ export async function updateConversation(payload: UpdateConversationPayload): Pr
       updated_at: new Date().toISOString(),
     };
 
-    if (payload.summary !== undefined) updateFields.summary = payload.summary;
+    if (payload.summary !== undefined) {
+      const summaryError = summaryLimitError(payload.summary);
+      if (summaryError) return { success: false, error: summaryError };
+      updateFields.summary = payload.summary;
+    }
     if (payload.channel_type !== undefined) updateFields.channel = payload.channel_type;
     if (payload.need_assistance !== undefined) updateFields.need_assist = payload.need_assistance;
     if (payload.document_urls !== undefined && Array.isArray(payload.document_urls) && payload.document_urls.length > 0) {

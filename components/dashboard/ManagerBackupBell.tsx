@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface BackupAlertItem {
   id: string;
@@ -106,7 +107,9 @@ export function ManagerBackupBell() {
           </div>
 
           {isLoading ? (
-            <p className="px-4 py-6 text-center text-xs text-slate-500">Memuat...</p>
+            <div className="space-y-3 px-4 py-4" aria-busy="true">
+              {[0, 1, 2].map((i) => <Skeleton key={i} className="h-14 w-full" />)}
+            </div>
           ) : loadFailed ? (
             <div className="px-4 py-6 text-center">
               <p className="text-xs text-slate-600">Gagal memuat need backup.</p>

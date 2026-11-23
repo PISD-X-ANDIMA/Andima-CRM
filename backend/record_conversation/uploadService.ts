@@ -40,8 +40,10 @@ export async function uploadConversationFile(file: File): Promise<{
 
     const ext = file.name.split('.').pop()?.toLowerCase() || 'bin';
     const fileSizeKb = Math.round(file.size / 1024) || 1;
-    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const filePath = `conversations/${Date.now()}_${sanitizedFileName}`;
+    // Hanya buang karakter yang merusak path/URL; spasi dipertahankan agar nama asli utuh.
+    const sanitizedFileName = file.name.replace(/[\/\\?%*:|"<>]/g, '_');
+    // Folder timestamp, nama file tetap asli — nama tampilan tidak ikut kotor.
+    const filePath = `conversations/${Date.now()}/${sanitizedFileName}`;
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -85,7 +87,8 @@ export async function uploadConversationFile(file: File): Promise<{
     console.warn('Upload exception, returning local fallback metadata:', err);
     const ext = file.name.split('.').pop()?.toLowerCase() || 'txt';
     const fileSizeKb = Math.round(file.size / 1024) || 1;
-    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    // Hanya buang karakter yang merusak path/URL; spasi dipertahankan agar nama asli utuh.
+    const sanitizedFileName = file.name.replace(/[\/\\?%*:|"<>]/g, '_');
     return {
       success: true,
       data: {

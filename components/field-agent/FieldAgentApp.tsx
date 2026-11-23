@@ -9,6 +9,7 @@ import {
   openMyTaskPrintReport,
 } from "@/lib/myTaskExport";
 import { searchCountryLocations } from "@/lib/countryLocations";
+import { Skeleton } from "@/components/ui/Skeleton";
 import {
   AlertTriangle,
   ArrowDown,
@@ -3353,7 +3354,7 @@ function UnifiedJobForm({
                 serverTimestamp: gpsData.serverTimestamp,
                 taskId: no(job),
                 photos: validPhotos,
-                documents: [docs.main!, docs.supporting!],
+                documents: [finalDocDetails[0].url, finalDocDetails[1].url],
                 docDetails: finalDocDetails,
                 hasIssue: hasProblem === "yes",
                 issueDescription: problemDescription.trim(),
@@ -3796,19 +3797,12 @@ function FieldReportDetailModal({
         </div>
 
         {/* BODY */}
-        <div className="p-6 sm:p-7 space-y-6 max-h-[75vh] overflow-y-auto bg-slate-50/50">
+        <div className="p-6 sm:p-7 space-y-6 max-h-[75dvh] overflow-y-auto bg-slate-50/50">
           {loading ? (
-            <div className="py-20 text-center text-slate-500">
-              <RefreshCw
-                className="animate-spin mx-auto mb-3 text-blue-600"
-                size={28}
-              />
-              <p className="text-sm font-semibold text-slate-700">
-                Fetching task report details from server...
-              </p>
-              <p className="text-xs text-slate-400 mt-1">
-                Loading task, handover, documentation, and actual issue records.
-              </p>
+            <div className="space-y-4" aria-busy="true">
+              <Skeleton className="h-28 w-full" />
+              <Skeleton className="h-44 w-full" />
+              <Skeleton className="h-44 w-full" />
             </div>
           ) : fetchError ? (
             <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-red-700">
@@ -4296,11 +4290,11 @@ function FieldReportDetailModal({
                 <X size={18} />
               </button>
             </div>
-            <div className="p-2 bg-black flex items-center justify-center max-h-[70vh] overflow-hidden">
+            <div className="p-2 bg-black flex items-center justify-center max-h-[70dvh] overflow-hidden">
               <img
                 src={previewPhoto.url}
                 alt={previewPhoto.title}
-                className="max-h-[68vh] w-auto object-contain rounded-lg shadow-lg"
+                className="max-h-[68dvh] w-auto object-contain rounded-lg shadow-lg"
               />
             </div>
           </div>
@@ -5581,8 +5575,8 @@ function AddTaskModal({
         body: JSON.stringify({
           jobNumber: trimmedJob,
           taskId: trimmedJob,
-          photoUrls: validPhotos,
-          documents: [validDocDetails[0].name, validDocDetails[1].name],
+          photos: validPhotos,
+          documents: [validDocDetails[0].url, validDocDetails[1].url],
           docDetails: validDocDetails,
           issueFlag: hasIssue === "yes",
           issueNotes:
@@ -6056,7 +6050,7 @@ function AddTaskModal({
               <div className="border-b-2 border-dotted border-sky-400/80 my-3.5 -mx-6 sm:-mx-7" />
 
               {/* Body Step 2 (Scrollable container matching Image 1) */}
-              <div className="space-y-4 max-h-[68vh] overflow-y-auto pr-1">
+              <div className="space-y-4 max-h-[68dvh] overflow-y-auto pr-1">
                 {/* 1. MANDATORY PHOTOS: 4 CARGO ANGLES */}
                 <div>
                   <div className="flex items-center justify-between mb-0.5">

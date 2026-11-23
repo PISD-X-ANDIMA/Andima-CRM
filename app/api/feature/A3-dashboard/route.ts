@@ -6,28 +6,26 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const client = getA3Client();
-    const { data: jobsData, error: jobsError } = await client
-      .from("corp_jobs")
-      .select("id, job_number, origin, destination, job_type, customer_id");
+    const [totalRes, draftRes, assignedRes, completedRes, hasIssueRes, recentRes] = await Promise.all([
+      client.from("corp_jobs").select("id", { count: "exact", head: true }),
+      client.from("a3_tasks").select("id", { count: "exact", head: true }).eq("status", "Draft"),
+      client.from("a3_tasks").select("id", { count: "exact", head: true }).eq("status", "Assigned"),
+      client.from("a3_tasks").select("id", { count: "exact", head: true }).eq("status", "Completed"),
+      client.from("a3_tasks").select("id", { count: "exact", head: true }).eq("status", "Has Issue"),
+      client.from("corp_jobs").select("id, job_number, origin, destination, job_type, customer_id").limit(5),
+    ]);
 
-    const { data: tasksData } = await client
-      .from("a3_tasks")
-      .select("id, job_id, status, issue_description, completed_at");
-
-    if (jobsError) throw new Error("Unable to load dashboard.");
-    const jobs = jobsData ?? [];
-    const tasks = tasksData ?? [];
-    const countStatus = (st: string) => tasks.filter((t: any) => t.status === st).length;
+    if (totalRes.error) throw new Error("Unable to load dashboard.");
 
     return NextResponse.json({
       success: true,
       data: {
-        total: jobs.length,
-        draft: countStatus("Draft"),
-        inProgress: countStatus("Assigned"),
-        completed: countStatus("Completed"),
-        hasIssue: countStatus("Has Issue"),
-        recentJobs: jobs.slice(0, 5),
+        total: totalRes.count ?? 0,
+        draft: draftRes.count ?? 0,
+        inProgress: assignedRes.count ?? 0,
+        completed: completedRes.count ?? 0,
+        hasIssue: hasIssueRes.count ?? 0,
+        recentJobs: recentRes.data ?? [],
       },
     });
   } catch (error) { return apiError(error); }

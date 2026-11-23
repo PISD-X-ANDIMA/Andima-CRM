@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import FieldAgentApp from "@/components/field-agent/FieldAgentApp";
+import { DashboardSkeleton } from "@/components/ui/Skeleton";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentUserScope } from "@/lib/auth/roles";
 
@@ -18,8 +19,8 @@ export default async function FieldAgentPage() {
     <div className="h-full min-h-0 flex flex-col overflow-hidden">
       <Suspense
         fallback={
-          <div className="p-6 text-sm text-slate-400">
-            Loading Field Agent...
+          <div className="p-6">
+            <DashboardSkeleton />
           </div>
         }
       >

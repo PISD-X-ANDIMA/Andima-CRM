@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { ApiResponse, CustomerDetailItem, CustomerListItem } from "@/types/customer";
 import type { SalesExecutiveMetrics } from "@/lib/services/sales-executive-metrics";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface Props {
   initialCustomers: CustomerListItem[];
@@ -214,8 +215,8 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
   ].filter((label): label is string => label !== null);
 
   return <div className="mx-auto w-full max-w-[1280px]">
-    <h1 className="mb-0 text-4xl font-bold tracking-tight text-black sm:text-5xl">Welcome Back, {displayName}</h1>
-    <p className="mb-5 ml-2 text-lg text-[#858585] sm:text-2xl">Here’s your CRM Overview today!</p>
+    <h1 className="mb-0 text-2xl font-bold tracking-tight text-black sm:text-3xl">Welcome Back, {displayName}</h1>
+    <p className="mb-4 ml-1 text-sm text-[#858585] sm:text-base">Here’s your CRM Overview today!</p>
 
     <section aria-label="Key performance indicators" className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {[
@@ -223,7 +224,7 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
         { label: "Upcoming Meeting", value: metrics.upcomingMeetings, percentage: metrics.meetingPercentage, hint: "Scheduled meetings", icon: CalendarDays, color: "bg-rose-50 text-rose-600" },
         { label: "Task", value: metrics.tasks, percentage: metrics.taskPercentage, hint: "Worksheet rows", icon: BriefcaseBusiness, color: "bg-sky-50 text-sky-600" },
       ].map(({ label, value, percentage, hint, icon: Icon, color }) => (
-        <article key={label} className="flex min-w-0 flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs transition-colors">
+        <article key={label} className="flex min-w-0 flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs transition-colors">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-700">{label}</h2>
             {percentage !== undefined && percentage !== null && (
@@ -240,7 +241,7 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
             <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${color}`}>
               <Icon className="h-5 w-5" />
             </span>
-            <p className="text-3xl font-bold tracking-tight text-slate-900">{value ?? "—"}</p>
+            <p className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{value ?? "—"}</p>
             <span className="ml-auto text-right text-[11px] leading-tight text-slate-400">{hint}</span>
           </div>
         </article>
@@ -249,9 +250,9 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
     {unavailableMetrics.length > 0 && <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><span>Gagal memuat data statistik, coba lagi nanti. Periksa koneksi basis data.</span><button type="button" onClick={() => router.refresh()} className="font-semibold underline">Retry</button></div>}
 
     <section aria-labelledby="weekly-schedule-title" className="mb-6">
-      <div className="mb-3 flex items-center justify-between"><h2 id="weekly-schedule-title" className="text-xl font-bold text-slate-800 sm:text-2xl">Schedule this week</h2><Link href="/dashboard/meeting-schedule" aria-label="Open Meeting Schedule" className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"><CalendarDays className="h-5 w-5" /></Link></div>
+      <div className="mb-3 flex items-center justify-between"><h2 id="weekly-schedule-title" className="text-base font-bold text-slate-800 sm:text-lg">Schedule this week</h2><Link href="/dashboard/meeting-schedule" aria-label="Open Meeting Schedule" className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"><CalendarDays className="h-5 w-5" /></Link></div>
       {!scheduleLoading && !scheduleLoadError && nearbyMeetings.length > 0 && <div role="status" className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><strong>{nearbyMeetings.some(({ startsAt }) => (startsAt.getTime() - clockNow) / 60_000 < 15) ? "A meeting is starting soon:" : "Upcoming meeting within an hour:"}</strong> {nearbyMeetings.map(({ customer, startsAt }) => { const minutes = Math.max(0, Math.ceil((startsAt.getTime() - clockNow) / 60_000)); return `${customer.companyName} (${minutes === 0 ? "starting now" : `in ${minutes} min`})`; }).join(" · ")}</div>}
-      <div className="space-y-2.5">{scheduleLoadError ? <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">{scheduleLoadError || "Gagal memuat jadwal mingguan"}<button type="button" onClick={() => void refreshSchedule()} className="ml-2 font-semibold underline">Retry</button></div> : scheduleLoading ? <div role="status" className="space-y-2.5">{Array.from({ length: 3 }, (_, index) => <div key={index} className="h-16 animate-pulse rounded-xl border border-slate-200 bg-slate-100/70" />)}</div> : nearestWeeklyMeetings.length ? nearestWeeklyMeetings.map(({ customer, date, time, endsAt, startsAt }) => { const minutesUntil = Math.max(0, Math.ceil((startsAt.getTime() - clockNow) / 60_000)); const isStartingSoon = minutesUntil <= 60; return <Link key={`${customer.id}-${date.toISOString()}-${time}`} href={`/dashboard/company-list/${customer.id}`} className={`flex min-h-[64px] items-center justify-between gap-5 rounded-xl border px-4 py-3.5 text-slate-700 transition-colors hover:border-blue-300 sm:px-5 ${isStartingSoon ? "border-amber-300 bg-amber-50/70" : "border-slate-200 bg-white"}`}><span className="min-w-0"><span className="block truncate text-base font-semibold text-slate-900 sm:text-lg">{customer.companyName}</span><span className="text-xs text-slate-500">{date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span></span><span className="shrink-0 text-right text-xs sm:text-sm">{date.toLocaleDateString("en-GB", { weekday: "long" })}, {time} - {endsAt}{isStartingSoon && <span className="mt-1 block text-xs font-semibold text-amber-800">{minutesUntil === 0 ? "Starting now" : `Starting in ${minutesUntil} min`}</span>}</span></Link>; }) : <div className="rounded-xl border border-dashed border-slate-200 bg-white px-5 py-6 text-sm text-slate-500">Tidak ada jadwal meeting</div>}</div>
+      <div className="space-y-2.5">{scheduleLoadError ? <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">{scheduleLoadError || "Gagal memuat jadwal mingguan"}<button type="button" onClick={() => void refreshSchedule()} className="ml-2 font-semibold underline">Retry</button></div> : scheduleLoading ? <div role="status" className="space-y-2.5">{Array.from({ length: 3 }, (_, index) => <div key={index} className="h-16 animate-pulse rounded-xl border border-slate-200 bg-slate-100/70" />)}</div> : nearestWeeklyMeetings.length ? nearestWeeklyMeetings.map(({ customer, date, time, endsAt, startsAt }) => { const minutesUntil = Math.max(0, Math.ceil((startsAt.getTime() - clockNow) / 60_000)); const isStartingSoon = minutesUntil <= 60; return <Link key={`${customer.id}-${date.toISOString()}-${time}`} href={`/dashboard/company-list/${customer.id}`} className={`flex min-h-[64px] items-center justify-between gap-5 rounded-xl border px-4 py-3.5 text-slate-700 transition-colors hover:border-blue-300 sm:px-5 ${isStartingSoon ? "border-amber-300 bg-amber-50/70" : "border-slate-200 bg-white"}`}><span className="min-w-0"><span className="block truncate text-sm font-semibold text-slate-900 sm:text-base">{customer.companyName}</span><span className="text-xs text-slate-500">{date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span></span><span className="shrink-0 text-right text-xs sm:text-sm">{date.toLocaleDateString("en-GB", { weekday: "long" })}, {time} - {endsAt}{isStartingSoon && <span className="mt-1 block text-xs font-semibold text-amber-800">{minutesUntil === 0 ? "Starting now" : `Starting in ${minutesUntil} min`}</span>}</span></Link>; }) : <div className="rounded-xl border border-dashed border-slate-200 bg-white px-5 py-6 text-sm text-slate-500">Tidak ada jadwal meeting</div>}</div>
     </section>
 
     <div className="mb-4 flex items-center justify-between gap-4">
@@ -263,14 +264,14 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
           onChange={(event) => { setSearch(event.target.value); setPage(1); }}
           placeholder="Search Company or PIC"
           aria-label="Search company or PIC"
-          className="h-12 w-full rounded-full border border-slate-300 bg-white pl-12 pr-4 text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          className="h-10 w-full rounded-full border border-slate-300 bg-white pl-12 pr-4 text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
         />
       </label>
       <button
         type="button"
         onClick={() => { setExportError(""); setExportOpen(true); }}
         disabled={!customers.length}
-        className="inline-flex h-12 shrink-0 items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        className="inline-flex h-10 shrink-0 items-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
       >
         <Download className="h-4 w-4" />Export Transaction Records
       </button>
@@ -337,7 +338,16 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
 
     {detailOpen && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="transaction-detail-title" className="my-auto w-full max-w-7xl rounded-xl bg-white p-6 shadow-2xl sm:px-12 sm:py-10">
       <div className="flex items-start justify-between gap-4"><h2 id="transaction-detail-title" className="text-3xl font-bold tracking-tight text-black sm:text-4xl">Company Details</h2><button type="button" aria-label="Close" onClick={() => setDetailOpen(false)} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X className="h-6 w-6" /></button></div>
-      {detailLoading ? <div role="status" className="grid min-h-72 place-items-center text-slate-500">Loading company details...</div> : detailError ? <p role="alert" className="mt-8 rounded-lg bg-rose-50 p-4 text-sm text-rose-700">{detailError}</p> : detailCustomer && <>
+      {detailLoading ? (
+        <div className="mt-7 space-y-5" aria-busy="true">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-16 w-full" />)}
+          </div>
+          <div className="grid gap-5 lg:grid-cols-2">
+            {[0, 1].map((i) => <Skeleton key={i} className="h-56 w-full" />)}
+          </div>
+        </div>
+      ) : detailError ?<p role="alert" className="mt-8 rounded-lg bg-rose-50 p-4 text-sm text-rose-700">{detailError}</p> : detailCustomer && <>
         <div className="mt-7 grid gap-5 border-b border-slate-100 pb-6 sm:grid-cols-2 lg:grid-cols-3">{[["Company", detailCustomer.companyName], ["PIC", detailCustomer.primaryPic?.fullName], ["PIC Phone Number", detailCustomer.primaryPic?.phoneNumber]].map(([label, value]) => <div key={label}><h3 className="text-base text-[#707070] sm:text-lg">{label}</h3><p className="mt-1 break-words text-sm font-medium text-[#303030] sm:text-base">{value || "—"}</p></div>)}</div>
         <div className="mt-6 grid gap-5 lg:grid-cols-2"><DetailInfoCard title="Company Information" rows={[["Address", detailCustomer.address], ["PIC", detailCustomer.primaryPic?.fullName], ["PIC Phone Number", detailCustomer.primaryPic?.phoneNumber], ["Created By", detailCustomer.createdBy], ["Created Date", detailCustomer.createdAt]]} /><DetailInfoCard title="Meeting Schedule" rows={detailCustomer.meetings.length ? detailCustomer.meetings.map((meeting) => [meeting.formattedSchedule, [meeting.agenda, meeting.status].filter(Boolean).join(" · ")]) : [["No meeting scheduled", ""]]} /></div>
       </>}

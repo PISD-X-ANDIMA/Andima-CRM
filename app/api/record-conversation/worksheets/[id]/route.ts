@@ -21,14 +21,11 @@ export async function GET(
     }
 
     const resolvedParams = await Promise.resolve(context.params);
-    const worksheetId = Number(resolvedParams.id);
+    const worksheetId = resolvedParams.id;
 
-    if (isNaN(worksheetId)) {
+    if (!worksheetId) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Invalid worksheet ID. Must be a numeric ID.',
-        },
+        { success: false, error: 'Invalid worksheet ID.' },
         { status: 400 }
       );
     }

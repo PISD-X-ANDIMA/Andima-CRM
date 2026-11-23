@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  ChevronRight, Plus, X, Trash2, Loader2,
+  ChevronRight, Plus, X, Trash2,
   Briefcase, Truck, Clock, Box, Camera, FileText, User,
   CheckSquare, Check, Info, Download, AlertTriangle, Image,
   MapPin, ShieldAlert
@@ -12,6 +12,7 @@ import {
   fetchApiWorksheetDetail,
   WorksheetItem,
 } from '../backend/record_conversation';
+import { Skeleton, TableSkeleton } from '@/components/ui/Skeleton';
 
 // --- Shared Helpers ---
 
@@ -250,9 +251,11 @@ function WorksheetPanel({ worksheetId, onClose }: { worksheetId: number; onClose
 
         <div className="printable-body flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-white">
           {loading ? (
-            <div className="py-20 text-center text-xs text-slate-400">
-              <Loader2 size={24} className="animate-spin inline mr-2 text-blue-500" />
-              <div>Memuat data detail worksheet...</div>
+            <div className="space-y-4" aria-busy="true">
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-40 w-full" />
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-40 w-full" />
             </div>
           ) : data ? (
             <>
@@ -455,11 +458,7 @@ function WorksheetsSubTab() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-xs text-slate-400">
-                    <Loader2 size={16} className="animate-spin inline mr-2 text-blue-500" /> Memuat data tugas lapangan...
-                  </td>
-                </tr>
+                <TableSkeleton rows={4} columns={6} />
               ) : worksheets.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-xs text-slate-400">Belum ada lembar kerja lapangan.</td>

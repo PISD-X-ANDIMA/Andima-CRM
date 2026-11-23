@@ -28,5 +28,5 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     redirect(roleHome(scope.role));
   }
 
-  return <DashboardShell><DashboardHeader />{children}</DashboardShell>;
+  return <DashboardShell><DashboardHeader isManager={Boolean(scope.isManager)} />{children}</DashboardShell>;
 }

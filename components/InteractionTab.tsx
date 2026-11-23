@@ -265,12 +265,33 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   const [recordSummary, setRecordSummary] = useState('');
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
   const [newUploadedFiles, setNewUploadedFiles] = useState<UploadedFileMetadata[]>([]);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [isSubmittingNew, setIsSubmittingNew] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [saveSuccessNotif, setSaveSuccessNotif] = useState(false);
   const [createFormError, setCreateFormError] = useState<string | null>(null);
+
+  // Batas ringkasan: 50 kata dan 500 karakter.
+  // Batas karakter mencegah spam satu huruf tanpa spasi lolos dari hitungan kata.
+  const MAX_SUMMARY_WORDS = 50;
+  const MAX_SUMMARY_CHARS = 500;
+
+  // URL lama memakai path "conversations/<timestamp>_<nama>". Buang prefix angka itu.
+  const fileNameFromUrl = (url: string, fallback: string): string => {
+    const raw = url.split('/').pop()?.split('?')[0] || fallback;
+    return decodeURIComponent(raw).replace(/^\d{10,}_/, '');
+  };
+
+  const todayJakartaIso = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date());
+
+  /** Tanggal format dd/mm/yyyy dianggap masa depan bila melewati hari ini (WIB). */
+  const isFutureRecordDate = (value: string): boolean => {
+    const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!match) return false;
+    return `${match[3]}-${match[2]}-${match[1]}` > todayJakartaIso();
+  };
 
   const getWordCount = (str: string): number => {
     return str.trim() ? str.trim().split(/\s+/).filter(Boolean).length : 0;
@@ -392,11 +413,11 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
           const attachments: EvidenceAttachmentItem[] = (c.document_urls && c.document_urls.length > 0)
             ? c.document_urls.map((url, uIdx) => {
-              const fileName = url.split('/').pop()?.split('?')[0] || `Attachment_${uIdx + 1}`;
+              const fileName = fileNameFromUrl(url, `Attachment_${uIdx + 1}`);
               const isImg = /\.(png|jpe?g|webp|gif|svg)$/i.test(fileName);
               return {
                 id: `att-db-${c.id}-${uIdx}`,
-                name: decodeURIComponent(fileName),
+                name: fileName,
                 size: 'Dokumen',
                 type: isImg ? 'image' : 'pdf',
                 url
@@ -827,11 +848,11 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       setEditAttachments(item.evidence_attachments);
     } else if (item.document_urls && item.document_urls.length > 0) {
       const mappedDocs: EvidenceAttachmentItem[] = item.document_urls.map((url, idx) => {
-        const fileName = url.split('/').pop()?.split('?')[0] || `Attachment_${idx + 1}`;
+        const fileName = fileNameFromUrl(url, `Attachment_${idx + 1}`);
         const isImage = /\.(png|jpe?g|webp|gif|svg)$/i.test(fileName);
         return {
           id: `att-doc-${idx}-${Date.now()}`,
-          name: decodeURIComponent(fileName),
+          name: fileName,
           size: 'Dokumen',
           type: isImage ? 'image' : 'pdf',
           url
@@ -976,6 +997,12 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       return;
     }
 
+    if (isFutureRecordDate(recordDate)) {
+      setDateError('Tanggal tidak boleh melewati hari ini.');
+      setCreateFormError('Tanggal Record Conversation tidak boleh di masa mendatang.');
+      return;
+    }
+
     if (channelSelection === null) {
       setCreateFormError('Channel harus dipilih.');
       return;
@@ -988,11 +1015,16 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       return;
     }
 
-    // Lecturer Rule 2: Text Summary melebihi 100 words -> Menolak penyimpanan dan menampilkan informasi batas maksimal
+    // Batas ringkasan: 50 kata / 500 karakter.
     const wordCount = getWordCount(recordSummary);
-    if (wordCount > 100) {
-      setSummaryError(`Text Summary melebihi 100 words (saat ini ${wordCount} kata). Menolak penyimpanan dan menampilkan informasi batas maksimal.`);
-      setCreateFormError(`Text Summary melebihi batas maksimum 100 kata (saat ini ${wordCount} kata). Mohon persingkat.`);
+    if (wordCount > MAX_SUMMARY_WORDS) {
+      setSummaryError(`Text Summary melebihi batas maksimum ${MAX_SUMMARY_WORDS} kata (saat ini ${wordCount} kata). Mohon persingkat.`);
+      setCreateFormError(`Text Summary melebihi batas maksimum ${MAX_SUMMARY_WORDS} kata (saat ini ${wordCount} kata). Mohon persingkat.`);
+      return;
+    }
+    if (recordSummary.trim().length > MAX_SUMMARY_CHARS) {
+      setSummaryError(`Text Summary melebihi batas maksimum ${MAX_SUMMARY_CHARS} karakter. Mohon persingkat.`);
+      setCreateFormError(`Text Summary melebihi batas maksimum ${MAX_SUMMARY_CHARS} karakter. Mohon persingkat.`);
       return;
     }
 
@@ -1495,7 +1527,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     <span>Export Summary (.pdf)</span>
                   </button>
                 </div>
-                <div className="bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed font-medium">
+                <div className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed font-medium">
                   {selectedConversation.summary || 'Discussed recent shipment delays. Customer requested schedule adjustment for container #2 and re-verification of documentation at Tanjung Priok Port.'}
                 </div>
               </div>
@@ -1731,7 +1763,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
                   MANAGER NOTES &amp; INSTRUCTIONS
                 </span>
-                <div className="bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed font-normal shadow-2xs">
+                <div className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed font-normal shadow-2xs">
                   {selectedConversation.summary || 'Discussed recent shipment delays. Customer requested schedule adjustment for container #2 and re-verification of documentation at Tanjung Priok Port.'}
                 </div>
                 <div className="mt-2.5 flex items-center justify-between text-[11px]">
@@ -1850,18 +1882,28 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     onChange={(e) => {
                       const formatted = formatWithSlashes(e.target.value);
                       setRecordDate(formatted);
+                      setDateError(
+                        /^\d{2}\/\d{2}\/\d{4}$/.test(formatted) && isFutureRecordDate(formatted)
+                          ? 'Tanggal tidak boleh melewati hari ini.'
+                          : null
+                      );
                     }}
-                    placeholder="MM/DD/YYYY"
-                    className="w-full bg-[#f8fafc] border border-slate-200 focus:border-blue-500 focus:bg-white rounded-xl pl-4 pr-10 py-3 text-xs font-semibold text-slate-800 outline-none shadow-2xs transition-colors placeholder:text-slate-400"
+                    placeholder="DD/MM/YYYY"
+                    className={`w-full bg-[#f8fafc] border rounded-xl pl-4 pr-10 py-3 text-xs font-semibold text-slate-800 outline-none shadow-2xs transition-colors placeholder:text-slate-400 ${dateError
+                      ? 'border-red-500 bg-red-50/20 focus:border-red-600 focus:ring-1 focus:ring-red-500'
+                      : 'border-slate-200 focus:border-blue-500 focus:bg-white'
+                    }`}
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-lg hover:bg-slate-200/60 transition-colors cursor-pointer">
                     <input
                       type="date"
+                      max={todayJakartaIso()}
                       onChange={(e) => {
                         const val = e.target.value;
                         if (val) {
                           const [yyyy, mm, dd] = val.split('-');
                           setRecordDate(`${dd}/${mm}/${yyyy}`);
+                          setDateError(val > todayJakartaIso() ? 'Tanggal tidak boleh melewati hari ini.' : null);
                         }
                       }}
                       className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
@@ -1870,6 +1912,9 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     <Calendar size={16} className="text-blue-600 pointer-events-none" />
                   </div>
                 </div>
+                {dateError && (
+                  <p className="mt-1.5 text-xs text-red-600 font-semibold">{dateError}</p>
+                )}
               </div>
 
               {/* Channel Type * */}
@@ -1921,30 +1966,33 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                   <label className="block text-xs font-bold text-slate-800">
                     Text Summary<span className="text-red-500">*</span>
                   </label>
-                  <span className={`text-[11px] font-bold ${getWordCount(recordSummary) >= 100 ? 'text-red-600 font-bold' : 'text-slate-400'}`}>
-                    {getWordCount(recordSummary)} / 100 kata
+                  <span className={`text-[11px] font-bold ${getWordCount(recordSummary) >= MAX_SUMMARY_WORDS || recordSummary.length >= MAX_SUMMARY_CHARS ? 'text-red-600 font-bold' : 'text-slate-400'}`}>
+                    {getWordCount(recordSummary)} / {MAX_SUMMARY_WORDS} kata · {recordSummary.length} / {MAX_SUMMARY_CHARS} karakter
                   </span>
                 </div>
                 <textarea
                   rows={3}
                   value={recordSummary}
-                  onKeyDown={(e) => handleKeyDownMaxWords(e, recordSummary, 100)}
+                  onKeyDown={(e) => handleKeyDownMaxWords(e, recordSummary, MAX_SUMMARY_WORDS)}
+                  maxLength={MAX_SUMMARY_CHARS}
                   onChange={(e) => {
-                    const rawVal = e.target.value;
-                    const trimmed = rawVal.trim();
+                    const capped = e.target.value.slice(0, MAX_SUMMARY_CHARS);
+                    const trimmed = capped.trim();
                     const words = trimmed ? trimmed.split(/\s+/).filter(Boolean) : [];
-                    let finalVal = rawVal;
-                    if (words.length > 100) {
-                      finalVal = words.slice(0, 100).join(' ');
-                    } else if (words.length === 100 && (rawVal.endsWith(' ') || rawVal.endsWith('\n') || rawVal.endsWith('\t'))) {
+                    let finalVal = capped;
+                    if (words.length > MAX_SUMMARY_WORDS) {
+                      finalVal = words.slice(0, MAX_SUMMARY_WORDS).join(' ');
+                    } else if (words.length === MAX_SUMMARY_WORDS && /[\s\n\t]$/.test(capped)) {
                       finalVal = words.join(' ');
                     }
                     setRecordSummary(finalVal);
                     const count = getWordCount(finalVal);
                     if (!finalVal.trim()) {
                       setSummaryError('Text Summary belum diisi.');
-                    } else if (count >= 100) {
-                      setSummaryError('Telah mencapai batas maksimal 100 kata. Tidak dapat menambahkan kata lagi.');
+                    } else if (count >= MAX_SUMMARY_WORDS) {
+                      setSummaryError(`Telah mencapai batas maksimal ${MAX_SUMMARY_WORDS} kata. Tidak dapat menambahkan kata lagi.`);
+                    } else if (finalVal.length >= MAX_SUMMARY_CHARS) {
+                      setSummaryError(`Telah mencapai batas maksimal ${MAX_SUMMARY_CHARS} karakter. Persingkat ringkasan.`);
                     } else {
                       setSummaryError(null);
                     }

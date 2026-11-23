@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
+import { Skeleton, TableSkeleton } from "@/components/ui/Skeleton";
 
 interface SalesExecItem {
   id: string;
@@ -85,27 +86,33 @@ export function ManagerCustomerSuccessDashboard() {
         {/* Total Sales Executive */}
         <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs transition-shadow hover:shadow-sm">
           <p className="text-xs font-medium text-slate-500">Total Sales Executive</p>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-            {data.total_sales_executives}
-          </p>
+          {loading ? <Skeleton className="mt-3 h-9 w-16" /> : (
+            <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+              {data.total_sales_executives}
+            </p>
+          )}
           <p className="mt-2 text-xs text-slate-400">Active users</p>
         </div>
 
         {/* Total Customer */}
         <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs transition-shadow hover:shadow-sm">
           <p className="text-xs font-medium text-slate-500">Total Customer</p>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-            {data.total_customers}
-          </p>
+          {loading ? <Skeleton className="mt-3 h-9 w-16" /> : (
+            <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+              {data.total_customers}
+            </p>
+          )}
           <p className="mt-2 text-xs text-slate-400">All Sales Executives</p>
         </div>
 
         {/* Meetings this week */}
         <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs transition-shadow hover:shadow-sm">
           <p className="text-xs font-medium text-slate-500">Meetings this week</p>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-            {data.meetings_this_week}
-          </p>
+          {loading ? <Skeleton className="mt-3 h-9 w-16" /> : (
+            <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+              {data.meetings_this_week}
+            </p>
+          )}
           <p className="mt-2 text-xs text-slate-400">All Sales Executives</p>
         </div>
       </section>
@@ -130,10 +137,12 @@ export function ManagerCustomerSuccessDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {data.sales_executives.length === 0 ? (
+                {loading ? (
+                  <TableSkeleton rows={4} columns={5} />
+                ) : data.sales_executives.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-xs text-slate-500">
-                      {loading ? "Loading sales executives..." : "No Sales Executive yet"}
+                      No Sales Executive yet
                     </td>
                   </tr>
                 ) : (
@@ -182,9 +191,13 @@ export function ManagerCustomerSuccessDashboard() {
             </h2>
 
             <div className="space-y-4">
-              {data.latest_issues.length === 0 ? (
+              {loading ? (
+                <div className="space-y-3" aria-busy="true">
+                  {[0, 1, 2].map((i) => <Skeleton key={i} className="h-20 w-full" />)}
+                </div>
+              ) : data.latest_issues.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-xs text-slate-500">
-                  {loading ? "Checking open issues..." : "No open issues"}
+                  No open issues
                 </div>
               ) : (
                 data.latest_issues.map((issue) => (

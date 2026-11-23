@@ -69,8 +69,22 @@ export async function POST(request: NextRequest) {
       throw new A3HttpError(403, "This task belongs to another field agent.");
     }
 
-    const photos: string[] = Array.isArray(body.photos) ? body.photos.filter(Boolean) : [];
-    const documents: string[] = Array.isArray(body.documents) ? body.documents.filter(Boolean) : [];
+    const photos: string[] = Array.isArray(body.photos)
+      ? body.photos.filter(Boolean)
+      : Array.isArray(body.photoUrls)
+        ? body.photoUrls.filter(Boolean)
+        : [];
+    const docDetails: Array<{ name?: string; url?: string }> = Array.isArray(body.docDetails) ? body.docDetails : [];
+    // Klien lama mengirim nama file. Ambil URL dari docDetails supaya a3_task_documents
+    // tetap menyimpan URL yang bisa diunduh.
+    const documents: string[] = (Array.isArray(body.documents) ? body.documents : [])
+      .map((doc: unknown, index: number) => {
+        if (typeof doc !== 'string' || !doc) return null;
+        if (/^https?:\/\//i.test(doc) || doc.startsWith('/')) return doc;
+        const match = docDetails[index] || docDetails.find((entry) => entry?.name === doc);
+        return match?.url || doc;
+      })
+      .filter((doc: string | null): doc is string => Boolean(doc));
     if (photos.length === 0 && documents.length === 0) {
       throw new A3HttpError(400, "photos or documents are required.");
     }

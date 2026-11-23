@@ -86,8 +86,54 @@ async function loadTaskBundle(db: any, task: TaskRow) {
   return { job: jobWithCustomer, handover: handoverRes.data || null, docs, agentName };
 }
 
-async function findTaskByJobNumber(db: any, jobNumber: string): Promise<TaskRow | null> {
-  const { data: job } = await db
+/** Sama seperti loadTaskBundle, tapi 5 query untuk semua task sekaligus (hindari N+1). */
+async function loadTaskBundles(db: any, tasks: TaskRow[]) {
+  if (tasks.length === 0) return [];
+  const jobIds = Array.from(new Set(tasks.map((t) => t.job_id).filter(Boolean)));
+  const taskIds = tasks.map((t) => t.id);
+  const agentIds = Array.from(new Set(tasks.map((t) => t.field_agent_id).filter((id): id is string => Boolean(id))));
+
+  const [jobsRes, handoversRes, docsRes, agentsRes] = await Promise.all([
+    jobIds.length > 0
+      ? db.from("corp_jobs").select("id, job_number, customer_id, origin, destination").in("id", jobIds)
+      : Promise.resolve({ data: [] }),
+    db.from("a3_task_handovers").select("*").in("task_id", taskIds),
+    db.from("a3_task_documents").select("*").in("task_id", taskIds).order("created_at", { ascending: true }),
+    agentIds.length > 0
+      ? db.from("b2_register").select("id, full_name").in("id", agentIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const jobs = (jobsRes.data || []) as any[];
+  const customerIds = Array.from(new Set(jobs.map((j) => j.customer_id).filter(Boolean)));
+  const customersRes =
+    customerIds.length > 0
+      ? await db.from("a1_customers").select("id, company_name").in("id", customerIds)
+      : { data: [] };
+
+  const jobById = new Map<string, any>(jobs.map((j) => [j.id, j]));
+  const customerById = new Map<string, string>(((customersRes.data || []) as any[]).map((c) => [c.id, c.company_name]));
+  const agentById = new Map<string, string>(((agentsRes.data || []) as any[]).map((a) => [a.id, a.full_name]));
+  const handoverByTask = new Map<string, any>(((handoversRes.data || []) as any[]).map((h) => [h.task_id, h]));
+  const docsByTask = new Map<string, any[]>();
+  for (const doc of (docsRes.data || []) as any[]) {
+    const list = docsByTask.get(doc.task_id);
+    if (list) list.push(doc);
+    else docsByTask.set(doc.task_id, [doc]);
+  }
+
+  return tasks.map((task) => {
+    const job = jobById.get(task.job_id);
+    return {
+      job: job ? { ...job, customer_name: customerById.get(job.customer_id) || "-" } : null,
+      handover: handoverByTask.get(task.id) || null,
+      docs: docsByTask.get(task.id) || [],
+      agentName: task.field_agent_id ? agentById.get(task.field_agent_id) || null : null,
+    };
+  });
+}
+
+async function findTaskByJobNumber(db: any, jobNumber: string): Promise<TaskRow | null> {  const { data: job } = await db
     .from("corp_jobs")
     .select("id")
     .eq("job_number", jobNumber)
@@ -156,12 +202,11 @@ export async function GET(request: NextRequest) {
     if (error) throw error;
 
     const rows = (tasks || []) as TaskRow[];
-    const items = await Promise.all(
-      rows.map(async (task) => {
-        const { job, handover, docs, agentName } = await loadTaskBundle(db, task);
-        return mapTask(task, job, agentName, handover, docs);
-      })
-    );
+    const bundles = await loadTaskBundles(db, rows);
+    const items = rows.map((task, index) => {
+      const { job, handover, docs, agentName } = bundles[index];
+      return mapTask(task, job, agentName, handover, docs);
+    });
 
     return NextResponse.json({ success: true, data: items });
   } catch (error) {

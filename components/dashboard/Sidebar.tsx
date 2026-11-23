@@ -8,7 +8,6 @@ import { supabase } from '@/lib/supabaseClient';
 import {
   Users,
   ChevronDown,
-  X,
 } from "lucide-react";
 
 interface SubMenuItem {
@@ -40,7 +39,7 @@ const defaultManagerMenus: SubMenuItem[] = [
   { name: "Manage Accounts", href: "/dashboard/field-agent-management" },
 ];
 
-export function Sidebar({ onHide }: { onHide: () => void }) {
+export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -135,18 +134,19 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
     return () => { active = false; };
   }, [pathname]);
 
-  // Root link is active only when no submenu (with query) matches the current URL.
+  // Root link is active on the role home, unless a query-based submenu item owns that URL.
+  const cleanPath = pathname.replace(/\/+$/, "");
   const currentUrl = searchParams.toString()
-    ? `${pathname}?${searchParams.toString()}`
-    : pathname;
+    ? `${cleanPath}?${searchParams.toString()}`
+    : cleanPath;
   const isCurrentDashboard =
-    pathname === sectionHref &&
-    !submenuItems.some((item) => item.href === currentUrl);
+    cleanPath === sectionHref &&
+    !submenuItems.some((item) => item.href === currentUrl && item.href !== sectionHref);
 
   return (
     <aside className="group relative flex h-screen h-dvh w-[260px] shrink-0 flex-col bg-[#0F2342]">
       {/* Header Logo */}
-      <div className="flex items-start justify-between gap-2 px-4 pb-5 pt-5">
+      <div className="flex items-start gap-2 px-4 pb-5 pt-5">
         <div className="flex items-center gap-2.5">
           <Image src="/andima-logo.png" alt="PT Andima Transportindo" width={470} height={300} className="h-10 w-11 shrink-0 object-contain" priority />
           <div className="leading-tight text-white">
@@ -154,14 +154,6 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
             <p className="text-[9px] font-medium tracking-[0.08em] text-slate-300">Logistics Suite</p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onHide}
-          aria-label="Hide sidebar"
-          className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-md text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-        >
-          <X className="h-[18px] w-[18px]" strokeWidth={2.5} />
-        </button>
       </div>
 
       <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
@@ -186,10 +178,11 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
             <Link
               href={sectionHref}
               prefetch
-              className={`flex items-center rounded-md px-2 py-[7px] text-[12.5px] font-semibold transition-colors ${
+              aria-current={isCurrentDashboard ? "page" : undefined}
+              className={`flex items-center rounded-md border-l-2 px-2 py-[7px] text-[12.5px] font-semibold transition-colors ${
                 isCurrentDashboard
-                  ? "bg-[#cdd8dd] text-[#5d6b75]"
-                  : "text-white hover:bg-white/10"
+                  ? "border-emerald-400 bg-[#cdd8dd] text-[#5d6b75]"
+                  : "border-transparent text-white hover:bg-white/10"
               }`}
             >
               {isCurrentDashboard && (
@@ -202,19 +195,23 @@ export function Sidebar({ onHide }: { onHide: () => void }) {
               {submenuItems
                 .filter((item) => item.href !== sectionHref)
                 .map((item) => {
-                const [itemPath, itemQuery] = item.href.split("?");
-                const isActive =
-                  pathname === itemPath &&
-                  (!itemQuery || itemQuery === searchParams.toString());
+                const [rawItemPath, itemQuery] = item.href.split("?");
+                const itemPath = rawItemPath.replace(/\/+$/, "");
+                const currentPath = pathname.replace(/\/+$/, "");
+                // Item tanpa query aktif untuk path itu sendiri dan semua sub-path-nya.
+                const isActive = itemQuery
+                  ? itemPath === currentPath && itemQuery === searchParams.toString()
+                  : itemPath === currentPath || currentPath.startsWith(`${itemPath}/`);
 
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center rounded-md px-2 py-[7px] text-[12.5px] font-semibold transition-colors ${
+                    aria-current={isActive ? "page" : undefined}
+                    className={`flex items-center rounded-md border-l-2 px-2 py-[7px] text-[12.5px] font-semibold transition-colors ${
                       isActive
-                        ? "bg-[#cdd8dd] text-[#5d6b75]"
-                        : "text-white hover:bg-white/10"
+                        ? "border-emerald-400 bg-[#cdd8dd] text-[#5d6b75]"
+                        : "border-transparent text-white hover:bg-white/10"
                     }`}
                   >
                     {isActive && (

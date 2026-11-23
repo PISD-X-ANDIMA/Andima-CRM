@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import { Search, X } from "lucide-react";
 import { ManagerGlobalFilterBar } from "@/components/dashboard/ManagerGlobalFilterBar";
 import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
+import { TableSkeleton } from "@/components/ui/Skeleton";
 
 interface BackupTicket {
   alertId: string;
@@ -175,11 +176,7 @@ export default function NeedBackupPage() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
-                  Loading backup tickets...
-                </td>
-              </tr>
+              <TableSkeleton rows={5} columns={6} />
             ) : loadFailed ? (
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center text-slate-600">

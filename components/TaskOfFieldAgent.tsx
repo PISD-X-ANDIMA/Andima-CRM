@@ -68,6 +68,7 @@ export interface FieldTaskItem {
   photo_count: number;
   doc_count: number;
   result_photos?: string[];
+  documents?: Array<{ id: string; doc_type: string; file_url: string; created_at?: string }>;
   result_docs?: { name: string; size: string; url: string }[];
   gross_weight?: string;
   cargo_pieces?: string;
@@ -972,6 +973,26 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     setAssignedAgentName(task.field_agent_name || '');
     setNotesModalTask(task);
   };
+
+  /** Buka modal lalu lengkapi dengan dokumen asli dari a3_task_documents. */
+  const openTaskWithDocuments = (task: FieldTaskItem, open: (t: FieldTaskItem) => void) => {
+    open(task);
+    const rawId = task.id.replace(/^tsk-/, '');
+    fetch(`/api/record-conversation/worksheets/${encodeURIComponent(rawId)}`, { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json) => {
+        const detail = json?.data;
+        if (!detail) return;
+        const documents = Array.isArray(detail.documents) ? detail.documents : [];
+        const photos = Array.isArray(detail.photos)
+          ? detail.photos.map((photo: { photo_url?: string }) => photo.photo_url).filter((url: string | undefined): url is string => Boolean(url))
+          : [];
+        open({ ...task, documents, result_photos: photos.length ? photos : task.result_photos });
+      })
+      .catch(() => undefined);
+  };
+
+  const resultPhotoUrl = (index: number) => resultModalTask?.result_photos?.[index];
 
   const handleSaveTaskNote = async () => {
     if (!notesModalTask) return;
@@ -1907,7 +1928,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                         </div>
                         <button
                           type="button"
-                          onClick={() => setResultModalTask(task)}
+                          onClick={() => openTaskWithDocuments(task, setResultModalTask)}
                           className="text-xs font-semibold text-[#0d6efd] hover:underline cursor-pointer transition-colors mt-0.5"
                         >
                           See more...
@@ -3014,20 +3035,30 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   </h3>
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold">
                     <Check size={11} className="text-emerald-600" />
-                    <span>4/4 Verified</span>
+                    <span>{Math.min(resultModalTask.result_photos?.length || 0, 4)}/4 Verified</span>
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {/* Card 1: 1. Foto Keseluruhan */}
                   <div className="border border-[#e2eaf5] rounded-xl overflow-hidden bg-white shadow-2xs">
                     <div
-                      className="printable-photo-box bg-[#edf2f9] h-16 flex flex-col items-center justify-center p-1.5 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
-                      onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[0] || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800')}
+                      className="printable-photo-box bg-[#edf2f9] h-16 flex flex-col items-center justify-center p-1.5 relative overflow-hidden group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
+                      onClick={() => {
+                        const url = resultPhotoUrl(0);
+                        if (url) setPreviewPhotoUrl(url);
+                        else showToast('Foto Keseluruhan belum tersedia.');
+                      }}
                     >
-                      <div className="w-6 h-6 rounded-full bg-blue-100 text-[#2563eb] flex items-center justify-center shadow-xs">
-                        <Camera size={12} />
-                      </div>
-                      <span className="text-[9px] text-slate-400 font-mono mt-0.5">IMG_8411.JPG • 10:12</span>
+                      {resultPhotoUrl(0) ? (
+                        <img src={resultPhotoUrl(0)} alt="Foto Keseluruhan" className="absolute inset-0 h-full w-full object-cover" />
+                      ) : (
+                        <>
+                          <div className="w-6 h-6 rounded-full bg-blue-100 text-[#2563eb] flex items-center justify-center shadow-xs">
+                            <Camera size={12} />
+                          </div>
+                          <span className="text-[9px] text-slate-400 font-mono mt-0.5">Belum ada foto</span>
+                        </>
+                      )}
                     </div>
                     <div className="px-2 py-1 bg-white flex items-center justify-between border-t border-slate-100">
                       <span className="text-[10px] font-semibold text-slate-800">1. Overall Cargo</span>
@@ -3038,13 +3069,23 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   {/* Card 2: 2. Marking / Label */}
                   <div className="border border-[#e2eaf5] rounded-xl overflow-hidden bg-white shadow-2xs">
                     <div
-                      className="printable-photo-box bg-[#edf2f9] h-16 flex flex-col items-center justify-center p-1.5 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
-                      onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[1] || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800')}
+                      className="printable-photo-box bg-[#edf2f9] h-16 flex flex-col items-center justify-center p-1.5 relative overflow-hidden group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
+                      onClick={() => {
+                        const url = resultPhotoUrl(1);
+                        if (url) setPreviewPhotoUrl(url);
+                        else showToast('Foto Marking & Label belum tersedia.');
+                      }}
                     >
-                      <div className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shadow-xs">
-                        <Tag size={12} />
-                      </div>
-                      <span className="text-[9px] text-slate-400 font-mono mt-0.5">IMG_8412.JPG • 10:14</span>
+                      {resultPhotoUrl(1) ? (
+                        <img src={resultPhotoUrl(1)} alt="Marking dan Label" className="absolute inset-0 h-full w-full object-cover" />
+                      ) : (
+                        <>
+                          <div className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shadow-xs">
+                            <Tag size={12} />
+                          </div>
+                          <span className="text-[9px] text-slate-400 font-mono mt-0.5">Belum ada foto</span>
+                        </>
+                      )}
                     </div>
                     <div className="px-2 py-1 bg-white flex items-center justify-between border-t border-slate-100">
                       <span className="text-[10px] font-semibold text-slate-800">2. Marking &amp; Label</span>
@@ -3055,13 +3096,23 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   {/* Card 3: 3. Foto Seal */}
                   <div className="border border-[#e2eaf5] rounded-xl overflow-hidden bg-white shadow-2xs">
                     <div
-                      className="printable-photo-box bg-[#edf2f9] h-16 flex flex-col items-center justify-center p-1.5 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
-                      onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[2] || 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?w=800')}
+                      className="printable-photo-box bg-[#edf2f9] h-16 flex flex-col items-center justify-center p-1.5 relative overflow-hidden group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
+                      onClick={() => {
+                        const url = resultPhotoUrl(2);
+                        if (url) setPreviewPhotoUrl(url);
+                        else showToast('Foto Seal belum tersedia.');
+                      }}
                     >
-                      <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
-                        <Lock size={12} />
-                      </div>
-                      <span className="text-[9px] text-slate-400 font-mono mt-0.5">IMG_8413.JPG • 10:15</span>
+                      {resultPhotoUrl(2) ? (
+                        <img src={resultPhotoUrl(2)} alt="Container Seal" className="absolute inset-0 h-full w-full object-cover" />
+                      ) : (
+                        <>
+                          <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
+                            <Lock size={12} />
+                          </div>
+                          <span className="text-[9px] text-slate-400 font-mono mt-0.5">Belum ada foto</span>
+                        </>
+                      )}
                     </div>
                     <div className="px-2 py-1 bg-white flex items-center justify-between border-t border-slate-100">
                       <span className="text-[10px] font-semibold text-slate-800">3. Container Seal</span>
@@ -3072,13 +3123,23 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   {/* Card 4: 4. Area Kerusakan */}
                   <div className="border border-[#e2eaf5] rounded-xl overflow-hidden bg-white shadow-2xs">
                     <div
-                      className="printable-photo-box bg-[#edf2f9] h-16 flex flex-col items-center justify-center p-1.5 relative group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
-                      onClick={() => setPreviewPhotoUrl(resultModalTask.result_photos?.[3] || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800')}
+                      className="printable-photo-box bg-[#edf2f9] h-16 flex flex-col items-center justify-center p-1.5 relative overflow-hidden group cursor-pointer hover:bg-[#e4ecf7] transition-colors"
+                      onClick={() => {
+                        const url = resultPhotoUrl(3);
+                        if (url) setPreviewPhotoUrl(url);
+                        else showToast('Foto Area Kerusakan belum tersedia.');
+                      }}
                     >
-                      <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
-                        <Shield size={12} />
-                      </div>
-                      <span className="text-[9px] text-slate-400 font-mono mt-0.5">Inspected • 10:20</span>
+                      {resultPhotoUrl(3) ? (
+                        <img src={resultPhotoUrl(3)} alt="Surface Detail" className="absolute inset-0 h-full w-full object-cover" />
+                      ) : (
+                        <>
+                          <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
+                            <Shield size={12} />
+                          </div>
+                          <span className="text-[9px] text-slate-400 font-mono mt-0.5">Belum ada foto</span>
+                        </>
+                      )}
                     </div>
                     <div className="px-2 py-1 bg-white flex items-center justify-between border-t border-slate-100">
                       <span className="text-[10px] font-semibold text-slate-800">4. Surface Detail</span>
@@ -3094,61 +3155,52 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   DOCUMENT ATTACHMENTS
                 </h3>
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between p-2.5 bg-white border border-[#e2eaf5] rounded-xl shadow-2xs">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
-                        <FileText size={14} />
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-slate-800 block">Primary Document</span>
-                        <span className="text-[10px] text-slate-400">Packing List.pdf • PDF • 1.4 MB</span>
-                      </div>
+                  {(resultModalTask.documents || []).length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-4 text-center text-[10px] text-slate-400">
+                      Belum ada dokumen yang diunggah Field Agent.
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const link = document.createElement('a');
-                        link.href = 'data:application/pdf;base64,JVBERi0xLjQKJSDl4uXw...';
-                        link.download = 'Packing_List.pdf';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        showToast('Berkas Packing_List.pdf berhasil diunduh');
-                      }}
-                      className="p-1.5 text-slate-400 hover:text-[#2563eb] rounded-lg transition-colors cursor-pointer"
-                      title="Unduh Berkas"
-                    >
-                      <Download size={14} />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between p-2.5 bg-white border border-[#e2eaf5] rounded-xl shadow-2xs">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
-                        <FileText size={14} />
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-slate-800 block">Supporting Document</span>
-                        <span className="text-[10px] text-slate-400">MSDS.pdf • PDF • 860 KB</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const link = document.createElement('a');
-                        link.href = 'data:application/pdf;base64,JVBERi0xLjQKJSDl4uXw...';
-                        link.download = 'MSDS.pdf';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        showToast('Berkas MSDS.pdf berhasil diunduh');
-                      }}
-                      className="p-1.5 text-slate-400 hover:text-[#2563eb] rounded-lg transition-colors cursor-pointer"
-                      title="Unduh Berkas"
-                    >
-                      <Download size={14} />
-                    </button>
-                  </div>
+                  ) : (
+                    (resultModalTask.documents || []).map((doc) => {
+                      const fileName = decodeURIComponent(doc.file_url.split('?')[0].split('/').pop() || 'document');
+                      const ext = fileName.split('.').pop()?.toUpperCase() || 'FILE';
+                      const typeLabel = doc.doc_type === 'main_doc'
+                        ? 'Primary Document'
+                        : doc.doc_type === 'support_doc'
+                          ? 'Supporting Document'
+                          : doc.doc_type === 'msds'
+                            ? 'MSDS / DG Declaration'
+                            : doc.doc_type;
+                      return (
+                        <div key={doc.id} className="flex items-center justify-between p-2.5 bg-white border border-[#e2eaf5] rounded-xl shadow-2xs">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-7 h-7 rounded-lg bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
+                              <FileText size={14} />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="text-xs font-bold text-slate-800 block truncate">{typeLabel}</span>
+                              <span className="text-[10px] text-slate-400 block truncate">{fileName} • {ext}</span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = `/api/record-conversation/download?url=${encodeURIComponent(doc.file_url)}&filename=${encodeURIComponent(fileName)}`;
+                              link.download = fileName;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              showToast(`Berkas ${fileName} berhasil diunduh`);
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-[#2563eb] rounded-lg transition-colors cursor-pointer"
+                            title="Unduh Berkas"
+                          >
+                            <Download size={14} />
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
 
                   {/* Pihak Penyerah & Pihak Penerima Box */}
                   <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-2.5 grid grid-cols-2 gap-3 mt-1">
@@ -3784,7 +3836,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                             onClick={() => {
                               const t = timelineModalTask;
                               setTimelineModalTask(null);
-                              setResultModalTask(t);
+                              if (t) openTaskWithDocuments(t, setResultModalTask);
                             }}
                             className="text-[#2563eb] hover:underline font-bold text-[11px] cursor-pointer"
                           >
