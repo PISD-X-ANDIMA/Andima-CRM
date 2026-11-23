@@ -160,10 +160,10 @@ export function Sidebar() {
         <button
           type="button"
           onClick={() => setCrmOpen((value) => !value)}
-          className="flex w-full items-center gap-2.5 rounded-lg bg-[#1476f2] px-3 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-black/10 transition-colors hover:bg-[#0f6ae0]"
+          className="flex w-full items-center gap-2.5 rounded-lg bg-[#0550D7] px-3 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-black/10 transition-colors hover:bg-[#0446B8]"
         >
           <span className="grid h-5 w-5 shrink-0 place-items-center rounded-[5px] bg-white">
-            <Users className="h-3 w-3 text-[#1476f2]" />
+            <Users className="h-3 w-3 text-[#0550D7]" />
           </span>
           <span className="flex-1 truncate text-left">{menuLabel}</span>
           <ChevronDown
@@ -181,7 +181,7 @@ export function Sidebar() {
               aria-current={isCurrentDashboard ? "page" : undefined}
               className={`flex items-center rounded-md border-l-2 px-2 py-[7px] text-[12.5px] font-semibold transition-colors ${
                 isCurrentDashboard
-                  ? "border-emerald-400 bg-[#cdd8dd] text-[#5d6b75]"
+                  ? "border-transparent bg-[#B0C6D4] text-[#44525c]"
                   : "border-transparent text-white hover:bg-white/10"
               }`}
             >
@@ -210,7 +210,7 @@ export function Sidebar() {
                     aria-current={isActive ? "page" : undefined}
                     className={`flex items-center rounded-md border-l-2 px-2 py-[7px] text-[12.5px] font-semibold transition-colors ${
                       isActive
-                        ? "border-emerald-400 bg-[#cdd8dd] text-[#5d6b75]"
+                        ? "border-transparent bg-[#B0C6D4] text-[#44525c]"
                         : "border-transparent text-white hover:bg-white/10"
                     }`}
                   >
@@ -235,7 +235,7 @@ export function Sidebar() {
             try { localStorage.removeItem('andima_user'); } catch (error) { console.error(error); }
             router.push('/login');
           }}
-          className="flex h-10 w-full items-center justify-center rounded-full border-2 border-[#f32650] bg-transparent px-4 text-base font-bold text-[#f32650] transition-colors hover:bg-[#f32650] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f32650] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F2342]"
+          className="flex h-10 w-full items-center justify-center rounded-full border-2 border-[#D9364F] bg-transparent px-4 text-base font-bold text-[#D9364F] transition-colors hover:bg-[#D9364F] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D9364F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F2342]"
         >
           <span>Logout</span>
         </button>
