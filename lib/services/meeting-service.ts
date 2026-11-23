@@ -19,7 +19,7 @@ export interface MeetingInput {
   status?: "scheduled" | "completed" | "cancelled";
 }
 
-const MEETING_SLOT_STARTS = new Set(Array.from({ length: 9 }, (_, index) => `${String(index + 8).padStart(2, "0")}:00`));
+const MEETING_SLOT_STARTS = new Set(Array.from({ length: 13 }, (_, index) => `${String(index + 6).padStart(2, "0")}:00`));
 const JAKARTA_WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
 function jakartaDateAndMinutes(now = new Date()) {
@@ -39,7 +39,7 @@ export function validateMeetingScheduleDateAndSlot(input: Pick<MeetingInput, "me
   const slotStart = input.start_time?.slice(0, 5);
   const slotEnd = input.end_time?.slice(0, 5);
   if (!MEETING_SLOT_STARTS.has(slotStart) || slotEnd !== `${String(Number(slotStart.slice(0, 2)) + 1).padStart(2, "0")}:00`) {
-    return "Select a one-hour meeting slot between 08:00 and 17:00.";
+    return "Select a one-hour meeting slot between 06:00 and 19:00.";
   }
 
   const selectedDate = input.schedule_type === "one_day" ? input.meeting_date : input.effective_start_date;

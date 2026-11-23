@@ -1,20 +1,44 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Info,
+  Lock,
+  Pencil,
+  Plus,
+  Trash2,
+  Unlock,
+  X,
+} from "lucide-react";
 import type { ApiResponse, CustomerListItem, MeetingDay, ScheduleType } from "@/types/customer";
 import { ManagerGlobalFilterBar } from "@/components/dashboard/ManagerGlobalFilterBar";
 import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
 
-const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const hours = Array.from({ length: 9 }, (_, index) => 8 + index);
+// Hours displayed in the Cakap-style calendar: 06:00 to 18:00
+const hours = Array.from({ length: 13 }, (_, index) => 6 + index);
 const meetingSlots = hours.map((hour) => ({
   start: `${String(hour).padStart(2, "0")}:00`,
   end: `${String(hour + 1).padStart(2, "0")}:00`,
 }));
 const dayKeys: MeetingDay[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+const dayShortNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+type CalendarViewMode = "day" | "work_week" | "week";
 type MeetingType = "offline" | "online";
+
+interface LockedSlot {
+  id: string;
+  time: string; // e.g. "10:00"
+  date?: string; // YYYY-MM-DD (if specific day)
+  allDays?: boolean; // if applies to all days
+}
+
 interface MeetingFormState {
   companyId: string;
   date: string;
@@ -30,10 +54,45 @@ interface MeetingFormState {
   notes: string;
 }
 
-function dateKey(date: Date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`; }
-function jakartaDateKey(date = new Date()) { const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date); const part = (type: string) => parts.find((item) => item.type === type)?.value || "00"; return `${part("year")}-${part("month")}-${part("day")}`; }
-function jakartaMinutes(date = new Date()) { const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(date); return Number(parts.find((part) => part.type === "hour")?.value || 0) * 60 + Number(parts.find((part) => part.type === "minute")?.value || 0); }
-function dateForInput(value: string) { return new Date(`${value}T12:00:00`); }
+function dateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function jakartaDateKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const part = (type: string) => parts.find((item) => item.type === type)?.value || "00";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+function jakartaMinutes(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Jakarta",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  return (
+    Number(parts.find((part) => part.type === "hour")?.value || 0) * 60 +
+    Number(parts.find((part) => part.type === "minute")?.value || 0)
+  );
+}
+
+function dateForInput(value: string) {
+  return new Date(`${value}T12:00:00`);
+}
+
+function getMonday(dateInput: Date): Date {
+  const d = new Date(dateInput);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.getFullYear(), d.getMonth(), diff);
+}
+
 function isMeetingPast(meeting: NonNullable<CustomerListItem["meetingSchedule"]>, selectedDate: string) {
   const occurrenceDate = meeting.scheduleType === "one_day" ? meeting.meetingDate : meeting.occurrenceDate || selectedDate;
   if (!occurrenceDate) return false;
@@ -43,34 +102,131 @@ function isMeetingPast(meeting: NonNullable<CustomerListItem["meetingSchedule"]>
   const [hours, minutes] = (meeting.endTime || "00:00").split(":").map(Number);
   return hours * 60 + minutes <= jakartaMinutes();
 }
+
 function newForm(date: string, startTime: string, customer?: CustomerListItem, representative = ""): MeetingFormState {
   const [hour, minutes] = startTime.split(":").map(Number);
   const endTime = `${String(Math.min(hour + 1, 23)).padStart(2, "0")}:${String(minutes || 0).padStart(2, "0")}`;
-  return { companyId: customer?.id || "", date, startTime, endTime, agenda: "", picName: customer?.primaryPic?.fullName || "", representative, meetingType: "offline", location: "", meetingLink: "", frequency: "one_day", notes: "" };
+  return {
+    companyId: customer?.id || "",
+    date,
+    startTime,
+    endTime,
+    agenda: "",
+    picName: customer?.primaryPic?.fullName || "",
+    representative,
+    meetingType: "offline",
+    location: "",
+    meetingLink: "",
+    frequency: "one_day",
+    notes: "",
+  };
+}
+
+function getMeetingColorStyle(agenda: string, status?: string) {
+  if (status === "completed") {
+    return "border-emerald-400 bg-emerald-50/90 text-emerald-900 border-l-4";
+  }
+  if (status === "cancelled") {
+    return "border-slate-300 bg-slate-100 text-slate-500 border-l-4 opacity-65 line-through";
+  }
+  const lower = agenda.toLowerCase();
+  if (lower.includes("follow") || lower.includes("kargo") || lower.includes("global")) {
+    return "border-purple-400 bg-purple-50/90 text-purple-900 border-l-4";
+  }
+  if (lower.includes("trans") || lower.includes("closing") || lower.includes("deal") || lower.includes("nusantara")) {
+    return "border-emerald-400 bg-emerald-50/90 text-emerald-900 border-l-4";
+  }
+  if (lower.includes("discuss") || lower.includes("diskusi") || lower.includes("cargo") || lower.includes("sentra")) {
+    return "border-amber-400 bg-amber-50/90 text-amber-900 border-l-4";
+  }
+  return "border-blue-500 bg-blue-50/90 text-blue-900 border-l-4";
 }
 
 export default function MeetingSchedulePage() {
   const router = useRouter();
   const { selectedExecutive } = useManagerFilter();
   const [isManager, setIsManager] = useState(false);
-  const [month, setMonth] = useState(() => new Date());
-  const [selected, setSelected] = useState(() => jakartaDateKey());
+
+  // Active anchor date for calendar navigation
+  const [anchorDate, setAnchorDate] = useState(() => dateForInput(jakartaDateKey()));
+  const [selectedDateKey, setSelectedDateKey] = useState(() => jakartaDateKey());
+  const [viewMode, setViewMode] = useState<CalendarViewMode>("work_week");
+
+  // Date jump picker popover state
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const datePickerRef = useRef<HTMLDivElement>(null);
+
+  // Data states
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [slotError, setSlotError] = useState("");
+  const [slotRefresh, setSlotRefresh] = useState(0);
+
+  // Modal & form states
   const [slotToBook, setSlotToBook] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [mutationError, setMutationError] = useState("");
-  const [selectedMeeting, setSelectedMeeting] = useState<{ customer: CustomerListItem; meeting: NonNullable<CustomerListItem["meetingSchedule"]> } | null>(null);
+  const [selectedMeeting, setSelectedMeeting] = useState<{
+    customer: CustomerListItem;
+    meeting: NonNullable<CustomerListItem["meetingSchedule"]>;
+  } | null>(null);
   const [editingMeeting, setEditingMeeting] = useState(false);
-  const [multiMeetingSlot, setMultiMeetingSlot] = useState<{ hour: number; meetings: { customer: CustomerListItem; meeting: NonNullable<CustomerListItem["meetingSchedule"]> }[] } | null>(null);
+  const [multiMeetingSlot, setMultiMeetingSlot] = useState<{
+    date: string;
+    hour: number;
+    meetings: { customer: CustomerListItem; meeting: NonNullable<CustomerListItem["meetingSchedule"]> }[];
+  } | null>(null);
   const [form, setForm] = useState<MeetingFormState>(() => newForm(jakartaDateKey(), "09:00"));
-  const [selectedDaySlots, setSelectedDaySlots] = useState<Record<string, { status: string; meeting: { id: string; company_id: string; company_name: string | null; start_time: string; end_time: string; status: string } | null }[]>>({});
-  const [calendarEvents, setCalendarEvents] = useState<{ date: string; status: string }[]>([]);
-  const [slotRefresh, setSlotRefresh] = useState(0);
 
+  // Locked slots state
+  const [lockedSlots, setLockedSlots] = useState<LockedSlot[]>([]);
+  const [lockTimeInput, setLockTimeInput] = useState("10:00");
+  const [lockApplyAllDays, setLockApplyAllDays] = useState(false);
+  const [lockFeedback, setLockFeedback] = useState("");
+
+  // Load locked slots from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("andima_locked_time_slots");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) setLockedSlots(parsed);
+      } else {
+        // Default locked slot as in the reference image: 10:00 on Monday
+        const mondayKey = dateKey(getMonday(new Date()));
+        const initial = [{ id: "default-lock-10", time: "10:00", date: mondayKey }];
+        setLockedSlots(initial);
+      }
+    } catch {
+      // ignore JSON parse error
+    }
+  }, []);
+
+  // Save locked slots to localStorage
+  const saveLockedSlots = (newSlots: LockedSlot[]) => {
+    setLockedSlots(newSlots);
+    try {
+      localStorage.setItem("andima_locked_time_slots", JSON.stringify(newSlots));
+    } catch {
+      // ignore
+    }
+  };
+
+  // Close date picker popup on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setShowDatePicker(false);
+      }
+    }
+    if (showDatePicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [showDatePicker]);
+
+  // Check role
   useEffect(() => {
     let active = true;
     fetch("/api/v1/navigation/sidebar", { cache: "no-store" })
@@ -81,11 +237,15 @@ export default function MeetingSchedulePage() {
         }
       })
       .catch(() => {});
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
 
+  // Load customers & meetings
   const load = useCallback(async () => {
-    setLoading(true); setError("");
+    setLoading(true);
+    setError("");
     try {
       const params = new URLSearchParams({ perPage: "100", page: "1", context: "calendar" });
       if (isManager) {
@@ -96,87 +256,218 @@ export default function MeetingSchedulePage() {
       }
       const response = await fetch(`/api/v1/customers?${params}`, { cache: "no-store" });
       const result: ApiResponse<CustomerListItem[]> = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.success ? "Failed to load the schedule." : result.message);
+      if (!response.ok || !result.success) {
+        throw new Error(result.success ? "Failed to load the schedule." : result.message);
+      }
       const allCustomers = [...result.data];
       for (let page = 2; page <= (result.meta?.totalPages || 1); page += 1) {
         params.set("page", String(page));
         const nextResponse = await fetch(`/api/v1/customers?${params}`, { cache: "no-store" });
         const nextResult: ApiResponse<CustomerListItem[]> = await nextResponse.json();
-        if (!nextResponse.ok || !nextResult.success) throw new Error(nextResult.success ? "Failed to load all meeting schedules." : nextResult.message);
+        if (!nextResponse.ok || !nextResult.success) {
+          throw new Error(nextResult.success ? "Failed to load all meeting schedules." : nextResult.message);
+        }
         allCustomers.push(...nextResult.data);
       }
       setCustomers(allCustomers);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Failed to load the schedule."); }
-    finally { setLoading(false); }
-  }, [slotRefresh, isManager, selectedExecutive]);
-  useEffect(() => { void load(); }, [load]);
-
-  useEffect(() => {
-    let active = true;
-    setSlotError("");
-    const slotUrl = new URL(`/api/v1/meetings/slots`, window.location.origin);
-    slotUrl.searchParams.set("date", selected);
-    if (isManager && selectedExecutive !== "all") {
-      slotUrl.searchParams.set("assigned_to", selectedExecutive);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Failed to load the schedule.");
+    } finally {
+      setLoading(false);
     }
-    fetch(slotUrl.toString(), { cache: "no-store" })
-      .then(async (response) => {
-        const result: ApiResponse<{ date: string; slots: { status: string; meeting: { id: string; company_id: string; company_name: string | null; start_time: string; end_time: string; status: string } | null }[] }> = await response.json();
-        if (!response.ok || !result.success) throw new Error(result.success ? "Could not load meeting slots." : result.message);
-        if (active) setSelectedDaySlots((current) => ({ ...current, [selected]: result.data.slots }));
-      })
-      .catch((cause) => { if (active) { setSlotError(cause instanceof Error ? cause.message : "Could not load meeting slots."); setSelectedDaySlots((current) => ({ ...current, [selected]: [] })); } });
-    return () => { active = false; };
-  }, [selected, slotRefresh, isManager, selectedExecutive]);
+  }, [isManager, selectedExecutive]);
 
   useEffect(() => {
-    let active = true;
-    const monthKey = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}`;
-    const calUrl = new URL(`/api/v1/meetings/calendar`, window.location.origin);
-    calUrl.searchParams.set("month", monthKey);
-    if (isManager) {
-      calUrl.searchParams.set("forceAll", "true");
-      if (selectedExecutive !== "all") {
-        calUrl.searchParams.set("assigned_to", selectedExecutive);
+    void load();
+  }, [load, slotRefresh]);
+
+  // Determine which days to display based on viewMode
+  const displayedDays = useMemo(() => {
+    if (viewMode === "day") {
+      return [anchorDate];
+    }
+    const monday = getMonday(anchorDate);
+    const count = viewMode === "work_week" ? 5 : 7;
+    return Array.from({ length: count }, (_, idx) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + idx);
+      return d;
+    });
+  }, [anchorDate, viewMode]);
+
+  // Formatted date range label for the top control bar
+  const dateRangeLabel = useMemo(() => {
+    const formatFull = (d: Date) =>
+      d.toLocaleDateString("en-GB", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+
+    if (viewMode === "day") {
+      return formatFull(displayedDays[0]);
+    }
+    const first = displayedDays[0];
+    const last = displayedDays[displayedDays.length - 1];
+    return `${formatFull(first)} – ${formatFull(last)}`;
+  }, [displayedDays, viewMode]);
+
+  // Navigate dates
+  const handleNavPrev = () => {
+    setAnchorDate((current) => {
+      const next = new Date(current);
+      if (viewMode === "day") {
+        next.setDate(current.getDate() - 1);
+      } else {
+        next.setDate(current.getDate() - 7);
       }
-    }
-    fetch(calUrl.toString(), { cache: "no-store" })
-      .then(async (response) => {
-        const result: ApiResponse<{ meetings: { date: string; status: string }[] }> = await response.json();
-        if (!response.ok || !result.success) throw new Error(result.success ? "Could not load the meeting calendar." : result.message);
-        if (active) setCalendarEvents(result.data.meetings);
-      })
-      .catch(() => { if (active) setCalendarEvents([]); });
-    return () => { active = false; };
-  }, [month, slotRefresh, isManager, selectedExecutive]);
-
-  const calendarDays = useMemo(() => {
-    const start = new Date(month.getFullYear(), month.getMonth(), 1);
-    return Array.from({ length: 42 }, (_, index) => new Date(start.getFullYear(), start.getMonth(), index - start.getDay() + 1));
-  }, [month]);
-  const selectedDate = dateForInput(selected);
-  const agenda = customers.flatMap((customer) => (customer.meetings || []).flatMap((meeting) => {
-    if (meeting.effectiveStartDate && selected < meeting.effectiveStartDate) return [];
-    const isScheduled = meeting.scheduleType === "one_day" ? meeting.meetingDate === selected : meeting.meetingDay === dayKeys[selectedDate.getDay()];
-    return isScheduled ? [{ customer, meeting }] : [];
-  })).sort((a, b) => (a.meeting.startTime || "").localeCompare(b.meeting.startTime || ""));
-  const availableCustomers = customers;
-
-  const beginAdd = (time: string) => {
-    if (selected < jakartaDateKey() || (selected === jakartaDateKey() && Number(time.slice(0, 2)) * 60 <= jakartaMinutes())) return;
-    const representative = (() => { try { return JSON.parse(localStorage.getItem("andima_user") || "{}").name || ""; } catch { return ""; } })();
-    setForm(newForm(selected, time, undefined, representative));
-    setMutationError("");
-    setSlotToBook(time);
+      return next;
+    });
   };
 
+  const handleNavNext = () => {
+    setAnchorDate((current) => {
+      const next = new Date(current);
+      if (viewMode === "day") {
+        next.setDate(current.getDate() + 1);
+      } else {
+        next.setDate(current.getDate() + 7);
+      }
+      return next;
+    });
+  };
+
+  const handleNavToday = () => {
+    const today = dateForInput(jakartaDateKey());
+    setAnchorDate(today);
+    setSelectedDateKey(jakartaDateKey());
+  };
+
+  // Check if a time slot is locked
+  const getSlotLock = useCallback(
+    (targetDateKey: string, time: string) => {
+      const formattedTime = time.slice(0, 5);
+      return lockedSlots.find((slot) => {
+        if (slot.time !== formattedTime) return false;
+        if (slot.allDays) return true;
+        return slot.date === targetDateKey;
+      });
+    },
+    [lockedSlots]
+  );
+
+  // Toggle or add lock slot
+  const handleLockTimeSlot = () => {
+    const formatted = lockTimeInput.slice(0, 5);
+    const existingIndex = lockedSlots.findIndex((s) => {
+      if (s.time !== formatted) return false;
+      if (lockApplyAllDays) return s.allDays;
+      return s.date === selectedDateKey;
+    });
+
+    if (existingIndex >= 0) {
+      // Slot is already locked -> unlock it
+      const updated = lockedSlots.filter((_, idx) => idx !== existingIndex);
+      saveLockedSlots(updated);
+      setLockFeedback(`Slot ${formatted} unlocked.`);
+    } else {
+      // Add new lock
+      const newLock: LockedSlot = {
+        id: `lock-${Date.now()}`,
+        time: formatted,
+        ...(lockApplyAllDays ? { allDays: true } : { date: selectedDateKey }),
+      };
+      saveLockedSlots([...lockedSlots, newLock]);
+      setLockFeedback(`Slot ${formatted} locked ${lockApplyAllDays ? "for all days" : `for ${selectedDateKey}`}.`);
+    }
+    setTimeout(() => setLockFeedback(""), 3500);
+  };
+
+  const handleUnlockSlot = (lockId: string) => {
+    const updated = lockedSlots.filter((s) => s.id !== lockId);
+    saveLockedSlots(updated);
+    setLockFeedback("Slot unlocked.");
+    setTimeout(() => setLockFeedback(""), 3000);
+  };
+
+  // Get meetings occurring on a specific date key and hour
+  const getMeetingsForSlot = useCallback(
+    (targetDateKey: string, hour: number) => {
+      const targetDate = dateForInput(targetDateKey);
+      const dayOfWeekKey = dayKeys[targetDate.getDay()];
+
+      return customers
+        .flatMap((customer) =>
+          (customer.meetings || []).flatMap((meeting) => {
+            if (meeting.status === "cancelled") return [];
+            if (meeting.effectiveStartDate && targetDateKey < meeting.effectiveStartDate) return [];
+
+            const isScheduledToday =
+              meeting.scheduleType === "one_day"
+                ? meeting.meetingDate === targetDateKey
+                : meeting.meetingDay === dayOfWeekKey;
+
+            if (!isScheduledToday) return [];
+
+            const meetingStart = Number(meeting.startTime?.slice(0, 2)) * 60 + Number(meeting.startTime?.slice(3, 5) || 0);
+            const meetingEnd = Number(meeting.endTime?.slice(0, 2)) * 60 + Number(meeting.endTime?.slice(3, 5) || 0);
+            const slotStart = hour * 60;
+            const slotEnd = (hour + 1) * 60;
+
+            if (meetingStart < slotEnd && meetingEnd > slotStart) {
+              return [{ customer, meeting }];
+            }
+            return [];
+          })
+        )
+        .sort((a, b) => (a.meeting.startTime || "").localeCompare(b.meeting.startTime || ""));
+    },
+    [customers]
+  );
+
+  // Begin booking a slot
+  const beginAdd = (dateStr: string, timeStr: string) => {
+    const today = jakartaDateKey();
+    if (dateStr < today) return;
+    const hourNum = Number(timeStr.slice(0, 2));
+    if (dateStr === today && hourNum * 60 <= jakartaMinutes()) return;
+
+    // Check if slot is locked
+    const lock = getSlotLock(dateStr, timeStr);
+    if (lock) {
+      alert(`Waktu ${timeStr} sedang dikunci (Locked). Buka kunci terlebih dahulu jika ingin menjadwalkan meeting.`);
+      return;
+    }
+
+    const representative = (() => {
+      try {
+        return JSON.parse(localStorage.getItem("andima_user") || "{}").name || "";
+      } catch {
+        return "";
+      }
+    })();
+
+    setSelectedDateKey(dateStr);
+    setForm(newForm(dateStr, timeStr, undefined, representative));
+    setMutationError("");
+    setSlotToBook(timeStr);
+  };
+
+  // Edit existing meeting
   const beginEdit = () => {
     if (!selectedMeeting) return;
     const meeting = selectedMeeting.meeting;
-    const representative = (() => { try { return JSON.parse(localStorage.getItem("andima_user") || "{}").name || ""; } catch { return ""; } })();
+    const representative = (() => {
+      try {
+        return JSON.parse(localStorage.getItem("andima_user") || "{}").name || "";
+      } catch {
+        return "";
+      }
+    })();
     setForm({
       companyId: selectedMeeting.customer.id,
-      date: meeting.scheduleType === "one_day" ? meeting.meetingDate || selected : meeting.effectiveStartDate || selected,
+      date: meeting.scheduleType === "one_day" ? meeting.meetingDate || selectedDateKey : meeting.effectiveStartDate || selectedDateKey,
       startTime: meeting.startTime?.slice(0, 5) || "09:00",
       endTime: meeting.endTime?.slice(0, 5) || "10:00",
       agenda: meeting.agenda || "",
@@ -192,16 +483,39 @@ export default function MeetingSchedulePage() {
     setEditingMeeting(true);
   };
 
+  // Save / Update Meeting
   const handleSaveMeeting = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const customer = customers.find((item) => item.id === form.companyId);
-    if (!customer) { setMutationError("Select a company."); return; }
-    if (form.meetingType === "offline" && !form.location.trim()) { setMutationError("Location is required for an offline meeting."); return; }
-    if (form.meetingType === "online" && !form.meetingLink.trim()) { setMutationError("A meeting link is required for an online meeting."); return; }
-    if (form.endTime <= form.startTime) { setMutationError("End time must be after start time."); return; }
-    if (form.date < jakartaDateKey()) { setMutationError("Meetings cannot be scheduled on a past date."); return; }
-    if (!meetingSlots.some((slot) => slot.start === form.startTime && slot.end === form.endTime)) { setMutationError("Select an available one-hour slot between 08:00 and 17:00."); return; }
-    if (form.date === jakartaDateKey() && Number(form.startTime.slice(0, 2)) * 60 <= jakartaMinutes()) { setMutationError("Meetings cannot be scheduled in a time slot that has already started."); return; }
+    if (!customer) {
+      setMutationError("Select a company.");
+      return;
+    }
+    if (form.meetingType === "offline" && !form.location.trim()) {
+      setMutationError("Location is required for an offline meeting.");
+      return;
+    }
+    if (form.meetingType === "online" && !form.meetingLink.trim()) {
+      setMutationError("A meeting link is required for an online meeting.");
+      return;
+    }
+    if (form.endTime <= form.startTime) {
+      setMutationError("End time must be after start time.");
+      return;
+    }
+    if (form.date < jakartaDateKey()) {
+      setMutationError("Meetings cannot be scheduled on a past date.");
+      return;
+    }
+    if (!meetingSlots.some((slot) => slot.start === form.startTime && slot.end === form.endTime)) {
+      setMutationError("Select an available one-hour slot between 06:00 and 19:00.");
+      return;
+    }
+    if (form.date === jakartaDateKey() && Number(form.startTime.slice(0, 2)) * 60 <= jakartaMinutes()) {
+      setMutationError("Meetings cannot be scheduled in a time slot that has already started.");
+      return;
+    }
+
     const meetingDate = dateForInput(form.date);
     const payload = {
       meeting_day: dayKeys[meetingDate.getDay()],
@@ -218,7 +532,9 @@ export default function MeetingSchedulePage() {
       meeting_link: form.meetingType === "online" ? form.meetingLink.trim() : null,
       notes: form.notes.trim(),
     };
-    setSaving(true); setMutationError("");
+
+    setSaving(true);
+    setMutationError("");
     try {
       const editMeeting = editingMeeting ? selectedMeeting : null;
       const response = await fetch(`/api/v1/customers/${editMeeting ? editMeeting.customer.id : customer.id}/meetings`, {
@@ -228,29 +544,49 @@ export default function MeetingSchedulePage() {
       });
       const result: ApiResponse<{ meetingId: string }> = await response.json();
       if (!response.ok || !result.success) throw new Error(result.success ? "Failed to save the meeting." : result.message);
-      setSelected(form.date);
-      setMonth(new Date(meetingDate.getFullYear(), meetingDate.getMonth(), 1));
-      setSlotToBook(null); setEditingMeeting(false); setSelectedMeeting(null);
+
+      setSelectedDateKey(form.date);
+      setAnchorDate(dateForInput(form.date));
+      setSlotToBook(null);
+      setEditingMeeting(false);
+      setSelectedMeeting(null);
       setSlotRefresh((value) => value + 1);
-    } catch (cause) { setMutationError(cause instanceof Error ? cause.message : "Failed to save the meeting."); }
-    finally { setSaving(false); }
+    } catch (cause) {
+      setMutationError(cause instanceof Error ? cause.message : "Failed to save the meeting.");
+    } finally {
+      setSaving(false);
+    }
   };
 
+  // Delete Meeting
   async function deleteSelectedMeeting() {
     if (!selectedMeeting) return;
-    setSaving(true); setMutationError("");
+    setSaving(true);
+    setMutationError("");
     try {
-      const response = await fetch(`/api/v1/customers/${selectedMeeting.customer.id}/meetings`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ meetingId: selectedMeeting.meeting.id }) });
+      const response = await fetch(`/api/v1/customers/${selectedMeeting.customer.id}/meetings`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ meetingId: selectedMeeting.meeting.id }),
+      });
       const result: ApiResponse<{ meetingId: string }> = await response.json();
       if (!response.ok || !result.success) throw new Error(result.success ? "Failed to delete the meeting." : result.message);
-      setSelectedMeeting(null); setEditingMeeting(false); setDeleteConfirmOpen(false); setSlotRefresh((value) => value + 1);
-    } catch (cause) { setMutationError(cause instanceof Error ? cause.message : "Failed to delete the meeting."); }
-    finally { setSaving(false); }
+      setSelectedMeeting(null);
+      setEditingMeeting(false);
+      setDeleteConfirmOpen(false);
+      setSlotRefresh((value) => value + 1);
+    } catch (cause) {
+      setMutationError(cause instanceof Error ? cause.message : "Failed to delete the meeting.");
+    } finally {
+      setSaving(false);
+    }
   }
 
+  // Update Status
   async function changeMeetingStatus(status: "scheduled" | "completed" | "cancelled") {
     if (!selectedMeeting || selectedMeeting.meeting.status === status) return;
-    setSaving(true); setMutationError("");
+    setSaving(true);
+    setMutationError("");
     try {
       const response = await fetch(`/api/v1/customers/${selectedMeeting.customer.id}/meetings`, {
         method: "PATCH",
@@ -259,7 +595,7 @@ export default function MeetingSchedulePage() {
       });
       const result: ApiResponse<{ meetingId: string }> = await response.json();
       if (!response.ok || !result.success) throw new Error(result.success ? "Failed to update the meeting status." : result.message);
-      setSelectedMeeting((current) => current ? { ...current, meeting: { ...current.meeting, status } } : null);
+      setSelectedMeeting((current) => (current ? { ...current, meeting: { ...current.meeting, status } } : null));
       setSlotRefresh((value) => value + 1);
     } catch (cause) {
       setMutationError(cause instanceof Error ? cause.message : "Failed to update the meeting status.");
@@ -268,298 +604,1122 @@ export default function MeetingSchedulePage() {
     }
   }
 
-  const formatDate = (date: Date) => date.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  const meetingAtHour = (hour: number) => agenda.filter(({ meeting }) => {
-    const start = Number(meeting.startTime?.slice(0, 2)) * 60 + Number(meeting.startTime?.slice(3, 5));
-    const end = Number(meeting.endTime?.slice(0, 2)) * 60 + Number(meeting.endTime?.slice(3, 5));
-    return start < (hour + 1) * 60 && end > hour * 60;
-  });
-  const updateForm = (field: keyof MeetingFormState, value: string) => setForm((current) => {
-    if (field === "startTime") {
-      const slot = meetingSlots.find((item) => item.start === value);
-      return { ...current, startTime: value, endTime: slot?.end || current.endTime };
-    }
-    if (field === "date") {
-      const firstAvailableSlot = value === jakartaDateKey()
-        ? meetingSlots.find((slot) => Number(slot.start.slice(0, 2)) * 60 > jakartaMinutes())
-        : meetingSlots[0];
-      const currentSlot = meetingSlots.find((slot) => slot.start === current.startTime && slot.end === current.endTime);
-      if (currentSlot && (value !== jakartaDateKey() || Number(currentSlot.start.slice(0, 2)) * 60 > jakartaMinutes())) return { ...current, date: value };
-      return { ...current, date: value, startTime: firstAvailableSlot?.start || current.startTime, endTime: firstAvailableSlot?.end || current.endTime };
-    }
-    return { ...current, [field]: value };
-  });
-  const selectableSlots = meetingSlots.filter((slot) => form.date !== jakartaDateKey() || Number(slot.start.slice(0, 2)) * 60 > jakartaMinutes());
-  const selectedDateIsPast = selected < jakartaDateKey();
-  const isSelectedDateSlotPast = (hour: number) => selectedDateIsPast || (selected === jakartaDateKey() && hour * 60 <= jakartaMinutes());
+  const updateForm = (field: keyof MeetingFormState, value: string) =>
+    setForm((current) => {
+      if (field === "startTime") {
+        const slot = meetingSlots.find((item) => item.start === value);
+        return { ...current, startTime: value, endTime: slot?.end || current.endTime };
+      }
+      if (field === "date") {
+        const firstAvailableSlot =
+          value === jakartaDateKey()
+            ? meetingSlots.find((slot) => Number(slot.start.slice(0, 2)) * 60 > jakartaMinutes())
+            : meetingSlots[0];
+        const currentSlot = meetingSlots.find((slot) => slot.start === current.startTime && slot.end === current.endTime);
+        if (currentSlot && (value !== jakartaDateKey() || Number(currentSlot.start.slice(0, 2)) * 60 > jakartaMinutes())) {
+          return { ...current, date: value };
+        }
+        return {
+          ...current,
+          date: value,
+          startTime: firstAvailableSlot?.start || current.startTime,
+          endTime: firstAvailableSlot?.end || current.endTime,
+        };
+      }
+      return { ...current, [field]: value };
+    });
 
-  return <div className="space-y-6">
-    {isManager && <ManagerGlobalFilterBar />}
-    {isManager && (
-      <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 text-xs font-medium text-amber-900 leading-relaxed shadow-2xs">
-        Manager sees meetings of the selected Sales Executive plus his or her own. Add, edit, delete, and status change are only for the Manager&apos;s own meetings. A time slot is blocked only by the Manager&apos;s own meetings.
-      </div>
-    )}
-    <header className="flex flex-wrap items-end justify-between gap-5">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-black">{formatDate(selectedDate)}</h1>
-        <p className="mt-1 text-lg text-slate-500">Meeting schedule and availability for this date</p>
-      </div>
-      <button
-        type="button"
-        disabled={selectedDateIsPast || selectableSlots.length === 0 || Boolean(error) || loading || customers.length === 0}
-        onClick={() => beginAdd(selectableSlots[0]?.start || "09:00")}
-        className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-lg font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <Plus className="h-5 w-5" />Add Meeting
-      </button>
-    </header>
-    <div className="grid items-start gap-8 lg:grid-cols-[minmax(350px,0.76fr)_minmax(500px,1.24fr)]">
-      <section className="rounded-2xl border border-slate-200 bg-white p-7"><div className="mb-7 flex items-center justify-between"><button aria-label="Previous month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="rounded p-2 text-slate-400 hover:bg-slate-100"><ChevronLeft className="h-7 w-7" /></button><h2 className="text-2xl font-semibold text-slate-950">{month.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h2><button aria-label="Next month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="rounded p-2 text-slate-400 hover:bg-slate-100"><ChevronRight className="h-7 w-7" /></button></div>
-        <div className="grid grid-cols-7 gap-y-3 text-center">
-          {weekdayNames.map((day) => <span key={day} className="pb-2 text-sm font-medium text-slate-600">{day}</span>)}
-          {calendarDays.map((date) => {
-            const key = dateKey(date);
-            const inMonth = date.getMonth() === month.getMonth();
-            const statuses = calendarEvents.filter((event) => event.date === key).map((event) => event.status);
-            const dayMeetings = customers.flatMap((c) => c.meetings || []).filter((m) => {
-              if (m.status === "cancelled") return false;
-              if (m.scheduleType === "one_day") return m.meetingDate === key;
-              return m.meetingDay === dayKeys[date.getDay()] && (!m.effectiveStartDate || key >= m.effectiveStartDate);
-            });
-            const overflowOnDay = dayMeetings.length > 1 ? dayMeetings.length - 1 : 0;
-            const dotClass = statuses.includes("completed") ? "bg-emerald-500" : statuses.includes("scheduled") ? "bg-blue-500" : "bg-slate-400";
-            return (
-              <button
-                key={key}
-                onClick={() => setSelected(key)}
-                className={`relative mx-auto grid h-10 w-10 place-items-center rounded-full text-sm ${!inMonth ? "text-slate-300" : "text-slate-700 hover:bg-blue-50"} ${key === selected ? "bg-blue-600 font-semibold text-white hover:bg-blue-700" : ""}`}
-                aria-pressed={key === selected}
-              >
-                <span>{date.getDate()}</span>
-                {inMonth && <span className={`absolute bottom-0.5 h-1.5 w-1.5 rounded-full ${key === selected ? "bg-white" : dotClass}`} />}
-                {inMonth && overflowOnDay > 0 && (
-                  <span className={`absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold leading-none ${key === selected ? "bg-amber-400 text-slate-900" : "bg-blue-600 text-white"} shadow-xs`}>
-                    +{overflowOnDay}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+  const selectableSlots = meetingSlots.filter(
+    (slot) => form.date !== jakartaDateKey() || Number(slot.start.slice(0, 2)) * 60 > jakartaMinutes()
+  );
+
+  const availableCustomers = customers;
+  const todayKey = jakartaDateKey();
+
+  return (
+    <div className="space-y-6 pb-20">
+      {/* Manager Scoping Banner */}
+      {isManager && <ManagerGlobalFilterBar />}
+      {isManager && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 text-xs font-medium text-amber-900 leading-relaxed shadow-2xs">
+          Manager sees meetings of the selected Sales Executive plus his or her own. Add, edit, delete, and status change are only for the Manager&apos;s own meetings. A time slot is blocked only by the Manager&apos;s own meetings.
         </div>
-        <ul aria-label="Meeting status legend" className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-slate-600"><li className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-slate-400" />Available</li><li className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-blue-500" />Scheduled</li><li className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-emerald-500" />Completed</li><li className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full border border-slate-500 bg-white" />Canceled</li></ul>
-      </section>
-      <section className="space-y-3">
-        {slotError && !loading && <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{slotError} Showing the latest available schedule data.</p>}
-        {loading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 4 }, (_, idx) => (
-              <div key={idx} className="flex min-h-[70px] animate-pulse items-center justify-between rounded-xl border border-slate-200 bg-slate-100/70 px-5 py-4">
-                <div className="h-4 w-36 rounded bg-slate-200/80" />
-                <div className="h-4 w-28 rounded bg-slate-200/80" />
-              </div>
-            ))}
-          </div>
-        ) : error ? (
-          <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-800">
-            {error}
-            <button className="ml-3 font-semibold underline" onClick={() => void load()}>Try again</button>
-          </div>
-        ) : null}
-        {!loading && !error && agenda.length === 0 && <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-center text-slate-500">Available - no meetings are scheduled for this date.</div>}
-        {!loading && !error && hours.map((hour) => {
-          const slotMeetings = meetingAtHour(hour);
-          const apiSlot = selectedDaySlots[selected]?.[hour - 8];
-          const apiMeeting = apiSlot?.meeting;
-          const matchedMeeting = apiMeeting ? agenda.find(({ meeting }) => meeting.id === apiMeeting.id) : null;
-          if (apiSlot && !apiMeeting) return <div key={hour} className="flex min-h-[70px] items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-slate-500"><span className="flex items-center gap-4"><i className="h-3 w-3 rounded-full bg-slate-400" />Available</span><span className="whitespace-nowrap">{String(hour).padStart(2, "0")}:00 - {String(hour + 1).padStart(2, "0")}:00</span><button type="button" disabled={apiSlot.status === "past" || isSelectedDateSlotPast(hour) || Boolean(error) || loading} onClick={() => beginAdd(`${String(hour).padStart(2, "0")}:00`)} className="rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40">+Add</button></div>;
-          if (apiSlot && apiMeeting && !matchedMeeting) return <div key={hour} className="flex min-h-[70px] items-center justify-between gap-4 rounded-xl border border-blue-200 bg-blue-50/60 px-5 py-4 text-blue-800"><span>{apiMeeting.company_name || "Scheduled meeting"}</span><span className="whitespace-nowrap">{apiMeeting.start_time} - {apiMeeting.end_time}</span></div>;
-          if (slotMeetings.length > 0) {
-            const hasMultiple = slotMeetings.length > 1;
-            const overflowNum = slotMeetings.length - 1;
-            return (
-              <div key={hour} className="space-y-2">
-                {slotMeetings.map(({ customer, meeting }, idx) => {
-                  const meetingStatus = meeting.status || "scheduled";
-                  const statusStyle = meetingStatus === "completed" ? "border-emerald-200 bg-emerald-50/70 text-emerald-800" : meetingStatus === "cancelled" ? "border-slate-200 bg-slate-100 text-slate-600" : "border-blue-200 bg-blue-50/60 text-blue-800";
-                  const statusColor = meetingStatus === "completed" ? "bg-emerald-500" : meetingStatus === "cancelled" ? "bg-slate-400" : "bg-blue-500";
-                  return (
-                    <div key={`${meeting.id}-${hour}`} className={`flex min-h-[70px] w-full items-center justify-between gap-4 rounded-xl border px-5 py-4 ${statusStyle}`}>
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedMeeting({ customer, meeting }); setEditingMeeting(false); setMutationError(""); }}
-                        className="flex min-w-0 flex-1 items-center justify-between gap-4 text-left"
-                      >
-                        <span className="flex min-w-0 items-center gap-3">
-                          <i className={`h-3 w-3 shrink-0 rounded-full ${statusColor}`} />
-                          <span className="truncate font-medium">{customer.companyName}</span>
-                          <small className="ml-1 text-slate-500">
-                            {meetingStatus === "completed" ? "Completed" : meetingStatus === "cancelled" ? "Canceled" : "Scheduled"} · View details
-                          </small>
-                          {hasMultiple && idx === 0 && (
-                            <span
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMultiMeetingSlot({ hour, meetings: slotMeetings });
-                              }}
-                              className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-700 hover:bg-blue-200 cursor-pointer shadow-2xs"
-                              title="Click to view all meetings in this slot"
-                            >
-                              +{overflowNum} meeting{overflowNum > 1 ? "s" : ""}
-                            </span>
-                          )}
-                        </span>
-                        <span className="whitespace-nowrap text-slate-600">{meeting.startTime?.slice(0, 5)} - {meeting.endTime?.slice(0, 5)}</span>
-                      </button>
-                      {meetingStatus === "cancelled" && (
-                        <button
-                          type="button"
-                          disabled={Boolean(error) || loading}
-                          onClick={() => beginAdd(meeting.startTime?.slice(0, 5) || `${String(hour).padStart(2, "0")}:00`)}
-                          className="shrink-0 rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          +Add
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          }
-          return <div key={hour} className="flex min-h-[70px] items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-slate-500"><span className="flex items-center gap-4"><i className="h-3 w-3 rounded-full bg-slate-400" />Available</span><span className="whitespace-nowrap">{String(hour).padStart(2, "0")}:00 - {String(hour + 1).padStart(2, "0")}:00</span><button type="button" disabled={isSelectedDateSlotPast(hour) || Boolean(error) || loading} onClick={() => beginAdd(`${String(hour).padStart(2, "0")}:00`)} className="rounded-lg border border-blue-400 px-3 py-1 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40">+Add</button></div>;
-        })}
-      </section>
-    </div>
+      )}
 
-    {slotToBook && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/75 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setSlotToBook(null); }}><form onSubmit={handleSaveMeeting} className="my-auto w-full max-w-5xl rounded-2xl bg-white px-6 py-6 shadow-2xl sm:px-8"><div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4"><h2 className="text-2xl font-bold text-slate-900">Add Meeting</h2><button type="button" aria-label="Close" onClick={() => setSlotToBook(null)} className="text-slate-400 hover:text-slate-700"><X className="h-6 w-6" /></button></div>
-      <div className="space-y-4">
-        {availableCustomers.length === 0 && (
-          <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 border border-amber-200">
-            No assigned companies found. Please add a company in Company List first before scheduling meetings.
-          </div>
-        )}
-        <MeetingField label="Company" required><select required value={form.companyId} onChange={(event) => { const customer = customers.find((item) => item.id === event.target.value); updateForm("companyId", event.target.value); if (customer) updateForm("picName", customer.primaryPic?.fullName || ""); }} className={inputClass}><option value="">Select company</option>{availableCustomers.map((customer) => <option key={customer.id} value={customer.id}>{customer.companyName}</option>)}</select></MeetingField>
-        <MeetingField label="Date" required><input required type="date" min={jakartaDateKey()} value={form.date} onChange={(event) => updateForm("date", event.target.value)} className={inputClass} /></MeetingField>
-        <MeetingField label="Time" required><select required value={form.startTime} onChange={(event) => updateForm("startTime", event.target.value)} className={inputClass}><option value="" disabled>Select a time slot</option>{selectableSlots.map((slot) => <option key={slot.start} value={slot.start}>{slot.start} - {slot.end}</option>)}</select></MeetingField>
-        <MeetingField label="Agenda / Topic" required><input required maxLength={200} value={form.agenda} onChange={(event) => updateForm("agenda", event.target.value)} placeholder="Enter agenda" className={inputClass} /></MeetingField>
-        <MeetingField label="PIC Name" required><input required readOnly value={form.picName} placeholder="Select a company first" className={`${inputClass} cursor-not-allowed bg-slate-50`} /></MeetingField>
-        <MeetingField label="Andima Representative" required><input required value={form.representative} onChange={(event) => updateForm("representative", event.target.value)} placeholder="Representative name" className={inputClass} /></MeetingField>
-        <MeetingField label="Meeting Type" required><div className="flex flex-wrap gap-6 pt-2"><RadioChoice name="meeting-type" checked={form.meetingType === "offline"} onChange={() => updateForm("meetingType", "offline")} label="Offline (Location)" /><RadioChoice name="meeting-type" checked={form.meetingType === "online"} onChange={() => updateForm("meetingType", "online")} label="Online (Link)" /></div></MeetingField>
-        {form.meetingType === "offline" ? <MeetingField label="Location" required><input required value={form.location} onChange={(event) => updateForm("location", event.target.value)} placeholder="Enter location" className={inputClass} /></MeetingField> : <MeetingField label="Meeting Link" required><input required type="url" value={form.meetingLink} onChange={(event) => updateForm("meetingLink", event.target.value)} placeholder="https://" className={inputClass} /></MeetingField>}
-        <MeetingField label="Frequency" required><div className="flex flex-wrap gap-6 pt-2"><RadioChoice name="meeting-frequency" checked={form.frequency === "one_day"} onChange={() => updateForm("frequency", "one_day")} label="One-time" /><RadioChoice name="meeting-frequency" checked={form.frequency === "weekly"} onChange={() => updateForm("frequency", "weekly")} label="Weekly (repeats until canceled)" /></div></MeetingField>
-        <MeetingField label="Notes"><div><textarea maxLength={500} rows={3} value={form.notes} onChange={(event) => updateForm("notes", event.target.value)} placeholder="Enter notes (optional)" className={`${inputClass} resize-y`} /><p className="mt-1 text-right text-xs text-slate-400">{form.notes.length}/500</p></div></MeetingField>
-      </div>
-      {mutationError && <p role="alert" className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{mutationError}</p>}
-      <div className="mt-5 flex justify-end gap-3 border-t border-slate-100 pt-5"><button type="button" onClick={() => setSlotToBook(null)} className="rounded-lg border border-slate-300 px-6 py-2.5 text-sm font-semibold text-slate-600">Cancel</button><button type="submit" disabled={saving || availableCustomers.length === 0} className="rounded-lg bg-blue-600 px-8 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{saving ? "Saving..." : "Save Meeting"}</button></div>
-    </form></div>}
+      {/* Breadcrumb Navigation */}
+      <nav className="text-xs font-medium text-slate-500">
+        <span className="text-slate-400">ANDIMA CRM</span>
+        <span className="mx-2 text-slate-300">/</span>
+        <span className="text-slate-400">Sales Executive</span>
+        <span className="mx-2 text-slate-300">/</span>
+        <span className="text-slate-800 font-semibold">Meeting Calendar</span>
+      </nav>
 
-    {selectedMeeting && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/75 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) { setSelectedMeeting(null); setEditingMeeting(false); } }}>
-      {editingMeeting ? <form onSubmit={handleSaveMeeting} className="my-auto w-full max-w-5xl rounded-2xl bg-white px-6 py-6 shadow-2xl sm:px-8"><div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4"><h2 className="text-2xl font-bold text-slate-900">Edit Meeting</h2><button type="button" aria-label="Close" onClick={() => setEditingMeeting(false)} className="text-slate-400 hover:text-slate-700"><X className="h-6 w-6" /></button></div>
-        <div className="space-y-4"><MeetingField label="Company" required><select required disabled value={form.companyId} className={`${inputClass} cursor-not-allowed bg-slate-50`}><option value={selectedMeeting.customer.id}>{selectedMeeting.customer.companyName}</option></select></MeetingField>
-          <MeetingField label="Date" required><input required type="date" value={form.date} onChange={(event) => updateForm("date", event.target.value)} className={inputClass} /></MeetingField>
-          <MeetingField label="Time" required><select required value={form.startTime} onChange={(event) => updateForm("startTime", event.target.value)} className={inputClass}>{meetingSlots.map((slot) => <option key={slot.start} value={slot.start}>{slot.start} - {slot.end}</option>)}</select></MeetingField>
-          <MeetingField label="Agenda / Topic" required><input required maxLength={200} value={form.agenda} onChange={(event) => updateForm("agenda", event.target.value)} placeholder="Enter agenda" className={inputClass} /></MeetingField>
-          <MeetingField label="PIC Name" required><input required readOnly value={form.picName} className={`${inputClass} cursor-not-allowed bg-slate-50`} /></MeetingField>
-          <MeetingField label="Andima Representative" required><input required value={form.representative} onChange={(event) => updateForm("representative", event.target.value)} className={inputClass} /></MeetingField>
-          <MeetingField label="Meeting Type" required><div className="flex flex-wrap gap-6 pt-2"><RadioChoice name="edit-meeting-type" checked={form.meetingType === "offline"} onChange={() => updateForm("meetingType", "offline")} label="Offline (Location)" /><RadioChoice name="edit-meeting-type" checked={form.meetingType === "online"} onChange={() => updateForm("meetingType", "online")} label="Online (Link)" /></div></MeetingField>
-          {form.meetingType === "offline" ? <MeetingField label="Location" required><input required value={form.location} onChange={(event) => updateForm("location", event.target.value)} className={inputClass} /></MeetingField> : <MeetingField label="Meeting Link" required><input required type="url" value={form.meetingLink} onChange={(event) => updateForm("meetingLink", event.target.value)} className={inputClass} /></MeetingField>}
-          <MeetingField label="Frequency" required><div className="flex flex-wrap gap-6 pt-2"><RadioChoice name="edit-meeting-frequency" checked={form.frequency === "one_day"} onChange={() => updateForm("frequency", "one_day")} label="One-time" /><RadioChoice name="edit-meeting-frequency" checked={form.frequency === "weekly"} onChange={() => updateForm("frequency", "weekly")} label="Weekly (repeats until canceled)" /></div></MeetingField>
-          <MeetingField label="Notes"><div><textarea maxLength={500} rows={3} value={form.notes} onChange={(event) => updateForm("notes", event.target.value)} placeholder="Enter notes (optional)" className={`${inputClass} resize-y`} /><p className="mt-1 text-right text-xs text-slate-400">{form.notes.length}/500</p></div></MeetingField>
+      {/* Header with Title and Create Meeting Button */}
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Meeting Calendar</h1>
+          <p className="mt-1 text-sm sm:text-base text-slate-500">Kelola dan lihat jadwal meeting dengan customer.</p>
         </div>
-        {mutationError && <p role="alert" className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{mutationError}</p>}
-        <div className="mt-5 flex justify-end gap-3 border-t border-slate-100 pt-5"><button type="button" onClick={() => setEditingMeeting(false)} className="rounded-lg border border-slate-300 px-6 py-2.5 text-sm font-semibold text-slate-600">Cancel</button><button type="submit" disabled={saving} className="rounded-lg bg-blue-600 px-8 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{saving ? "Saving..." : "Save Changes"}</button></div>
-      </form> : <div className="my-auto w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"><div className="flex items-center justify-between border-b border-slate-100 px-6 py-5"><h2 className="text-xl font-bold text-slate-900">Meeting Details</h2><button type="button" aria-label="Close" onClick={() => setSelectedMeeting(null)} className="text-slate-400 hover:text-slate-700"><X className="h-5 w-5" /></button></div>
-        <div className="space-y-5 px-6 py-6"><div className="grid grid-cols-[minmax(130px,0.75fr)_minmax(0,1.25fr)] gap-x-4 gap-y-5 text-sm"><DetailRow label="Company" value={selectedMeeting.customer.companyName} /><DetailRow label="Date & Time" value={`${formatDate(selectedMeeting.meeting.scheduleType === "one_day" && selectedMeeting.meeting.meetingDate ? dateForInput(selectedMeeting.meeting.meetingDate) : selectedDate)}, ${selectedMeeting.meeting.startTime?.slice(0, 5)} - ${selectedMeeting.meeting.endTime?.slice(0, 5)}`} /><DetailRow label="Agenda / Topic" value={selectedMeeting.meeting.agenda || "Not provided"} /><DetailRow label="PIC" value={selectedMeeting.meeting.picName || selectedMeeting.customer.primaryPic?.fullName || "Not provided"} /><DetailRow label="PIC Phone Number" value={selectedMeeting.customer.primaryPic?.phoneNumber || "Not provided"} /><DetailRow label="Andima Representative" value={selectedMeeting.meeting.representativeName || "Not provided"} /><DetailRow label="Meeting Type" value={selectedMeeting.meeting.meetingType === "online" ? "Online (Link)" : "Offline (Location)"} /><DetailRow label={selectedMeeting.meeting.meetingType === "online" ? "Meeting Link" : "Location"} value={selectedMeeting.meeting.meetingType === "online" ? selectedMeeting.meeting.meetingLink || "Not provided" : selectedMeeting.meeting.location || selectedMeeting.customer.address || "Not provided"} /><dt className="text-slate-500">Status</dt><dd>{selectedMeeting.meeting.status === "completed" ? <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">Completed</span> : <select aria-label="Meeting status" disabled={saving} value={selectedMeeting.meeting.status || "scheduled"} onChange={(event) => void changeMeetingStatus(event.target.value as "scheduled" | "completed" | "cancelled")} className={`rounded-full border border-slate-200 px-3 py-1 text-sm font-semibold disabled:opacity-60 ${selectedMeeting.meeting.status === "cancelled" ? "bg-slate-100 text-slate-600" : "bg-blue-50 text-blue-700"}`}><option value="scheduled">Scheduled</option><option value="completed">Completed</option><option value="cancelled">Canceled</option></select>}</dd><DetailRow label="Frequency" value={selectedMeeting.meeting.scheduleType === "weekly" ? "Weekly" : "One-time"} /><DetailRow label="Notes" value={selectedMeeting.meeting.notes || "No notes"} /></div>{selectedMeeting.meeting.status === "completed" && <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">This completed meeting is read-only.</p>}{mutationError && <p role="alert" className="text-sm text-rose-600">{mutationError}</p>}</div>
-        <div className="flex flex-wrap justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4"><button type="button" disabled={selectedMeeting.meeting.status !== "completed" && !isMeetingPast(selectedMeeting.meeting, selected)} onClick={() => router.push(`/dashboard/record-conversation?customer_id=${encodeURIComponent(selectedMeeting.customer.id)}&customer_name=${encodeURIComponent(selectedMeeting.customer.companyName)}&meeting_id=${encodeURIComponent(selectedMeeting.meeting.id)}&source_meeting_id=${encodeURIComponent(selectedMeeting.meeting.id)}`)} className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40">+ Record Conversation</button>{selectedMeeting.meeting.status !== "completed" && <button type="button" disabled={saving} onClick={() => setDeleteConfirmOpen(true)} className="inline-flex items-center gap-2 rounded-lg border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 disabled:opacity-50"><Trash2 className="h-4 w-4" />Delete</button>}{selectedMeeting.meeting.status !== "completed" && <button type="button" onClick={beginEdit} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white"><Pencil className="h-4 w-4" />Edit</button>}</div>
-      </div>}
-    </div>}
-    {deleteConfirmOpen && selectedMeeting && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/50 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setDeleteConfirmOpen(false); }}><section role="alertdialog" aria-modal="true" aria-labelledby="delete-meeting-title" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"><div className="flex items-start gap-4"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-rose-50 text-rose-600"><Trash2 className="h-5 w-5" /></span><div><h2 id="delete-meeting-title" className="text-lg font-bold text-slate-900">Delete meeting?</h2><p className="mt-2 text-sm leading-6 text-slate-600">Delete the meeting for <strong>{selectedMeeting.customer.companyName}</strong>? This action cannot be undone.</p></div></div>{mutationError && <p role="alert" className="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{mutationError}</p>}<div className="mt-6 flex justify-end gap-3"><button type="button" disabled={saving} onClick={() => setDeleteConfirmOpen(false)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50">Cancel</button><button type="button" disabled={saving} onClick={() => void deleteSelectedMeeting()} className="inline-flex min-w-24 items-center justify-center rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{saving ? "Deleting..." : "Delete"}</button></div></section></div>}
+        <button
+          type="button"
+          disabled={loading || customers.length === 0}
+          onClick={() => {
+            const firstAvailable =
+              selectedDateKey === todayKey
+                ? selectableSlots[0]?.start || "09:00"
+                : "09:00";
+            beginAdd(selectedDateKey >= todayKey ? selectedDateKey : todayKey, firstAvailable);
+          }}
+          className="inline-flex items-center gap-2 rounded-xl bg-[#0f2744] hover:bg-[#183c66] px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Create Meeting</span>
+        </button>
+      </header>
 
-    {/* Multi-Meeting Slot Modal (Tiket 5 Planka / Overlap Dialog) */}
-    {multiMeetingSlot && (
-      <div
-        className="fixed inset-0 z-[65] flex items-center justify-center bg-slate-950/75 p-4"
-        onMouseDown={(e) => { if (e.target === e.currentTarget) setMultiMeetingSlot(null); }}
-      >
-        <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl sm:p-8">
-          <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">Meetings at {String(multiMeetingSlot.hour).padStart(2, "0")}:00</h2>
-              <p className="text-xs text-slate-500">{multiMeetingSlot.meetings.length} scheduled meetings in this time slot</p>
-            </div>
+      {/* Calendar Controls Bar: Today, Navigation, Date Range, and View Toggle */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs">
+        {/* Left Side: Navigation */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleNavToday}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
+          >
+            Today
+          </button>
+
+          <div className="flex items-center rounded-xl border border-slate-200 bg-white shadow-2xs">
             <button
               type="button"
-              onClick={() => setMultiMeetingSlot(null)}
-              className="text-slate-400 hover:text-slate-700"
+              onClick={handleNavPrev}
+              aria-label="Previous range"
+              className="p-2 text-slate-600 hover:bg-slate-50 rounded-l-xl transition-colors"
             >
-              <X className="h-6 w-6" />
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <div className="h-4 w-px bg-slate-200" />
+            <button
+              type="button"
+              onClick={handleNavNext}
+              aria-label="Next range"
+              className="p-2 text-slate-600 hover:bg-slate-50 rounded-r-xl transition-colors"
+            >
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
-            {multiMeetingSlot.meetings.map(({ customer, meeting }) => {
-              const meetingStatus = meeting.status || "scheduled";
-              const statusBadge = meetingStatus === "completed" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : meetingStatus === "cancelled" ? "bg-slate-100 text-slate-600 border-slate-200" : "bg-blue-50 text-blue-700 border-blue-200";
+          {/* Date Range Picker Display */}
+          <div className="relative" ref={datePickerRef}>
+            <button
+              type="button"
+              onClick={() => setShowDatePicker(!showDatePicker)}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs sm:text-sm font-medium text-slate-800 hover:bg-slate-50 transition-colors shadow-2xs"
+            >
+              <CalendarIcon className="h-4 w-4 text-slate-400" />
+              <span>{dateRangeLabel}</span>
+              <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+            </button>
+
+            {/* Date jump popover */}
+            {showDatePicker && (
+              <div className="absolute left-0 top-full z-40 mt-2 w-64 rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+                <label className="block text-xs font-semibold text-slate-700 mb-2">Pilih Tanggal Acuan:</label>
+                <input
+                  type="date"
+                  value={dateKey(anchorDate)}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      const newDate = dateForInput(e.target.value);
+                      setAnchorDate(newDate);
+                      setSelectedDateKey(e.target.value);
+                      setShowDatePicker(false);
+                    }
+                  }}
+                  className="w-full rounded-lg border border-slate-300 p-2 text-sm text-slate-800 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Side: View Mode Switcher */}
+        <div className="flex items-center rounded-xl bg-slate-100 p-1 text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => setViewMode("day")}
+            className={`rounded-lg px-3 py-1.5 transition-all ${
+              viewMode === "day"
+                ? "bg-white text-blue-700 shadow-xs font-bold"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Day
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("work_week")}
+            className={`rounded-lg px-3 py-1.5 transition-all ${
+              viewMode === "work_week"
+                ? "bg-[#dce7fe] text-[#1e40af] shadow-xs font-bold"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Work Week
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("week")}
+            className={`rounded-lg px-3 py-1.5 transition-all ${
+              viewMode === "week"
+                ? "bg-white text-blue-700 shadow-xs font-bold"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Week
+          </button>
+        </div>
+      </div>
+
+      {/* Main Calendar Grid Matrix */}
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-xs">
+        <div className="min-w-[760px]">
+          {/* Header row with Days */}
+          <div
+            className="grid border-b border-slate-200 bg-slate-50/60 text-slate-700"
+            style={{
+              gridTemplateColumns: `80px repeat(${displayedDays.length}, minmax(130px, 1fr))`,
+            }}
+          >
+            {/* Blank corner above time labels */}
+            <div className="p-3 border-r border-slate-200 text-center text-xs font-semibold text-slate-400">
+              Time
+            </div>
+
+            {/* Day columns */}
+            {displayedDays.map((d) => {
+              const dKey = dateKey(d);
+              const isToday = dKey === todayKey;
+              const isSelected = dKey === selectedDateKey;
+
               return (
                 <div
-                  key={meeting.id}
-                  className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 p-4 transition-colors hover:border-blue-300 hover:bg-slate-50/60"
+                  key={dKey}
+                  onClick={() => setSelectedDateKey(dKey)}
+                  className={`p-3 text-center border-r border-slate-200 last:border-r-0 cursor-pointer transition-colors ${
+                    isSelected ? "bg-blue-50/40" : "hover:bg-slate-100/50"
+                  }`}
                 >
-                  <div className="min-w-0">
-                    <h3 className="truncate font-semibold text-slate-900">{customer.companyName}</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {meeting.startTime?.slice(0, 5)} - {meeting.endTime?.slice(0, 5)} · Topic: {meeting.agenda || "General meeting"}
-                    </p>
-                    <p className="text-xs text-slate-400 mt-0.5">PIC: {meeting.picName || customer.primaryPic?.fullName || "—"}</p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusBadge}`}>
-                      {meetingStatus === "completed" ? "Completed" : meetingStatus === "cancelled" ? "Canceled" : "Scheduled"}
+                  <div
+                    className={`inline-flex flex-col items-center justify-center rounded-xl px-4 py-1.5 transition-all ${
+                      isSelected
+                        ? "border-2 border-blue-400 bg-blue-100/60 shadow-xs"
+                        : isToday
+                        ? "border border-blue-200 bg-blue-50/50"
+                        : ""
+                    }`}
+                  >
+                    <span className={`text-xs font-bold uppercase tracking-wider ${isSelected ? "text-blue-900" : "text-slate-600"}`}>
+                      {dayShortNames[d.getDay()]}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedMeeting({ customer, meeting });
-                        setMultiMeetingSlot(null);
-                        setEditingMeeting(false);
-                      }}
-                      className="rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 shadow-2xs"
-                    >
-                      View Details
-                    </button>
+                    <span className={`text-sm font-semibold mt-0.5 ${isSelected ? "text-blue-950 font-bold" : "text-slate-900"}`}>
+                      {d.getDate()}{" "}
+                      {d.toLocaleDateString("en-GB", { month: "short" })}
+                    </span>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="mt-6 flex justify-end border-t border-slate-100 pt-4">
-            <button
-              type="button"
-              onClick={() => setMultiMeetingSlot(null)}
-              className="rounded-lg border border-slate-300 px-5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-            >
-              Close
-            </button>
+          {/* Hour Rows */}
+          <div className="divide-y divide-slate-100">
+            {hours.map((hour) => {
+              const timeStr = `${String(hour).padStart(2, "0")}:00`;
+              const isHourHighlighted = hour === 10 || (lockTimeInput.startsWith(String(hour).padStart(2, "0")));
+
+              return (
+                <div
+                  key={hour}
+                  className="grid min-h-[72px]"
+                  style={{
+                    gridTemplateColumns: `80px repeat(${displayedDays.length}, minmax(130px, 1fr))`,
+                  }}
+                >
+                  {/* Y-Axis Hour Label */}
+                  <div className="flex items-start justify-center p-2.5 border-r border-slate-200 text-xs font-medium text-slate-400">
+                    {isHourHighlighted ? (
+                      <span className="rounded-full bg-[#4589f5] px-2.5 py-0.5 text-[11px] font-bold text-white shadow-2xs">
+                        {timeStr}
+                      </span>
+                    ) : (
+                      <span className="pt-0.5">{timeStr}</span>
+                    )}
+                  </div>
+
+                  {/* Day Slot Cells */}
+                  {displayedDays.map((d) => {
+                    const dKey = dateKey(d);
+                    const isPast = dKey < todayKey || (dKey === todayKey && hour * 60 <= jakartaMinutes());
+                    const slotMeetings = getMeetingsForSlot(dKey, hour);
+                    const lock = getSlotLock(dKey, timeStr);
+
+                    return (
+                      <div
+                        key={`${dKey}-${hour}`}
+                        className={`relative border-r border-slate-100 last:border-r-0 p-1.5 transition-colors ${
+                          dKey === selectedDateKey ? "bg-blue-50/15" : ""
+                        } ${isPast ? "bg-slate-50/40" : "hover:bg-slate-50/70"}`}
+                      >
+                        {/* If Slot is Locked */}
+                        {lock ? (
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`Slot ${timeStr} sedang terkunci. Buka kunci slot ini?`)) {
+                                handleUnlockSlot(lock.id);
+                              }
+                            }}
+                            className="group flex h-full w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-blue-200 bg-[#e8f1fd] p-2 text-xs font-semibold text-[#1e40af] shadow-2xs transition-all hover:bg-blue-100"
+                            title="Klik untuk membuka kunci slot"
+                          >
+                            <span className="inline-flex items-center gap-1.5">
+                              <Lock className="h-3.5 w-3.5 text-blue-600" />
+                              <span>Locked</span>
+                            </span>
+                            <span className="hidden text-[10px] text-blue-500 group-hover:inline">
+                              (Klik untuk unlock)
+                            </span>
+                          </div>
+                        ) : slotMeetings.length > 0 ? (
+                          /* If Slot has Meetings */
+                          <div className="flex h-full flex-col gap-1">
+                            {slotMeetings.slice(0, 1).map(({ customer, meeting }) => {
+                              const meetingTitle = meeting.agenda || "Meeting";
+                              const colorStyle = getMeetingColorStyle(meetingTitle, meeting.status);
+
+                              return (
+                                <div
+                                  key={meeting.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedMeeting({ customer, meeting });
+                                    setEditingMeeting(false);
+                                    setMutationError("");
+                                  }}
+                                  className={`flex h-full w-full cursor-pointer flex-col justify-center rounded-lg p-2 text-xs shadow-2xs transition-transform hover:-translate-y-0.5 hover:shadow-xs ${colorStyle}`}
+                                >
+                                  <div className="truncate font-semibold leading-tight">
+                                    {meetingTitle} – {customer.companyName}
+                                  </div>
+                                  <div className="mt-0.5 text-[11px] opacity-80">
+                                    {meeting.startTime?.slice(0, 5)} - {meeting.endTime?.slice(0, 5)}
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {/* Overlap Indicator Badge if multiple meetings in slot */}
+                            {slotMeetings.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMultiMeetingSlot({ date: dKey, hour, meetings: slotMeetings });
+                                }}
+                                className="mt-0.5 inline-flex items-center justify-center rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700 hover:bg-blue-200 shadow-2xs"
+                              >
+                                +{slotMeetings.length - 1} meeting{slotMeetings.length > 2 ? "s" : ""}
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          /* Empty Slot: Clickable to add meeting */
+                          <div
+                            onClick={() => {
+                              if (!isPast) {
+                                beginAdd(dKey, timeStr);
+                              }
+                            }}
+                            className={`group flex h-full min-h-[56px] w-full items-center justify-center rounded-lg transition-colors ${
+                              isPast
+                                ? "cursor-not-allowed opacity-30"
+                                : "cursor-pointer hover:bg-blue-50/50"
+                            }`}
+                          >
+                            {!isPast && (
+                              <span className="opacity-0 group-hover:opacity-100 text-xs font-semibold text-blue-600 transition-opacity">
+                                + Add
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
-    )}
-  </div>;
+
+      {/* Floating Bottom Action Bar: Lock Time Slot */}
+      <div className="fixed bottom-4 left-1/2 z-30 -translate-x-1/2">
+        <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-200 bg-white/95 px-6 py-3.5 shadow-2xl backdrop-blur-md">
+          {/* Label with info icon */}
+          <div className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-800">
+            <span>Lock Time Slot</span>
+            <span
+              title="Kunci jam tertentu agar tidak bisa dijadwalkan meeting oleh klien atau agent."
+              className="cursor-help text-slate-400 hover:text-slate-600"
+            >
+              <Info className="h-4 w-4" />
+            </span>
+          </div>
+
+          {/* Time Picker */}
+          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 shadow-2xs">
+            <Clock className="h-4 w-4 text-slate-400" />
+            <select
+              value={lockTimeInput}
+              onChange={(e) => setLockTimeInput(e.target.value)}
+              className="bg-transparent text-xs sm:text-sm font-medium text-slate-800 focus:outline-none"
+            >
+              {hours.map((h) => {
+                const t = `${String(h).padStart(2, "0")}:00`;
+                return (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          {/* Checkbox: Terapkan ke semua hari */}
+          <label className="flex cursor-pointer items-center gap-2 text-xs sm:text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={lockApplyAllDays}
+              onChange={(e) => setLockApplyAllDays(e.target.checked)}
+              className="h-4 w-4 rounded accent-blue-600"
+            />
+            <span>Terapkan ke semua hari</span>
+          </label>
+
+          {/* Lock Button */}
+          <button
+            type="button"
+            onClick={handleLockTimeSlot}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#0f2744] hover:bg-[#183c66] px-5 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition-all"
+          >
+            <Lock className="h-3.5 w-3.5" />
+            <span>Lock</span>
+          </button>
+
+          {/* Quick feedback message */}
+          {lockFeedback && (
+            <span className="text-xs font-semibold text-emerald-600 animate-fade-in">
+              {lockFeedback}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* CREATE / ADD MEETING MODAL */}
+      {slotToBook && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/75 p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !saving) setSlotToBook(null);
+          }}
+        >
+          <form
+            onSubmit={handleSaveMeeting}
+            className="my-auto w-full max-w-5xl rounded-2xl bg-white px-6 py-6 shadow-2xl sm:px-8"
+          >
+            <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
+              <h2 className="text-2xl font-bold text-slate-900">Add Meeting</h2>
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={() => setSlotToBook(null)}
+                className="text-slate-400 hover:text-slate-700"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {availableCustomers.length === 0 && (
+                <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 border border-amber-200">
+                  No assigned companies found. Please add a company in Company List first before scheduling meetings.
+                </div>
+              )}
+              <MeetingField label="Company" required>
+                <select
+                  required
+                  value={form.companyId}
+                  onChange={(event) => {
+                    const customer = customers.find((item) => item.id === event.target.value);
+                    updateForm("companyId", event.target.value);
+                    if (customer) updateForm("picName", customer.primaryPic?.fullName || "");
+                  }}
+                  className={inputClass}
+                >
+                  <option value="">Select company</option>
+                  {availableCustomers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.companyName}
+                    </option>
+                  ))}
+                </select>
+              </MeetingField>
+              <MeetingField label="Date" required>
+                <input
+                  required
+                  type="date"
+                  min={jakartaDateKey()}
+                  value={form.date}
+                  onChange={(event) => updateForm("date", event.target.value)}
+                  className={inputClass}
+                />
+              </MeetingField>
+              <MeetingField label="Time" required>
+                <select
+                  required
+                  value={form.startTime}
+                  onChange={(event) => updateForm("startTime", event.target.value)}
+                  className={inputClass}
+                >
+                  <option value="" disabled>
+                    Select a time slot
+                  </option>
+                  {selectableSlots.map((slot) => (
+                    <option key={slot.start} value={slot.start}>
+                      {slot.start} - {slot.end}
+                    </option>
+                  ))}
+                </select>
+              </MeetingField>
+              <MeetingField label="Agenda / Topic" required>
+                <input
+                  required
+                  maxLength={200}
+                  value={form.agenda}
+                  onChange={(event) => updateForm("agenda", event.target.value)}
+                  placeholder="Enter agenda (e.g. Follow Up, Meeting, Discussion)"
+                  className={inputClass}
+                />
+              </MeetingField>
+              <MeetingField label="PIC Name" required>
+                <input
+                  required
+                  readOnly
+                  value={form.picName}
+                  placeholder="Select a company first"
+                  className={`${inputClass} cursor-not-allowed bg-slate-50`}
+                />
+              </MeetingField>
+              <MeetingField label="Andima Representative" required>
+                <input
+                  required
+                  value={form.representative}
+                  onChange={(event) => updateForm("representative", event.target.value)}
+                  placeholder="Representative name"
+                  className={inputClass}
+                />
+              </MeetingField>
+              <MeetingField label="Meeting Type" required>
+                <div className="flex flex-wrap gap-6 pt-2">
+                  <RadioChoice
+                    name="meeting-type"
+                    checked={form.meetingType === "offline"}
+                    onChange={() => updateForm("meetingType", "offline")}
+                    label="Offline (Location)"
+                  />
+                  <RadioChoice
+                    name="meeting-type"
+                    checked={form.meetingType === "online"}
+                    onChange={() => updateForm("meetingType", "online")}
+                    label="Online (Link)"
+                  />
+                </div>
+              </MeetingField>
+              {form.meetingType === "offline" ? (
+                <MeetingField label="Location" required>
+                  <input
+                    required
+                    value={form.location}
+                    onChange={(event) => updateForm("location", event.target.value)}
+                    placeholder="Enter location"
+                    className={inputClass}
+                  />
+                </MeetingField>
+              ) : (
+                <MeetingField label="Meeting Link" required>
+                  <input
+                    required
+                    type="url"
+                    value={form.meetingLink}
+                    onChange={(event) => updateForm("meetingLink", event.target.value)}
+                    placeholder="https://"
+                    className={inputClass}
+                  />
+                </MeetingField>
+              )}
+              <MeetingField label="Frequency" required>
+                <div className="flex flex-wrap gap-6 pt-2">
+                  <RadioChoice
+                    name="meeting-frequency"
+                    checked={form.frequency === "one_day"}
+                    onChange={() => updateForm("frequency", "one_day")}
+                    label="One-time"
+                  />
+                  <RadioChoice
+                    name="meeting-frequency"
+                    checked={form.frequency === "weekly"}
+                    onChange={() => updateForm("frequency", "weekly")}
+                    label="Weekly (repeats until canceled)"
+                  />
+                </div>
+              </MeetingField>
+              <MeetingField label="Notes">
+                <div>
+                  <textarea
+                    maxLength={500}
+                    rows={3}
+                    value={form.notes}
+                    onChange={(event) => updateForm("notes", event.target.value)}
+                    placeholder="Enter notes (optional)"
+                    className={`${inputClass} resize-y`}
+                  />
+                  <p className="mt-1 text-right text-xs text-slate-400">{form.notes.length}/500</p>
+                </div>
+              </MeetingField>
+            </div>
+
+            {mutationError && (
+              <p role="alert" className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
+                {mutationError}
+              </p>
+            )}
+
+            <div className="mt-5 flex justify-end gap-3 border-t border-slate-100 pt-5">
+              <button
+                type="button"
+                onClick={() => setSlotToBook(null)}
+                className="rounded-lg border border-slate-300 px-6 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving || availableCustomers.length === 0}
+                className="rounded-lg bg-blue-600 px-8 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save Meeting"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MEETING DETAILS / EDIT MODAL */}
+      {selectedMeeting && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/75 p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !saving) {
+              setSelectedMeeting(null);
+              setEditingMeeting(false);
+            }
+          }}
+        >
+          {editingMeeting ? (
+            <form
+              onSubmit={handleSaveMeeting}
+              className="my-auto w-full max-w-5xl rounded-2xl bg-white px-6 py-6 shadow-2xl sm:px-8"
+            >
+              <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
+                <h2 className="text-2xl font-bold text-slate-900">Edit Meeting</h2>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  onClick={() => setEditingMeeting(false)}
+                  className="text-slate-400 hover:text-slate-700"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <MeetingField label="Company" required>
+                  <select
+                    required
+                    disabled
+                    value={form.companyId}
+                    className={`${inputClass} cursor-not-allowed bg-slate-50`}
+                  >
+                    <option value={selectedMeeting.customer.id}>
+                      {selectedMeeting.customer.companyName}
+                    </option>
+                  </select>
+                </MeetingField>
+                <MeetingField label="Date" required>
+                  <input
+                    required
+                    type="date"
+                    value={form.date}
+                    onChange={(event) => updateForm("date", event.target.value)}
+                    className={inputClass}
+                  />
+                </MeetingField>
+                <MeetingField label="Time" required>
+                  <select
+                    required
+                    value={form.startTime}
+                    onChange={(event) => updateForm("startTime", event.target.value)}
+                    className={inputClass}
+                  >
+                    {meetingSlots.map((slot) => (
+                      <option key={slot.start} value={slot.start}>
+                        {slot.start} - {slot.end}
+                      </option>
+                    ))}
+                  </select>
+                </MeetingField>
+                <MeetingField label="Agenda / Topic" required>
+                  <input
+                    required
+                    maxLength={200}
+                    value={form.agenda}
+                    onChange={(event) => updateForm("agenda", event.target.value)}
+                    placeholder="Enter agenda"
+                    className={inputClass}
+                  />
+                </MeetingField>
+                <MeetingField label="PIC Name" required>
+                  <input
+                    required
+                    readOnly
+                    value={form.picName}
+                    className={`${inputClass} cursor-not-allowed bg-slate-50`}
+                  />
+                </MeetingField>
+                <MeetingField label="Andima Representative" required>
+                  <input
+                    required
+                    value={form.representative}
+                    onChange={(event) => updateForm("representative", event.target.value)}
+                    className={inputClass}
+                  />
+                </MeetingField>
+                <MeetingField label="Meeting Type" required>
+                  <div className="flex flex-wrap gap-6 pt-2">
+                    <RadioChoice
+                      name="edit-meeting-type"
+                      checked={form.meetingType === "offline"}
+                      onChange={() => updateForm("meetingType", "offline")}
+                      label="Offline (Location)"
+                    />
+                    <RadioChoice
+                      name="edit-meeting-type"
+                      checked={form.meetingType === "online"}
+                      onChange={() => updateForm("meetingType", "online")}
+                      label="Online (Link)"
+                    />
+                  </div>
+                </MeetingField>
+                {form.meetingType === "offline" ? (
+                  <MeetingField label="Location" required>
+                    <input
+                      required
+                      value={form.location}
+                      onChange={(event) => updateForm("location", event.target.value)}
+                      className={inputClass}
+                    />
+                  </MeetingField>
+                ) : (
+                  <MeetingField label="Meeting Link" required>
+                    <input
+                      required
+                      type="url"
+                      value={form.meetingLink}
+                      onChange={(event) => updateForm("meetingLink", event.target.value)}
+                      className={inputClass}
+                    />
+                  </MeetingField>
+                )}
+                <MeetingField label="Frequency" required>
+                  <div className="flex flex-wrap gap-6 pt-2">
+                    <RadioChoice
+                      name="edit-meeting-frequency"
+                      checked={form.frequency === "one_day"}
+                      onChange={() => updateForm("frequency", "one_day")}
+                      label="One-time"
+                    />
+                    <RadioChoice
+                      name="edit-meeting-frequency"
+                      checked={form.frequency === "weekly"}
+                      onChange={() => updateForm("frequency", "weekly")}
+                      label="Weekly (repeats until canceled)"
+                    />
+                  </div>
+                </MeetingField>
+                <MeetingField label="Notes">
+                  <div>
+                    <textarea
+                      maxLength={500}
+                      rows={3}
+                      value={form.notes}
+                      onChange={(event) => updateForm("notes", event.target.value)}
+                      placeholder="Enter notes (optional)"
+                      className={`${inputClass} resize-y`}
+                    />
+                    <p className="mt-1 text-right text-xs text-slate-400">{form.notes.length}/500</p>
+                  </div>
+                </MeetingField>
+              </div>
+
+              {mutationError && (
+                <p role="alert" className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
+                  {mutationError}
+                </p>
+              )}
+
+              <div className="mt-5 flex justify-end gap-3 border-t border-slate-100 pt-5">
+                <button
+                  type="button"
+                  onClick={() => setEditingMeeting(false)}
+                  className="rounded-lg border border-slate-300 px-6 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="rounded-lg bg-blue-600 px-8 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {saving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="my-auto w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+                <h2 className="text-xl font-bold text-slate-900">Meeting Details</h2>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  onClick={() => setSelectedMeeting(null)}
+                  className="text-slate-400 hover:text-slate-700"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-5 px-6 py-6">
+                <div className="grid grid-cols-[minmax(130px,0.75fr)_minmax(0,1.25fr)] gap-x-4 gap-y-5 text-sm">
+                  <DetailRow label="Company" value={selectedMeeting.customer.companyName} />
+                  <DetailRow
+                    label="Date & Time"
+                    value={`${
+                      selectedMeeting.meeting.scheduleType === "one_day" && selectedMeeting.meeting.meetingDate
+                        ? selectedMeeting.meeting.meetingDate
+                        : selectedMeeting.meeting.meetingDay || selectedDateKey
+                    }, ${selectedMeeting.meeting.startTime?.slice(0, 5)} - ${selectedMeeting.meeting.endTime?.slice(0, 5)}`}
+                  />
+                  <DetailRow label="Agenda / Topic" value={selectedMeeting.meeting.agenda || "Not provided"} />
+                  <DetailRow
+                    label="PIC"
+                    value={selectedMeeting.meeting.picName || selectedMeeting.customer.primaryPic?.fullName || "Not provided"}
+                  />
+                  <DetailRow
+                    label="PIC Phone Number"
+                    value={selectedMeeting.customer.primaryPic?.phoneNumber || "Not provided"}
+                  />
+                  <DetailRow
+                    label="Andima Representative"
+                    value={selectedMeeting.meeting.representativeName || "Not provided"}
+                  />
+                  <DetailRow
+                    label="Meeting Type"
+                    value={selectedMeeting.meeting.meetingType === "online" ? "Online (Link)" : "Offline (Location)"}
+                  />
+                  <DetailRow
+                    label={selectedMeeting.meeting.meetingType === "online" ? "Meeting Link" : "Location"}
+                    value={
+                      selectedMeeting.meeting.meetingType === "online"
+                        ? selectedMeeting.meeting.meetingLink || "Not provided"
+                        : selectedMeeting.meeting.location || selectedMeeting.customer.address || "Not provided"
+                    }
+                  />
+                  <dt className="text-slate-500">Status</dt>
+                  <dd>
+                    {selectedMeeting.meeting.status === "completed" ? (
+                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
+                        Completed
+                      </span>
+                    ) : (
+                      <select
+                        aria-label="Meeting status"
+                        disabled={saving}
+                        value={selectedMeeting.meeting.status || "scheduled"}
+                        onChange={(event) =>
+                          void changeMeetingStatus(event.target.value as "scheduled" | "completed" | "cancelled")
+                        }
+                        className={`rounded-full border border-slate-200 px-3 py-1 text-sm font-semibold disabled:opacity-60 ${
+                          selectedMeeting.meeting.status === "cancelled"
+                            ? "bg-slate-100 text-slate-600"
+                            : "bg-blue-50 text-blue-700"
+                        }`}
+                      >
+                        <option value="scheduled">Scheduled</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Canceled</option>
+                      </select>
+                    )}
+                  </dd>
+                  <DetailRow
+                    label="Frequency"
+                    value={selectedMeeting.meeting.scheduleType === "weekly" ? "Weekly" : "One-time"}
+                  />
+                  <DetailRow label="Notes" value={selectedMeeting.meeting.notes || "No notes"} />
+                </div>
+
+                {selectedMeeting.meeting.status === "completed" && (
+                  <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">
+                    This completed meeting is read-only.
+                  </p>
+                )}
+                {mutationError && <p role="alert" className="text-sm text-rose-600">{mutationError}</p>}
+              </div>
+
+              {/* Bottom buttons: + Record Conversation, Delete, Edit */}
+              <div className="flex flex-wrap justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4">
+                <button
+                  type="button"
+                  disabled={
+                    selectedMeeting.meeting.status !== "completed" &&
+                    !isMeetingPast(selectedMeeting.meeting, selectedDateKey)
+                  }
+                  onClick={() =>
+                    router.push(
+                      `/dashboard/record-conversation?customer_id=${encodeURIComponent(
+                        selectedMeeting.customer.id
+                      )}&customer_name=${encodeURIComponent(
+                        selectedMeeting.customer.companyName
+                      )}&meeting_id=${encodeURIComponent(
+                        selectedMeeting.meeting.id
+                      )}&source_meeting_id=${encodeURIComponent(selectedMeeting.meeting.id)}`
+                    )
+                  }
+                  className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40 shadow-2xs"
+                >
+                  + Record Conversation
+                </button>
+                {selectedMeeting.meeting.status !== "completed" && (
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </button>
+                )}
+                {selectedMeeting.meeting.status !== "completed" && (
+                  <button
+                    type="button"
+                    onClick={beginEdit}
+                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {deleteConfirmOpen && selectedMeeting && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/50 p-4"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !saving) setDeleteConfirmOpen(false);
+          }}
+        >
+          <section
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-meeting-title"
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+          >
+            <div className="flex items-start gap-4">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-rose-50 text-rose-600">
+                <Trash2 className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 id="delete-meeting-title" className="text-lg font-bold text-slate-900">
+                  Delete meeting?
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Delete the meeting for <strong>{selectedMeeting.customer.companyName}</strong>? This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            {mutationError && (
+              <p role="alert" className="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
+                {mutationError}
+              </p>
+            )}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => setDeleteConfirmOpen(false)}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void deleteSelectedMeeting()}
+                className="inline-flex min-w-24 items-center justify-center rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+              >
+                {saving ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* MULTI-MEETING SLOT OVERLAP MODAL */}
+      {multiMeetingSlot && (
+        <div
+          className="fixed inset-0 z-[65] flex items-center justify-center bg-slate-950/75 p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setMultiMeetingSlot(null);
+          }}
+        >
+          <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl sm:p-8">
+            <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">
+                  Meetings at {String(multiMeetingSlot.hour).padStart(2, "0")}:00 ({multiMeetingSlot.date})
+                </h2>
+                <p className="text-xs text-slate-500">
+                  {multiMeetingSlot.meetings.length} scheduled meetings in this time slot
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMultiMeetingSlot(null)}
+                className="text-slate-400 hover:text-slate-700"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+              {multiMeetingSlot.meetings.map(({ customer, meeting }) => {
+                const meetingStatus = meeting.status || "scheduled";
+                const statusBadge =
+                  meetingStatus === "completed"
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : meetingStatus === "cancelled"
+                    ? "bg-slate-100 text-slate-600 border-slate-200"
+                    : "bg-blue-50 text-blue-700 border-blue-200";
+
+                return (
+                  <div
+                    key={meeting.id}
+                    className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 p-4 transition-colors hover:border-blue-300 hover:bg-slate-50/60"
+                  >
+                    <div className="min-w-0">
+                      <h3 className="truncate font-semibold text-slate-900">{customer.companyName}</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {meeting.startTime?.slice(0, 5)} - {meeting.endTime?.slice(0, 5)} · Topic: {meeting.agenda || "General meeting"}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        PIC: {meeting.picName || customer.primaryPic?.fullName || "—"}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusBadge}`}>
+                        {meetingStatus === "completed" ? "Completed" : meetingStatus === "cancelled" ? "Canceled" : "Scheduled"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMeeting({ customer, meeting });
+                          setMultiMeetingSlot(null);
+                          setEditingMeeting(false);
+                        }}
+                        className="rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 shadow-2xs"
+                      >
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 flex justify-end border-t border-slate-100 pt-4">
+              <button
+                type="button"
+                onClick={() => setMultiMeetingSlot(null)}
+                className="rounded-lg border border-slate-300 px-5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
-const inputClass = "h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+const inputClass =
+  "h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
 
 function MeetingField({ label, required, children }: { label: string; required?: boolean; children: ReactNode }) {
-  return <div className="grid gap-2 sm:grid-cols-[minmax(180px,0.62fr)_minmax(0,1fr)] sm:items-center"><label className="text-sm font-semibold text-slate-700">{label}{required && <span className="ml-1 text-rose-500">*</span>}</label>{children}</div>;
+  return (
+    <div className="grid gap-2 sm:grid-cols-[minmax(180px,0.62fr)_minmax(0,1fr)] sm:items-center">
+      <label className="text-sm font-semibold text-slate-700">
+        {label}
+        {required && <span className="ml-1 text-rose-500">*</span>}
+      </label>
+      {children}
+    </div>
+  );
 }
 
 function RadioChoice({ name, checked, onChange, label }: { name: string; checked: boolean; onChange: () => void; label: string }) {
-  return <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="radio" name={name} checked={checked} onChange={onChange} className="h-4 w-4 accent-blue-600" />{label}</label>;
+  return (
+    <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+      <input type="radio" name={name} checked={checked} onChange={onChange} className="h-4 w-4 accent-blue-600" />
+      {label}
+    </label>
+  );
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {
-  return <><dt className="text-slate-500">{label}</dt><dd className="break-words font-semibold text-slate-800">{value}</dd></>;
+  return (
+    <>
+      <dt className="text-slate-500">{label}</dt>
+      <dd className="break-words font-semibold text-slate-800">{value}</dd>
+    </>
+  );
 }
-
