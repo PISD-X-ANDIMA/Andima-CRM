@@ -6,23 +6,13 @@ import { Menu } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { ManagerBackupBell } from "@/components/dashboard/ManagerBackupBell";
 import { useSidebarToggle } from "@/components/dashboard/DashboardShell";
-
-const routeLabels: Record<string, string> = {
-  "sales-executive": "Sales Executive",
-  "manager-customer-success": "Manager of Customer Success",
-  "field-agent": "Field Agent",
-  "company-list": "Company List",
-  "meeting-schedule": "Meeting Schedule",
-  "record-conversation": "Record Conversation",
-  "task-of-field-agent": "Task of Field Agent",
-  "field-agent-management": "Field Agent Management",
-  "field-agent-access": "Field Agent Management",
-  jobs: "Jobs",
-};
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export function DashboardHeader({ isManager = false }: { isManager?: boolean }) {
   const pathname = usePathname();
   const { sidebarVisible, toggleSidebar } = useSidebarToggle();
+  const { t } = useLanguage();
   const [username, setUsername] = useState("User");
 
   useEffect(() => {
@@ -50,23 +40,43 @@ export function DashboardHeader({ isManager = false }: { isManager?: boolean }) 
     return () => { active = false; };
   }, []);
 
+  const routeLabelMap: Record<string, string> = useMemo(() => ({
+    "sales-executive": t("nav.salesExecutive", "Sales Executive"),
+    "manager-customer-success": t("nav.managerCustomerSuccess", "Manager of Customer Success"),
+    "field-agent": t("nav.fieldAgent", "Field Agent"),
+    "company-list": t("nav.companyList", "Company List"),
+    "meeting-schedule": t("nav.meetingSchedule", "Meeting Schedule"),
+    "record-conversation": t("nav.recordConversation", "Record Conversation"),
+    "task-of-field-agent": t("nav.taskOfFieldAgent", "Task of Field Agent"),
+    "field-agent-management": t("nav.fieldAgentManagement", "Field Agent Management"),
+    "field-agent-access": t("nav.fieldAgentManagement", "Field Agent Management"),
+    jobs: "Jobs",
+  }), [t]);
+
   const breadcrumbs = useMemo(() => {
     const segments = pathname.split("/").filter(Boolean).slice(1);
-    if (!segments.length) return ["Dashboard"];
-    const isManager = pathname.includes("manager-customer-success");
-    const parentRole = isManager
-      ? "Manager of Customer Success"
+    if (!segments.length) return [t("nav.dashboard", "Dashboard")];
+    const isManagerRole = pathname.includes("manager-customer-success");
+    const parentRole = isManagerRole
+      ? t("nav.managerCustomerSuccess", "Manager of Customer Success")
       : segments[0] === "field-agent"
-        ? "Field Agent"
-        : "Sales Executive";
-    if (segments[0] === "task-of-field-agent") return ["CRM", parentRole, "Task of Field Agent"];
-    const labels = segments.map((segment) => routeLabels[segment] || (segment.includes("-") ? "Details" : segment));
-    if (labels[0] !== parentRole && labels[0] !== "Dashboard") labels.unshift(parentRole);
+        ? t("nav.fieldAgent", "Field Agent")
+        : t("nav.salesExecutive", "Sales Executive");
+
+    if (segments[0] === "task-of-field-agent") {
+      return ["CRM", parentRole, t("nav.taskOfFieldAgent", "Task of Field Agent")];
+    }
+    const labels = segments.map((segment) =>
+      routeLabelMap[segment] || (segment.includes("-") ? t("common.details", "Details") : segment)
+    );
+    if (labels[0] !== parentRole && labels[0] !== t("nav.dashboard", "Dashboard")) {
+      labels.unshift(parentRole);
+    }
     return ["CRM", ...labels];
-  }, [pathname]);
+  }, [pathname, routeLabelMap, t]);
 
   return (
-    <header className="mb-8 flex min-h-10 items-center justify-between gap-3 border-b border-slate-100 pb-4">
+    <header className="mb-6 flex min-h-10 flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 pt-1 sm:mb-8">
       <div className="flex min-w-0 items-center gap-3">
         <button
           type="button"
@@ -78,18 +88,40 @@ export function DashboardHeader({ isManager = false }: { isManager?: boolean }) 
         >
           <Menu className="h-[18px] w-[18px]" strokeWidth={2.5} />
         </button>
-        <nav aria-label="Breadcrumb" className="flex min-w-0 flex-wrap items-center gap-1 text-xs uppercase text-slate-500">
+        <nav aria-label="Breadcrumb" className="flex min-w-0 flex-wrap items-center gap-1 text-[11px] sm:text-xs uppercase text-slate-500 font-medium">
           {breadcrumbs.map((label, index) => (
-            <span key={`${label}-${index}`} className={index === breadcrumbs.length - 1 ? "font-medium text-blue-600" : ""}>
-              {index > 0 && <span className="px-1 text-slate-300">/</span>}{label}
+            <span
+              key={`${label}-${index}`}
+              className={`truncate max-w-[140px] sm:max-w-none ${
+                index === breadcrumbs.length - 1 ? "font-semibold text-blue-600" : ""
+              }`}
+            >
+              {index > 0 && <span className="px-1 text-slate-300">/</span>}
+              {label}
             </span>
           ))}
         </nav>
       </div>
-      <div className="flex shrink-0 items-center gap-2 text-slate-700" aria-label={`Signed in as ${username}`}>
+
+      <div className="flex shrink-0 items-center gap-2.5 text-slate-700">
+        {/* Language Switcher */}
+        <LanguageSwitcher />
+
+        {/* Manager Backup Bell (conditional in component) */}
         {isManager && <ManagerBackupBell />}
-        <span aria-hidden="true" className="grid h-8 w-8 place-items-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700">{username.slice(0, 1).toUpperCase()}</span>
-        <span className="max-w-48 truncate text-xs font-semibold">{username}</span>
+
+        {/* User avatar & name */}
+        <div className="flex items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50 py-1 pl-1 pr-3" aria-label={`Signed in as ${username}`}>
+          <span
+            aria-hidden="true"
+            className="grid h-7 w-7 sm:h-8 sm:w-8 place-items-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-2xs"
+          >
+            {username.slice(0, 1).toUpperCase()}
+          </span>
+          <span className="max-w-28 sm:max-w-40 truncate text-xs font-semibold text-slate-800">
+            {username}
+          </span>
+        </div>
       </div>
     </header>
   );

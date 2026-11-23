@@ -15,6 +15,7 @@ import {
 import type { ApiResponse, CustomerListItem, MeetingDay, ScheduleType } from "@/types/customer";
 import { ManagerGlobalFilterBar } from "@/components/dashboard/ManagerGlobalFilterBar";
 import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 // Hours displayed in the calendar: 08:00 to 18:00 (1 slot = 1 hour, from 08:00-09:00 until 17:00-18:00)
 const hours = Array.from({ length: 10 }, (_, index) => 8 + index);
@@ -133,6 +134,7 @@ function getMeetingColorStyle(agenda: string, status?: string) {
 
 export default function MeetingSchedulePage() {
   const router = useRouter();
+  const { t, language } = useLanguage();
   const { selectedExecutive } = useManagerFilter();
   const [isManager, setIsManager] = useState(() => {
     try {
@@ -147,6 +149,13 @@ export default function MeetingSchedulePage() {
   const [anchorDate, setAnchorDate] = useState(() => dateForInput(jakartaDateKey()));
   const [selectedDateKey, setSelectedDateKey] = useState(() => jakartaDateKey());
   const [viewMode, setViewMode] = useState<CalendarViewMode>("work_week");
+
+  // On mobile screens, automatically default to Day view for optimal touch experience
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setViewMode("day");
+    }
+  }, []);
 
   // Date jump picker popover state
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -267,8 +276,9 @@ export default function MeetingSchedulePage() {
 
   // Formatted date range label for the top control bar
   const dateRangeLabel = useMemo(() => {
+    const locale = language === "id" ? "id-ID" : "en-GB";
     const formatFull = (d: Date) =>
-      d.toLocaleDateString("en-GB", {
+      d.toLocaleDateString(locale, {
         weekday: "short",
         day: "numeric",
         month: "short",
@@ -281,7 +291,7 @@ export default function MeetingSchedulePage() {
     const first = displayedDays[0];
     const last = displayedDays[displayedDays.length - 1];
     return `${formatFull(first)} – ${formatFull(last)}`;
-  }, [displayedDays, viewMode]);
+  }, [displayedDays, viewMode, language]);
 
   // Navigate dates
   const handleNavPrev = () => {
@@ -592,8 +602,8 @@ export default function MeetingSchedulePage() {
       {/* Header with Title and Create Meeting Button */}
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Meeting Calendar</h1>
-          <p className="mt-1 text-sm sm:text-base text-slate-500">Kelola dan lihat jadwal meeting dengan customer.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">{t("meetingSchedule.title", "Meeting Calendar")}</h1>
+          <p className="mt-1 text-sm sm:text-base text-slate-500">{t("meetingSchedule.subtitle", "Kelola dan lihat jadwal meeting dengan customer.")}</p>
         </div>
         <button
           type="button"
@@ -608,7 +618,7 @@ export default function MeetingSchedulePage() {
           className="inline-flex items-center gap-2 rounded-xl bg-[#0b5796] hover:bg-[#084577] px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus className="h-4 w-4" />
-          <span>Create Meeting</span>
+          <span>{t("meetingSchedule.createMeeting", "Create Meeting")}</span>
         </button>
       </header>
 
@@ -621,7 +631,7 @@ export default function MeetingSchedulePage() {
             onClick={handleNavToday}
             className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
           >
-            Today
+            {t("common.today", "Today")}
           </button>
 
           <div className="flex items-center rounded-xl border border-slate-200 bg-white shadow-2xs">
@@ -689,7 +699,7 @@ export default function MeetingSchedulePage() {
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            Day
+            {t("meetingSchedule.day", "Day")}
           </button>
           <button
             type="button"
@@ -700,7 +710,7 @@ export default function MeetingSchedulePage() {
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            Work Week
+            {t("meetingSchedule.workWeek", "Work Week")}
           </button>
           <button
             type="button"
@@ -711,24 +721,27 @@ export default function MeetingSchedulePage() {
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            Week
+            {t("meetingSchedule.week", "Week")}
           </button>
         </div>
       </div>
 
       {/* Main Calendar Grid Matrix */}
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-xs">
-        <div className="min-w-[760px]">
+        <div className={viewMode === "day" ? "w-full min-w-0" : "min-w-[760px]"}>
           {/* Header row with Days */}
           <div
             className="grid border-b border-slate-200 bg-slate-50/50 text-slate-700"
             style={{
-              gridTemplateColumns: `80px repeat(${displayedDays.length}, minmax(130px, 1fr))`,
+              gridTemplateColumns:
+                viewMode === "day"
+                  ? "64px 1fr"
+                  : `80px repeat(${displayedDays.length}, minmax(130px, 1fr))`,
             }}
           >
             {/* Blank corner above time labels */}
             <div className="flex items-center justify-center border-r border-slate-200 p-3 text-center text-xs font-semibold text-slate-400">
-              Time
+              {t("meetingSchedule.time", "Time")}
             </div>
 
             {/* Day columns */}
@@ -753,11 +766,11 @@ export default function MeetingSchedulePage() {
                     }`}
                   >
                     <span className={`text-xs font-bold uppercase tracking-wider ${isSelected ? "text-blue-900" : "text-slate-700"}`}>
-                      {dayShortNames[d.getDay()]}
+                      {d.toLocaleDateString(language === "id" ? "id-ID" : "en-GB", { weekday: "short" })}
                     </span>
                     <span className={`mt-0.5 text-sm ${isSelected ? "font-bold text-blue-950" : "font-medium text-slate-600"}`}>
                       {d.getDate()}{" "}
-                      {d.toLocaleDateString("en-GB", { month: "short" })}
+                      {d.toLocaleDateString(language === "id" ? "id-ID" : "en-GB", { month: "short" })}
                     </span>
                   </div>
                 </div>
@@ -775,7 +788,10 @@ export default function MeetingSchedulePage() {
                   key={hour}
                   className="group/hour grid min-h-[74px] border-b border-slate-200 transition-colors hover:bg-slate-50/25 last:border-b-0"
                   style={{
-                    gridTemplateColumns: `80px repeat(${displayedDays.length}, minmax(130px, 1fr))`,
+                    gridTemplateColumns:
+                      viewMode === "day"
+                        ? "64px 1fr"
+                        : `80px repeat(${displayedDays.length}, minmax(130px, 1fr))`,
                   }}
                 >
                   {/* Y-Axis Hour Label */}
@@ -891,10 +907,10 @@ export default function MeetingSchedulePage() {
         >
           <form
             onSubmit={handleSaveMeeting}
-            className="my-auto w-full max-w-5xl rounded-2xl bg-white px-6 py-6 shadow-2xl sm:px-8"
+            className="my-auto w-full max-w-5xl rounded-2xl bg-white px-6 py-6 shadow-2xl sm:px-8 max-h-[90vh] overflow-y-auto"
           >
             <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
-              <h2 className="text-2xl font-bold text-slate-900">Add Meeting</h2>
+              <h2 className="text-2xl font-bold text-slate-900">{t("meetingSchedule.createMeeting", "Add Meeting")}</h2>
               <button
                 type="button"
                 aria-label="Close"
@@ -1066,14 +1082,14 @@ export default function MeetingSchedulePage() {
                 onClick={() => setSlotToBook(null)}
                 className="rounded-lg border border-slate-300 px-6 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
               >
-                Cancel
+                {t("common.cancel", "Cancel")}
               </button>
               <button
                 type="submit"
                 disabled={saving || availableCustomers.length === 0}
                 className="rounded-lg bg-blue-600 px-8 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                {saving ? "Saving..." : "Save Meeting"}
+                {saving ? t("customer.saving", "Saving...") : t("common.save", "Save Meeting")}
               </button>
             </div>
           </form>
@@ -1094,10 +1110,10 @@ export default function MeetingSchedulePage() {
           {editingMeeting ? (
             <form
               onSubmit={handleSaveMeeting}
-              className="my-auto w-full max-w-5xl rounded-2xl bg-white px-6 py-6 shadow-2xl sm:px-8"
+              className="my-auto w-full max-w-5xl rounded-2xl bg-white px-6 py-6 shadow-2xl sm:px-8 max-h-[90vh] overflow-y-auto"
             >
               <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
-                <h2 className="text-2xl font-bold text-slate-900">Edit Meeting</h2>
+                <h2 className="text-2xl font-bold text-slate-900">{t("meetingSchedule.editMeeting", "Edit Meeting")}</h2>
                 <button
                   type="button"
                   aria-label="Close"
@@ -1249,21 +1265,21 @@ export default function MeetingSchedulePage() {
                   onClick={() => setEditingMeeting(false)}
                   className="rounded-lg border border-slate-300 px-6 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
                 >
-                  Cancel
+                  {t("common.cancel", "Cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
                   className="rounded-lg bg-blue-600 px-8 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {saving ? "Saving..." : "Save Changes"}
+                  {saving ? t("customer.saving", "Saving...") : t("common.save", "Save Changes")}
                 </button>
               </div>
             </form>
           ) : (
-            <div className="my-auto w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="my-auto w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col">
               <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
-                <h2 className="text-xl font-bold text-slate-900">Meeting Details</h2>
+                <h2 className="text-xl font-bold text-slate-900">{t("meetingSchedule.meetingDetails", "Meeting Details")}</h2>
                 <button
                   type="button"
                   aria-label="Close"
@@ -1274,7 +1290,7 @@ export default function MeetingSchedulePage() {
                 </button>
               </div>
 
-              <div className="space-y-5 px-6 py-6">
+              <div className="space-y-5 px-6 py-6 overflow-y-auto flex-1">
                 <div className="grid grid-cols-[minmax(130px,0.75fr)_minmax(0,1.25fr)] gap-x-4 gap-y-5 text-sm">
                   <DetailRow label="Company" value={selectedMeeting.customer.companyName} />
                   <DetailRow
@@ -1372,7 +1388,7 @@ export default function MeetingSchedulePage() {
                   }
                   className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40 shadow-2xs"
                 >
-                  + Record Conversation
+                  {t("meetingSchedule.recordConversationBtn", "+ Record Conversation")}
                 </button>
                 {selectedMeeting.meeting.status !== "completed" && (
                   <button
@@ -1382,7 +1398,7 @@ export default function MeetingSchedulePage() {
                     className="inline-flex items-center gap-2 rounded-lg border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Delete
+                    {t("common.delete", "Delete")}
                   </button>
                 )}
                 {selectedMeeting.meeting.status !== "completed" && (
@@ -1392,7 +1408,7 @@ export default function MeetingSchedulePage() {
                     className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                   >
                     <Pencil className="h-4 w-4" />
-                    Edit
+                    {t("common.edit", "Edit")}
                   </button>
                 )}
               </div>
@@ -1441,7 +1457,7 @@ export default function MeetingSchedulePage() {
                 onClick={() => setDeleteConfirmOpen(false)}
                 className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
               >
-                Cancel
+                {t("common.cancel", "Cancel")}
               </button>
               <button
                 type="button"
@@ -1449,7 +1465,7 @@ export default function MeetingSchedulePage() {
                 onClick={() => void deleteSelectedMeeting()}
                 className="inline-flex min-w-24 items-center justify-center rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
               >
-                {saving ? "Deleting..." : "Delete"}
+                {saving ? t("common.loading", "Deleting...") : t("common.delete", "Delete")}
               </button>
             </div>
           </section>

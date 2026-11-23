@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { downloadXlsx, openPdfPrintWindow, printTableAsPdf } from "@/lib/export-utils";
 import {
-  BriefcaseBusiness, CalendarDays, Download, FileText, Search, UsersRound, X,
+  BriefcaseBusiness, CalendarDays, Download, FileText, Phone, Search, User, UsersRound, X,
 } from "lucide-react";
 import type { ApiResponse, CustomerDetailItem, CustomerListItem } from "@/types/customer";
 import type { SalesExecutiveMetrics } from "@/lib/services/sales-executive-metrics";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface Props {
   initialCustomers: CustomerListItem[];
@@ -47,6 +48,7 @@ function DetailInfoCard({ title, rows }: { title: string; rows: [string, string 
 
 export function SalesExecutiveDashboard({ initialCustomers, metrics, initialDataError }: Props) {
   const router = useRouter();
+  const { t } = useLanguage();
   const initialTransactions = initialCustomers.slice(0, 5);
   const [customers, setCustomers] = useState(initialTransactions);
   const [weeklyMeetings, setWeeklyMeetings] = useState<WeeklyMeeting[]>([]);
@@ -214,154 +216,385 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
     metrics.tasks === null ? "Task" : null,
   ].filter((label): label is string => label !== null);
 
-  return <div className="mx-auto w-full max-w-[1280px]">
-    <h1 className="mb-0 text-2xl font-bold tracking-tight text-black sm:text-3xl">Welcome Back, {displayName}</h1>
-    <p className="mb-4 ml-1 text-sm text-[#858585] sm:text-base">Here’s your CRM Overview today!</p>
+  return (
+    <div className="mx-auto w-full max-w-[1280px]">
+      <h1 className="mb-0 text-2xl font-bold tracking-tight text-black sm:text-3xl">Welcome Back, {displayName}</h1>
+      <p className="mb-4 ml-1 text-sm text-[#858585] sm:text-base">Here’s your CRM Overview today!</p>
 
-    <section aria-label="Key performance indicators" className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {[
-        { label: "Total Customer", value: metrics.totalCustomers, percentage: metrics.customerPercentage, hint: "Company records", icon: UsersRound, color: "bg-blue-50 text-blue-600" },
-        { label: "Upcoming Meeting", value: metrics.upcomingMeetings, percentage: metrics.meetingPercentage, hint: "Scheduled meetings", icon: CalendarDays, color: "bg-rose-50 text-rose-600" },
-        { label: "Task", value: metrics.tasks, percentage: metrics.taskPercentage, hint: "Worksheet rows", icon: BriefcaseBusiness, color: "bg-sky-50 text-sky-600" },
-      ].map(({ label, value, percentage, hint, icon: Icon, color }) => (
-        <article key={label} className="flex min-w-0 flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs transition-colors">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-700">{label}</h2>
-            {percentage !== undefined && percentage !== null && (
-              <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                percentage > 0 ? "border border-emerald-200 bg-emerald-50 text-emerald-700" :
-                percentage < 0 ? "border border-rose-200 bg-rose-50 text-rose-700" :
-                "border border-slate-200 bg-slate-100 text-slate-600"
-              }`}>
-                {percentage > 0 ? `+${percentage}%` : `${percentage}%`}
+      <section aria-label="Key performance indicators" className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {[
+          { label: t("dashboard.totalCustomer", "Total Customer"), value: metrics.totalCustomers, percentage: metrics.customerPercentage, hint: t("dashboard.activeCustomerPortfolio", "Company records"), icon: UsersRound, color: "bg-blue-50 text-blue-600" },
+          { label: t("dashboard.upcomingMeeting", "Upcoming Meeting"), value: metrics.upcomingMeetings, percentage: metrics.meetingPercentage, hint: t("dashboard.scheduledEngagements", "Scheduled meetings"), icon: CalendarDays, color: "bg-rose-50 text-rose-600" },
+          { label: t("dashboard.tasks", "Task"), value: metrics.tasks, percentage: metrics.taskPercentage, hint: t("dashboard.fieldAgentWorksheets", "Worksheet rows"), icon: BriefcaseBusiness, color: "bg-sky-50 text-sky-600" },
+        ].map(({ label, value, percentage, hint, icon: Icon, color }) => (
+          <article key={label} className="flex min-w-0 flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs transition-colors">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-700">{label}</h2>
+              {percentage !== undefined && percentage !== null && (
+                <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                  percentage > 0 ? "border border-emerald-200 bg-emerald-50 text-emerald-700" :
+                  percentage < 0 ? "border border-rose-200 bg-rose-50 text-rose-700" :
+                  "border border-slate-200 bg-slate-100 text-slate-600"
+                }`}>
+                  {percentage > 0 ? `+${percentage}%` : `${percentage}%`}
+                </span>
+              )}
+            </div>
+            <div className="mt-3 flex items-center gap-3">
+              <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${color}`}>
+                <Icon className="h-5 w-5" />
               </span>
-            )}
-          </div>
-          <div className="mt-3 flex items-center gap-3">
-            <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${color}`}>
-              <Icon className="h-5 w-5" />
-            </span>
-            <p className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{value ?? "—"}</p>
-            <span className="ml-auto text-right text-[11px] leading-tight text-slate-400">{hint}</span>
-          </div>
-        </article>
-      ))}
-    </section>
-    {unavailableMetrics.length > 0 && <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><span>Gagal memuat data statistik, coba lagi nanti. Periksa koneksi basis data.</span><button type="button" onClick={() => router.refresh()} className="font-semibold underline">Retry</button></div>}
+              <p className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{value ?? "—"}</p>
+              <span className="ml-auto text-right text-[11px] leading-tight text-slate-400">{hint}</span>
+            </div>
+          </article>
+        ))}
+      </section>
 
-    <section aria-labelledby="weekly-schedule-title" className="mb-6">
-      <div className="mb-3 flex items-center justify-between"><h2 id="weekly-schedule-title" className="text-base font-bold text-slate-800 sm:text-lg">Schedule this week</h2><Link href="/dashboard/meeting-schedule" aria-label="Open Meeting Schedule" className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"><CalendarDays className="h-5 w-5" /></Link></div>
-      {!scheduleLoading && !scheduleLoadError && nearbyMeetings.length > 0 && <div role="status" className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><strong>{nearbyMeetings.some(({ startsAt }) => (startsAt.getTime() - clockNow) / 60_000 < 15) ? "A meeting is starting soon:" : "Upcoming meeting within an hour:"}</strong> {nearbyMeetings.map(({ customer, startsAt }) => { const minutes = Math.max(0, Math.ceil((startsAt.getTime() - clockNow) / 60_000)); return `${customer.companyName} (${minutes === 0 ? "starting now" : `in ${minutes} min`})`; }).join(" · ")}</div>}
-      <div className="space-y-2.5">{scheduleLoadError ? <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">{scheduleLoadError || "Gagal memuat jadwal mingguan"}<button type="button" onClick={() => void refreshSchedule()} className="ml-2 font-semibold underline">Retry</button></div> : scheduleLoading ? <div role="status" className="space-y-2.5">{Array.from({ length: 3 }, (_, index) => <div key={index} className="h-16 animate-pulse rounded-xl border border-slate-200 bg-slate-100/70" />)}</div> : nearestWeeklyMeetings.length ? nearestWeeklyMeetings.map(({ customer, date, time, endsAt, startsAt }) => { const minutesUntil = Math.max(0, Math.ceil((startsAt.getTime() - clockNow) / 60_000)); const isStartingSoon = minutesUntil <= 60; return <Link key={`${customer.id}-${date.toISOString()}-${time}`} href={`/dashboard/company-list/${customer.id}`} className={`flex min-h-[64px] items-center justify-between gap-5 rounded-xl border px-4 py-3.5 text-slate-700 transition-colors hover:border-blue-300 sm:px-5 ${isStartingSoon ? "border-amber-300 bg-amber-50/70" : "border-slate-200 bg-white"}`}><span className="min-w-0"><span className="block truncate text-sm font-semibold text-slate-900 sm:text-base">{customer.companyName}</span><span className="text-xs text-slate-500">{date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span></span><span className="shrink-0 text-right text-xs sm:text-sm">{date.toLocaleDateString("en-GB", { weekday: "long" })}, {time} - {endsAt}{isStartingSoon && <span className="mt-1 block text-xs font-semibold text-amber-800">{minutesUntil === 0 ? "Starting now" : `Starting in ${minutesUntil} min`}</span>}</span></Link>; }) : <div className="rounded-xl border border-dashed border-slate-200 bg-white px-5 py-6 text-sm text-slate-500">Tidak ada jadwal meeting</div>}</div>
-    </section>
-
-    <div className="mb-4 flex items-center justify-between gap-4">
-      <label className="relative block w-full max-w-[500px]">
-        <Search aria-hidden="true" className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-        <input
-          type="search"
-          value={search}
-          onChange={(event) => { setSearch(event.target.value); setPage(1); }}
-          placeholder="Search Company or PIC"
-          aria-label="Search company or PIC"
-          className="h-10 w-full rounded-full border border-slate-300 bg-white pl-12 pr-4 text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-        />
-      </label>
-      <button
-        type="button"
-        onClick={() => { setExportError(""); setExportOpen(true); }}
-        disabled={!customers.length}
-        className="inline-flex h-10 shrink-0 items-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-      >
-        <Download className="h-4 w-4" />Export Transaction Records
-      </button>
-    </div>
-
-    <section aria-label="Company records" className="overflow-x-auto rounded-xl border border-slate-200/90 bg-white shadow-xs">
-      <table className="w-full min-w-[1000px] table-fixed text-left">
-        <thead className="border-b border-slate-200 bg-[#edf4f8] text-slate-700">
-          <tr>
-            <th className="w-[34%] px-4 py-3.5 text-center text-sm font-semibold">Company</th>
-            <th className="w-[16%] px-4 py-3.5 text-center text-sm font-semibold">Company Code</th>
-            <th className="w-[18%] px-4 py-3.5 text-center text-sm font-semibold">PIC</th>
-            <th className="w-[20%] px-4 py-3.5 text-center text-sm font-semibold">PIC Number</th>
-            <th className="w-[12%] px-4 py-3.5 text-center text-sm font-semibold">Detail</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
-          {isSearching ? (
-            Array.from({ length: 5 }, (_, row) => (
-              <tr key={row} className="border-t border-slate-100">
-                <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-44 animate-pulse rounded bg-slate-200/70" /></td>
-                <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-20 animate-pulse rounded bg-slate-200/70" /></td>
-                <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-28 animate-pulse rounded bg-slate-200/70" /></td>
-                <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-32 animate-pulse rounded bg-slate-200/70" /></td>
-                <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-12 animate-pulse rounded bg-slate-200/70" /></td>
-              </tr>
-            ))
-          ) : customers.map((customer) => (
-            <tr key={customer.id} className="transition-colors hover:bg-slate-50/70">
-              <td className="truncate px-4 py-3.5 text-center font-medium text-slate-900 leading-tight" title={customer.companyName}>
-                {customer.companyName}
-              </td>
-              <td className="break-words px-4 py-3.5 text-center font-mono text-xs font-semibold text-slate-800">
-                {customer.customerCode ? (
-                  <span className="inline-block rounded bg-blue-50 px-2 py-0.5 text-xs font-mono font-medium text-blue-700 border border-blue-200/60">
-                    {customer.customerCode}
-                  </span>
-                ) : (
-                  "—"
-                )}
-              </td>
-              <td className="truncate px-4 py-3.5 text-center text-slate-800" title={customer.primaryPic?.fullName || ""}>{customer.primaryPic?.fullName || "—"}</td>
-              <td className="break-words px-4 py-3.5 text-center font-mono text-xs text-slate-700">{customer.primaryPic?.phoneNumber || "—"}</td>
-              <td className="px-4 py-3.5 text-center">
-                <button type="button" onClick={() => void openCustomerDetail(customer.id)} className="font-semibold text-blue-600 hover:text-blue-800 hover:underline">See more</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {initialDataError && <div role="alert" className="m-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">Customer data could not be loaded: {initialDataError}</div>}
-      {searchError ? <div role="alert" className="border-t border-slate-200 p-6 text-center text-sm text-amber-800 bg-amber-50/50">{searchError}</div> : customers.length === 0 && !initialDataError && !isSearching ? <div className="border-t border-slate-200 p-8 text-center text-slate-500"><FileText className="mx-auto mb-2 h-5 w-5" />{search ? "No customer or PIC found" : "Belum terdapat data transaksi"}</div> : null}
-    </section>
-    <div className="flex flex-wrap items-center justify-between gap-4 px-3 pt-2 text-xs text-slate-500"><span>Showing {firstRow}-{lastRow} of {total} transactions</span><nav className="flex items-center gap-1" aria-label="Dashboard pages"><button type="button" aria-label="Previous page" disabled={page <= 1 || isSearching} onClick={() => setPage((value) => value - 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40">‹</button>{Array.from({ length: Math.min(totalPages, 5) }, (_, index) => { const pageNumber = totalPages <= 5 ? index + 1 : Math.max(1, Math.min(page - 2, totalPages - 4)) + index; return <button type="button" key={pageNumber} aria-current={page === pageNumber ? "page" : undefined} onClick={() => setPage(pageNumber)} className={`h-8 min-w-8 rounded-md px-2 ${page === pageNumber ? "bg-blue-600 font-semibold text-white" : "text-slate-600 hover:bg-slate-100"}`}>{pageNumber}</button>; })}{totalPages > 5 && <><span className="px-1">...</span><button type="button" onClick={() => setPage(totalPages)} className="h-8 min-w-8 rounded-md px-2 text-slate-600">{totalPages}</button></>}<button type="button" aria-label="Next page" disabled={page >= totalPages || isSearching} onClick={() => setPage((value) => value + 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40">›</button></nav></div>
-
-    {exportOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setExportOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="export-title" className="w-full max-w-5xl rounded-xl bg-white px-6 py-8 shadow-2xl sm:px-11 sm:py-10">
-      <h2 id="export-title" className="text-3xl font-bold tracking-tight text-black sm:text-4xl">Export Transaction Records</h2><p className="mt-1 text-base text-[#747474] sm:text-xl">Select a creation date range to export transaction records</p>
-      <div className="mt-5 grid gap-7 md:grid-cols-2"><fieldset><legend className="mb-1 text-lg font-medium text-[#444] sm:text-xl">File Format</legend><div className="flex min-h-[165px] flex-col justify-center gap-4 rounded-lg border border-[#ccc] px-5 py-4 text-lg text-[#777]"><label className="flex cursor-pointer items-center gap-4"><input type="radio" name="export-format" checked={exportFormat === "xlsx"} onChange={() => setExportFormat("xlsx")} className="h-5 w-5 accent-blue-600" /><span className="text-emerald-600">▦</span><span>Excel (.xlsx)</span></label><label className="flex cursor-pointer items-center gap-4"><input type="radio" name="export-format" checked={exportFormat === "pdf"} onChange={() => setExportFormat("pdf")} className="h-5 w-5 accent-blue-600" /><span className="text-rose-500">▣</span><span>PDF (.pdf)</span></label>{exportFormat === "pdf" && <p className="pl-9 text-xs text-slate-500">The browser print dialog will open. Choose “Save as PDF”.</p>}</div></fieldset>
-        <fieldset><legend className="mb-1 text-lg font-medium text-[#444] sm:text-xl">Date Range</legend><div className="min-h-[165px] rounded-lg border border-[#ccc] p-4"><div className="grid gap-3 sm:grid-cols-2"><label className="text-xs font-medium text-slate-500">From<input type="date" value={exportStart} onChange={(event) => setExportStart(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-700" /></label><label className="text-xs font-medium text-slate-500">To<input type="date" value={exportEnd} onChange={(event) => setExportEnd(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-700" /></label></div></div></fieldset>
-      </div>
-      {exportError && <p role="alert" className="mt-3 text-sm text-rose-600">{exportError}</p>}
-      <div className="mt-6 flex flex-col-reverse justify-end gap-3 sm:flex-row sm:gap-5"><button type="button" onClick={() => setExportOpen(false)} className="h-14 rounded-lg border border-[#888] px-10 text-lg font-semibold text-[#505050] hover:bg-slate-50 sm:w-[220px]">Cancel</button><button type="button" disabled={exporting} onClick={() => void runExport()} className="h-14 rounded-lg bg-[#3e6df5] px-10 text-lg font-semibold text-white hover:bg-blue-700 disabled:opacity-60 sm:w-[320px]">{exporting ? "Preparing..." : "Export"}</button></div>
-    </section></div>}
-
-    {detailOpen && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="transaction-detail-title" className="my-auto w-full max-w-7xl rounded-xl bg-white p-6 shadow-2xl sm:px-12 sm:py-10">
-      <div className="flex items-start justify-between gap-4"><h2 id="transaction-detail-title" className="text-3xl font-bold tracking-tight text-black sm:text-4xl">Company Details</h2><button type="button" aria-label="Close" onClick={() => setDetailOpen(false)} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X className="h-6 w-6" /></button></div>
-      {detailLoading ? (
-        <div className="mt-7 space-y-5" aria-busy="true">
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-16 w-full" />)}
-          </div>
-          <div className="grid gap-5 lg:grid-cols-2">
-            {[0, 1].map((i) => <Skeleton key={i} className="h-56 w-full" />)}
-          </div>
+      {unavailableMetrics.length > 0 && (
+        <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <span>{t("dashboard.statError", "Failed to load statistical metrics. Please check database connection.")}</span>
+          <button type="button" onClick={() => router.refresh()} className="font-semibold underline">
+            {t("common.retry", "Retry")}
+          </button>
         </div>
-      ) : detailError ?<p role="alert" className="mt-8 rounded-lg bg-rose-50 p-4 text-sm text-rose-700">{detailError}</p> : detailCustomer && <>
-        <div className="mt-7 grid gap-5 border-b border-slate-100 pb-6 sm:grid-cols-2 lg:grid-cols-3">{[["Company", detailCustomer.companyName], ["PIC", detailCustomer.primaryPic?.fullName], ["PIC Phone Number", detailCustomer.primaryPic?.phoneNumber]].map(([label, value]) => <div key={label}><h3 className="text-base text-[#707070] sm:text-lg">{label}</h3><p className="mt-1 break-words text-sm font-medium text-[#303030] sm:text-base">{value || "—"}</p></div>)}</div>
-        <div className="mt-6 grid gap-5 lg:grid-cols-2"><DetailInfoCard title="Company Information" rows={[["Address", detailCustomer.address], ["PIC", detailCustomer.primaryPic?.fullName], ["PIC Phone Number", detailCustomer.primaryPic?.phoneNumber], ["Created By", detailCustomer.createdBy], ["Created Date", detailCustomer.createdAt]]} /><DetailInfoCard title="Meeting Schedule" rows={detailCustomer.meetings.length ? detailCustomer.meetings.map((meeting) => [meeting.formattedSchedule, [meeting.agenda, meeting.status].filter(Boolean).join(" · ")]) : [["No meeting scheduled", ""]]} /></div>
-      </>}
-      <div className="mt-7 flex flex-wrap items-center justify-end gap-3">
-        {detailCustomer && (
-          <Link href={`/dashboard/company-list/${detailCustomer.id}`} className="inline-flex h-12 items-center gap-2 rounded-lg border border-blue-600 px-6 text-sm font-semibold text-blue-600 hover:bg-blue-50">
-            Open External Detail
+      )}
+
+      <section aria-labelledby="weekly-schedule-title" className="mb-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 id="weekly-schedule-title" className="text-lg sm:text-xl font-bold text-slate-800">
+            {t("dashboard.scheduleThisWeek", "Schedule this week")}
+          </h2>
+          <Link href="/dashboard/meeting-schedule" aria-label="Open Meeting Schedule" className="grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-colors">
+            <CalendarDays className="h-5 w-5" />
           </Link>
+        </div>
+        {!scheduleLoading && !scheduleLoadError && nearbyMeetings.length > 0 && (
+          <div role="status" className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <strong>
+              {nearbyMeetings.some(({ startsAt }) => (startsAt.getTime() - clockNow) / 60_000 < 15)
+                ? t("dashboard.meetingStartingSoon", "A meeting is starting soon:")
+                : t("dashboard.upcomingWithinHour", "Upcoming meeting within an hour:")}
+            </strong>{" "}
+            {nearbyMeetings.map(({ customer, startsAt }) => {
+              const minutes = Math.max(0, Math.ceil((startsAt.getTime() - clockNow) / 60_000));
+              return `${customer.companyName} (${minutes === 0 ? t("dashboard.startingNow", "starting now") : t("dashboard.startingInMin", `in ${minutes} min`, { min: minutes })})`;
+            }).join(" · ")}
+          </div>
         )}
-        <button type="button" onClick={() => setDetailOpen(false)} className="h-12 rounded-lg bg-[#3e6df5] px-8 text-base font-semibold text-white hover:bg-blue-700">
-          Close
+        <div className="space-y-2.5">
+          {scheduleLoadError ? (
+            <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+              {scheduleLoadError || "Failed to load weekly schedule"}
+              <button type="button" onClick={() => void refreshSchedule()} className="ml-2 font-semibold underline">
+                {t("common.retry", "Retry")}
+              </button>
+            </div>
+          ) : scheduleLoading ? (
+            <div role="status" className="space-y-2.5">
+              {Array.from({ length: 3 }, (_, index) => <div key={index} className="h-16 animate-pulse rounded-xl border border-slate-200 bg-slate-100/70" />)}
+            </div>
+          ) : nearestWeeklyMeetings.length ? (
+            nearestWeeklyMeetings.map(({ customer, date, time, endsAt, startsAt }) => {
+              const minutesUntil = Math.max(0, Math.ceil((startsAt.getTime() - clockNow) / 60_000));
+              const isStartingSoon = minutesUntil <= 60;
+              return (
+                <Link
+                  key={`${customer.id}-${date.toISOString()}-${time}`}
+                  href={`/dashboard/company-list/${customer.id}`}
+                  className={`flex min-h-[64px] items-center justify-between gap-3 sm:gap-5 rounded-xl border px-3.5 py-3 sm:px-5 sm:py-3.5 text-slate-700 transition-colors hover:border-blue-300 ${
+                    isStartingSoon ? "border-amber-300 bg-amber-50/70" : "border-slate-200 bg-white"
+                  }`}
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm sm:text-base font-semibold text-slate-900">{customer.companyName}</span>
+                    <span className="text-xs text-slate-500">{date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
+                  </span>
+                  <span className="shrink-0 text-right text-xs sm:text-sm">
+                    {date.toLocaleDateString("en-GB", { weekday: "short" })}, {time} - {endsAt}
+                    {isStartingSoon && <span className="mt-0.5 block text-xs font-semibold text-amber-800">{minutesUntil === 0 ? t("dashboard.startingNow", "Starting now") : t("dashboard.startingInMin", `in ${minutesUntil} min`, { min: minutesUntil })}</span>}
+                  </span>
+                </Link>
+              );
+            })
+          ) : (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-white px-5 py-6 text-sm text-slate-500 text-center">
+              {t("dashboard.noUpcomingMeetings", "No meetings scheduled")}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <label className="relative block w-full sm:max-w-[450px]">
+          <Search aria-hidden="true" className="absolute left-4 top-1/2 h-4 w-4 sm:h-5 sm:w-5 -translate-y-1/2 text-slate-400" />
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => { setSearch(event.target.value); setPage(1); }}
+            placeholder={t("common.search", "Search Company, Code, or PIC...")}
+            aria-label="Search company or PIC"
+            className="h-11 sm:h-12 w-full rounded-xl sm:rounded-full border border-slate-300 bg-white pl-11 sm:pl-12 pr-4 text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => { setExportError(""); setExportOpen(true); }}
+          disabled={!customers.length}
+          className="inline-flex h-11 sm:h-12 shrink-0 items-center justify-center gap-2 rounded-xl sm:rounded-2xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+        >
+          <Download className="h-4 w-4" />
+          <span>{t("common.export", "Export")}</span>
         </button>
       </div>
-    </section></div>}
 
-  </div>;
+      {/* Mobile Cards (Touch-friendly for phones) */}
+      <div className="block md:hidden space-y-3">
+        {isSearching ? (
+          Array.from({ length: 4 }, (_, idx) => (
+            <div key={idx} className="animate-pulse rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+              <div className="h-5 w-40 rounded bg-slate-200" />
+              <div className="h-4 w-28 rounded bg-slate-100" />
+              <div className="h-4 w-32 rounded bg-slate-100" />
+            </div>
+          ))
+        ) : customers.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-slate-500">
+            <FileText className="mx-auto mb-2 h-6 w-6 text-slate-400" />
+            <p className="text-sm font-medium">{search ? t("dashboard.noCustomerFound", "No customer or PIC found") : t("dashboard.noTransactions", "No transaction records yet")}</p>
+          </div>
+        ) : (
+          customers.map((customer) => (
+            <article
+              key={customer.id}
+              className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-2xs transition-shadow active:bg-slate-50/50"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base font-bold text-slate-900 truncate" title={customer.companyName}>
+                    {customer.companyName}
+                  </h3>
+                  {customer.customerCode && (
+                    <span className="mt-1 inline-block rounded-md bg-blue-50 px-2 py-0.5 text-xs font-mono font-medium text-blue-700 border border-blue-200/60">
+                      {customer.customerCode}
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void openCustomerDetail(customer.id)}
+                  className="shrink-0 rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                >
+                  {t("common.details", "Details")}
+                </button>
+              </div>
+
+              <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-2.5 text-xs text-slate-600">
+                <div className="flex items-center gap-2">
+                  <User className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                  <span className="truncate">{customer.primaryPic?.fullName || "—"}</span>
+                </div>
+                {customer.primaryPic?.phoneNumber && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    <a
+                      href={`tel:${customer.primaryPic.phoneNumber}`}
+                      className="font-mono text-blue-600 hover:underline"
+                    >
+                      {customer.primaryPic.phoneNumber}
+                    </a>
+                  </div>
+                )}
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <section aria-label="Company records" className="hidden md:block overflow-x-auto rounded-xl border border-slate-200/90 bg-white shadow-xs">
+        <table className="w-full min-w-[1000px] table-fixed text-left">
+          <thead className="border-b border-slate-200 bg-[#edf4f8] text-slate-700">
+            <tr>
+              <th className="w-[34%] px-4 py-3.5 text-left text-sm font-semibold">{t("customer.company", "Company")}</th>
+              <th className="w-[16%] px-4 py-3.5 text-center text-sm font-semibold">{t("customer.companyCode", "Company Code")}</th>
+              <th className="w-[18%] px-4 py-3.5 text-center text-sm font-semibold">{t("customer.pic", "PIC")}</th>
+              <th className="w-[20%] px-4 py-3.5 text-center text-sm font-semibold">{t("customer.picNumber", "PIC Number")}</th>
+              <th className="w-[12%] px-4 py-3.5 text-center text-sm font-semibold">{t("customer.detail", "Detail")}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+            {isSearching ? (
+              Array.from({ length: 5 }, (_, row) => (
+                <tr key={row} className="border-t border-slate-100">
+                  <td className="px-4 py-3.5 text-left"><div className="h-4 w-44 animate-pulse rounded bg-slate-200/70" /></td>
+                  <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-20 animate-pulse rounded bg-slate-200/70" /></td>
+                  <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-28 animate-pulse rounded bg-slate-200/70" /></td>
+                  <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-32 animate-pulse rounded bg-slate-200/70" /></td>
+                  <td className="px-4 py-3.5 text-center"><div className="mx-auto h-4 w-12 animate-pulse rounded bg-slate-200/70" /></td>
+                </tr>
+              ))
+            ) : customers.map((customer) => (
+              <tr key={customer.id} className="transition-colors hover:bg-slate-50/70">
+                <td className="truncate px-4 py-3.5 text-left font-medium text-slate-900 leading-tight" title={customer.companyName}>
+                  {customer.companyName}
+                </td>
+                <td className="break-words px-4 py-3.5 text-center font-mono text-xs font-semibold text-slate-800">
+                  {customer.customerCode ? (
+                    <span className="inline-block rounded bg-blue-50 px-2 py-0.5 text-xs font-mono font-medium text-blue-700 border border-blue-200/60">
+                      {customer.customerCode}
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+                <td className="truncate px-4 py-3.5 text-center text-slate-800" title={customer.primaryPic?.fullName || ""}>{customer.primaryPic?.fullName || "—"}</td>
+                <td className="break-words px-4 py-3.5 text-center font-mono text-xs text-slate-700">{customer.primaryPic?.phoneNumber || "—"}</td>
+                <td className="px-4 py-3.5 text-center">
+                  <button type="button" onClick={() => void openCustomerDetail(customer.id)} className="font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+                    {t("common.seeMore", "See more")}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {initialDataError && <div role="alert" className="m-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">Customer data could not be loaded: {initialDataError}</div>}
+        {searchError ? <div role="alert" className="border-t border-slate-200 p-6 text-center text-sm text-amber-800 bg-amber-50/50">{searchError}</div> : customers.length === 0 && !initialDataError && !isSearching ? <div className="border-t border-slate-200 p-8 text-center text-slate-500"><FileText className="mx-auto mb-2 h-5 w-5" />{search ? t("dashboard.noCustomerFound", "No customer or PIC found") : t("dashboard.noTransactions", "No transaction records yet")}</div> : null}
+      </section>
+
+      <div className="flex flex-wrap items-center justify-between gap-4 px-3 pt-2 text-xs text-slate-500">
+        <span>{t("dashboard.showingTransactions", `Showing ${firstRow}-${lastRow} of ${total} transactions`, { first: firstRow, last: lastRow, total })}</span>
+        <nav className="flex items-center gap-1" aria-label="Dashboard pages">
+          <button type="button" aria-label="Previous page" disabled={page <= 1 || isSearching} onClick={() => setPage((value) => value - 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40">‹</button>
+          {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+            const pageNumber = totalPages <= 5 ? index + 1 : Math.max(1, Math.min(page - 2, totalPages - 4)) + index;
+            return <button type="button" key={pageNumber} aria-current={page === pageNumber ? "page" : undefined} onClick={() => setPage(pageNumber)} className={`h-8 min-w-8 rounded-md px-2 ${page === pageNumber ? "bg-blue-600 font-semibold text-white" : "text-slate-600 hover:bg-slate-100"}`}>{pageNumber}</button>;
+          })}
+          {totalPages > 5 && <><span className="px-1">...</span><button type="button" onClick={() => setPage(totalPages)} className="h-8 min-w-8 rounded-md px-2 text-slate-600">{totalPages}</button></>}
+          <button type="button" aria-label="Next page" disabled={page >= totalPages || isSearching} onClick={() => setPage((value) => value + 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40">›</button>
+        </nav>
+      </div>
+
+      {exportOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setExportOpen(false); }}>
+          <section role="dialog" aria-modal="true" aria-labelledby="export-title" className="w-full max-w-5xl rounded-xl bg-white px-6 py-8 shadow-2xl sm:px-11 sm:py-10 max-h-[90vh] overflow-y-auto">
+            <h2 id="export-title" className="text-2xl sm:text-4xl font-bold tracking-tight text-black">{t("dashboard.exportTitle", "Export Transaction Records")}</h2>
+            <p className="mt-1 text-sm sm:text-lg text-[#747474]">{t("dashboard.exportSubtitle", "Select a creation date range to export transaction records")}</p>
+            <div className="mt-5 grid gap-6 md:grid-cols-2">
+              <fieldset>
+                <legend className="mb-2 text-base sm:text-lg font-medium text-[#444]">{t("common.fileFormat", "File Format")}</legend>
+                <div className="flex min-h-[140px] flex-col justify-center gap-4 rounded-lg border border-[#ccc] px-5 py-4 text-base sm:text-lg text-[#777]">
+                  <label className="flex cursor-pointer items-center gap-4">
+                    <input type="radio" name="export-format" checked={exportFormat === "xlsx"} onChange={() => setExportFormat("xlsx")} className="h-5 w-5 accent-blue-600" />
+                    <span className="text-emerald-600">▦</span>
+                    <span>Excel (.xlsx)</span>
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-4">
+                    <input type="radio" name="export-format" checked={exportFormat === "pdf"} onChange={() => setExportFormat("pdf")} className="h-5 w-5 accent-blue-600" />
+                    <span className="text-rose-500">▣</span>
+                    <span>PDF (.pdf)</span>
+                  </label>
+                  {exportFormat === "pdf" && <p className="pl-9 text-xs text-slate-500">The browser print dialog will open. Choose “Save as PDF”.</p>}
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend className="mb-2 text-base sm:text-lg font-medium text-[#444]">{t("common.dateRange", "Date Range")}</legend>
+                <div className="min-h-[140px] rounded-lg border border-[#ccc] p-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="text-xs font-medium text-slate-500">
+                      {t("common.from", "From")}
+                      <input type="date" value={exportStart} onChange={(event) => setExportStart(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-700" />
+                    </label>
+                    <label className="text-xs font-medium text-slate-500">
+                      {t("common.to", "To")}
+                      <input type="date" value={exportEnd} onChange={(event) => setExportEnd(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-700" />
+                    </label>
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+            {exportError && <p role="alert" className="mt-3 text-sm text-rose-600">{exportError}</p>}
+            <div className="mt-6 flex flex-col-reverse justify-end gap-3 sm:flex-row sm:gap-5">
+              <button type="button" onClick={() => setExportOpen(false)} className="h-12 sm:h-14 rounded-lg border border-[#888] px-8 text-base sm:text-lg font-semibold text-[#505050] hover:bg-slate-50 sm:w-[180px]">
+                {t("common.cancel", "Cancel")}
+              </button>
+              <button type="button" disabled={exporting} onClick={() => void runExport()} className="h-12 sm:h-14 rounded-lg bg-[#3e6df5] px-8 text-base sm:text-lg font-semibold text-white hover:bg-blue-700 disabled:opacity-60 sm:w-[260px]">
+                {exporting ? t("common.preparing", "Preparing...") : t("common.export", "Export")}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {detailOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailOpen(false); }}>
+          <section role="dialog" aria-modal="true" aria-labelledby="transaction-detail-title" className="my-auto w-full max-w-7xl rounded-xl bg-white p-6 shadow-2xl sm:px-12 sm:py-10 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-4">
+              <h2 id="transaction-detail-title" className="text-2xl sm:text-4xl font-bold tracking-tight text-black">
+                {t("dashboard.companyDetails", "Company Details")}
+              </h2>
+              <button type="button" aria-label="Close" onClick={() => setDetailOpen(false)} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            {detailLoading ? (
+              <div className="mt-7 space-y-5" aria-busy="true">
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {[0, 1, 2].map((i) => <Skeleton key={i} className="h-16 w-full" />)}
+                </div>
+                <div className="grid gap-5 lg:grid-cols-2">
+                  {[0, 1].map((i) => <Skeleton key={i} className="h-56 w-full" />)}
+                </div>
+              </div>
+            ) : detailError ? (
+              <p role="alert" className="mt-8 rounded-lg bg-rose-50 p-4 text-sm text-rose-700">{detailError}</p>
+            ) : detailCustomer && (
+              <>
+                <div className="mt-6 grid gap-5 border-b border-slate-100 pb-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {[
+                    [t("customer.company", "Company"), detailCustomer.companyName],
+                    [t("customer.pic", "PIC"), detailCustomer.primaryPic?.fullName],
+                    [t("customer.picNumber", "PIC Phone Number"), detailCustomer.primaryPic?.phoneNumber]
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <h3 className="text-sm sm:text-base text-[#707070]">{label}</h3>
+                      <p className="mt-1 break-words text-sm sm:text-base font-medium text-[#303030]">{value || "—"}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6 grid gap-5 lg:grid-cols-2">
+                  <DetailInfoCard
+                    title={t("dashboard.companyInfo", "Company Information")}
+                    rows={[
+                      [t("customer.address", "Address"), detailCustomer.address],
+                      [t("customer.pic", "PIC"), detailCustomer.primaryPic?.fullName],
+                      [t("customer.picNumber", "PIC Phone Number"), detailCustomer.primaryPic?.phoneNumber],
+                      [t("customer.createdBy", "Created By"), detailCustomer.createdBy],
+                      [t("customer.createdDate", "Created Date"), detailCustomer.createdAt]
+                    ]}
+                  />
+                  <DetailInfoCard
+                    title={t("customer.meetingSchedule", "Meeting Schedule")}
+                    rows={detailCustomer.meetings.length ? detailCustomer.meetings.map((meeting) => [meeting.formattedSchedule, [meeting.agenda, meeting.status].filter(Boolean).join(" · ")]) : [[t("customer.noMeetingScheduled", "No meeting scheduled"), ""]]}
+                  />
+                </div>
+              </>
+            )}
+            <div className="mt-7 flex flex-wrap items-center justify-end gap-3">
+              {detailCustomer && (
+                <Link href={`/dashboard/company-list/${detailCustomer.id}`} className="inline-flex h-11 sm:h-12 items-center gap-2 rounded-lg border border-blue-600 px-5 text-sm font-semibold text-blue-600 hover:bg-blue-50">
+                  {t("dashboard.openExternalDetail", "Open External Detail")}
+                </Link>
+              )}
+              <button type="button" onClick={() => setDetailOpen(false)} className="h-11 sm:h-12 rounded-lg bg-[#3e6df5] px-6 sm:px-8 text-sm sm:text-base font-semibold text-white hover:bg-blue-700">
+                {t("common.close", "Close")}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+    </div>
+  );
 }

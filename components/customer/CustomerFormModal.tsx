@@ -4,6 +4,7 @@ import React, { useState, useCallback } from "react";
 import { X, Building2, User, MapPin, Loader2, AlertCircle } from "lucide-react";
 import { CreateCustomerInput, CustomerListItem, ApiResponse } from "@/types/customer";
 import { getNationalPhoneNumber, getPhoneCountry, isValidPicPhoneNumber, PHONE_COUNTRIES, toInternationalPhoneNumber, type PhoneCountryCode } from "@/lib/validation/pic-phone";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface CustomerFormModalProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ function validate(data: CreateCustomerInput): FormErrors {
 }
 
 export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: CustomerFormModalProps) {
+  const { t } = useLanguage();
   const [form, setForm] = useState<CreateCustomerInput>(INITIAL_FORM);
   const phoneCountry = getPhoneCountry(form.pic_phone_number).code;
   const nationalPhone = getNationalPhoneNumber(form.pic_phone_number, phoneCountry);
@@ -146,7 +148,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
               <Building2 className="w-4 h-4" />
             </div>
             <h2 id="customer-modal-title" className="text-base font-semibold text-slate-900">
-              {customer ? "Edit Company" : "Add Company"}
+              {customer ? t("companyList.editCompany", "Edit Company") : t("companyList.addCompany", "Add Company")}
             </h2>
           </div>
           <button
@@ -174,7 +176,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
             {/* Company section */}
             <div>
               <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                Company Information
+                {t("companyList.companyInformation", "Company Information")}
               </p>
               <div className="space-y-3">
                 {/* Company Name */}
@@ -183,7 +185,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
                     htmlFor="field-company_name"
                     className="block text-xs font-medium text-slate-700 mb-1.5"
                   >
-                    Company Name <span className="text-red-500">*</span>
+                    {t("customer.companyName", "Company Name")} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -216,7 +218,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
             {/* Section: PIC */}
             <div>
               <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                    Company PIC
+                {t("customer.picInfo", "Company PIC")}
               </p>
               <div className="space-y-3">
                 {/* PIC Name */}
@@ -225,7 +227,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
                     htmlFor="field-pic_full_name"
                     className="block text-xs font-medium text-slate-700 mb-1.5"
                   >
-                    PIC Name <span className="text-red-500">*</span>
+                    {t("customer.picName", "PIC Name")} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -263,7 +265,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
 
                 <div>
                   <label htmlFor="field-pic_phone_number" className="mb-1.5 block text-xs font-medium text-slate-700">
-                    PIC Phone Number <span className="text-red-500">*</span>
+                    {t("customer.picNumber", "PIC Phone Number")} <span className="text-red-500">*</span>
                   </label>
                   <div className="flex gap-2">
                     <select aria-label="Country calling code" value={phoneCountry} onChange={(event) => {
@@ -296,7 +298,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
 
                 <div>
                   <label htmlFor="field-address" className="mb-1.5 block text-xs font-medium text-slate-700">
-                    Address <span className="text-red-500">*</span>
+                    {t("customer.address", "Address")} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <div className="pointer-events-none absolute left-0 top-3 pl-3 text-slate-400"><MapPin className="h-4 w-4" /></div>
@@ -323,7 +325,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
               disabled={isSubmitting}
               className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
             >
-              Cancel
+              {t("common.cancel", "Cancel")}
             </button>
             <button
               type="submit"
@@ -333,10 +335,10 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Saving...</span>
+                  <span>{t("customer.saving", "Saving...")}</span>
                 </>
               ) : (
-                <span>{customer ? "Save Changes" : "Add Company"}</span>
+                <span>{customer ? t("common.save", "Save Changes") : t("companyList.addCompany", "Add Company")}</span>
               )}
             </button>
           </div>

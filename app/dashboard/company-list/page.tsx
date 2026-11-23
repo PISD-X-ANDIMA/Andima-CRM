@@ -10,10 +10,12 @@ import { DeleteConfirmDialog } from "@/components/customer/DeleteConfirmDialog";
 import { CompanyActionModal } from "@/components/customer/CompanyActionModals";
 import { ManagerGlobalFilterBar } from "@/components/dashboard/ManagerGlobalFilterBar";
 import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type ExportFormat = "xlsx" | "pdf";
 
 export default function CompanyListPage() {
+  const { t } = useLanguage();
   const { selectedExecutive } = useManagerFilter();
   const [isManager, setIsManager] = useState(false);
 
@@ -177,16 +179,16 @@ export default function CompanyListPage() {
   return (
     <div className="space-y-6">
       {/* Title Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            Company List
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            {t("companyList.title", "Company List")}
           </h1>
-          {isManager && (
-            <p className="mt-1 text-sm text-slate-500">
-              Customers handled by each Sales Executive. Read only for Manager.
-            </p>
-          )}
+          <p className="mt-1 text-xs sm:text-sm text-slate-500">
+            {isManager
+              ? "Customers handled by each Sales Executive. Read only for Manager."
+              : t("companyList.subtitle", "Manage customer accounts, meetings, and field agent tasks.")}
+          </p>
         </div>
 
         {/* Hide Add Company for Manager */}
@@ -195,9 +197,10 @@ export default function CompanyListPage() {
             type="button"
             disabled={Boolean(error)}
             onClick={() => { setSuccessMessage(""); setModalCustomer(null); setIsModalOpen(true); }}
-            className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-base font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-11 sm:h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-blue-600 px-5 text-sm sm:text-base font-semibold text-white hover:bg-blue-700 active:scale-95 transition-all disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer shadow-xs"
           >
-            <Plus className="h-4 w-4" />Add Company
+            <Plus className="h-4 w-4" />
+            <span>{t("companyList.addCompany", "Add Company")}</span>
           </button>
         )}
       </div>
@@ -212,30 +215,31 @@ export default function CompanyListPage() {
       )}
 
       {/* Search & Export Bar */}
-      <div className="flex items-center justify-between gap-4 pt-1">
-        <label className="relative block w-full max-w-[425px]">
-          <Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+        <label className="relative block w-full sm:max-w-[425px]">
+          <Search className="absolute left-4 sm:left-5 top-1/2 h-4 w-4 sm:h-5 sm:w-5 -translate-y-1/2 text-slate-400" />
           <input
             type="search"
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
-            placeholder="Search Company, PIC or Phone Number"
-            className="h-[52px] w-full rounded-full border border-slate-300 bg-white pl-14 pr-5 text-base font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            placeholder={t("companyList.searchPlaceholder", "Search Company, Code, PIC or Phone Number")}
+            className="h-11 sm:h-[52px] w-full rounded-xl sm:rounded-full border border-slate-300 bg-white pl-11 sm:pl-14 pr-4 sm:pr-5 text-sm sm:text-base font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
           />
         </label>
         <button
           type="button"
           onClick={() => { setExportError(""); setExportOpen(true); }}
           disabled={!total || isExporting}
-          className="inline-flex h-[52px] items-center gap-3 rounded-2xl border border-slate-300 bg-white px-5 text-base font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+          className="inline-flex h-11 sm:h-[52px] items-center justify-center gap-2.5 rounded-xl sm:rounded-2xl border border-slate-300 bg-white px-5 text-sm sm:text-base font-semibold text-slate-600 hover:bg-slate-50 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
         >
-          <Download className="h-5 w-5" />Export
+          <Download className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span>{t("common.export", "Export")}</span>
         </button>
       </div>
 
       {exportError && <p role="alert" className="-mt-4 text-sm text-red-600">{exportError}</p>}
 
-      {/* Main Table */}
+      {/* Main Table / Responsive Cards */}
       <CustomerTable
         customers={customers}
         isLoading={isLoading}
@@ -251,8 +255,8 @@ export default function CompanyListPage() {
       />
 
       {/* Pagination Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 px-4 pt-2 text-xs text-slate-500">
-        <span>Showing {firstRow}-{lastRow} of {total} customers</span>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2 sm:px-4 pt-2 text-xs text-slate-500">
+        <span>{t("common.showing", "Showing")} {firstRow}-{lastRow} {t("common.of", "of")} {total} {t("common.companies", "companies")}</span>
         <nav className="flex items-center gap-1" aria-label="Company list pages">
           <button
             type="button"
