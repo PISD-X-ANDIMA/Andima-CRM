@@ -76,7 +76,8 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
     forceAll = false,
   } = options;
 
-  const validPerPage = Math.min(Math.max(perPage, 1), 100);
+  const maxAllowed = requireMeetings ? 500 : 100;
+  const validPerPage = Math.min(Math.max(perPage, 1), maxAllowed);
   const offset = (page - 1) * validPerPage;
 
   type CompanyRow = {
@@ -149,11 +150,14 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
     const meetingsByCompany = new Map<string, any[]>();
 
     if (companyIds.length) {
-      const jobPromise = (supabase as any)
-        .from("corp_jobs")
-        .select("id, customer_id, job_number")
-        .in("customer_id", companyIds)
-        .order("created_at", { ascending: false });
+      const shouldFetchJobs = requireTransactions || !requireMeetings;
+      const jobPromise = shouldFetchJobs
+        ? (supabase as any)
+            .from("corp_jobs")
+            .select("id, customer_id, job_number")
+            .in("customer_id", companyIds)
+            .order("created_at", { ascending: false })
+        : Promise.resolve({ data: [] });
 
       const meetingPromise = (supabase as any)
         .from("a1_meetings")

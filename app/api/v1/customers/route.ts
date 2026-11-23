@@ -37,7 +37,8 @@ export async function GET(request: NextRequest) {
     const requestedPage = Number.parseInt(searchParams.get("page") || "1", 10);
     const requestedLimit = Number.parseInt(searchParams.get("limit") || searchParams.get("perPage") || "20", 10);
     const page = Number.isFinite(requestedPage) ? Math.max(1, requestedPage) : 1;
-    const perPage = Number.isFinite(requestedLimit) ? Math.min(100, Math.max(1, requestedLimit)) : 20;
+    const maxLimit = context === "calendar" ? 500 : 100;
+    const perPage = Number.isFinite(requestedLimit) ? Math.min(maxLimit, Math.max(1, requestedLimit)) : 20;
     const sortBy = (searchParams.get("sortBy") || "company_name") as
       | "company_name"
       | "created_at";

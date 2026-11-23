@@ -134,7 +134,14 @@ function getMeetingColorStyle(agenda: string, status?: string) {
 export default function MeetingSchedulePage() {
   const router = useRouter();
   const { selectedExecutive } = useManagerFilter();
-  const [isManager, setIsManager] = useState(false);
+  const [isManager, setIsManager] = useState(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem("andima_user") || "{}");
+      return Boolean(user.role?.toLowerCase()?.includes("manager"));
+    } catch {
+      return false;
+    }
+  });
 
   // Active anchor date for calendar navigation
   const [anchorDate, setAnchorDate] = useState(() => dateForInput(jakartaDateKey()));
@@ -188,8 +195,8 @@ export default function MeetingSchedulePage() {
     fetch("/api/v1/navigation/sidebar", { cache: "no-store" })
       .then((res) => res.json())
       .then((json) => {
-        if (active && json?.success && json.data?.isManager) {
-          setIsManager(true);
+        if (active && json?.success && typeof json.data?.isManager === "boolean") {
+          setIsManager((prev) => (prev !== json.data.isManager ? json.data.isManager : prev));
         }
       })
       .catch(() => {});
@@ -203,7 +210,7 @@ export default function MeetingSchedulePage() {
     setLoading(true);
     setError("");
     try {
-      const params = new URLSearchParams({ perPage: "100", page: "1", context: "calendar" });
+      const params = new URLSearchParams({ perPage: "500", page: "1", context: "calendar" });
       if (isManager) {
         params.set("forceAll", "true");
         if (selectedExecutive !== "all") {
@@ -216,14 +223,21 @@ export default function MeetingSchedulePage() {
         throw new Error(result.success ? "Failed to load the schedule." : result.message);
       }
       const allCustomers = [...result.data];
-      for (let page = 2; page <= (result.meta?.totalPages || 1); page += 1) {
-        params.set("page", String(page));
-        const nextResponse = await fetch(`/api/v1/customers?${params}`, { cache: "no-store" });
-        const nextResult: ApiResponse<CustomerListItem[]> = await nextResponse.json();
-        if (!nextResponse.ok || !nextResult.success) {
-          throw new Error(nextResult.success ? "Failed to load all meeting schedules." : nextResult.message);
+      if ((result.meta?.totalPages || 1) > 1) {
+        const remainingPromises = [];
+        for (let page = 2; page <= (result.meta?.totalPages || 1); page += 1) {
+          const pageParams = new URLSearchParams(params);
+          pageParams.set("page", String(page));
+          remainingPromises.push(
+            fetch(`/api/v1/customers?${pageParams}`, { cache: "no-store" })
+              .then((res) => res.json())
+              .then((json: ApiResponse<CustomerListItem[]>) => (json.success && json.data) ? json.data : [])
+          );
         }
-        allCustomers.push(...nextResult.data);
+        const pagesData = await Promise.all(remainingPromises);
+        for (const data of pagesData) {
+          allCustomers.push(...data);
+        }
       }
       setCustomers(allCustomers);
     } catch (cause) {
