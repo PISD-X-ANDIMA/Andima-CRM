@@ -12,7 +12,7 @@ import { getCompanyScope } from '@/lib/services/access-scope';
  */
 export async function GET(
   _request: NextRequest,
-  context: { params: Promise<{ id: string }> | { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const scope = await getCompanyScope();
