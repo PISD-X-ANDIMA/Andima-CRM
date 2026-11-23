@@ -755,25 +755,20 @@ export default function MeetingSchedulePage() {
           <div>
             {hours.map((hour) => {
               const timeStr = `${String(hour).padStart(2, "0")}:00`;
-              const isHourHighlighted = hour === 10;
 
               return (
                 <div
                   key={hour}
-                  className="grid min-h-[74px] border-b border-slate-200 last:border-b-0"
+                  className="group/hour grid min-h-[74px] border-b border-slate-200 transition-colors hover:bg-slate-50/25 last:border-b-0"
                   style={{
                     gridTemplateColumns: `80px repeat(${displayedDays.length}, minmax(130px, 1fr))`,
                   }}
                 >
                   {/* Y-Axis Hour Label */}
                   <div className="flex items-start justify-center border-r border-slate-200 p-2.5 text-xs font-medium text-slate-400">
-                    {isHourHighlighted ? (
-                      <span className="rounded-full bg-[#4589f5] px-2.5 py-0.5 text-[11px] font-bold text-white shadow-2xs">
-                        {timeStr}
-                      </span>
-                    ) : (
-                      <span className="pt-0.5">{timeStr}</span>
-                    )}
+                    <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold text-slate-400 transition-all duration-150 group-hover/hour:bg-[#4589f5] group-hover/hour:text-white group-hover/hour:shadow-2xs">
+                      {timeStr}
+                    </span>
                   </div>
 
                   {/* Day Slot Cells */}
