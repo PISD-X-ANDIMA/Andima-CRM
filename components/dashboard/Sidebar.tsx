@@ -55,7 +55,7 @@ export function Sidebar() {
           if (role.includes("field") || role.includes("agent")) return "field_agent";
           if (role.includes("manager")) return "manager";
         }
-      } catch {}
+      } catch (error) { console.error(error); }
     }
     if (pathname.includes("manager-customer-success")) return "manager";
     if (pathname.includes("field-agent")) return "field_agent";
@@ -232,7 +232,7 @@ export function Sidebar() {
           type="button"
           onClick={async () => {
             await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
-            try { localStorage.removeItem('andima_user'); } catch {}
+            try { localStorage.removeItem('andima_user'); } catch (error) { console.error(error); }
             router.push('/login');
           }}
           className="flex h-10 w-full items-center justify-center rounded-full border-2 border-[#f32650] bg-transparent px-4 text-base font-bold text-[#f32650] transition-colors hover:bg-[#f32650] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f32650] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F2342]"

@@ -225,7 +225,7 @@ export default function ManageFieldAgentAccount() {
           }
           if (cleaned.length >= 24 && cleaned[0]?.agent_id?.startsWith('AGNT-')) return cleaned;
         }
-      } catch {}
+      } catch (error) { console.error(error); }
     }
     return DEFAULT_FIELD_AGENT_ACCOUNTS;
   });
@@ -243,7 +243,7 @@ export default function ManageFieldAgentAccount() {
             setAgentAccounts(cleaned);
           }
         }
-      } catch {}
+      } catch (error) { console.error(error); }
     }
   }, []);
 
@@ -332,7 +332,7 @@ export default function ManageFieldAgentAccount() {
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('andima_field_agent_accounts', JSON.stringify(accounts));
-      } catch {}
+      } catch (error) { console.error(error); }
     }
   };
 

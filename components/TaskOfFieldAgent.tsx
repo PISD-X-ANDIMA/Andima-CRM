@@ -9,6 +9,7 @@ import {
   ExternalLink, Image as ImageIcon, MessageCircle
 } from 'lucide-react';
 import { submitNeedBackup } from '@/backend/record_conversation/worksheetService';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 
 // ==========================================
 // TYPES & INTERFACES
@@ -606,7 +607,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             return cleaned;
           }
         }
-      } catch {}
+      } catch (error) { console.error(error); }
     }
     return DEFAULT_FIELD_AGENT_ACCOUNTS;
   });
@@ -642,7 +643,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
           const parsed = JSON.parse(stored);
           if (parsed?.role && parsed.role.trim()) return parsed.role.trim();
         }
-      } catch {}
+      } catch (error) { console.error(error); }
     }
     return 'Sales Executive';
   });
@@ -668,6 +669,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
   const [detailModalTask, setDetailModalTask] = useState<FieldTaskItem | null>(null);
   const [resultModalTask, setResultModalTask] = useState<FieldTaskItem | null>(null);
   const [notesModalTask, setNotesModalTask] = useState<FieldTaskItem | null>(null);
+
+  useEscapeKey(() => setResultModalTask(null), Boolean(resultModalTask));
+  useEscapeKey(() => setDetailModalTask(null), Boolean(detailModalTask));
+  useEscapeKey(() => setNotesModalTask(null), Boolean(notesModalTask));
+  useEscapeKey(() => setTimelineModalTask(null), Boolean(timelineModalTask));
   const [editingNoteText, setEditingNoteText] = useState('');
   const [assignedAgentName, setAssignedAgentName] = useState('');
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
@@ -693,7 +699,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       // shortcut: full reload keeps the existing fetch logic; upgrade to refetch when state grows.
       window.location.reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update review status.');
+      showToast(err instanceof Error ? err.message : 'Failed to update review status.');
     } finally {
       setReviewSaving(false);
     }
@@ -726,7 +732,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
         const year = d.getFullYear();
         return `${day}/${month}/${year}`;
       }
-    } catch { }
+    } catch (error) { console.error(error); }
     return clean.replace(/-/g, '/');
   };
 
@@ -1208,7 +1214,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('andima_field_agent_accounts', JSON.stringify(accounts));
-      } catch {}
+      } catch (error) { console.error(error); }
     }
   };
 
@@ -1305,7 +1311,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('andima_field_agent_figma_tasks', JSON.stringify(newTasks));
-      } catch { }
+      } catch (error) { console.error(error); }
     }
   };
 

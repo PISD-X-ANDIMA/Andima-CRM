@@ -3704,7 +3704,7 @@ function FieldReportDetailModal({
       let name = raw.split("/").pop() || "Document";
       try {
         name = decodeURIComponent(name);
-      } catch {}
+      } catch (error) { console.error(error); }
       if (
         raw.startsWith("http://") ||
         raw.startsWith("https://") ||
@@ -6704,6 +6704,7 @@ function ReassignModal({
     "Vehicle / Transportation Issue",
   );
   const [notes, setNotes] = useState("");
+  const [formError, setFormError] = useState("");
 
   const reasonCategories = [
     "Vehicle / Transportation Issue",
@@ -6721,7 +6722,7 @@ function ReassignModal({
     } else {
       const found = availableAgents.find((a) => a.id === selectedAgentId);
       if (!found) {
-        alert("Please select a replacement agent.");
+        setFormError("Please select a replacement agent.");
         return;
       }
       targetAgent = { id: found.id, name: found.name };
@@ -6799,7 +6800,10 @@ function ReassignModal({
               </label>
               <select
                 value={selectedAgentId}
-                onChange={(e) => setSelectedAgentId(e.target.value)}
+                onChange={(e) => {
+                  setSelectedAgentId(e.target.value);
+                  setFormError("");
+                }}
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 {availableAgents
@@ -6843,6 +6847,12 @@ function ReassignModal({
             />
           </div>
         </div>
+
+        {formError && (
+          <p role="alert" className="mt-3 text-xs font-semibold text-rose-600">
+            {formError}
+          </p>
+        )}
 
         <div className="mt-5 flex items-center justify-between gap-4 border-t border-slate-100 pt-4">
           <button

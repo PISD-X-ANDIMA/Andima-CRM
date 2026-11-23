@@ -7,6 +7,7 @@ import {
   ExternalLink, AlertCircle, Save, Trash2, HelpCircle,
   ShieldCheck, Lock as LockIcon, CheckCircle, XCircle
 } from 'lucide-react';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import {
   fetchApiCustomers,
   fetchApiConversations,
@@ -164,7 +165,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           const parsed = JSON.parse(stored);
           if (parsed?.name && parsed.name.trim()) return parsed.name.trim();
         }
-      } catch { }
+      } catch (error) { console.error(error); }
     }
     return 'Sales Executive';
   });
@@ -178,7 +179,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           const parsed = JSON.parse(stored);
           if (parsed?.role && parsed.role.trim()) return parsed.role.trim();
         }
-      } catch { }
+      } catch (error) { console.error(error); }
     }
     return 'Sales Executive';
   });
@@ -197,7 +198,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
           if (parsed?.name && parsed.name.trim()) setActiveUserName(parsed.name.trim());
           if (parsed?.role && parsed.role.trim()) setActiveUserRole(parsed.role.trim());
         }
-      } catch { }
+      } catch (error) { console.error(error); }
     }
   }, [currentUser]);
 
@@ -271,6 +272,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   const [isSubmittingNew, setIsSubmittingNew] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [saveSuccessNotif, setSaveSuccessNotif] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [createFormError, setCreateFormError] = useState<string | null>(null);
 
   // Batas ringkasan: 50 kata dan 500 karakter.
@@ -356,6 +358,18 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       return () => clearTimeout(timer);
     }
   }, [saveSuccessNotif]);
+
+  // Auto-dismiss error toast after 5 seconds
+  useEffect(() => {
+    if (actionError) {
+      const timer = setTimeout(() => setActionError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [actionError]);
+
+  useEscapeKey(() => setIsCreateModalOpen(false), isCreateModalOpen);
+  useEscapeKey(() => setIsDetailModalOpen(false), isDetailModalOpen);
+  useEscapeKey(() => setIsManagerFeedbackModalOpen(false), isManagerFeedbackModalOpen);
 
   // Lightbox Preview Modal
   const [previewModal, setPreviewModal] = useState<{
@@ -584,7 +598,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       document.body.removeChild(link);
     } catch (err) {
       console.error('Export text summary error:', err);
-      alert('Gagal mengekspor Text Summary.');
+      setActionError('Gagal mengekspor Text Summary.');
     }
   };
 
@@ -825,7 +839,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       document.body.removeChild(link);
     } catch (err) {
       console.error('Export failed:', err);
-      alert('Gagal mengekspor data.');
+      setActionError('Gagal mengekspor data.');
     }
   };
 
@@ -1114,11 +1128,11 @@ Exported on: ${new Date().toLocaleString('id-ID')}
         setIsEditDetailMode(false);
         setSaveSuccessNotif(true);
       } else {
-        alert(`Gagal memperbarui percakapan: ${res.error}`);
+        setActionError(`Gagal memperbarui percakapan: ${res.error}`);
       }
     } catch (err: any) {
       console.error('Error saving detail:', err);
-      alert(`Gagal menyimpan: ${err?.message || err}`);
+      setActionError(`Gagal menyimpan: ${err?.message || err}`);
     } finally {
       setIsSavingDetail(false);
     }
@@ -1141,12 +1155,12 @@ Exported on: ${new Date().toLocaleString('id-ID')}
         setIsDetailModalOpen(false);
         setSaveSuccessNotif(true);
       } else {
-        alert(`Gagal menyelesaikan need backup: ${res.error}`);
+        setActionError(`Gagal menyelesaikan need backup: ${res.error}`);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error('Error resolving need backup:', err);
-      alert(`Gagal menyelesaikan: ${message}`);
+      setActionError(`Gagal menyelesaikan: ${message}`);
     } finally {
       setIsResolvingBackup(false);
     }
@@ -1175,6 +1189,32 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               setSaveSuccessNotif(false);
             }}
             className="ml-2 text-slate-400 hover:text-white p-1 transition-colors"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* Error toast — menggantikan alert() browser */}
+      {actionError && (
+        <div
+          role="alert"
+          onClick={() => setActionError(null)}
+          className="fixed bottom-6 right-6 z-[100] bg-rose-600 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-3 duration-200 cursor-pointer select-none border border-rose-700/60"
+          title="Klik untuk menutup"
+        >
+          <div className="w-6 h-6 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0">
+            <AlertCircle size={14} />
+          </div>
+          <span className="max-w-xs">{actionError}</span>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              setActionError(null);
+            }}
+            className="ml-1 text-white/70 hover:text-white p-1 transition-colors"
+            aria-label="Tutup notifikasi"
           >
             <X size={14} />
           </button>
