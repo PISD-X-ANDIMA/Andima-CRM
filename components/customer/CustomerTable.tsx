@@ -118,7 +118,14 @@ export function CustomerTable({
             return (
               <tr key={customer.id} className="min-h-[70px] transition-colors hover:bg-slate-50/70">
                 <td className="break-words px-4 py-3.5 font-medium text-slate-900 leading-tight">
-                  {customer.companyName}
+                  <div className="flex flex-col gap-1 items-start">
+                    <span className="font-semibold text-slate-900">{customer.companyName}</span>
+                    {customer.customerCode && (
+                      <span className="inline-block rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-mono font-medium text-blue-700 border border-blue-200/60">
+                        {customer.customerCode}
+                      </span>
+                    )}
+                  </div>
                 </td>
 
                 {isManager && (

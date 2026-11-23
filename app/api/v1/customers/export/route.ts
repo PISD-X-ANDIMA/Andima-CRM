@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
       page += 1;
     } while (page <= totalPages);
     const rows = customers.map((customer) => ({
+      company_code: customer.customerCode || "",
       company_name: customer.companyName,
       address: customer.address || "",
       pic_name: customer.primaryPic?.fullName || "",

@@ -297,7 +297,16 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
             ))
           ) : customers.map((customer) => (
             <tr key={customer.id} className="transition-colors hover:bg-slate-50/70">
-              <td className="truncate px-4 py-3.5 text-left font-medium text-slate-900 leading-tight" title={customer.companyName}>{customer.companyName}</td>
+              <td className="truncate px-4 py-3.5 text-left font-medium text-slate-900 leading-tight" title={customer.companyName}>
+                <div className="flex items-center gap-2">
+                  <span>{customer.companyName}</span>
+                  {customer.customerCode && (
+                    <span className="inline-block rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-mono font-medium text-blue-700 border border-blue-200/60">
+                      {customer.customerCode}
+                    </span>
+                  )}
+                </div>
+              </td>
               <td className="truncate px-4 py-3.5 text-center text-slate-800" title={customer.primaryPic?.fullName || ""}>{customer.primaryPic?.fullName || "—"}</td>
               <td className="break-words px-4 py-3.5 text-center font-mono text-xs text-slate-700">{customer.primaryPic?.phoneNumber || "—"}</td>
               <td className="px-4 py-3.5 text-center">

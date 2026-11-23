@@ -83,6 +83,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
   type CompanyRow = {
     id: string;
     company_name: string;
+    company_code?: string | null;
     address: string | null;
     pic_name: string | null;
     pic_phone: string | null;
@@ -108,7 +109,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
       .is("deleted_at", null);
     let dataQuery = (supabase as any)
       .from("a1_customers")
-      .select("id, company_name, address, pic_name, pic_phone, created_by, created_by_name, created_at")
+      .select("id, company_name, company_code, address, pic_name, pic_phone, created_by, created_by_name, created_at")
       .is("deleted_at", null);
 
     if (!scope.isManager && !forceAll) {
@@ -127,7 +128,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
 
     if (search.trim()) {
       const term = `%${search.trim()}%`;
-      const searchFilter = `company_name.ilike.${term},pic_name.ilike.${term},pic_phone.ilike.${term},created_by_name.ilike.${term}`;
+      const searchFilter = `company_name.ilike.${term},company_code.ilike.${term},pic_name.ilike.${term},pic_phone.ilike.${term},created_by_name.ilike.${term}`;
       countQuery = countQuery.or(searchFilter);
       dataQuery = dataQuery.or(searchFilter);
     }
@@ -191,7 +192,7 @@ export async function getCustomers(options: GetCustomersOptions = {}): Promise<{
     const customers: CustomerListItem[] = rows.map((item) => ({
       id: item.id,
       companyName: item.company_name,
-      customerCode: null,
+      customerCode: item.company_code || null,
       address: item.address,
       transactionNo: jobByCompany.get(item.id)?.transactionNo || null,
       jobNumber: jobByCompany.get(item.id)?.jobNumber || null,
@@ -317,7 +318,7 @@ export async function getCustomerById(
     if (!userScope) return null;
     const { data, error } = await (supabase as any)
       .from("a1_customers")
-      .select("id, company_name, pic_name, pic_phone, address, created_by, created_by_name, created_at, updated_at")
+      .select("id, company_name, company_code, pic_name, pic_phone, address, created_by, created_by_name, created_at, updated_at")
       .eq("id", customerId)
       .is("deleted_at", null)
       .maybeSingle();
@@ -382,7 +383,7 @@ export async function getCustomerById(
     return {
       id: data.id,
       companyName: data.company_name,
-      customerCode: null,
+      customerCode: data.company_code || null,
       transactionNo,
       jobNumber: worksheetJobNumber,
       createdBy: data.created_by_name || data.created_by,
@@ -397,6 +398,32 @@ export async function getCustomerById(
   } catch (error) {
     throw createSupabaseOperationError("Customer detail lookup failed", error);
   }
+}
+
+/**
+ * Generates the next sequential company code, e.g. CMP-027.
+ */
+async function generateNextCompanyCode(supabase: any): Promise<string> {
+  const { data } = await supabase
+    .from("a1_customers")
+    .select("company_code")
+    .not("company_code", "is", null);
+
+  let maxNum = 0;
+  if (data && data.length > 0) {
+    for (const row of data) {
+      if (typeof row.company_code === "string") {
+        const match = row.company_code.match(/^CMP-(\d+)$/i);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (!isNaN(num) && num > maxNum) {
+            maxNum = num;
+          }
+        }
+      }
+    }
+  }
+  return `CMP-${String(maxNum + 1).padStart(3, "0")}`;
 }
 
 /**
@@ -426,7 +453,7 @@ export async function createCustomer(
 
     const dupQuery = (supabase as any)
       .from("a1_customers")
-      .select("id, company_name, deleted_at, created_by, created_by_name")
+      .select("id, company_name, company_code, deleted_at, created_by, created_by_name")
       .ilike("company_name", normalizedName.replace(/[\\%_]/g, "\\$&"));
 
     const { data: existing, error: duplicateCheckError } = await dupQuery;
@@ -448,11 +475,13 @@ export async function createCustomer(
 
     const archivedExisting = existing?.find((item: any) => item.deleted_at);
     if (archivedExisting) {
+      const existingCode = archivedExisting.company_code || (await generateNextCompanyCode(supabase));
       // Reactivate archived/soft-deleted record rather than inserting a duplicate row!
       const { error: reactivateErr } = await (supabase as any)
         .from("a1_customers")
         .update({
           company_name: normalizedName,
+          company_code: existingCode,
           address: input.address.trim(),
           pic_name: input.pic_full_name.trim(),
           pic_phone: input.pic_phone_number.trim(),
@@ -477,11 +506,13 @@ export async function createCustomer(
     }
 
     const newCompanyId = crypto.randomUUID();
+    const nextCompanyCode = await generateNextCompanyCode(supabase);
     const { error: companyInsertErr } = await (supabase as any)
       .from("a1_customers")
       .insert({
         id: newCompanyId,
         company_name: normalizedName,
+        company_code: nextCompanyCode,
         address: input.address.trim(),
         pic_name: input.pic_full_name.trim(),
         pic_phone: input.pic_phone_number.trim(),

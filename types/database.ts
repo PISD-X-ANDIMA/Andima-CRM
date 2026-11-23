@@ -24,6 +24,7 @@ export interface Database {
         Row: {
           id: string;
           company_name: string;
+          company_code?: string | null;
           address: string | null;
           pic_name: string | null;
           pic_phone: string | null;
@@ -36,6 +37,7 @@ export interface Database {
         Insert: {
           id?: string;
           company_name: string;
+          company_code?: string | null;
           address?: string | null;
           pic_name?: string | null;
           pic_phone?: string | null;
@@ -48,6 +50,7 @@ export interface Database {
         Update: {
           id?: string;
           company_name?: string;
+          company_code?: string | null;
           address?: string | null;
           pic_name?: string | null;
           pic_phone?: string | null;

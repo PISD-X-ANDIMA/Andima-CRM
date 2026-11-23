@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     let companyQuery = (supabase as any)
       .from("a1_customers")
-      .select("id, company_name, pic_name, pic_phone, created_by, created_by_name, created_at")
+      .select("id, company_name, company_code, pic_name, pic_phone, created_by, created_by_name, created_at")
       .is("deleted_at", null)
       .gte("created_at", `${from}T00:00:00Z`)
       .lt("created_at", `${endExclusiveDate}T00:00:00Z`)
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     const companies = (companiesResult.data || []).map((company: any) => ({
       id: company.id,
       companyName: company.company_name,
-      customerCode: null,
+      customerCode: company.company_code || null,
       jobNumber: null,
       createdDate: company.created_at,
       createdBy: company.created_by_name || company.created_by,
