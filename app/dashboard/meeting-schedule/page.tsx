@@ -591,7 +591,7 @@ export default function MeetingSchedulePage() {
                 : "09:00";
             beginAdd(selectedDateKey >= todayKey ? selectedDateKey : todayKey, firstAvailable);
           }}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#0f2744] hover:bg-[#183c66] px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-xl bg-[#0b5796] hover:bg-[#084577] px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus className="h-4 w-4" />
           <span>Create Meeting</span>
@@ -707,13 +707,13 @@ export default function MeetingSchedulePage() {
         <div className="min-w-[760px]">
           {/* Header row with Days */}
           <div
-            className="grid border-b border-slate-200 bg-slate-50/60 text-slate-700"
+            className="grid border-b border-slate-200 bg-slate-50/50 text-slate-700"
             style={{
               gridTemplateColumns: `80px repeat(${displayedDays.length}, minmax(130px, 1fr))`,
             }}
           >
             {/* Blank corner above time labels */}
-            <div className="p-3 border-r border-slate-200 text-center text-xs font-semibold text-slate-400">
+            <div className="flex items-center justify-center border-r border-slate-200 p-3 text-center text-xs font-semibold text-slate-400">
               Time
             </div>
 
@@ -727,23 +727,21 @@ export default function MeetingSchedulePage() {
                 <div
                   key={dKey}
                   onClick={() => setSelectedDateKey(dKey)}
-                  className={`p-3 text-center border-r border-slate-200 last:border-r-0 cursor-pointer transition-colors ${
-                    isSelected ? "bg-blue-50/40" : "hover:bg-slate-100/50"
-                  }`}
+                  className="flex cursor-pointer items-stretch border-r border-slate-200 p-1.5 last:border-r-0"
                 >
                   <div
-                    className={`inline-flex flex-col items-center justify-center rounded-xl px-4 py-1.5 transition-all ${
+                    className={`flex w-full flex-col items-center justify-center rounded-xl px-3 py-2.5 transition-all ${
                       isSelected
-                        ? "border-2 border-blue-400 bg-blue-100/60 shadow-xs"
+                        ? "border-2 border-blue-500 bg-[#dfeafe] font-bold text-blue-950 shadow-2xs"
                         : isToday
-                        ? "border border-blue-200 bg-blue-50/50"
-                        : ""
+                        ? "border border-blue-200 bg-blue-50/40 text-slate-800 hover:bg-blue-50/70"
+                        : "border border-transparent text-slate-700 hover:bg-slate-100/70"
                     }`}
                   >
-                    <span className={`text-xs font-bold uppercase tracking-wider ${isSelected ? "text-blue-900" : "text-slate-600"}`}>
+                    <span className={`text-xs font-bold uppercase tracking-wider ${isSelected ? "text-blue-900" : "text-slate-700"}`}>
                       {dayShortNames[d.getDay()]}
                     </span>
-                    <span className={`text-sm font-semibold mt-0.5 ${isSelected ? "text-blue-950 font-bold" : "text-slate-900"}`}>
+                    <span className={`mt-0.5 text-sm ${isSelected ? "font-bold text-blue-950" : "font-medium text-slate-600"}`}>
                       {d.getDate()}{" "}
                       {d.toLocaleDateString("en-GB", { month: "short" })}
                     </span>
@@ -754,7 +752,7 @@ export default function MeetingSchedulePage() {
           </div>
 
           {/* Hour Rows */}
-          <div className="divide-y divide-slate-100">
+          <div>
             {hours.map((hour) => {
               const timeStr = `${String(hour).padStart(2, "0")}:00`;
               const isHourHighlighted = hour === 10;
@@ -762,13 +760,13 @@ export default function MeetingSchedulePage() {
               return (
                 <div
                   key={hour}
-                  className="grid min-h-[72px]"
+                  className="grid min-h-[74px] border-b border-slate-200 last:border-b-0"
                   style={{
                     gridTemplateColumns: `80px repeat(${displayedDays.length}, minmax(130px, 1fr))`,
                   }}
                 >
                   {/* Y-Axis Hour Label */}
-                  <div className="flex items-start justify-center p-2.5 border-r border-slate-200 text-xs font-medium text-slate-400">
+                  <div className="flex items-start justify-center border-r border-slate-200 p-2.5 text-xs font-medium text-slate-400">
                     {isHourHighlighted ? (
                       <span className="rounded-full bg-[#4589f5] px-2.5 py-0.5 text-[11px] font-bold text-white shadow-2xs">
                         {timeStr}
@@ -787,7 +785,7 @@ export default function MeetingSchedulePage() {
                     return (
                       <div
                         key={`${dKey}-${hour}`}
-                        className={`relative border-r border-slate-100 last:border-r-0 p-1.5 transition-colors ${
+                        className={`relative border-r border-slate-200 p-1.5 transition-colors last:border-r-0 ${
                           dKey === selectedDateKey ? "bg-blue-50/15" : ""
                         }`}
                       >
