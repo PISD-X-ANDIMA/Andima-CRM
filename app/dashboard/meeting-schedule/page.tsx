@@ -7,13 +7,9 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Clock,
-  Info,
-  Lock,
   Pencil,
   Plus,
   Trash2,
-  Unlock,
   X,
 } from "lucide-react";
 import type { ApiResponse, CustomerListItem, MeetingDay, ScheduleType } from "@/types/customer";
@@ -31,13 +27,6 @@ const dayShortNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 type CalendarViewMode = "day" | "work_week" | "week";
 type MeetingType = "offline" | "online";
-
-interface LockedSlot {
-  id: string;
-  time: string; // e.g. "10:00"
-  date?: string; // YYYY-MM-DD (if specific day)
-  allDays?: boolean; // if applies to all days
-}
 
 interface MeetingFormState {
   companyId: string;
@@ -167,6 +156,7 @@ export default function MeetingSchedulePage() {
   const [saving, setSaving] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [mutationError, setMutationError] = useState("");
+  const [pastSlotNotice, setPastSlotNotice] = useState("");
   const [selectedMeeting, setSelectedMeeting] = useState<{
     customer: CustomerListItem;
     meeting: NonNullable<CustomerListItem["meetingSchedule"]>;
@@ -178,40 +168,6 @@ export default function MeetingSchedulePage() {
     meetings: { customer: CustomerListItem; meeting: NonNullable<CustomerListItem["meetingSchedule"]> }[];
   } | null>(null);
   const [form, setForm] = useState<MeetingFormState>(() => newForm(jakartaDateKey(), "09:00"));
-
-  // Locked slots state
-  const [lockedSlots, setLockedSlots] = useState<LockedSlot[]>([]);
-  const [lockTimeInput, setLockTimeInput] = useState("10:00");
-  const [lockApplyAllDays, setLockApplyAllDays] = useState(false);
-  const [lockFeedback, setLockFeedback] = useState("");
-
-  // Load locked slots from localStorage on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("andima_locked_time_slots");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) setLockedSlots(parsed);
-      } else {
-        // Default locked slot as in the reference image: 10:00 on Monday
-        const mondayKey = dateKey(getMonday(new Date()));
-        const initial = [{ id: "default-lock-10", time: "10:00", date: mondayKey }];
-        setLockedSlots(initial);
-      }
-    } catch {
-      // ignore JSON parse error
-    }
-  }, []);
-
-  // Save locked slots to localStorage
-  const saveLockedSlots = (newSlots: LockedSlot[]) => {
-    setLockedSlots(newSlots);
-    try {
-      localStorage.setItem("andima_locked_time_slots", JSON.stringify(newSlots));
-    } catch {
-      // ignore
-    }
-  };
 
   // Close date picker popup on outside click
   useEffect(() => {
@@ -344,53 +300,6 @@ export default function MeetingSchedulePage() {
     setSelectedDateKey(jakartaDateKey());
   };
 
-  // Check if a time slot is locked
-  const getSlotLock = useCallback(
-    (targetDateKey: string, time: string) => {
-      const formattedTime = time.slice(0, 5);
-      return lockedSlots.find((slot) => {
-        if (slot.time !== formattedTime) return false;
-        if (slot.allDays) return true;
-        return slot.date === targetDateKey;
-      });
-    },
-    [lockedSlots]
-  );
-
-  // Toggle or add lock slot
-  const handleLockTimeSlot = () => {
-    const formatted = lockTimeInput.slice(0, 5);
-    const existingIndex = lockedSlots.findIndex((s) => {
-      if (s.time !== formatted) return false;
-      if (lockApplyAllDays) return s.allDays;
-      return s.date === selectedDateKey;
-    });
-
-    if (existingIndex >= 0) {
-      // Slot is already locked -> unlock it
-      const updated = lockedSlots.filter((_, idx) => idx !== existingIndex);
-      saveLockedSlots(updated);
-      setLockFeedback(`Slot ${formatted} unlocked.`);
-    } else {
-      // Add new lock
-      const newLock: LockedSlot = {
-        id: `lock-${Date.now()}`,
-        time: formatted,
-        ...(lockApplyAllDays ? { allDays: true } : { date: selectedDateKey }),
-      };
-      saveLockedSlots([...lockedSlots, newLock]);
-      setLockFeedback(`Slot ${formatted} locked ${lockApplyAllDays ? "for all days" : `for ${selectedDateKey}`}.`);
-    }
-    setTimeout(() => setLockFeedback(""), 3500);
-  };
-
-  const handleUnlockSlot = (lockId: string) => {
-    const updated = lockedSlots.filter((s) => s.id !== lockId);
-    saveLockedSlots(updated);
-    setLockFeedback("Slot unlocked.");
-    setTimeout(() => setLockFeedback(""), 3000);
-  };
-
   // Get meetings occurring on a specific date key and hour
   const getMeetingsForSlot = useCallback(
     (targetDateKey: string, hour: number) => {
@@ -429,14 +338,15 @@ export default function MeetingSchedulePage() {
   // Begin booking a slot
   const beginAdd = (dateStr: string, timeStr: string) => {
     const today = jakartaDateKey();
-    if (dateStr < today) return;
+    if (dateStr < today) {
+      setPastSlotNotice("Tanggal sudah terlewat, tidak dapat menjadwalkan meeting.");
+      setTimeout(() => setPastSlotNotice(""), 3500);
+      return;
+    }
     const hourNum = Number(timeStr.slice(0, 2));
-    if (dateStr === today && hourNum * 60 <= jakartaMinutes()) return;
-
-    // Check if slot is locked
-    const lock = getSlotLock(dateStr, timeStr);
-    if (lock) {
-      alert(`Waktu ${timeStr} sedang dikunci (Locked). Buka kunci terlebih dahulu jika ingin menjadwalkan meeting.`);
+    if (dateStr === today && hourNum * 60 <= jakartaMinutes()) {
+      setPastSlotNotice("Jam ini sudah terlewat, tidak dapat menjadwalkan meeting.");
+      setTimeout(() => setPastSlotNotice(""), 3500);
       return;
     }
 
@@ -637,7 +547,17 @@ export default function MeetingSchedulePage() {
   const todayKey = jakartaDateKey();
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-12">
+      {/* Toast Notice for past slot click */}
+      {pastSlotNotice && (
+        <div className="fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xl animate-fade-in">
+          <span>⚠️ {pastSlotNotice}</span>
+          <button type="button" onClick={() => setPastSlotNotice("")} className="ml-2 text-slate-400 hover:text-white">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Manager Scoping Banner */}
       {isManager && <ManagerGlobalFilterBar />}
       {isManager && (
@@ -837,7 +757,7 @@ export default function MeetingSchedulePage() {
           <div className="divide-y divide-slate-100">
             {hours.map((hour) => {
               const timeStr = `${String(hour).padStart(2, "0")}:00`;
-              const isHourHighlighted = hour === 10 || (lockTimeInput.startsWith(String(hour).padStart(2, "0")));
+              const isHourHighlighted = hour === 10;
 
               return (
                 <div
@@ -863,36 +783,15 @@ export default function MeetingSchedulePage() {
                     const dKey = dateKey(d);
                     const isPast = dKey < todayKey || (dKey === todayKey && hour * 60 <= jakartaMinutes());
                     const slotMeetings = getMeetingsForSlot(dKey, hour);
-                    const lock = getSlotLock(dKey, timeStr);
 
                     return (
                       <div
                         key={`${dKey}-${hour}`}
                         className={`relative border-r border-slate-100 last:border-r-0 p-1.5 transition-colors ${
                           dKey === selectedDateKey ? "bg-blue-50/15" : ""
-                        } ${isPast ? "bg-slate-50/40" : "hover:bg-slate-50/70"}`}
+                        }`}
                       >
-                        {/* If Slot is Locked */}
-                        {lock ? (
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (confirm(`Slot ${timeStr} sedang terkunci. Buka kunci slot ini?`)) {
-                                handleUnlockSlot(lock.id);
-                              }
-                            }}
-                            className="group flex h-full w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-blue-200 bg-[#e8f1fd] p-2 text-xs font-semibold text-[#1e40af] shadow-2xs transition-all hover:bg-blue-100"
-                            title="Klik untuk membuka kunci slot"
-                          >
-                            <span className="inline-flex items-center gap-1.5">
-                              <Lock className="h-3.5 w-3.5 text-blue-600" />
-                              <span>Locked</span>
-                            </span>
-                            <span className="hidden text-[10px] text-blue-500 group-hover:inline">
-                              (Klik untuk unlock)
-                            </span>
-                          </div>
-                        ) : slotMeetings.length > 0 ? (
+                        {slotMeetings.length > 0 ? (
                           /* If Slot has Meetings */
                           <div className="flex h-full flex-col gap-1">
                             {slotMeetings.slice(0, 1).map(({ customer, meeting }) => {
@@ -934,25 +833,35 @@ export default function MeetingSchedulePage() {
                               </button>
                             )}
                           </div>
-                        ) : (
-                          /* Empty Slot: Clickable to add meeting */
+                        ) : isPast ? (
+                          /* Past Empty Slot: Disabled with Hover Tooltip Notification */
                           <div
                             onClick={() => {
-                              if (!isPast) {
-                                beginAdd(dKey, timeStr);
-                              }
+                              setPastSlotNotice(`Waktu ${timeStr} pada tanggal ini sudah terlewat.`);
+                              setTimeout(() => setPastSlotNotice(""), 3500);
                             }}
-                            className={`group flex h-full min-h-[56px] w-full items-center justify-center rounded-lg transition-colors ${
-                              isPast
-                                ? "cursor-not-allowed opacity-30"
-                                : "cursor-pointer hover:bg-blue-50/50"
-                            }`}
+                            className="group/past relative flex h-full min-h-[56px] w-full cursor-not-allowed items-center justify-center rounded-lg bg-slate-50/50 p-1 transition-colors hover:bg-slate-100/70"
                           >
-                            {!isPast && (
-                              <span className="opacity-0 group-hover:opacity-100 text-xs font-semibold text-blue-600 transition-opacity">
-                                + Add
-                              </span>
-                            )}
+                            <span className="text-[11px] font-medium text-slate-300 select-none">
+                              —
+                            </span>
+                            {/* Hover Notification Tooltip */}
+                            <div className="pointer-events-none absolute -top-9 left-1/2 z-30 -translate-x-1/2 opacity-0 group-hover/past:opacity-100 transition-opacity duration-150">
+                              <div className="whitespace-nowrap rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white shadow-xl">
+                                ⚠️ Waktu sudah terlewat
+                              </div>
+                              <div className="mx-auto h-1.5 w-1.5 -translate-y-1 rotate-45 bg-slate-900" />
+                            </div>
+                          </div>
+                        ) : (
+                          /* Active Empty Slot: Clickable to add meeting */
+                          <div
+                            onClick={() => beginAdd(dKey, timeStr)}
+                            className="group flex h-full min-h-[56px] w-full cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-blue-50/50"
+                          >
+                            <span className="opacity-0 group-hover:opacity-100 text-xs font-semibold text-blue-600 transition-opacity">
+                              + Add
+                            </span>
                           </div>
                         )}
                       </div>
@@ -962,69 +871,6 @@ export default function MeetingSchedulePage() {
               );
             })}
           </div>
-        </div>
-      </div>
-
-      {/* Floating Bottom Action Bar: Lock Time Slot */}
-      <div className="fixed bottom-4 left-1/2 z-30 -translate-x-1/2">
-        <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-200 bg-white/95 px-6 py-3.5 shadow-2xl backdrop-blur-md">
-          {/* Label with info icon */}
-          <div className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-800">
-            <span>Lock Time Slot</span>
-            <span
-              title="Kunci jam tertentu agar tidak bisa dijadwalkan meeting oleh klien atau agent."
-              className="cursor-help text-slate-400 hover:text-slate-600"
-            >
-              <Info className="h-4 w-4" />
-            </span>
-          </div>
-
-          {/* Time Picker */}
-          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 shadow-2xs">
-            <Clock className="h-4 w-4 text-slate-400" />
-            <select
-              value={lockTimeInput}
-              onChange={(e) => setLockTimeInput(e.target.value)}
-              className="bg-transparent text-xs sm:text-sm font-medium text-slate-800 focus:outline-none"
-            >
-              {hours.map((h) => {
-                const t = `${String(h).padStart(2, "0")}:00`;
-                return (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-
-          {/* Checkbox: Terapkan ke semua hari */}
-          <label className="flex cursor-pointer items-center gap-2 text-xs sm:text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={lockApplyAllDays}
-              onChange={(e) => setLockApplyAllDays(e.target.checked)}
-              className="h-4 w-4 rounded accent-blue-600"
-            />
-            <span>Terapkan ke semua hari</span>
-          </label>
-
-          {/* Lock Button */}
-          <button
-            type="button"
-            onClick={handleLockTimeSlot}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#0f2744] hover:bg-[#183c66] px-5 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition-all"
-          >
-            <Lock className="h-3.5 w-3.5" />
-            <span>Lock</span>
-          </button>
-
-          {/* Quick feedback message */}
-          {lockFeedback && (
-            <span className="text-xs font-semibold text-emerald-600 animate-fade-in">
-              {lockFeedback}
-            </span>
-          )}
         </div>
       </div>
 
