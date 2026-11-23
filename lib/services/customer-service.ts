@@ -422,18 +422,21 @@ export async function createCustomer(
       return { success: false, error: "User identity is unavailable for the customer record." };
     }
 
+    const normalizedName = input.company_name.trim().replace(/\s+/g, " ");
+
     const dupQuery = (supabase as any)
       .from("a1_customers")
-      .select("id, created_by, created_by_name")
-      .ilike("company_name", input.company_name.trim().replace(/[\\%_]/g, "\\$&"))
-      .is("deleted_at", null);
+      .select("id, company_name, deleted_at, created_by, created_by_name")
+      .ilike("company_name", normalizedName.replace(/[\\%_]/g, "\\$&"));
 
     const { data: existing, error: duplicateCheckError } = await dupQuery;
     if (duplicateCheckError) return { success: false, error: duplicateCheckError.message };
-    if (existing?.length) {
+
+    const activeExisting = existing?.find((item: any) => !item.deleted_at);
+    if (activeExisting) {
       return {
         success: false,
-        error: "DUPLICATE_COMPANY: This company is already registered",
+        error: "DUPLICATE_COMPANY: Perusahaan ini sudah terdaftar dalam sistem.",
       };
     }
 
@@ -443,19 +446,56 @@ export async function createCustomer(
       .eq("id", userScope.user.id)
       .maybeSingle();
 
+    const archivedExisting = existing?.find((item: any) => item.deleted_at);
+    if (archivedExisting) {
+      // Reactivate archived/soft-deleted record rather than inserting a duplicate row!
+      const { error: reactivateErr } = await (supabase as any)
+        .from("a1_customers")
+        .update({
+          company_name: normalizedName,
+          address: input.address.trim(),
+          pic_name: input.pic_full_name.trim(),
+          pic_phone: input.pic_phone_number.trim(),
+          created_by: regUser?.id || userScope.user.id,
+          created_by_name: createdByName,
+          deleted_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", archivedExisting.id);
+
+      if (reactivateErr) {
+        return {
+          success: false,
+          error: reactivateErr.message.includes("duplicate") || reactivateErr.code === "23505"
+            ? "DUPLICATE_COMPANY: Perusahaan ini sudah terdaftar dalam sistem."
+            : reactivateErr.message,
+        };
+      }
+
+      invalidateCompanyScope(userScope.user.id);
+      return { success: true, companyId: archivedExisting.id };
+    }
+
     const newCompanyId = crypto.randomUUID();
     const { error: companyInsertErr } = await (supabase as any)
       .from("a1_customers")
       .insert({
         id: newCompanyId,
-        company_name: input.company_name.trim(),
+        company_name: normalizedName,
         address: input.address.trim(),
         pic_name: input.pic_full_name.trim(),
         pic_phone: input.pic_phone_number.trim(),
         created_by: regUser?.id || userScope.user.id,
         created_by_name: createdByName,
       });
-    if (companyInsertErr) return { success: false, error: companyInsertErr.message.includes("duplicate") ? "DUPLICATE_COMPANY: This company is already on the company list" : companyInsertErr.message };
+    if (companyInsertErr) {
+      return {
+        success: false,
+        error: companyInsertErr.message.includes("duplicate") || companyInsertErr.code === "23505"
+          ? "DUPLICATE_COMPANY: Perusahaan ini sudah terdaftar dalam sistem."
+          : companyInsertErr.message,
+      };
+    }
 
     invalidateCompanyScope(userScope.user.id);
     return { success: true, companyId: newCompanyId };
@@ -487,7 +527,7 @@ export async function updateCustomer(
     };
 
     if (input.company_name) {
-      const cleanName = input.company_name.trim();
+      const cleanName = input.company_name.trim().replace(/\s+/g, " ");
       updatePayload.company_name = cleanName;
 
       const { data: existingDup, error: dupCheckErr } = await (supabase as any)
@@ -501,7 +541,7 @@ export async function updateCustomer(
       if (existingDup && existingDup.length > 0) {
         return {
           success: false,
-          error: "DUPLICATE_COMPANY: This company is already on the company list",
+          error: "DUPLICATE_COMPANY: Nama perusahaan sudah digunakan oleh customer lain.",
         };
       }
     }
@@ -521,7 +561,7 @@ export async function updateCustomer(
 
     const { error } = await updateQuery;
 
-    if (error) return { success: false, error: error.message.includes("duplicate") ? "DUPLICATE_COMPANY: This company is already on the company list" : error.message };
+    if (error) return { success: false, error: error.message.includes("duplicate") || (error as any).code === "23505" ? "DUPLICATE_COMPANY: Nama perusahaan sudah digunakan oleh customer lain." : error.message };
 
     return { success: true };
   } catch (err: any) {
