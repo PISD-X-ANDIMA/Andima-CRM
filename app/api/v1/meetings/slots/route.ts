@@ -7,9 +7,9 @@ import { buildCustomerOwnerFilter } from "@/lib/services/access-scope";
 
 export const dynamic = "force-dynamic";
 
-const slots = Array.from({ length: 13 }, (_, index) => ({
-  start_time: `${String(index + 6).padStart(2, "0")}:00`,
-  end_time: `${String(index + 7).padStart(2, "0")}:00`,
+const slots = Array.from({ length: 10 }, (_, index) => ({
+  start_time: `${String(index + 8).padStart(2, "0")}:00`,
+  end_time: `${String(index + 9).padStart(2, "0")}:00`,
 }));
 const weekdays = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 

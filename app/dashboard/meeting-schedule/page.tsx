@@ -16,8 +16,8 @@ import type { ApiResponse, CustomerListItem, MeetingDay, ScheduleType } from "@/
 import { ManagerGlobalFilterBar } from "@/components/dashboard/ManagerGlobalFilterBar";
 import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
 
-// Hours displayed in the Cakap-style calendar: 06:00 to 18:00
-const hours = Array.from({ length: 13 }, (_, index) => 6 + index);
+// Hours displayed in the calendar: 08:00 to 18:00 (1 slot = 1 hour, from 08:00-09:00 until 17:00-18:00)
+const hours = Array.from({ length: 10 }, (_, index) => 8 + index);
 const meetingSlots = hours.map((hour) => ({
   start: `${String(hour).padStart(2, "0")}:00`,
   end: `${String(hour + 1).padStart(2, "0")}:00`,
@@ -418,7 +418,7 @@ export default function MeetingSchedulePage() {
       return;
     }
     if (!meetingSlots.some((slot) => slot.start === form.startTime && slot.end === form.endTime)) {
-      setMutationError("Select an available one-hour slot between 06:00 and 19:00.");
+      setMutationError("Select an available one-hour slot between 08:00 and 18:00.");
       return;
     }
     if (form.date === jakartaDateKey() && Number(form.startTime.slice(0, 2)) * 60 <= jakartaMinutes()) {
