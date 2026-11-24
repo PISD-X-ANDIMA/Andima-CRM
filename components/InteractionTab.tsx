@@ -448,6 +448,20 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     title: string;
   } | null>(null);
 
+  // Lock background scroll while any modal is open.
+  useEffect(() => {
+    const anyModalOpen = isCreateModalOpen || isDetailModalOpen || isManagerFeedbackModalOpen || Boolean(previewModal?.isOpen);
+    if (!anyModalOpen) return;
+    const bodyOverflow = document.body.style.overflow;
+    const htmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = bodyOverflow;
+      document.documentElement.style.overflow = htmlOverflow;
+    };
+  }, [isCreateModalOpen, isDetailModalOpen, isManagerFeedbackModalOpen, previewModal?.isOpen]);
+
   // Close dropdowns on outside click
   useEffect(() => {
     function handleDocumentClick(e: MouseEvent) {
