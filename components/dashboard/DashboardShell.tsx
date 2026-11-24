@@ -97,20 +97,6 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        {/* Desktop Toggle Button when hidden */}
-        {!desktopSidebarVisible && (
-          <button
-            type="button"
-            onClick={() => setDesktopSidebarVisible(true)}
-            aria-label="Show sidebar"
-            aria-controls="crm-sidebar"
-            aria-expanded={false}
-            className="fixed left-4 top-4 z-40 hidden size-[36px] place-items-center rounded-[8px] bg-[#1565d8] text-white shadow-md transition-colors hover:bg-[#0f52b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1565d8]/40 lg:grid cursor-pointer"
-          >
-            <Menu className="h-[18px] w-[18px]" strokeWidth={2.2} />
-          </button>
-        )}
-
         {/* ======================================================== */}
         {/* 2. MOBILE SLIDE-OUT DRAWER & BACKDROP (< 1024px)          */}
         {/* ======================================================== */}

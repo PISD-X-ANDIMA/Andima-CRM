@@ -18,7 +18,7 @@ const defaultSalesExecutiveMenus: SubMenuItem[] = [
   { name: "Company List", href: "/dashboard/company-list" },
   { name: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { name: "Record Conversation", href: "/dashboard/record-conversation" },
-  { name: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
+  { name: "Task Field Agent", href: "/dashboard/task-of-field-agent" },
   { name: "Field Agent Management", href: "/dashboard/field-agent-management" },
 ];
 
@@ -33,7 +33,7 @@ const defaultManagerMenus: SubMenuItem[] = [
   { name: "Company List", href: "/dashboard/company-list" },
   { name: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { name: "Record Conversation", href: "/dashboard/record-conversation" },
-  { name: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
+  { name: "Task Field Agent", href: "/dashboard/task-of-field-agent" },
   { name: "Manage Accounts", href: "/dashboard/field-agent-management" },
 ];
 
@@ -86,7 +86,7 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
         ? "/dashboard/manager-customer-success"
         : "/dashboard/sales-executive"
   );
-  const [submenuItems, setSubmenuItems] = useState(() =>
+  const [submenuItems, setSubmenuItems] = useState<SubMenuItem[]>(() =>
     initialRole === "field_agent"
       ? defaultFieldAgentMenus
       : initialRole === "manager"
@@ -105,7 +105,7 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
     if (href.includes("/company-list")) return t("nav.companyList", "Company List");
     if (href.includes("/meeting-schedule")) return t("nav.meetingSchedule", "Meeting Schedule");
     if (href.includes("/record-conversation")) return t("nav.recordConversation", "Record Conversation");
-    if (href.includes("/task-of-field-agent")) return t("nav.taskOfFieldAgent", "Task of Field Agent");
+    if (href.includes("/task-of-field-agent")) return t("nav.taskFieldAgent", "Task Field Agent");
     if (href.includes("/field-agent-management") || href.includes("/field-agent-access")) {
       return isManagerRole
         ? t("nav.manageAccounts", "Manage Accounts")
@@ -133,11 +133,17 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
 
         setIsManagerRole(Boolean(result.data.isManager));
         setMenuLabel(result.data.menuLabel || "CRM");
-        setRoleTitle(result.data.roleTitle || "Sales Executive");
-        setSectionHref(result.data.sectionHref || "/dashboard/sales-executive");
+        if (result.data.roleTitle) setRoleTitle(result.data.roleTitle);
+        if (result.data.sectionHref) setSectionHref(result.data.sectionHref);
 
-        if (Array.isArray(result.data.submenuItems) && result.data.submenuItems.length > 0) {
-          setSubmenuItems(result.data.submenuItems);
+        const sub = result.data.submenuItems || result.data.menu?.[0]?.children?.[0]?.children;
+        if (Array.isArray(sub) && sub.length > 0) {
+          setSubmenuItems(
+            sub.map((item: any) => ({
+              name: item.name || item.label,
+              href: item.href,
+            }))
+          );
         }
       } catch (error) {
         console.error("Failed to load navigation data:", error);
@@ -150,17 +156,10 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
     };
   }, []);
 
-  const [currentSectionPath, currentSectionQuery] = sectionHref.split("?");
-  const cleanSectionPath = currentSectionPath.replace(/\/+$/, "");
-  const cleanCurrentPath = pathname.replace(/\/+$/, "");
-  const isCurrentDashboard = currentSectionQuery
-    ? cleanSectionPath === cleanCurrentPath && currentSectionQuery === searchParams.toString()
-    : cleanSectionPath === cleanCurrentPath;
-
   return (
     <aside
       aria-label="Main Navigation"
-      className="flex h-full w-[260px] flex-col justify-between bg-[#0F2342] text-white select-none shadow-xl"
+      className="flex h-full w-[260px] flex-col justify-between bg-[#0F2342] text-white select-none shadow-xl font-sans"
     >
       <div>
         {/* Brand Header */}
@@ -185,10 +184,11 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
 
         {/* Main Nav Container */}
         <nav className="min-h-0 overflow-y-auto overscroll-contain px-4 pb-4">
+          {/* CRM Dropdown Header Button */}
           <button
             type="button"
             onClick={() => setCrmOpen((value) => !value)}
-            className="flex h-[40px] w-full items-center justify-between rounded-[8px] bg-[#0550d7] px-3 text-[14px] font-semibold tracking-[0.07px] text-white shadow-sm transition-colors hover:bg-[#0446b8]"
+            className="flex h-[40px] w-full items-center justify-between rounded-[8px] bg-[#0550d7] px-3 text-[14px] font-semibold tracking-[0.07px] text-white shadow-sm transition-colors hover:bg-[#0446b8] cursor-pointer"
           >
             <div className="flex items-center gap-2.5">
               <Users className="h-[18px] w-[18px] shrink-0" />
@@ -202,54 +202,55 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
           </button>
 
           {crmOpen && (
-            <div className="ml-4 mt-2.5 space-y-1 border-l border-white/20 pl-2.5">
+            <div className="mt-2.5">
+              {/* Active Role Box (e.g. Sales Executive) */}
               <Link
                 href={sectionHref}
                 prefetch
                 onClick={handleNavClick}
-                aria-current={isCurrentDashboard ? "page" : undefined}
-                className={`flex items-center rounded-[8px] px-3 py-[7px] text-[14px] font-semibold transition-colors ${
-                  isCurrentDashboard
-                    ? "bg-[#b0c6d4] text-[#45556c]"
-                    : "text-white hover:bg-white/10"
-                }`}
+                className="flex h-[40px] w-full items-center rounded-[8px] bg-[#b0c6d4] px-3 text-[14px] font-semibold text-[#45556c] transition-colors hover:bg-[#a1bccd]"
               >
-                {isCurrentDashboard && (
-                  <span className="mr-2 size-[6px] shrink-0 rounded-full bg-[#069494]" />
-                )}
                 <span className="truncate">{currentRoleTitle}</span>
               </Link>
 
-              <div className="space-y-1">
-                {submenuItems
-                  .filter((item) => item.href !== sectionHref)
-                  .map((item) => {
-                    const [rawItemPath, itemQuery] = item.href.split("?");
-                    const itemPath = rawItemPath.replace(/\/+$/, "");
-                    const currentPath = pathname.replace(/\/+$/, "");
-                    const isActive = itemQuery
-                      ? itemPath === currentPath && itemQuery === searchParams.toString()
-                      : itemPath === currentPath || currentPath.startsWith(`${itemPath}/`);
+              {/* Submodule Tree */}
+              <div className="ml-4 mt-2 border-l border-white/20 pl-2.5 space-y-1">
+                {submenuItems.map((item) => {
+                  const [rawItemPath, itemQuery] = item.href.split("?");
+                  const itemPath = rawItemPath.replace(/\/+$/, "");
+                  const currentPath = pathname.replace(/\/+$/, "");
 
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={handleNavClick}
-                        aria-current={isActive ? "page" : undefined}
-                        className={`flex items-center rounded-[8px] px-3 py-[7px] text-[14px] font-semibold transition-colors ${
-                          isActive
-                            ? "bg-[#b0c6d4] text-[#45556c]"
-                            : "text-white hover:bg-white/10"
-                        }`}
-                      >
-                        {isActive && (
-                          <span className="mr-2 size-[6px] shrink-0 rounded-full bg-[#069494]" />
-                        )}
-                        <span className="truncate">{getMenuTitle(item.href, item.name)}</span>
-                      </Link>
-                    );
-                  })}
+                  const isDashboardItem =
+                    item.href.includes("/sales-executive") ||
+                    item.href.includes("/manager-customer-success") ||
+                    item.href.includes("field-agent?tab=dashboard");
+
+                  const isActive = itemQuery
+                    ? itemPath === currentPath && itemQuery === searchParams.toString()
+                    : isDashboardItem
+                      ? (currentPath === itemPath || currentPath === "/dashboard") &&
+                        (!itemQuery || itemQuery === searchParams.toString())
+                      : currentPath === itemPath || currentPath.startsWith(`${itemPath}/`);
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={handleNavClick}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`flex items-center rounded-[8px] px-3 py-[7px] text-[14px] font-semibold transition-colors ${
+                        isActive
+                          ? "bg-[#b0c6d4] text-[#45556c]"
+                          : "text-white hover:bg-white/10"
+                      }`}
+                    >
+                      {isActive && (
+                        <span className="mr-2 size-[6px] shrink-0 rounded-full bg-[#069494]" />
+                      )}
+                      <span className="truncate">{getMenuTitle(item.href, item.name)}</span>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -257,7 +258,7 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
       </div>
 
       {/* Logout Footer */}
-      <div className="px-4 pb-6 pt-3">
+      <div className="px-4 pb-8 pt-3">
         <button
           type="button"
           onClick={async () => {
@@ -269,7 +270,7 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
             }
             router.push("/login");
           }}
-          className="flex h-[40px] w-full items-center justify-center rounded-full border-2 border-[#d9364f] bg-transparent text-[16px] font-semibold text-[#d9364f] transition-colors hover:bg-[#d9364f] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d9364f] cursor-pointer"
+          className="flex h-[40px] w-full items-center justify-center rounded-full border-2 border-[#d9364f] bg-transparent text-[18px] font-semibold text-[#d9364f] transition-colors hover:bg-[#d9364f] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d9364f] cursor-pointer"
         >
           <span>{t("nav.logout", "Logout")}</span>
         </button>
