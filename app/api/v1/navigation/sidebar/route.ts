@@ -6,11 +6,11 @@ import { getCurrentUserScope } from "@/lib/auth/roles";
 export const dynamic = "force-dynamic";
 
 const salesExecutiveMenu = [
-  { label: "Dashboard", href: "/dashboard/sales-executive" },
+  { label: "Sales Executive", href: "/dashboard/sales-executive" },
   { label: "Company List", href: "/dashboard/company-list" },
   { label: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { label: "Record Conversation", href: "/dashboard/record-conversation" },
-  { label: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
+  { label: "Monitoring Task of Field Agent", href: "/dashboard/task-of-field-agent" },
   { label: "Field Agent Management", href: "/dashboard/field-agent-management" },
 ];
 
@@ -19,7 +19,7 @@ const managerCustomerSuccessMenu = [
   { label: "Company List", href: "/dashboard/company-list" },
   { label: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { label: "Record Conversation", href: "/dashboard/record-conversation" },
-  { label: "Task of Field Agent", href: "/dashboard/task-of-field-agent" },
+  { label: "Monitoring Task of Field Agent", href: "/dashboard/task-of-field-agent" },
   { label: "Manage Accounts", href: "/dashboard/field-agent-management" },
 ];
 

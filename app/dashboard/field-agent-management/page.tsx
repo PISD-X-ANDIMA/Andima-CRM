@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { TableSkeleton } from "@/components/ui/Skeleton";
+import { FigmaPagination } from "@/components/ui/FigmaPagination";
 
 interface AccountItem {
   id: string;
@@ -68,6 +69,9 @@ export default function FieldAgentManagementPage() {
     }
   };
 
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+
   const filteredAccounts = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return accounts;
@@ -75,6 +79,17 @@ export default function FieldAgentManagementPage() {
       (a) => a.name.toLowerCase().includes(q) || (a.email || "").toLowerCase().includes(q)
     );
   }, [accounts, search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredAccounts.length / perPage));
+  const validPage = Math.min(page, totalPages);
+  const paginatedAccounts = useMemo(() => {
+    const start = (validPage - 1) * perPage;
+    return filteredAccounts.slice(start, start + perPage);
+  }, [filteredAccounts, validPage, perPage]);
 
   const isManagerView = viewerRole === "manager_customer_success";
 
@@ -136,7 +151,7 @@ export default function FieldAgentManagementPage() {
                 </td>
               </tr>
             ) : (
-              filteredAccounts.map((account) => (
+              paginatedAccounts.map((account) => (
                 <tr key={account.id} className="hover:bg-slate-50/70">
                   <td className="px-4 py-3.5 font-semibold text-slate-900">{account.name}</td>
                   <td className="px-4 py-3.5">{account.email || "-"}</td>
@@ -165,9 +180,17 @@ export default function FieldAgentManagementPage() {
         </table>
       </div>
 
-      <div className="text-xs text-slate-500">
-        Showing {filteredAccounts.length} of {accounts.length} accounts
-      </div>
+      <FigmaPagination
+        total={filteredAccounts.length}
+        page={validPage}
+        perPage={perPage}
+        onPageChange={setPage}
+        onPerPageChange={(newPerPage) => {
+          setPerPage(newPerPage);
+          setPage(1);
+        }}
+        itemLabel="accounts"
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Search, ChevronDown, Plus, X, Check, AlertTriangle, CheckCircle, FileText, Pencil, Lock
 } from 'lucide-react';
+import { FigmaPagination } from '@/components/ui/FigmaPagination';
 
 export interface FieldAgentAccount {
   id: string;
@@ -252,6 +253,7 @@ export default function ManageFieldAgentAccount() {
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement | null>(null);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -479,7 +481,6 @@ export default function ManageFieldAgentAccount() {
     return matchesSearch && matchesStatus;
   });
 
-  const pageSize = 5;
   const totalPages = Math.max(1, Math.ceil(filteredAgents.length / pageSize));
   const validPage = Math.min(page, totalPages);
   const pagedAgents = filteredAgents.slice((validPage - 1) * pageSize, validPage * pageSize);
@@ -488,9 +489,9 @@ export default function ManageFieldAgentAccount() {
     <div className="w-full pb-20 animate-in fade-in duration-200">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 animate-in slide-in-from-bottom-2">
-          <CheckCircle size={16} className="text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
+        <div className="fixed top-6 right-6 z-[100] bg-[#f2fef8] border border-[#a7f3d0] text-[#047857] text-xs font-semibold px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 animate-in slide-in-from-top-2 duration-200">
+          <CheckCircle size={16} className="text-[#047857] shrink-0" />
+          <span className="text-[#064e3b]">{toastMessage}</span>
         </div>
       )}
 
@@ -641,47 +642,18 @@ export default function ManageFieldAgentAccount() {
         </div>
 
         {/* DYNAMIC PAGINATION FOOTER */}
-        <div className="py-4 px-6 bg-white border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="text-slate-500 font-medium">
-            Showing <strong className="text-slate-800">{filteredAgents.length > 0 ? (validPage - 1) * pageSize + 1 : 0}-{Math.min(validPage * pageSize, filteredAgents.length)}</strong> of <strong className="text-slate-800">{filteredAgents.length}</strong> agents
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              disabled={validPage <= 1}
-              onClick={() => setPage(Math.max(1, validPage - 1))}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-            >
-              Previous
-            </button>
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
-              const pageNumber = totalPages <= 5
-                ? index + 1
-                : Math.max(1, Math.min(validPage - 2, totalPages - 4)) + index;
-              return (
-                <button
-                  key={pageNumber}
-                  type="button"
-                  onClick={() => setPage(pageNumber)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                    validPage === pageNumber
-                      ? 'bg-[#2563eb] text-white shadow-2xs'
-                      : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {pageNumber}
-                </button>
-              );
-            })}
-            <button
-              type="button"
-              disabled={validPage >= totalPages}
-              onClick={() => setPage(Math.min(totalPages, validPage + 1))}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-            >
-              Next
-            </button>
-          </div>
+        <div className="py-3 px-6 bg-white border-t border-slate-100">
+          <FigmaPagination
+            total={filteredAgents.length}
+            page={validPage}
+            perPage={pageSize}
+            onPageChange={setPage}
+            onPerPageChange={(newPerPage) => {
+              setPageSize(newPerPage);
+              setPage(1);
+            }}
+            itemLabel="agents"
+          />
         </div>
       </div>
 

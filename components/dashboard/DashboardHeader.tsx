@@ -11,7 +11,7 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export function DashboardHeader({ isManager = false }: { isManager?: boolean }) {
   const pathname = usePathname();
-  const { toggleSidebar } = useSidebarToggle();
+  const { sidebarVisible, toggleSidebar } = useSidebarToggle();
   const { t } = useLanguage();
   const [username, setUsername] = useState("User");
 
@@ -83,7 +83,9 @@ export function DashboardHeader({ isManager = false }: { isManager?: boolean }) 
           type="button"
           onClick={toggleSidebar}
           aria-label="Toggle navigation"
-          className="flex size-[36px] shrink-0 items-center justify-center rounded-[8px] !bg-[#1565d8] !text-white shadow-xs transition-colors hover:!bg-[#0f52b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1565d8]/40 cursor-pointer"
+          className={`flex size-[36px] shrink-0 items-center justify-center rounded-[8px] !bg-[#1565d8] !text-white shadow-xs transition-colors hover:!bg-[#0f52b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1565d8]/40 cursor-pointer ${
+            sidebarVisible ? "lg:hidden" : ""
+          }`}
         >
           <Menu className="h-[18px] w-[18px] text-white" strokeWidth={2.2} />
         </button>

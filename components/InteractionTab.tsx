@@ -8,6 +8,7 @@ import {
   ShieldCheck, Lock as LockIcon, CheckCircle, XCircle
 } from 'lucide-react';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { FigmaPagination } from '@/components/ui/FigmaPagination';
 import {
   fetchApiCustomers,
   fetchApiConversations,
@@ -221,7 +222,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 8;
+  const [pageSize, setPageSize] = useState(10);
 
   // Data States (Connected to Database)
   const [conversations, setConversations] = useState<ConversationDisplayItem[]>([]);
@@ -275,10 +276,10 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   const [actionError, setActionError] = useState<string | null>(null);
   const [createFormError, setCreateFormError] = useState<string | null>(null);
 
-  // Batas ringkasan: 50 kata dan 500 karakter.
-  // Batas karakter mencegah spam satu huruf tanpa spasi lolos dari hitungan kata.
-  const MAX_SUMMARY_WORDS = 50;
-  const MAX_SUMMARY_CHARS = 500;
+  // Batas ringkasan: Maksimal 100 kata, dan 1 kata dibatasi maksimal 25 karakter.
+  const MAX_SUMMARY_WORDS = 100;
+  const MAX_WORD_CHARS = 25;
+  const MAX_SUMMARY_CHARS = 2600;
 
   // URL lama memakai path "conversations/<timestamp>_<nama>". Buang prefix angka itu.
   const fileNameFromUrl = (url: string, fallback: string): string => {
@@ -299,11 +300,52 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
     return str.trim() ? str.trim().split(/\s+/).filter(Boolean).length : 0;
   };
 
+  /** Memotong kata yang melebihi 25 karakter dan teks yang melebihi 100 kata dengan tetap mempertahankan spasi format */
+  const sanitizeSummaryText = (
+    text: string,
+    maxWords: number = MAX_SUMMARY_WORDS,
+    maxWordLen: number = MAX_WORD_CHARS
+  ): string => {
+    if (!text) return '';
+    const parts = text.split(/(\s+)/);
+    let wordCount = 0;
+    let result = '';
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      const isWhitespace = i % 2 === 1;
+
+      if (isWhitespace) {
+        if (wordCount >= maxWords) {
+          break;
+        }
+        result += part;
+      } else {
+        if (part.length > 0) {
+          if (wordCount >= maxWords) {
+            break;
+          }
+          wordCount++;
+          result += part.slice(0, maxWordLen);
+        }
+      }
+    }
+    return result;
+  };
+
+  /**
+   * Menangani pengetikan pada summary:
+   * - Maksimal 100 kata.
+   * - Maksimal 25 karakter per kata. Jika sudah 25 karakter, tulisan langsung stop
+   *   dan hanya bisa dilanjut jika menekan spasi/enter ke kata baru.
+   */
   const handleKeyDownMaxWords = (
     e: React.KeyboardEvent<HTMLTextAreaElement>,
     currentVal: string,
-    maxWords: number
+    maxWords: number = MAX_SUMMARY_WORDS,
+    maxWordLength: number = MAX_WORD_CHARS
   ) => {
+    // Tombol kontrol, navigasi, dan hapus selalu diizinkan
     if (
       e.key === 'Backspace' ||
       e.key === 'Delete' ||
@@ -311,6 +353,8 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       e.key === 'Tab' ||
       e.key === 'Home' ||
       e.key === 'End' ||
+      e.key === 'PageUp' ||
+      e.key === 'PageDown' ||
       e.ctrlKey ||
       e.metaKey ||
       e.altKey
@@ -318,29 +362,55 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
       return;
     }
 
+    const target = e.currentTarget;
+    const selectionStart = target.selectionStart ?? currentVal.length;
+    const selectionEnd = target.selectionEnd ?? currentVal.length;
+    const selectedLen = selectionEnd - selectionStart;
+
     const trimmed = currentVal.trim();
     const words = trimmed ? trimmed.split(/\s+/).filter(Boolean) : [];
 
-    if (words.length >= maxWords) {
-      if (e.key === ' ' || e.key === 'Enter') {
-        e.preventDefault();
-        return;
-      }
-
-      const target = e.currentTarget;
-      const selectionStart = target.selectionStart;
-      const selectionEnd = target.selectionEnd;
-
-      if (selectionStart !== null && selectionEnd !== null && selectionStart !== selectionEnd) {
-        return;
-      }
-
-      if (selectionStart !== null && selectionStart > 0) {
-        const charBefore = currentVal.charAt(selectionStart - 1);
-        if (/\s/.test(charBefore)) {
+    // Jika menekan Space atau Enter
+    if (e.key === ' ' || e.key === 'Enter') {
+      if (words.length >= maxWords) {
+        if (selectionStart >= currentVal.trimEnd().length) {
           e.preventDefault();
+          setSummaryError(`Telah mencapai batas maksimal ${maxWords} kata. Tidak dapat menambahkan kata lagi.`);
           return;
         }
+      }
+      setSummaryError(null);
+      return;
+    }
+
+    // Karakter tunggal yang diketik (huruf, angka, simbol)
+    if (e.key.length === 1) {
+      // Cari batas kata yang sedang diedit di posisi kursor
+      let wordStart = selectionStart;
+      while (wordStart > 0 && !/\s/.test(currentVal[wordStart - 1])) {
+        wordStart--;
+      }
+      let wordEnd = selectionEnd;
+      while (wordEnd < currentVal.length && !/\s/.test(currentVal[wordEnd])) {
+        wordEnd++;
+      }
+
+      const currentWord = currentVal.slice(wordStart, wordEnd);
+      const projectedWordLen = currentWord.length - selectedLen + 1;
+
+      // 1. Batasan 25 karakter per kata: langsung stop jika sudah 25 karakter
+      if (projectedWordLen > maxWordLength) {
+        e.preventDefault();
+        setSummaryError(`Satu kata maksimal ${maxWordLength} karakter. Tekan spasi untuk melanjutkan ke kata baru.`);
+        return;
+      }
+
+      // 2. Batasan 100 kata: jika sudah 100 kata dan mencoba memulai kata baru
+      const isStartingNewWord = (currentWord.length === 0 || (currentWord.length - selectedLen === 0));
+      if (words.length >= maxWords && isStartingNewWord) {
+        e.preventDefault();
+        setSummaryError(`Telah mencapai batas maksimal ${maxWords} kata. Tidak dapat menambahkan kata baru.`);
+        return;
       }
     }
   };
@@ -1029,11 +1099,17 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       return;
     }
 
-    // Batas ringkasan: 50 kata / 500 karakter.
-    const wordCount = getWordCount(recordSummary);
-    if (wordCount > MAX_SUMMARY_WORDS) {
-      setSummaryError(`Text Summary melebihi batas maksimum ${MAX_SUMMARY_WORDS} kata (saat ini ${wordCount} kata). Mohon persingkat.`);
-      setCreateFormError(`Text Summary melebihi batas maksimum ${MAX_SUMMARY_WORDS} kata (saat ini ${wordCount} kata). Mohon persingkat.`);
+    // Batas ringkasan: Maksimal 100 kata, 25 karakter per kata.
+    const words = recordSummary.trim() ? recordSummary.trim().split(/\s+/).filter(Boolean) : [];
+    if (words.length > MAX_SUMMARY_WORDS) {
+      setSummaryError(`Text Summary melebihi batas maksimum ${MAX_SUMMARY_WORDS} kata (saat ini ${words.length} kata). Mohon persingkat.`);
+      setCreateFormError(`Text Summary melebihi batas maksimum ${MAX_SUMMARY_WORDS} kata (saat ini ${words.length} kata). Mohon persingkat.`);
+      return;
+    }
+    const overlongWord = words.find(w => w.length > MAX_WORD_CHARS);
+    if (overlongWord) {
+      setSummaryError(`Satu kata maksimal ${MAX_WORD_CHARS} karakter. Kata "${overlongWord.slice(0, 10)}..." melebihi batas.`);
+      setCreateFormError(`Satu kata maksimal ${MAX_WORD_CHARS} karakter. Mohon gunakan spasi.`);
       return;
     }
     if (recordSummary.trim().length > MAX_SUMMARY_CHARS) {
@@ -1172,15 +1248,15 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       {saveSuccessNotif && (
         <div
           onClick={() => setSaveSuccessNotif(false)}
-          className="fixed bottom-6 right-6 z-[100] bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-3 duration-200 cursor-pointer select-none border border-slate-700/60"
+          className="fixed top-6 right-6 z-[100] bg-[#f2fef8] text-[#047857] text-xs font-semibold px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-3 duration-200 cursor-pointer select-none border border-[#a7f3d0]"
           title="Klik untuk menutup"
         >
-          <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-            <Check size={14} className="text-emerald-400 stroke-[3]" />
+          <div className="w-6 h-6 rounded-full bg-[#d1fae5] text-[#047857] flex items-center justify-center shrink-0">
+            <Check size={14} className="text-[#047857] stroke-[3]" />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-white text-xs">Record Conversation Tersimpan</span>
-            <span className="text-[11px] text-slate-300 font-normal">Data percakapan berhasil diperbarui ke database</span>
+            <span className="font-bold text-[#064e3b] text-xs">Record Conversation Tersimpan</span>
+            <span className="text-[11px] text-[#047857] font-normal">Data percakapan berhasil diperbarui ke database</span>
           </div>
           <button
             type="button"
@@ -1188,7 +1264,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               e.stopPropagation();
               setSaveSuccessNotif(false);
             }}
-            className="ml-2 text-slate-400 hover:text-white p-1 transition-colors"
+            className="ml-2 text-[#047857]/60 hover:text-[#064e3b] p-1 transition-colors"
           >
             <X size={14} />
           </button>
@@ -1200,10 +1276,10 @@ Exported on: ${new Date().toLocaleString('id-ID')}
         <div
           role="alert"
           onClick={() => setActionError(null)}
-          className="fixed bottom-6 right-6 z-[100] bg-rose-600 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-3 duration-200 cursor-pointer select-none border border-rose-700/60"
+          className="fixed top-6 right-6 z-[100] bg-rose-50 text-rose-800 text-xs font-semibold px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-3 duration-200 cursor-pointer select-none border border-rose-200"
           title="Klik untuk menutup"
         >
-          <div className="w-6 h-6 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0">
+          <div className="w-6 h-6 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
             <AlertCircle size={14} />
           </div>
           <span className="max-w-xs">{actionError}</span>
@@ -1213,7 +1289,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               event.stopPropagation();
               setActionError(null);
             }}
-            className="ml-1 text-white/70 hover:text-white p-1 transition-colors"
+            className="ml-1 text-rose-400 hover:text-rose-700 p-1 transition-colors"
             aria-label="Tutup notifikasi"
           >
             <X size={14} />
@@ -1440,50 +1516,18 @@ Exported on: ${new Date().toLocaleString('id-ID')}
         </div>
 
         {/* 4. DYNAMIC PAGINATION FOOTER */}
-        <div className="py-4 px-6 bg-white border-t border-slate-100 flex items-center justify-between text-xs">
-          <div className="text-slate-500 font-medium">
-            Showing <strong className="text-slate-800">{filteredRows.length === 0 ? '0' : `${(validCurrentPage - 1) * pageSize + 1}-${Math.min(validCurrentPage * pageSize, filteredRows.length)}`}</strong> of <strong className="text-slate-800">{filteredRows.length}</strong> customers
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              disabled={validCurrentPage <= 1}
-              onClick={() => setCurrentPage(Math.max(1, validCurrentPage - 1))}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-            >
-              Previous
-            </button>
-
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
-              const pageNumber = totalPages <= 5
-                ? index + 1
-                : Math.max(1, Math.min(validCurrentPage - 2, totalPages - 4)) + index;
-              return (
-                <button
-                  key={pageNumber}
-                  type="button"
-                  onClick={() => setCurrentPage(pageNumber)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                    validCurrentPage === pageNumber
-                      ? 'bg-[#2563eb] text-white shadow-2xs'
-                      : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {pageNumber}
-                </button>
-              );
-            })}
-
-            <button
-              type="button"
-              disabled={validCurrentPage >= totalPages}
-              onClick={() => setCurrentPage(Math.min(totalPages, validCurrentPage + 1))}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-            >
-              Next
-            </button>
-          </div>
+        <div className="py-3 px-6 bg-white border-t border-slate-100">
+          <FigmaPagination
+            total={filteredRows.length}
+            page={validCurrentPage}
+            perPage={pageSize}
+            onPageChange={setCurrentPage}
+            onPerPageChange={(newPerPage) => {
+              setPageSize(newPerPage);
+              setCurrentPage(1);
+            }}
+            itemLabel="customers"
+          />
         </div>
       </div>
 
@@ -2006,33 +2050,30 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                   <label className="block text-xs font-bold text-slate-800">
                     Text Summary<span className="text-red-500">*</span>
                   </label>
-                  <span className={`text-[11px] font-bold ${getWordCount(recordSummary) >= MAX_SUMMARY_WORDS || recordSummary.length >= MAX_SUMMARY_CHARS ? 'text-red-600 font-bold' : 'text-slate-400'}`}>
-                    {getWordCount(recordSummary)} / {MAX_SUMMARY_WORDS} kata · {recordSummary.length} / {MAX_SUMMARY_CHARS} karakter
+                  <span className={`text-[11px] font-bold ${getWordCount(recordSummary) >= MAX_SUMMARY_WORDS ? 'text-red-600 font-bold' : 'text-slate-400'}`}>
+                    {getWordCount(recordSummary)} / {MAX_SUMMARY_WORDS} kata · maks. {MAX_WORD_CHARS} karakter/kata
                   </span>
                 </div>
                 <textarea
                   rows={3}
                   value={recordSummary}
-                  onKeyDown={(e) => handleKeyDownMaxWords(e, recordSummary, MAX_SUMMARY_WORDS)}
+                  onKeyDown={(e) => handleKeyDownMaxWords(e, recordSummary, MAX_SUMMARY_WORDS, MAX_WORD_CHARS)}
                   maxLength={MAX_SUMMARY_CHARS}
                   onChange={(e) => {
-                    const capped = e.target.value.slice(0, MAX_SUMMARY_CHARS);
-                    const trimmed = capped.trim();
-                    const words = trimmed ? trimmed.split(/\s+/).filter(Boolean) : [];
-                    let finalVal = capped;
-                    if (words.length > MAX_SUMMARY_WORDS) {
-                      finalVal = words.slice(0, MAX_SUMMARY_WORDS).join(' ');
-                    } else if (words.length === MAX_SUMMARY_WORDS && /[\s\n\t]$/.test(capped)) {
-                      finalVal = words.join(' ');
-                    }
+                    const rawVal = e.target.value.slice(0, MAX_SUMMARY_CHARS);
+                    const finalVal = sanitizeSummaryText(rawVal, MAX_SUMMARY_WORDS, MAX_WORD_CHARS);
                     setRecordSummary(finalVal);
+
                     const count = getWordCount(finalVal);
+                    const words = finalVal.trim() ? finalVal.trim().split(/\s+/).filter(Boolean) : [];
+                    const lastWord = words[words.length - 1] || '';
+
                     if (!finalVal.trim()) {
                       setSummaryError('Text Summary belum diisi.');
                     } else if (count >= MAX_SUMMARY_WORDS) {
                       setSummaryError(`Telah mencapai batas maksimal ${MAX_SUMMARY_WORDS} kata. Tidak dapat menambahkan kata lagi.`);
-                    } else if (finalVal.length >= MAX_SUMMARY_CHARS) {
-                      setSummaryError(`Telah mencapai batas maksimal ${MAX_SUMMARY_CHARS} karakter. Persingkat ringkasan.`);
+                    } else if (!finalVal.endsWith(' ') && !finalVal.endsWith('\n') && lastWord.length >= MAX_WORD_CHARS) {
+                      setSummaryError(`Satu kata telah mencapai batas ${MAX_WORD_CHARS} karakter. Tekan spasi untuk lanjut ke kata baru.`);
                     } else {
                       setSummaryError(null);
                     }

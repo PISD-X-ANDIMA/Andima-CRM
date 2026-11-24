@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { submitNeedBackup } from '@/backend/record_conversation/worksheetService';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { FigmaPagination } from '@/components/ui/FigmaPagination';
 
 // ==========================================
 // TYPES & INTERFACES
@@ -628,6 +629,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
   // Pagination states
   const [t1Page, setT1Page] = useState(1);
+  const [t1PageSize, setT1PageSize] = useState(10);
   const [t2Page, setT2Page] = useState(1);
 
   // Active User session & role
@@ -1694,7 +1696,6 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     return matchesSearch && matchesStatus;
   });
 
-  const t1PageSize = 5;
   const t1TotalPages = Math.max(1, Math.ceil(filteredTasks.length / t1PageSize));
   const t1ValidPage = Math.min(t1Page, t1TotalPages);
   const pagedTasks = filteredTasks.slice((t1ValidPage - 1) * t1PageSize, t1ValidPage * t1PageSize);
@@ -1708,9 +1709,9 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
     <div className="w-full pb-20 animate-in fade-in duration-200">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-[100] bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 animate-in slide-in-from-bottom-2 border border-slate-700/60">
-          <CheckCircle size={16} className="text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
+        <div className="fixed top-6 right-6 z-[100] bg-[#f2fef8] border border-[#a7f3d0] text-[#047857] text-xs font-semibold px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 animate-in slide-in-from-top-2 duration-200">
+          <CheckCircle size={16} className="text-[#047857] shrink-0" />
+          <span className="text-[#064e3b]">{toastMessage}</span>
         </div>
       )}
 
@@ -1949,47 +1950,18 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
         </div>
 
         {/* 5. DYNAMIC PAGINATION FOOTER */}
-        <div className="py-4 px-6 bg-white border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="text-slate-500 font-medium">
-            Showing <strong className="text-slate-800">{filteredTasks.length > 0 ? (t1ValidPage - 1) * t1PageSize + 1 : 0}-{Math.min(t1ValidPage * t1PageSize, filteredTasks.length)}</strong> of <strong className="text-slate-800">{filteredTasks.length}</strong> tasks
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              disabled={t1ValidPage <= 1}
-              onClick={() => setT1Page(Math.max(1, t1ValidPage - 1))}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-            >
-              Previous
-            </button>
-            {Array.from({ length: Math.min(t1TotalPages, 5) }, (_, index) => {
-              const pageNumber = t1TotalPages <= 5
-                ? index + 1
-                : Math.max(1, Math.min(t1ValidPage - 2, t1TotalPages - 4)) + index;
-              return (
-                <button
-                  key={pageNumber}
-                  type="button"
-                  onClick={() => setT1Page(pageNumber)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                    t1ValidPage === pageNumber
-                      ? 'bg-[#2563eb] text-white shadow-2xs'
-                      : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {pageNumber}
-                </button>
-              );
-            })}
-            <button
-              type="button"
-              disabled={t1ValidPage >= t1TotalPages}
-              onClick={() => setT1Page(Math.min(t1TotalPages, t1ValidPage + 1))}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-            >
-              Next
-            </button>
-          </div>
+        <div className="py-3 px-6 bg-white border-t border-slate-100">
+          <FigmaPagination
+            total={filteredTasks.length}
+            page={t1ValidPage}
+            perPage={t1PageSize}
+            onPageChange={setT1Page}
+            onPerPageChange={(newPerPage) => {
+              setT1PageSize(newPerPage);
+              setT1Page(1);
+            }}
+            itemLabel="tasks"
+          />
         </div>
       </div>
 

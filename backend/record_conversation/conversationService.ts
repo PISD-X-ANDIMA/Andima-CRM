@@ -1,15 +1,21 @@
 import { supabase } from './supabaseClient';
 import { CompanyItem, RecordConversationItem, NewConversationPayload, UpdateConversationPayload, PaginatedResult } from './types';
 
-const MAX_SUMMARY_WORDS = 50;
-const MAX_SUMMARY_CHARS = 500;
+const MAX_SUMMARY_WORDS = 100;
+const MAX_WORD_CHARS = 25;
+const MAX_SUMMARY_CHARS = 2600;
 
-/** Validasi server: 50 kata / 500 karakter. Batas karakter menutup spam satu kata panjang. */
+/** Validasi server: maksimal 100 kata, 25 karakter per kata. */
 function summaryLimitError(summary: string): string | null {
   const trimmed = summary.trim();
-  const words = trimmed ? trimmed.split(/\s+/).filter(Boolean).length : 0;
-  if (words > MAX_SUMMARY_WORDS) {
-    return `Ringkasan melebihi batas maksimum ${MAX_SUMMARY_WORDS} kata (saat ini ${words} kata). Mohon persingkat.`;
+  const words = trimmed ? trimmed.split(/\s+/).filter(Boolean) : [];
+  if (words.length > MAX_SUMMARY_WORDS) {
+    return `Ringkasan melebihi batas maksimum ${MAX_SUMMARY_WORDS} kata (saat ini ${words.length} kata). Mohon persingkat.`;
+  }
+  for (const word of words) {
+    if (word.length > MAX_WORD_CHARS) {
+      return `Setiap kata maksimal ${MAX_WORD_CHARS} karakter. Kata "${word.slice(0, 10)}..." melebihi batas.`;
+    }
   }
   if (trimmed.length > MAX_SUMMARY_CHARS) {
     return `Ringkasan melebihi batas maksimum ${MAX_SUMMARY_CHARS} karakter. Mohon persingkat.`;

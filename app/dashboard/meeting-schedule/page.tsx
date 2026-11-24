@@ -595,9 +595,9 @@ export default function MeetingSchedulePage() {
     <div className="space-y-6 pb-12">
       {/* Toast Notice for past slot click */}
       {pastSlotNotice && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xl animate-fade-in">
-          <span>⚠️ {pastSlotNotice}</span>
-          <button type="button" onClick={() => setPastSlotNotice("")} className="ml-2 text-slate-400 hover:text-white">
+        <div className="fixed top-6 right-6 z-[100] flex items-center gap-2 rounded-xl bg-[#f2fef8] border border-[#a7f3d0] px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#047857] shadow-lg animate-fade-in">
+          <span className="text-[#064e3b]">⚠️ {pastSlotNotice}</span>
+          <button type="button" onClick={() => setPastSlotNotice("")} className="ml-2 text-[#047857]/60 hover:text-[#064e3b]">
             <X className="h-4 w-4" />
           </button>
         </div>

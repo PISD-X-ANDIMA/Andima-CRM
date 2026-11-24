@@ -1080,8 +1080,8 @@ export default function FieldAgentApp({
       )}
 
       {notice && !isAddTaskOpen && !completionOpen && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-lg border border-blue-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-lg">
-          {notice}
+        <div className="fixed top-6 right-6 z-[100] rounded-xl border border-[#a7f3d0] bg-[#f2fef8] px-4 py-3 text-xs font-semibold text-[#047857] shadow-lg animate-in slide-in-from-top-2 duration-200">
+          <span className="text-[#064e3b]">{notice}</span>
         </div>
       )}
     </div>
