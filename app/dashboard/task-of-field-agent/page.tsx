@@ -196,10 +196,10 @@ export default function TaskOfFieldAgentPage() {
     <div className="w-full space-y-6 pb-12">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-          Field Agent Tasks
+          {t("manager.fieldAgentTasks", "Field Agent Tasks")}
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Task progress and inspection results of the selected Sales Executive. Read only for Manager.
+          {t("manager.fieldAgentTasksSubtitle", "Task progress and inspection results of the selected Sales Executive. Read only for Manager.")}
         </p>
       </div>
 
@@ -213,7 +213,7 @@ export default function TaskOfFieldAgentPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by customer or field agent..."
+          placeholder={t("manager.searchFieldAgentPlaceholder", "Search by customer or field agent...")}
           className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-xs placeholder:text-slate-400 focus:border-blue-500 focus:outline-hidden"
         />
       </div>
@@ -223,12 +223,12 @@ export default function TaskOfFieldAgentPage() {
         <table className="w-full text-left text-xs text-slate-600">
           <thead className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
             <tr>
-              <th className="px-4 py-3.5">Company</th>
-              <th className="px-4 py-3.5">Sales Executive</th>
-              <th className="px-4 py-3.5">Field Agent</th>
-              <th className="px-4 py-3.5">Status</th>
-              <th className="px-4 py-3.5">Issue / Result</th>
-              <th className="px-4 py-3.5 text-center">Action</th>
+              <th className="px-4 py-3.5">{t("dashboard.company", "Company")}</th>
+              <th className="px-4 py-3.5">{t("nav.salesExecutive", "Sales Executive")}</th>
+              <th className="px-4 py-3.5">{t("nav.fieldAgent", "Field Agent")}</th>
+              <th className="px-4 py-3.5">{t("manager.status", "Status")}</th>
+              <th className="px-4 py-3.5">{t("manager.issueResult", "Issue / Result")}</th>
+              <th className="px-4 py-3.5 text-center">{t("common.action", "Action")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -237,34 +237,34 @@ export default function TaskOfFieldAgentPage() {
             ) : filteredTasks.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
-                  No field agent tasks found for this selection.
+                  {t("manager.noFieldAgentTasksFound", "No field agent tasks found for this selection.")}
                 </td>
               </tr>
             ) : (
-              paginatedTasks.map((t, idx) => (
-                <tr key={`${t.company}-${idx}`} className="hover:bg-slate-50/70">
-                  <td className="px-4 py-3.5 font-medium text-slate-900">{t.company}</td>
-                  <td className="px-4 py-3.5">{t.salesExecutive}</td>
-                  <td className="px-4 py-3.5 font-medium text-slate-800">{t.fieldAgent}</td>
+              paginatedTasks.map((tItem, idx) => (
+                <tr key={`${tItem.company}-${idx}`} className="hover:bg-slate-50/70">
+                  <td className="px-4 py-3.5 font-medium text-slate-900">{tItem.company}</td>
+                  <td className="px-4 py-3.5">{tItem.salesExecutive}</td>
+                  <td className="px-4 py-3.5 font-medium text-slate-800">{tItem.fieldAgent}</td>
                   <td className="px-4 py-3.5">
-                    <span className={`rounded-full px-2.5 py-0.5 font-semibold ${t.reviewStatus === "Completed" ? "bg-emerald-50 text-emerald-700" : t.reviewStatus === "Archived" ? "bg-slate-100 text-slate-600" : t.hasIssue ? "bg-rose-50 text-rose-700" : "bg-amber-50 text-amber-700"}`}>
-                      {t.reviewStatus}
+                    <span className={`rounded-full px-2.5 py-0.5 font-semibold ${tItem.reviewStatus === "Completed" ? "bg-emerald-50 text-emerald-700" : tItem.reviewStatus === "Archived" ? "bg-slate-100 text-slate-600" : tItem.hasIssue ? "bg-rose-50 text-rose-700" : "bg-amber-50 text-amber-700"}`}>
+                      {tItem.reviewStatus}
                     </span>
                   </td>
                   <td className="px-4 py-3.5">
-                    {t.hasIssue ? (
-                      <span className="font-medium text-rose-600">{t.resultSummary}</span>
+                    {tItem.hasIssue ? (
+                      <span className="font-medium text-rose-600">{tItem.resultSummary}</span>
                     ) : (
-                      <span className="text-slate-500">{t.resultSummary}</span>
+                      <span className="text-slate-500">{tItem.resultSummary}</span>
                     )}
                   </td>
                   <td className="px-4 py-3.5 text-center">
                     <button
                       type="button"
-                      onClick={() => openDetail(t)}
+                      onClick={() => openDetail(tItem)}
                       className="rounded-md border border-slate-200 px-3 py-1 font-semibold text-blue-600 hover:bg-slate-50"
                     >
-                      Detail
+                      {t("common.details", "Detail")}
                     </button>
                   </td>
                 </tr>

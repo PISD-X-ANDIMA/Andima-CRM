@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
 import { Skeleton, TableSkeleton } from "@/components/ui/Skeleton";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface SalesExecItem {
   id: string;
@@ -33,6 +34,7 @@ interface OverviewData {
 }
 
 export function ManagerCustomerSuccessDashboard() {
+  const { t } = useLanguage();
   const router = useRouter();
   const { setSelectedExecutive } = useManagerFilter();
 
@@ -74,10 +76,10 @@ export function ManagerCustomerSuccessDashboard() {
       {/* Page Title & Subtitle */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-          Manager Dashboard
+          {t("manager.title", "Manager Dashboard")}
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Overview of the whole team. These numbers always cover all Sales Executives, regardless of the selection made in Company List.
+          {t("manager.subtitle", "Overview of the whole team. These numbers always cover all Sales Executives, regardless of the selection made in Company List.")}
         </p>
       </div>
 
@@ -85,35 +87,35 @@ export function ManagerCustomerSuccessDashboard() {
       <section aria-label="Team KPI Summary" className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* Total Sales Executive */}
         <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs transition-shadow hover:shadow-sm">
-          <p className="text-xs font-medium text-slate-500">Total Sales Executive</p>
+          <p className="text-xs font-medium text-slate-500">{t("manager.totalSalesExec", "Total Sales Executive")}</p>
           {loading ? <Skeleton className="mt-3 h-9 w-16" /> : (
             <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
               {data.total_sales_executives}
             </p>
           )}
-          <p className="mt-2 text-xs text-slate-400">Active users</p>
+          <p className="mt-2 text-xs text-slate-400">{t("manager.activeUsers", "Active users")}</p>
         </div>
 
         {/* Total Customer */}
         <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs transition-shadow hover:shadow-sm">
-          <p className="text-xs font-medium text-slate-500">Total Customer</p>
+          <p className="text-xs font-medium text-slate-500">{t("manager.totalCustomer", "Total Customer")}</p>
           {loading ? <Skeleton className="mt-3 h-9 w-16" /> : (
             <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
               {data.total_customers}
             </p>
           )}
-          <p className="mt-2 text-xs text-slate-400">All Sales Executives</p>
+          <p className="mt-2 text-xs text-slate-400">{t("manager.allSalesExecs", "All Sales Executives")}</p>
         </div>
 
         {/* Meetings this week */}
         <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs transition-shadow hover:shadow-sm">
-          <p className="text-xs font-medium text-slate-500">Meetings this week</p>
+          <p className="text-xs font-medium text-slate-500">{t("manager.meetingsThisWeek", "Meetings this week")}</p>
           {loading ? <Skeleton className="mt-3 h-9 w-16" /> : (
             <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
               {data.meetings_this_week}
             </p>
           )}
-          <p className="mt-2 text-xs text-slate-400">All Sales Executives</p>
+          <p className="mt-2 text-xs text-slate-400">{t("manager.allSalesExecs", "All Sales Executives")}</p>
         </div>
       </section>
 
@@ -122,18 +124,18 @@ export function ManagerCustomerSuccessDashboard() {
         {/* Left Column: Sales Executives Table (7 cols) */}
         <section className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs lg:col-span-7">
           <h2 className="mb-4 text-base font-semibold text-slate-800">
-            Sales Executives
+            {t("manager.salesExecutives", "Sales Executives")}
           </h2>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-100 text-xs font-semibold text-slate-500">
-                  <th scope="col" className="pb-3 pr-4">Name</th>
-                  <th scope="col" className="pb-3 px-4 text-center">Customers</th>
-                  <th scope="col" className="pb-3 px-4 text-center">Meetings this week</th>
-                  <th scope="col" className="pb-3 px-4 text-center">Open issues</th>
-                  <th scope="col" className="pb-3 pl-4 text-right">Detail</th>
+                  <th scope="col" className="pb-3 pr-4">{t("common.name", "Name")}</th>
+                  <th scope="col" className="pb-3 px-4 text-center">{t("common.customers", "Customers")}</th>
+                  <th scope="col" className="pb-3 px-4 text-center">{t("manager.meetingsThisWeek", "Meetings this week")}</th>
+                  <th scope="col" className="pb-3 px-4 text-center">{t("manager.openIssues", "Open issues")}</th>
+                  <th scope="col" className="pb-3 pl-4 text-right">{t("common.details", "Detail")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -142,7 +144,7 @@ export function ManagerCustomerSuccessDashboard() {
                 ) : data.sales_executives.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-xs text-slate-500">
-                      No Sales Executive yet
+                      {t("manager.noSalesExecYet", "No Sales Executive yet")}
                     </td>
                   </tr>
                 ) : (
@@ -172,7 +174,7 @@ export function ManagerCustomerSuccessDashboard() {
                           onClick={() => handleViewExecutive(exec.name)}
                           className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-2xs transition-colors hover:border-slate-400 hover:bg-slate-50 hover:text-blue-600"
                         >
-                          View
+                          {t("common.view", "View")}
                         </button>
                       </td>
                     </tr>
@@ -187,7 +189,7 @@ export function ManagerCustomerSuccessDashboard() {
         <section className="flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs lg:col-span-5">
           <div>
             <h2 className="mb-4 text-base font-semibold text-slate-800">
-              Latest issues needing backup
+              {t("manager.latestIssuesNeedingBackup", "Latest issues needing backup")}
             </h2>
 
             <div className="space-y-4">
@@ -197,7 +199,7 @@ export function ManagerCustomerSuccessDashboard() {
                 </div>
               ) : data.latest_issues.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-xs text-slate-500">
-                  No open issues
+                  {t("manager.noOpenIssues", "No open issues")}
                 </div>
               ) : (
                 data.latest_issues.map((issue) => (
@@ -211,7 +213,7 @@ export function ManagerCustomerSuccessDashboard() {
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-slate-500">
-                      {issue.executive_name} · meeting {issue.meeting_date}, {issue.meeting_time}
+                      {issue.executive_name} · {t("manager.meetingAt", "meeting")} {issue.meeting_date}, {issue.meeting_time}
                     </p>
                   </div>
                 ))
@@ -224,7 +226,7 @@ export function ManagerCustomerSuccessDashboard() {
               href="/dashboard/record-conversation?need_backup=yes"
               className="inline-flex w-full items-center justify-center rounded-lg border border-blue-600 bg-white py-2 text-xs font-semibold text-blue-600 shadow-2xs transition-colors hover:bg-blue-50"
             >
-              See conversation records
+              {t("manager.seeConversationRecords", "See conversation records")}
             </Link>
           </div>
         </section>

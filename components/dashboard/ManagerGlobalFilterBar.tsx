@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { ChevronDown } from "lucide-react";
 
 interface Props {
@@ -13,6 +14,7 @@ export function ManagerGlobalFilterBar({
   isCompanyListPage = false,
   salesExecutives: initialExecs,
 }: Props) {
+  const { t } = useLanguage();
   const { selectedExecutive, setSelectedExecutive } = useManagerFilter();
   const [executives, setExecutives] = useState<{ id: string; name: string }[]>(
     initialExecs || [{ id: "all", name: "All Sales Executives" }]
@@ -56,7 +58,7 @@ export function ManagerGlobalFilterBar({
     <div className="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200/90 bg-white px-4 py-3 shadow-xs">
       <div className="flex items-center gap-2">
         <label htmlFor="manager-sales-exec-filter" className="text-sm font-semibold text-slate-700 whitespace-nowrap">
-          Viewing Sales Executive:
+          {t("manager.viewingSalesExec", "Viewing Sales Executive:")}
         </label>
         <div className="relative">
           <select
@@ -65,7 +67,7 @@ export function ManagerGlobalFilterBar({
             onChange={(e) => setSelectedExecutive(e.target.value)}
             className="h-9 min-w-[210px] appearance-none rounded-lg border border-slate-300 bg-white px-3 pr-8 text-sm font-medium text-slate-800 shadow-xs transition-colors hover:border-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
-            <option value="all">All Sales Executives</option>
+            <option value="all">{t("manager.allSalesExecOption", "All Sales Executives")}</option>
             {executives.filter((se) => se.id !== "all").map((se) => (
               <option key={se.id} value={se.id}>
                 {se.name}
@@ -78,8 +80,8 @@ export function ManagerGlobalFilterBar({
 
       <p className="text-xs text-slate-500">
         {isCompanyListPage
-          ? "Set here. This selection also applies to Meeting Schedule, Record Conversation, and Task Field Agent."
-          : "Selected in Company List and shared across pages. You can change it here."}
+          ? t("manager.filterCompanyListNote", "Set here. This selection also applies to Meeting Schedule, Record Conversation, and Task Field Agent.")
+          : t("manager.filterGeneralNote", "Selected in Company List and shared across pages. You can change it here.")}
       </p>
     </div>
   );

@@ -212,10 +212,10 @@ export default function RecordConversationPage() {
     <div className="w-full space-y-6 pb-12">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-          Conversation Records
+          {t("manager.conversationRecords", "Conversation Records")}
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Record conversations of the selected Sales Executive. Read only for Manager.
+          {t("manager.conversationSubtitle", "Record conversations of the selected Sales Executive. Read only for Manager.")}
         </p>
       </div>
 
@@ -231,7 +231,7 @@ export default function RecordConversationPage() {
               onChange={(e) => setChannelFilter(e.target.value)}
               className="h-10 appearance-none rounded-lg border border-slate-200 bg-white px-3.5 pr-8 text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300"
             >
-              <option value="All">All Channels</option>
+              <option value="All">{t("manager.allChannels", "All Channels")}</option>
               <option value="WhatsApp">WhatsApp</option>
               <option value="Meeting">Meeting</option>
               <option value="Phone">Phone</option>
@@ -244,8 +244,8 @@ export default function RecordConversationPage() {
               onChange={(e) => setBackupFilter(e.target.value as "all" | "need")}
               className="h-10 appearance-none rounded-lg border border-slate-200 bg-white px-3.5 pr-8 text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300"
             >
-              <option value="all">All Records</option>
-              <option value="need">Need Backup</option>
+              <option value="all">{t("manager.allRecords", "All Records")}</option>
+              <option value="need">{t("manager.needBackup", "Need Backup")}</option>
             </select>
           </div>
         </div>
@@ -256,7 +256,7 @@ export default function RecordConversationPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search company..."
+            placeholder={t("manager.searchCompanyPlaceholder", "Search company...")}
             className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-xs placeholder:text-slate-400 focus:border-blue-500 focus:outline-hidden"
           />
         </div>
@@ -267,13 +267,13 @@ export default function RecordConversationPage() {
         <table className="w-full text-left text-xs text-slate-600">
           <thead className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
             <tr>
-              <th className="px-4 py-3.5">Company</th>
-              <th className="px-4 py-3.5">Sales Executive</th>
-              <th className="px-4 py-3.5">Source</th>
-              <th className="px-4 py-3.5">Date</th>
-              <th className="px-4 py-3.5">Summary</th>
-              <th className="px-4 py-3.5">Status</th>
-              <th className="px-4 py-3.5 text-center">Action</th>
+              <th className="px-4 py-3.5">{t("dashboard.company", "Company")}</th>
+              <th className="px-4 py-3.5">{t("nav.salesExecutive", "Sales Executive")}</th>
+              <th className="px-4 py-3.5">{t("common.source", "Source")}</th>
+              <th className="px-4 py-3.5">{t("common.date", "Date")}</th>
+              <th className="px-4 py-3.5">{t("manager.summary", "Summary")}</th>
+              <th className="px-4 py-3.5">{t("manager.status", "Status")}</th>
+              <th className="px-4 py-3.5 text-center">{t("common.action", "Action")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -282,7 +282,7 @@ export default function RecordConversationPage() {
             ) : filteredRecords.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
-                  No conversation records found for this selection.
+                  {t("manager.noConversationsFound", "No conversation records found for this selection.")}
                 </td>
               </tr>
             ) : (
@@ -302,18 +302,18 @@ export default function RecordConversationPage() {
                   <td className="px-4 py-3.5">
                     {r.backupStatus === "Pending" ? (
                       <span className="rounded-full bg-amber-100 px-2.5 py-0.5 font-semibold text-amber-800">
-                        Need Backup
+                        {t("manager.needBackup", "Need Backup")}
                       </span>
                     ) : r.backupStatus === "In Progress" ? (
                       <span className="rounded-full bg-blue-100 px-2.5 py-0.5 font-semibold text-blue-800">
-                        On Progress
+                        {t("manager.onProgress", "On Progress")}
                       </span>
                     ) : r.backupStatus === "Reviewed" ? (
                       <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 font-semibold text-emerald-800">
-                        Reviewed
+                        {t("manager.reviewed", "Reviewed")}
                       </span>
                     ) : (
-                      <span className="text-slate-400">Normal</span>
+                      <span className="text-slate-400">{t("manager.normal", "Normal")}</span>
                     )}
                   </td>
                   <td className="px-4 py-3.5 text-center">
@@ -322,7 +322,7 @@ export default function RecordConversationPage() {
                       onClick={() => setSelectedRecord(r)}
                       className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2.5 py-1 font-semibold text-blue-600 hover:bg-slate-50"
                     >
-                      <Eye className="h-3.5 w-3.5" /> See more..
+                      <Eye className="h-3.5 w-3.5" /> {t("common.seeMore", "See more..")}
                     </button>
                   </td>
                 </tr>
