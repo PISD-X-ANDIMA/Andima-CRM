@@ -40,6 +40,7 @@ export interface FieldTaskItem {
   id: string;
   task_id_code?: string;
   job_number: string;
+  customer_id?: string;
   customer_name: string;
   customer_code?: string;
   shipper?: string;
@@ -566,6 +567,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
 export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps) {
   const [tasks, setTasks] = useState<FieldTaskItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [companyFilter, setCompanyFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [issueFilter, setIssueFilter] = useState('All');
   const [periodFilter, setPeriodFilter] = useState('All');
@@ -1298,6 +1300,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
 
   useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('company_id');
+    if (id) setCompanyFilter(id);
+  }, []);
+
+  useEffect(() => {
     // Source of truth is a2_worksheets joined to a1_company_list, so company
     // names match the Company List. No local dummy seed or cache fallback.
     setLoading(true);
@@ -1606,6 +1613,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
   // Filter tasks
   const filteredTasks = tasks.filter(t => {
+    if (companyFilter && t.customer_id !== companyFilter) return false;
+
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch = !q || 
       t.job_number.toLowerCase().includes(q) ||
@@ -1667,13 +1676,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       if (isFieldAgent) {
         return !t.field_agent_name || t.field_agent_name.toLowerCase().includes(activeUserName.toLowerCase());
       }
-      // Sales Executive view: sees tasks under their sales responsibility / created by them / assigned to their field agents
-      const isMine = t.customer_name?.toLowerCase().includes(activeUserName.toLowerCase()) ||
-                     t.timeline?.some(ev => ev.author?.toLowerCase().includes(activeUserName.toLowerCase())) ||
-                     t.notes?.toLowerCase().includes(activeUserName.toLowerCase()) ||
-                     !t.field_agent_name ||
-                     t.field_agent_name === activeUserName;
-      return isMine;
+      // Sales Executive view: the API already scopes tasks to companies they own.
+      return true;
     })();
 
     return matchesSearch && matchesIssue && matchesPeriod && matchesRoleAccess;

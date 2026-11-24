@@ -187,9 +187,6 @@ export async function fetchApiWorksheetDetail(id: number): Promise<WorksheetItem
 export async function uploadApiFile(
   file: File
 ): Promise<{ success: boolean; data?: UploadedFileMetadata; error?: string }> {
-  const ext = file.name.split('.').pop()?.toLowerCase() || 'txt';
-  const fileSizeKb = Math.round(file.size / 1024) || 1;
-
   try {
     const formData = new FormData();
     formData.append('file', file);
@@ -210,16 +207,9 @@ export async function uploadApiFile(
     }
 
     if (!res.ok || !json?.success) {
-      // Fallback object URL if server returns non-JSON error or storage issues
-      const objectUrl = typeof window !== 'undefined' ? URL.createObjectURL(file) : '';
       return {
-        success: true,
-        data: {
-          file_name: file.name,
-          file_type: ext,
-          file_url: objectUrl,
-          file_size_kb: fileSizeKb,
-        },
+        success: false,
+        error: json?.error || `Gagal mengunggah berkas "${file.name}".`,
       };
     }
 
@@ -228,16 +218,9 @@ export async function uploadApiFile(
       data: json.data,
     };
   } catch (err: any) {
-    console.warn('uploadApiFile exception, using fallback object URL:', err);
-    const objectUrl = typeof window !== 'undefined' ? URL.createObjectURL(file) : '';
     return {
-      success: true,
-      data: {
-        file_name: file.name,
-        file_type: ext,
-        file_url: objectUrl,
-        file_size_kb: fileSizeKb,
-      },
+      success: false,
+      error: `Gagal mengunggah berkas "${file.name}": ${err?.message || 'Terjadi kesalahan koneksi.'}`,
     };
   }
 }

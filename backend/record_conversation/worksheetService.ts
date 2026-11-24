@@ -20,15 +20,31 @@ export async function getWorksheets(options?: {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
-  if (Array.isArray(options?.visibleCompanyIds) && options.visibleCompanyIds.length === 0) {
-    return { data: [], total: 0, page, limit, totalPages: 1 };
+  const allowedCompanyIds = Array.isArray(options?.visibleCompanyIds) ? options.visibleCompanyIds : null;
+  let allowedJobIds: string[] | null = null;
+
+  if (allowedCompanyIds) {
+    if (allowedCompanyIds.length === 0) {
+      return { data: [], total: 0, page, limit, totalPages: 1 };
+    }
+    const { data: visibleJobs } = await (supabase as any)
+      .from('corp_jobs')
+      .select('id')
+      .in('customer_id', allowedCompanyIds);
+    const jobIds: string[] = (visibleJobs || []).map((j: any) => String(j.id));
+    if (jobIds.length === 0) {
+      return { data: [], total: 0, page, limit, totalPages: 1 };
+    }
+    allowedJobIds = jobIds;
   }
 
-  const { data: tasks, count, error } = await (supabase as any)
+  let tasksQuery = (supabase as any)
     .from('a3_tasks')
     .select('id, job_id, field_agent_id, status, issue_description, created_at, updated_at', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(from, to);
+    .order('created_at', { ascending: false });
+  if (allowedJobIds) tasksQuery = tasksQuery.in('job_id', allowedJobIds);
+
+  const { data: tasks, count, error } = await tasksQuery.range(from, to);
 
   if (error || !tasks) {
     return { data: [], total: 0, page, limit, totalPages: 1 };
@@ -47,33 +63,34 @@ export async function getWorksheets(options?: {
 
   const custIds = (jobsRes.data || []).map((j: any) => j.customer_id).filter(Boolean);
   const { data: custs } = custIds.length > 0
-    ? await (supabase as any).from('a1_customers').select('id, company_name').in('id', custIds)
+    ? await (supabase as any).from('a1_customers').select('id, company_name, created_by_name').in('id', custIds)
     : { data: [] };
-  const custMap = new Map<string, any>((custs || []).map((c: any) => [c.id, c.company_name]));
+  const custMap = new Map<string, any>((custs || []).map((c: any) => [c.id, c]));
 
   const total = count || 0;
   const totalPages = Math.ceil(total / limit) || 1;
 
   const mappedData = tasks.map((t: any, index: number) => {
     const job = jobMap.get(t.job_id);
-    const agentName = String(userMap.get(t.field_agent_id) || 'Marsel');
+    const agentName = String(userMap.get(t.field_agent_id) || 'Field Agent');
     const initials = agentName
       .split(' ')
       .map((n: string) => n[0])
       .join('')
       .substring(0, 2)
-      .toUpperCase() || 'M';
+      .toUpperCase() || 'FA';
+    const customer = job?.customer_id ? custMap.get(job.customer_id) : null;
 
     return {
       worksheet_id: t.id,
       transaction_no: '-',
       job_no: job?.job_number || `#JOB-${index + 1}`,
       customer_id: job?.customer_id || '',
-      company_name: (job?.customer_id ? custMap.get(job.customer_id) : null) || '-',
+      company_name: customer?.company_name || '-',
       field_agent_name: agentName,
       field_agent_role: 'Field Inspector',
       field_agent_initials: initials,
-      sales_pic_name: 'Adelia',
+      sales_pic_name: customer?.created_by_name || 'Sales Executive',
       status_kendala: t.issue_description || 'Normal',
       has_issue: Boolean(t.issue_description) || t.status === 'has_issue',
       issue_note: t.issue_description || undefined,
@@ -113,10 +130,18 @@ export async function getWorksheetDetail(worksheetId: number | string, visibleCo
   ]);
 
   const job = jobRes.data;
+  if (Array.isArray(visibleCompanyIds)) {
+    if (!job?.customer_id || !visibleCompanyIds.includes(job.customer_id)) return null;
+  }
+
   let companyName = '-';
+  let salesPicName = 'Sales Executive';
   if (job?.customer_id) {
-    const { data: cust } = await (supabase as any).from('a1_customers').select('company_name').eq('id', job.customer_id).maybeSingle();
-    if (cust) companyName = cust.company_name;
+    const { data: cust } = await (supabase as any).from('a1_customers').select('company_name, created_by_name').eq('id', job.customer_id).maybeSingle();
+    if (cust) {
+      companyName = cust.company_name;
+      salesPicName = cust.created_by_name || salesPicName;
+    }
   }
 
   const agentName = String(agentRes.data?.full_name || 'Field Agent');
@@ -132,7 +157,7 @@ export async function getWorksheetDetail(worksheetId: number | string, visibleCo
     field_agent_name: agentName,
     field_agent_role: 'Field Inspector',
     field_agent_initials: initials,
-    sales_pic_name: 'Sales Executive',
+    sales_pic_name: salesPicName,
     status_kendala: t.issue_description || 'Normal',
     has_issue: Boolean(t.issue_description) || t.status === 'Has Issue' || t.status === 'has_issue',
     issue_note: t.issue_description || undefined,
@@ -203,8 +228,8 @@ export async function getFieldAgentTasks(visibleCompanyIds?: string[] | null): P
     });
 
     const custIds = (jobsRes.data || []).map((j: any) => j.customer_id).filter(Boolean);
-    const { data: custs } = custIds.length > 0 ? await (supabase as any).from('a1_customers').select('id, company_name').in('id', custIds) : { data: [] };
-    const custMap = new Map<string, any>((custs || []).map((c: any) => [c.id, c.company_name]));
+    const { data: custs } = custIds.length > 0 ? await (supabase as any).from('a1_customers').select('id, company_name, created_by_name').in('id', custIds) : { data: [] };
+    const custMap = new Map<string, any>((custs || []).map((c: any) => [c.id, c]));
 
     const allowedCompanyIds = Array.isArray(visibleCompanyIds) ? new Set(visibleCompanyIds) : null;
 
@@ -212,8 +237,7 @@ export async function getFieldAgentTasks(visibleCompanyIds?: string[] | null): P
       .filter((t: any) => {
         const job = jobMap.get(t.job_id);
         if (!allowedCompanyIds) return true;
-        // Sales only receives reports after the field agent declares them done.
-        if (t.status !== 'Completed' && t.status !== 'Has Issue') return false;
+        // Sales keeps the full task list for their own companies (assign/review/archive).
         if (!job?.customer_id) return false;
         return allowedCompanyIds.has(job.customer_id);
       })
@@ -231,7 +255,8 @@ export async function getFieldAgentTasks(visibleCompanyIds?: string[] | null): P
           id: `tsk-${t.id}`,
           task_id_code: `TSK-${String(t.id).slice(0, 8).toUpperCase()}`,
           job_number: job?.job_number || `#JOB-${index + 1}`,
-          customer_name: (job?.customer_id ? custMap.get(job.customer_id) : null) || '-',
+          customer_id: job?.customer_id || '',
+          customer_name: (job?.customer_id ? custMap.get(job.customer_id)?.company_name : null) || '-',
           field_agent_name: userMap.get(t.field_agent_id) || 'Field Agent',
           status: (t.status as any) || (t.field_agent_id ? 'Assigned' : 'Unassigned'),
           review_status: t.review_status || 'Review',

@@ -978,27 +978,10 @@ Exported on: ${new Date().toLocaleString('id-ID')}
     setIsCreateModalOpen(true);
   };
 
-  // Switch channel with automatic file re-validation
+  // Switch channel without dropping already-selected attachments.
   const handleChannelSelectionChange = (newChannel: 'WhatsApp' | 'Meeting') => {
     setChannelSelection(newChannel);
     setAttachmentError(null);
-
-    // If switched to WhatsApp, check existing uploaded files for non-.txt formats
-    if (newChannel === 'WhatsApp' && newUploadedFiles.length > 0) {
-      const invalidFiles = newUploadedFiles.filter(f => {
-        const ext = f.file_name.split('.').pop()?.toLowerCase() || '';
-        return ext !== 'txt' && f.file_type !== 'txt' && f.file_type !== 'text/plain';
-      });
-
-      if (invalidFiles.length > 0) {
-        const validFiles = newUploadedFiles.filter(f => {
-          const ext = f.file_name.split('.').pop()?.toLowerCase() || '';
-          return ext === 'txt' || f.file_type === 'txt' || f.file_type === 'text/plain';
-        });
-        setNewUploadedFiles(validFiles);
-        setAttachmentError(`Beberapa berkas (${invalidFiles.map(i => i.file_name).join(', ')}) dihapus karena channel WhatsApp hanya menerima file berformat .txt (Export Chat).`);
-      }
-    }
   };
 
   // Upload file in Create Modal with 5 MB & Channel Type validation (Lecturer Rules 3 & 4)
@@ -1022,23 +1005,6 @@ Exported on: ${new Date().toLocaleString('id-ID')}
         setAttachmentError(`Ukuran attachment "${file.name}" (${sizeMb} MB) melebihi batas maksimal 5 MB. Menolak attachment.`);
         if (createFileInputRef.current) createFileInputRef.current.value = '';
         return;
-      }
-
-      // Lecturer Rule 3: Jenis attachment tidak sesuai channel -> Menolak attachment
-      const ext = file.name.split('.').pop()?.toLowerCase() || '';
-      if (channelSelection === 'WhatsApp') {
-        if (ext !== 'txt' && file.type !== 'text/plain') {
-          setAttachmentError(`Jenis attachment "${file.name}" (.${ext}) tidak sesuai channel WhatsApp. Channel WhatsApp HANYA menerima berkas .txt (Export Chat). Menolak attachment.`);
-          if (createFileInputRef.current) createFileInputRef.current.value = '';
-          return;
-        }
-      } else if (channelSelection === 'Meeting') {
-        const allowedMeetingExts = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'png', 'jpg', 'jpeg', 'webp', 'txt', 'csv'];
-        if (!allowedMeetingExts.includes(ext)) {
-          setAttachmentError(`Jenis attachment "${file.name}" (.${ext}) tidak sesuai channel Meeting. Format berkas tidak didukung. Menolak attachment.`);
-          if (createFileInputRef.current) createFileInputRef.current.value = '';
-          return;
-        }
       }
     }
 
@@ -2138,20 +2104,13 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                   <div className={`mt-3 px-3 py-1 rounded-lg border text-[10px] font-semibold ${attachmentError ? 'border-red-200 bg-red-50 text-red-600' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
                     {channelSelection === null
                       ? 'Ukuran maks: 5MB • Pilih channel type untuk melihat format yang diterima'
-                      : `Ukuran maks: 5MB • Format Channel ${channelSelection}: ${channelSelection === 'WhatsApp' ? 'HANYA .txt' : '.pdf, .docx, .xlsx, .png'}`}
+                      : 'Ukuran maks: 5MB • Semua format berkas didukung'}
                   </div>
                 </div>
                 <input
                   ref={createFileInputRef}
                   type="file"
                   multiple
-                  accept={
-                    channelSelection === 'WhatsApp'
-                      ? '.txt,text/plain'
-                      : channelSelection === 'Meeting'
-                        ? '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.webp,.txt,.csv'
-                        : undefined
-                  }
                   onChange={(e) => handleCreateFileUpload(e.target.files)}
                   className="hidden"
                 />

@@ -57,15 +57,9 @@ export async function uploadConversationFile(file: File): Promise<{
       });
 
     if (uploadError) {
-      console.warn('Supabase storage upload warning, returning local fallback metadata:', uploadError.message);
       return {
-        success: true,
-        data: {
-          file_name: file.name,
-          file_type: ext,
-          file_url: `https://storage.placeholder.com/${sanitizedFileName}`,
-          file_size_kb: fileSizeKb,
-        },
+        success: false,
+        error: `Gagal mengunggah berkas "${file.name}": ${uploadError.message}`,
       };
     }
 
@@ -84,19 +78,9 @@ export async function uploadConversationFile(file: File): Promise<{
       },
     };
   } catch (err: any) {
-    console.warn('Upload exception, returning local fallback metadata:', err);
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'txt';
-    const fileSizeKb = Math.round(file.size / 1024) || 1;
-    // Hanya buang karakter yang merusak path/URL; spasi dipertahankan agar nama asli utuh.
-    const sanitizedFileName = file.name.replace(/[\/\\?%*:|"<>]/g, '_');
     return {
-      success: true,
-      data: {
-        file_name: file.name,
-        file_type: ext,
-        file_url: `https://storage.placeholder.com/${sanitizedFileName}`,
-        file_size_kb: fileSizeKb,
-      },
+      success: false,
+      error: `Gagal mengunggah berkas "${file.name}": ${err?.message || 'Terjadi kesalahan pada storage.'}`,
     };
   }
 }

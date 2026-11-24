@@ -12,6 +12,7 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface TaskItem {
   jobNumber: string;
+  customerId: string;
   company: string;
   salesExecutive: string;
   fieldAgent: string;
@@ -39,6 +40,7 @@ export default function TaskOfFieldAgentPage() {
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [companyFilter, setCompanyFilter] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
   const [detailDocs, setDetailDocs] = useState<Array<{ id: string; doc_type: string; file_url: string }>>([]);
   const [detailPhotos, setDetailPhotos] = useState<string[]>([]);
@@ -69,6 +71,11 @@ export default function TaskOfFieldAgentPage() {
   };
 
   useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("company_id");
+    if (id) setCompanyFilter(id);
+  }, []);
+
+  useEffect(() => {
     let active = true;
     fetch("/api/v1/navigation/sidebar", { cache: "no-store" })
       .then((res) => res.json())
@@ -96,7 +103,7 @@ export default function TaskOfFieldAgentPage() {
             .select("*")
             .order("created_at", { ascending: false }),          (supabase as any)
             .from("a1_customers")
-            .select("id, company_name"),
+            .select("id, company_name, created_by_name"),
           (supabase as any)
             .from("b2_register")
             .select("id, full_name"),
@@ -107,6 +114,7 @@ export default function TaskOfFieldAgentPage() {
 
         if (active && !error && data && data.length > 0) {
           const compMap = new Map((companies || []).map((c: any) => [c.id, c.company_name]));
+          const ownerMap = new Map((companies || []).map((c: any) => [c.id, c.created_by_name]));
           const userMap = new Map((users || []).map((u: any) => [u.id, u.full_name]));
           const jobMap = new Map((jobs || []).map((j: any) => [j.id, j]));
 
@@ -117,8 +125,9 @@ export default function TaskOfFieldAgentPage() {
               const hasIssue = Boolean(t.issue_description) || t.status === "has_issue";
               return {
                 jobNumber: job?.job_number || t.job_no || t.job_number || "#AENAT/0000/0000",
+                customerId: custId || "",
                 company: (custId ? compMap.get(custId) : null) || t.company_name || "-",
-                salesExecutive: userMap.get(t.field_agent_id) || "Sales Executive",
+                salesExecutive: (custId ? ownerMap.get(custId) : null) || "-",
                 fieldAgent: userMap.get(t.field_agent_id) || "Field Agent",
                 status: hasIssue ? "In Progress" : (t.status || "Completed"),
                 reviewStatus: (t.review_status || "Review") as "Review" | "Completed" | "Archived",
@@ -154,6 +163,9 @@ export default function TaskOfFieldAgentPage() {
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
+      if (companyFilter && t.customerId !== companyFilter) {
+        return false;
+      }
       if (selectedExecutive !== "all" && !t.salesExecutive.toLowerCase().includes(selectedExecutive.toLowerCase())) {
         return false;
       }
@@ -167,7 +179,7 @@ export default function TaskOfFieldAgentPage() {
       }
       return true;
     });
-  }, [tasks, selectedExecutive, search]);
+  }, [tasks, selectedExecutive, search, companyFilter]);
 
   useEffect(() => {
     setPage(1);

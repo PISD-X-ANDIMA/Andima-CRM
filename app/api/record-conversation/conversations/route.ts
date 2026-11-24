@@ -157,6 +157,28 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // A sales executive may only update conversations for companies they own.
+    if (!scope.isManager) {
+      const supabase = await createServerSupabaseClient();
+      if (!supabase) {
+        return NextResponse.json({ success: false, error: 'Database client unavailable' }, { status: 503 });
+      }
+      const { data: conversation } = await supabase
+        .from('a2_record_conversations')
+        .select('customer_id')
+        .eq('id', body.id)
+        .maybeSingle();
+      if (!conversation) {
+        return NextResponse.json({ success: false, error: 'Conversation not found.' }, { status: 404 });
+      }
+      if (!scope.companyIds.includes(conversation.customer_id)) {
+        return NextResponse.json(
+          { success: false, error: 'You can only update conversations for your own companies.' },
+          { status: 403 }
+        );
+      }
+    }
+
     const result = await updateConversation(body);
 
     if (!result.success) {

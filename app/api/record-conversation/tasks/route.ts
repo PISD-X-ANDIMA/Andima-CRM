@@ -17,8 +17,8 @@ export async function GET() {
   }
 
   try {
-    // Return all field agent tasks so they are synchronized across Manager and Sales Executive
-    const tasks = await getFieldAgentTasks(null);
+    // Managers see every task; a sales executive only sees their own companies.
+    const tasks = await getFieldAgentTasks(scope.isManager ? null : scope.companyIds);
     const response = NextResponse.json({ success: true, data: tasks ?? [] });
     response.headers.set('Cache-Control', 'private, max-age=3, stale-while-revalidate=30');
     return response;
@@ -110,6 +110,30 @@ export async function POST(request: NextRequest) {
         { success: false, error: 'taskId and notes are required.' },
         { status: 400 }
       );
+    }
+
+    if (!scope.isManager) {
+      const supabase = await createServerSupabaseClient();
+      if (!supabase) {
+        return NextResponse.json({ success: false, error: 'Database client unavailable' }, { status: 503 });
+      }
+      const cleanId = String(taskId).replace(/^tsk-/, '');
+      const { data: task } = await supabase
+        .from('a3_tasks')
+        .select('id, job_id')
+        .eq('id', cleanId)
+        .maybeSingle();
+      if (!task) {
+        return NextResponse.json({ success: false, error: 'Task not found.' }, { status: 404 });
+      }
+      const { data: job } = await supabase
+        .from('corp_jobs')
+        .select('customer_id')
+        .eq('id', task.job_id)
+        .maybeSingle();
+      if (!job?.customer_id || !scope.companyIds.includes(job.customer_id)) {
+        return NextResponse.json({ success: false, error: 'This report is outside your company scope.' }, { status: 403 });
+      }
     }
 
     const result = await saveFieldTaskNote({
