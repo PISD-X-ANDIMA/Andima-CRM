@@ -188,14 +188,14 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
           <button
             type="button"
             onClick={() => setCrmOpen((value) => !value)}
-            className="flex h-[40px] w-full items-center justify-between rounded-[8px] bg-[#0550d7] px-3 text-[14px] font-semibold tracking-[0.07px] text-white shadow-sm transition-colors hover:bg-[#0446b8] cursor-pointer"
+            className="flex h-[40px] w-full items-center justify-between rounded-[8px] !bg-[#0550d7] hover:!bg-[#0446b8] px-3 text-[14px] font-medium tracking-[0.07px] !text-white shadow-sm transition-colors cursor-pointer"
           >
             <div className="flex items-center gap-2.5">
-              <Users className="h-[18px] w-[18px] shrink-0" />
-              <span className="truncate text-left">{menuLabel}</span>
+              <Users className="h-[18px] w-[18px] shrink-0 text-white" />
+              <span className="truncate text-left text-white">{menuLabel}</span>
             </div>
             <ChevronDown
-              className={`h-4 w-4 shrink-0 transition-transform duration-200 ${
+              className={`h-4 w-4 shrink-0 text-white transition-transform duration-200 ${
                 crmOpen ? "rotate-0" : "-rotate-90"
               }`}
             />
@@ -208,7 +208,7 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
                 href={sectionHref}
                 prefetch
                 onClick={handleNavClick}
-                className="flex h-[40px] w-full items-center rounded-[8px] bg-[#b0c6d4] px-3 text-[14px] font-semibold text-[#45556c] transition-colors hover:bg-[#a1bccd]"
+                className="flex h-[40px] w-full items-center rounded-[8px] !bg-[#b0c6d4] hover:!bg-[#a1bccd] px-3 text-[14px] font-medium !text-[#45556c] transition-colors"
               >
                 <span className="truncate">{currentRoleTitle}</span>
               </Link>
@@ -238,14 +238,14 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
                       href={item.href}
                       onClick={handleNavClick}
                       aria-current={isActive ? "page" : undefined}
-                      className={`flex items-center rounded-[8px] px-3 py-[7px] text-[14px] font-semibold transition-colors ${
+                      className={`flex h-[36px] items-center rounded-[8px] px-3 text-[14px] transition-colors ${
                         isActive
-                          ? "bg-[#b0c6d4] text-[#45556c]"
-                          : "text-white hover:bg-white/10"
+                          ? "!bg-[#b0c6d4] font-medium !text-[#45556c]"
+                          : "!bg-transparent font-normal !text-white hover:!bg-white/10"
                       }`}
                     >
                       {isActive && (
-                        <span className="mr-2 size-[6px] shrink-0 rounded-full bg-[#069494]" />
+                        <span className="mr-2 size-[6px] shrink-0 rounded-full !bg-[#069494]" />
                       )}
                       <span className="truncate">{getMenuTitle(item.href, item.name)}</span>
                     </Link>
@@ -270,7 +270,7 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
             }
             router.push("/login");
           }}
-          className="flex h-[40px] w-full items-center justify-center rounded-full border-2 border-[#d9364f] bg-transparent text-[18px] font-semibold text-[#d9364f] transition-colors hover:bg-[#d9364f] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d9364f] cursor-pointer"
+          className="flex h-[40px] w-full items-center justify-center rounded-full border-2 border-[#d9364f] !bg-transparent hover:!bg-[#d9364f] text-[16px] font-medium !text-[#d9364f] hover:!text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d9364f] cursor-pointer"
         >
           <span>{t("nav.logout", "Logout")}</span>
         </button>

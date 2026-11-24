@@ -83,9 +83,9 @@ export function DashboardHeader({ isManager = false }: { isManager?: boolean }) 
           type="button"
           onClick={toggleSidebar}
           aria-label="Toggle navigation"
-          className="flex size-[36px] shrink-0 items-center justify-center rounded-[8px] bg-[#1565d8] text-white shadow-xs transition-colors hover:bg-[#0f52b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1565d8]/40 cursor-pointer"
+          className="flex size-[36px] shrink-0 items-center justify-center rounded-[8px] !bg-[#1565d8] !text-white shadow-xs transition-colors hover:!bg-[#0f52b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1565d8]/40 cursor-pointer"
         >
-          <Menu className="h-[18px] w-[18px]" strokeWidth={2.2} />
+          <Menu className="h-[18px] w-[18px] text-white" strokeWidth={2.2} />
         </button>
 
         <nav aria-label="Breadcrumb" className="flex min-w-0 flex-wrap items-center gap-1.5 text-[12px] font-medium uppercase tracking-wide">
