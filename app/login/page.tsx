@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [greeting, setGreeting] = useState<string>('Good Morning');
   const [existingSessionEmail, setExistingSessionEmail] = useState<string | null>(null);
 
-  // Show the current session but keep the form usable, so another account can sign in.
+  // Automatically clear invalid refresh tokens if previous session expired
   useEffect(() => {
     if (!hasSupabaseConfig) return;
     let active = true;
@@ -30,24 +30,16 @@ export default function LoginPage() {
         const invalidRefreshToken = error.code === 'refresh_token_not_found' ||
           /invalid refresh token|refresh token not found/i.test(error.message);
         if (invalidRefreshToken) {
-          // Remove only this browser's unusable session. No role is checked here.
           await supabase.auth.signOut({ scope: 'local' });
           if (active) setErrorMessage('Your previous login session expired. Please sign in again.');
         }
         return;
       }
 
-      if (user) setExistingSessionEmail(user.email ?? 'akun aktif');
+      if (user) setExistingSessionEmail(user.email ?? null);
     })();
     return () => { active = false; };
   }, []);
-
-  const handleSignOutExisting = async () => {
-    await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
-    try { localStorage.removeItem('andima_user'); } catch {}
-    setExistingSessionEmail(null);
-    setErrorMessage('');
-  };
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -250,7 +242,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#07111F] text-[#0D1B2A] selection:bg-[#3B6FF5] selection:text-white font-[family-name:var(--font-montserrat)]">
+    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#07111F] text-[#0D1B2A] selection:bg-[#3B6FF5] selection:text-white font-sans">
       {/* 1. BACKGROUND GAMBAR LOGISTIK FULL SCREEN */}
       <div className="absolute inset-0 z-0">
         <img
@@ -278,9 +270,9 @@ export default function LoginPage() {
             className="h-20 w-auto object-contain drop-shadow-[0_4px_20px_rgba(0,0,0,0.6)]"
           />
         </div>
-        <h1 className="font-[family-name:var(--font-syne)] text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-wider text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)] leading-tight">
+        <h1 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-wider text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)] leading-tight">
           PT. ANDIMA<br />
-          <span className="font-[family-name:var(--font-syne)] text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-wider text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)] leading-tight">TRANSPORTINDO</span>
+          <span className="font-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-wider text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)] leading-tight">TRANSPORTINDO</span>
         </h1>
       </div>
 
@@ -296,31 +288,16 @@ export default function LoginPage() {
 
             {/* Greeting */}
             <div className="mb-7 text-left relative z-10">
-              <h2 className="font-[family-name:var(--font-syne)] text-xl sm:text-2xl font-bold text-[#0D1B2A] tracking-tight">
+              <h2 className="font-heading text-xl sm:text-2xl font-bold text-[#0D1B2A] tracking-tight">
                 {greeting},
               </h2>
-              <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#334155] mt-1.5 font-medium">
+              <p className="font-sans text-sm text-[#334155] mt-1.5 font-medium">
                 Please sign in with your registered account to access the dashboard.
               </p>
             </div>
 
-            {existingSessionEmail && (
-              <div className="relative z-10 mb-6 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-                <span>
-                  Masih masuk sebagai <strong>{existingSessionEmail}</strong>. Isi form di bawah untuk masuk sebagai akun lain.
-                </span>
-                <button
-                  type="button"
-                  onClick={handleSignOutExisting}
-                  className="cursor-pointer rounded-md border border-amber-300 bg-white px-3 py-1 font-semibold text-amber-800 hover:bg-amber-100"
-                >
-                  Keluar
-                </button>
-              </div>
-            )}
-
             {/* Form Fields */}
-            <form onSubmit={handleSubmit} className="space-y-6 font-[family-name:var(--font-montserrat)] relative z-10" noValidate>
+            <form onSubmit={handleSubmit} className="space-y-6 font-sans relative z-10" noValidate>
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#0F172A] mb-2.5">
                   Email
@@ -396,7 +373,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLocked || isPermanentlyBlocked || isSigningIn}
-                className="w-full py-4 px-5 text-white font-extrabold rounded-xl text-sm tracking-wider uppercase transition-all mt-2 disabled:opacity-50 bg-[#3B6FF5] hover:bg-[#2B5CE5] shadow-[0_8px_25px_rgba(59,111,245,0.4)] active:scale-[0.99] cursor-pointer disabled:cursor-not-allowed font-[family-name:var(--font-montserrat)]"
+                className="w-full py-4 px-5 text-white font-extrabold rounded-xl text-sm tracking-wider uppercase transition-all mt-2 disabled:opacity-50 bg-[#3B6FF5] hover:bg-[#2B5CE5] shadow-[0_8px_25px_rgba(59,111,245,0.4)] active:scale-[0.99] cursor-pointer disabled:cursor-not-allowed font-sans"
               >
                 {isPermanentlyBlocked
                   ? 'ACCOUNT BLOCKED'
