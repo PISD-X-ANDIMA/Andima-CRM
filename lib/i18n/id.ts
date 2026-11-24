@@ -67,6 +67,15 @@ export const id: TranslationType = {
     to: "Sampai",
     preparing: "Menyiapkan...",
     seeMore: "Lihat selengkapnya",
+    perPage: "Per Halaman",
+    items: "item",
+    records: "catatan",
+    allChannels: "Semua Saluran",
+    allBackup: "Semua Backup",
+    needed: "Dibutuhkan",
+    notNeeded: "Tidak Butuh",
+    resolved: "Selesai",
+    companyCode: "Kode Perusahaan",
   },
   // Dashboard
   dashboard: {
@@ -175,6 +184,12 @@ export const id: TranslationType = {
     week: "Minggu",
     time: "Waktu",
     recordConversationBtn: "+ Catat Hasil Pertemuan",
+    companyRequired: "Perusahaan wajib dipilih",
+    dateRequired: "Tanggal wajib diisi",
+    timeRequired: "Waktu pertemuan wajib dipilih",
+    agendaRequired: "Agenda / Topik wajib diisi",
+    locationRequired: "Lokasi wajib diisi untuk pertemuan tatap muka",
+    linkRequired: "Tautan pertemuan wajib diisi untuk pertemuan daring",
   },
   // Mobile UI
   mobile: {

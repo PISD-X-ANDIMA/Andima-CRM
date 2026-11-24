@@ -178,6 +178,7 @@ export default function MeetingSchedulePage() {
     meeting: NonNullable<CustomerListItem["meetingSchedule"]>;
   } | null>(null);
   const [editingMeeting, setEditingMeeting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [multiMeetingSlot, setMultiMeetingSlot] = useState<{
     date: string;
     hour: number;
@@ -420,6 +421,24 @@ export default function MeetingSchedulePage() {
   // Save / Update Meeting
   const handleSaveMeeting = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const errors: Record<string, string> = {};
+    if (!form.companyId) errors.companyId = t("meetingSchedule.companyRequired", "Company is required");
+    if (!form.date) errors.date = t("meetingSchedule.dateRequired", "Date is required");
+    else if (form.date < jakartaDateKey()) errors.date = "Meetings cannot be scheduled on a past date";
+    if (!form.startTime) errors.startTime = t("meetingSchedule.timeRequired", "Time is required");
+    if (!form.agenda.trim()) errors.agenda = t("meetingSchedule.agendaRequired", "Agenda is required");
+    if (form.meetingType === "offline" && !form.location.trim()) {
+      errors.location = t("meetingSchedule.locationRequired", "Location is required for an offline meeting");
+    }
+    if (form.meetingType === "online" && !form.meetingLink.trim()) {
+      errors.meetingLink = t("meetingSchedule.linkRequired", "A meeting link is required for an online meeting");
+    }
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+    setFieldErrors({});
+
     const customer = customers.find((item) => item.id === form.companyId);
     if (!customer) {
       setMutationError("Select a company.");
@@ -538,7 +557,8 @@ export default function MeetingSchedulePage() {
     }
   }
 
-  const updateForm = (field: keyof MeetingFormState, value: string) =>
+  const updateForm = (field: keyof MeetingFormState, value: string) => {
+    setFieldErrors((prev) => ({ ...prev, [field]: "" }));
     setForm((current) => {
       if (field === "startTime") {
         const slot = meetingSlots.find((item) => item.start === value);
@@ -562,6 +582,7 @@ export default function MeetingSchedulePage() {
       }
       return { ...current, [field]: value };
     });
+  };
 
   const selectableSlots = meetingSlots.filter(
     (slot) => form.date !== jakartaDateKey() || Number(slot.start.slice(0, 2)) * 60 > jakartaMinutes()
@@ -590,15 +611,6 @@ export default function MeetingSchedulePage() {
         </div>
       )}
 
-      {/* Breadcrumb Navigation */}
-      <nav className="text-xs font-medium text-slate-500">
-        <span className="text-slate-400">ANDIMA CRM</span>
-        <span className="mx-2 text-slate-300">/</span>
-        <span className="text-slate-400">Sales Executive</span>
-        <span className="mx-2 text-slate-300">/</span>
-        <span className="text-slate-800 font-semibold">Meeting Calendar</span>
-      </nav>
-
       {/* Header with Title and Create Meeting Button */}
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -615,9 +627,9 @@ export default function MeetingSchedulePage() {
                 : "09:00";
             beginAdd(selectedDateKey >= todayKey ? selectedDateKey : todayKey, firstAvailable);
           }}
-          className="crm-btn crm-btn-primary"
+          className="inline-flex items-center gap-2 rounded-xl !bg-[#1565d8] hover:!bg-[#0f52b8] px-5 py-3 text-sm font-semibold !text-white shadow-xs transition-all disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4 text-white" />
           <span>{t("meetingSchedule.createMeeting", "Create Meeting")}</span>
         </button>
       </header>
@@ -907,6 +919,7 @@ export default function MeetingSchedulePage() {
         >
           <form
             onSubmit={handleSaveMeeting}
+            noValidate
             className="my-auto w-full max-w-5xl rounded-2xl bg-white px-6 py-6 shadow-2xl sm:px-8 max-h-[90vh] overflow-y-auto"
           >
             <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
@@ -927,16 +940,15 @@ export default function MeetingSchedulePage() {
                   No assigned companies found. Please add a company in Company List first before scheduling meetings.
                 </div>
               )}
-              <MeetingField label="Company" required>
+              <MeetingField label="Company" required error={fieldErrors.companyId}>
                 <select
-                  required
                   value={form.companyId}
                   onChange={(event) => {
                     const customer = customers.find((item) => item.id === event.target.value);
                     updateForm("companyId", event.target.value);
                     if (customer) updateForm("picName", customer.primaryPic?.fullName || "");
                   }}
-                  className={inputClass}
+                  className={`${inputClass} ${fieldErrors.companyId ? "!border-rose-400 focus:!ring-rose-200" : ""}`}
                 >
                   <option value="">Select company</option>
                   {availableCustomers.map((customer) => (
@@ -946,22 +958,20 @@ export default function MeetingSchedulePage() {
                   ))}
                 </select>
               </MeetingField>
-              <MeetingField label="Date" required>
+              <MeetingField label="Date" required error={fieldErrors.date}>
                 <input
-                  required
                   type="date"
                   min={jakartaDateKey()}
                   value={form.date}
                   onChange={(event) => updateForm("date", event.target.value)}
-                  className={inputClass}
+                  className={`${inputClass} ${fieldErrors.date ? "!border-rose-400 focus:!ring-rose-200" : ""}`}
                 />
               </MeetingField>
-              <MeetingField label="Time" required>
+              <MeetingField label="Time" required error={fieldErrors.startTime}>
                 <select
-                  required
                   value={form.startTime}
                   onChange={(event) => updateForm("startTime", event.target.value)}
-                  className={inputClass}
+                  className={`${inputClass} ${fieldErrors.startTime ? "!border-rose-400 focus:!ring-rose-200" : ""}`}
                 >
                   <option value="" disabled>
                     Select a time slot
@@ -973,19 +983,17 @@ export default function MeetingSchedulePage() {
                   ))}
                 </select>
               </MeetingField>
-              <MeetingField label="Agenda / Topic" required>
+              <MeetingField label="Agenda / Topic" required error={fieldErrors.agenda}>
                 <input
-                  required
                   maxLength={200}
                   value={form.agenda}
                   onChange={(event) => updateForm("agenda", event.target.value)}
                   placeholder="Enter agenda (e.g. Follow Up, Meeting, Discussion)"
-                  className={inputClass}
+                  className={`${inputClass} ${fieldErrors.agenda ? "!border-rose-400 focus:!ring-rose-200" : ""}`}
                 />
               </MeetingField>
               <MeetingField label="PIC Name" required>
                 <input
-                  required
                   readOnly
                   value={form.picName}
                   placeholder="Select a company first"
@@ -994,7 +1002,6 @@ export default function MeetingSchedulePage() {
               </MeetingField>
               <MeetingField label="Andima Representative" required>
                 <input
-                  required
                   value={form.representative}
                   onChange={(event) => updateForm("representative", event.target.value)}
                   placeholder="Representative name"
@@ -1018,24 +1025,22 @@ export default function MeetingSchedulePage() {
                 </div>
               </MeetingField>
               {form.meetingType === "offline" ? (
-                <MeetingField label="Location" required>
+                <MeetingField label="Location" required error={fieldErrors.location}>
                   <input
-                    required
                     value={form.location}
                     onChange={(event) => updateForm("location", event.target.value)}
                     placeholder="Enter location"
-                    className={inputClass}
+                    className={`${inputClass} ${fieldErrors.location ? "!border-rose-400 focus:!ring-rose-200" : ""}`}
                   />
                 </MeetingField>
               ) : (
-                <MeetingField label="Meeting Link" required>
+                <MeetingField label="Meeting Link" required error={fieldErrors.meetingLink}>
                   <input
-                    required
                     type="url"
                     value={form.meetingLink}
                     onChange={(event) => updateForm("meetingLink", event.target.value)}
                     placeholder="https://"
-                    className={inputClass}
+                    className={`${inputClass} ${fieldErrors.meetingLink ? "!border-rose-400 focus:!ring-rose-200" : ""}`}
                   />
                 </MeetingField>
               )}
@@ -1110,6 +1115,7 @@ export default function MeetingSchedulePage() {
           {editingMeeting ? (
             <form
               onSubmit={handleSaveMeeting}
+              noValidate
               className="my-auto w-full max-w-5xl rounded-2xl bg-white px-6 py-6 shadow-2xl sm:px-8 max-h-[90vh] overflow-y-auto"
             >
               <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
@@ -1127,7 +1133,6 @@ export default function MeetingSchedulePage() {
               <div className="space-y-4">
                 <MeetingField label="Company" required>
                   <select
-                    required
                     disabled
                     value={form.companyId}
                     className={`${inputClass} cursor-not-allowed bg-slate-50`}
@@ -1137,21 +1142,19 @@ export default function MeetingSchedulePage() {
                     </option>
                   </select>
                 </MeetingField>
-                <MeetingField label="Date" required>
+                <MeetingField label="Date" required error={fieldErrors.date}>
                   <input
-                    required
                     type="date"
                     value={form.date}
                     onChange={(event) => updateForm("date", event.target.value)}
-                    className={inputClass}
+                    className={`${inputClass} ${fieldErrors.date ? "!border-rose-400 focus:!ring-rose-200" : ""}`}
                   />
                 </MeetingField>
-                <MeetingField label="Time" required>
+                <MeetingField label="Time" required error={fieldErrors.startTime}>
                   <select
-                    required
                     value={form.startTime}
                     onChange={(event) => updateForm("startTime", event.target.value)}
-                    className={inputClass}
+                    className={`${inputClass} ${fieldErrors.startTime ? "!border-rose-400 focus:!ring-rose-200" : ""}`}
                   >
                     {meetingSlots.map((slot) => (
                       <option key={slot.start} value={slot.start}>
@@ -1160,19 +1163,17 @@ export default function MeetingSchedulePage() {
                     ))}
                   </select>
                 </MeetingField>
-                <MeetingField label="Agenda / Topic" required>
+                <MeetingField label="Agenda / Topic" required error={fieldErrors.agenda}>
                   <input
-                    required
                     maxLength={200}
                     value={form.agenda}
                     onChange={(event) => updateForm("agenda", event.target.value)}
                     placeholder="Enter agenda"
-                    className={inputClass}
+                    className={`${inputClass} ${fieldErrors.agenda ? "!border-rose-400 focus:!ring-rose-200" : ""}`}
                   />
                 </MeetingField>
                 <MeetingField label="PIC Name" required>
                   <input
-                    required
                     readOnly
                     value={form.picName}
                     className={`${inputClass} cursor-not-allowed bg-slate-50`}
@@ -1180,7 +1181,6 @@ export default function MeetingSchedulePage() {
                 </MeetingField>
                 <MeetingField label="Andima Representative" required>
                   <input
-                    required
                     value={form.representative}
                     onChange={(event) => updateForm("representative", event.target.value)}
                     className={inputClass}
@@ -1203,22 +1203,20 @@ export default function MeetingSchedulePage() {
                   </div>
                 </MeetingField>
                 {form.meetingType === "offline" ? (
-                  <MeetingField label="Location" required>
+                  <MeetingField label="Location" required error={fieldErrors.location}>
                     <input
-                      required
                       value={form.location}
                       onChange={(event) => updateForm("location", event.target.value)}
-                      className={inputClass}
+                      className={`${inputClass} ${fieldErrors.location ? "!border-rose-400 focus:!ring-rose-200" : ""}`}
                     />
                   </MeetingField>
                 ) : (
-                  <MeetingField label="Meeting Link" required>
+                  <MeetingField label="Meeting Link" required error={fieldErrors.meetingLink}>
                     <input
-                      required
                       type="url"
                       value={form.meetingLink}
                       onChange={(event) => updateForm("meetingLink", event.target.value)}
-                      className={inputClass}
+                      className={`${inputClass} ${fieldErrors.meetingLink ? "!border-rose-400 focus:!ring-rose-200" : ""}`}
                     />
                   </MeetingField>
                 )}
@@ -1563,14 +1561,27 @@ export default function MeetingSchedulePage() {
 const inputClass =
   "h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
 
-function MeetingField({ label, required, children }: { label: string; required?: boolean; children: ReactNode }) {
+function MeetingField({
+  label,
+  required,
+  children,
+  error,
+}: {
+  label: string;
+  required?: boolean;
+  children: ReactNode;
+  error?: string;
+}) {
   return (
-    <div className="grid gap-2 sm:grid-cols-[minmax(180px,0.62fr)_minmax(0,1fr)] sm:items-center">
-      <label className="text-sm font-semibold text-slate-700">
+    <div className="grid gap-2 sm:grid-cols-[minmax(180px,0.62fr)_minmax(0,1fr)] sm:items-start">
+      <label className="text-sm font-semibold text-slate-700 pt-2">
         {label}
         {required && <span className="ml-1 text-rose-500">*</span>}
       </label>
-      {children}
+      <div>
+        {children}
+        {error && <p className="mt-1 text-xs font-medium text-rose-600">{error}</p>}
+      </div>
     </div>
   );
 }

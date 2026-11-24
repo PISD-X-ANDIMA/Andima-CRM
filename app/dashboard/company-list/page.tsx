@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Download, Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Download, Plus, Search } from "lucide-react";
 import { downloadXlsx, openPdfPrintWindow, printTableAsPdf } from "@/lib/export-utils";
 import type { ApiResponse, CustomerListItem } from "@/types/customer";
 import { CustomerTable } from "@/components/customer/CustomerTable";
@@ -11,6 +11,7 @@ import { CompanyActionModal } from "@/components/customer/CompanyActionModals";
 import { ManagerGlobalFilterBar } from "@/components/dashboard/ManagerGlobalFilterBar";
 import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { FigmaPagination } from "@/components/ui/FigmaPagination";
 
 type ExportFormat = "xlsx" | "pdf";
 
@@ -41,7 +42,7 @@ export default function CompanyListPage() {
   const [exportError, setExportError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [refreshVersion, setRefreshVersion] = useState(0);
-  const perPage = 5;
+  const [perPage, setPerPage] = useState(10);
 
   useEffect(() => {
     let active = true;
@@ -86,7 +87,7 @@ export default function CompanyListPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearch, page, isManager, selectedExecutive]);
+  }, [debouncedSearch, page, perPage, isManager, selectedExecutive]);
 
   useEffect(() => { void fetchCustomers(); }, [fetchCustomers, refreshVersion]);
 
@@ -255,51 +256,17 @@ export default function CompanyListPage() {
       />
 
       {/* Pagination Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2 sm:px-4 pt-2 text-xs text-slate-500">
-        <span>{t("common.showing", "Showing")} {firstRow}-{lastRow} {t("common.of", "of")} {total} {t("common.companies", "companies")}</span>
-        <nav className="flex items-center gap-1" aria-label="Company list pages">
-          <button
-            type="button"
-            aria-label="Previous page"
-            disabled={page <= 1 || isLoading}
-            onClick={() => setPage((value) => value - 1)}
-            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
-            const pageNumber = totalPages <= 5 ? index + 1 : Math.max(1, Math.min(page - 2, totalPages - 4)) + index;
-            return (
-              <button
-                type="button"
-                key={pageNumber}
-                aria-current={page === pageNumber ? "page" : undefined}
-                onClick={() => setPage(pageNumber)}
-                className={`h-8 min-w-8 rounded-md px-2 ${page === pageNumber ? "bg-blue-600 font-semibold text-white" : "text-slate-600 hover:bg-slate-100"}`}
-              >
-                {pageNumber}
-              </button>
-            );
-          })}
-          {totalPages > 5 && (
-            <>
-              <span className="px-1">...</span>
-              <button type="button" onClick={() => setPage(totalPages)} className="h-8 min-w-8 rounded-md px-2 text-slate-600">
-                {totalPages}
-              </button>
-            </>
-          )}
-          <button
-            type="button"
-            aria-label="Next page"
-            disabled={page >= totalPages || isLoading}
-            onClick={() => setPage((value) => value + 1)}
-            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </nav>
-      </div>
+      <FigmaPagination
+        total={total}
+        page={page}
+        perPage={perPage}
+        onPageChange={(p) => setPage(p)}
+        onPerPageChange={(newPerPage) => {
+          setPerPage(newPerPage);
+          setPage(1);
+        }}
+        itemLabel={t("common.customers", "customers")}
+      />
 
       <CustomerFormModal isOpen={isModalOpen} customer={modalCustomer} onClose={() => { setIsModalOpen(false); setModalCustomer(null); }} onSuccess={handleSaved} />
       <CompanyActionModal customer={actionCustomer} mode={actionMode} onClose={() => { setActionCustomer(null); setActionMode(null); }} />

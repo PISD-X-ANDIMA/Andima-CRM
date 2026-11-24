@@ -65,6 +65,15 @@ export const en = {
     to: "To",
     preparing: "Preparing...",
     seeMore: "See more",
+    perPage: "Per Page",
+    items: "items",
+    records: "records",
+    allChannels: "All Channels",
+    allBackup: "All Backup",
+    needed: "Needed",
+    notNeeded: "Not Needed",
+    resolved: "Resolved",
+    companyCode: "Company Code",
   },
   // Dashboard
   dashboard: {
@@ -173,6 +182,12 @@ export const en = {
     week: "Week",
     time: "Time",
     recordConversationBtn: "+ Record Conversation",
+    companyRequired: "Company is required",
+    dateRequired: "Date is required",
+    timeRequired: "Time is required",
+    agendaRequired: "Agenda is required",
+    locationRequired: "Location is required for offline meeting",
+    linkRequired: "Meeting link is required for online meeting",
   },
   // Mobile UI
   mobile: {

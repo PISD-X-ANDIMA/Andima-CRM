@@ -63,8 +63,8 @@ export function CustomerTable({
   }
 
   if (isLoading) {
-    const colCount = isManager ? 8 : 7;
-    const widths = ["w-4/5", "w-3/5", "w-2/3", "w-1/2", "w-3/4", "w-2/5", "w-1/3", "w-1/2"];
+    const colCount = isManager ? 9 : 8;
+    const widths = ["w-4/5", "w-2/5", "w-3/5", "w-2/3", "w-1/2", "w-3/4", "w-2/5", "w-1/3", "w-1/2"];
     return (
       <div>
         {/* Mobile Skeleton Cards */}
@@ -95,6 +95,7 @@ export function CustomerTable({
                 {(isManager
                   ? [
                       t("dashboard.company", "Company"),
+                      t("customer.companyCode", "Company Code"),
                       t("nav.salesExecutive", "Sales Executive"),
                       t("common.address", "Address"),
                       t("dashboard.pic", "PIC"),
@@ -105,6 +106,7 @@ export function CustomerTable({
                     ]
                   : [
                       t("dashboard.company", "Company"),
+                      t("customer.companyCode", "Company Code"),
                       t("common.address", "Address"),
                       t("dashboard.pic", "PIC"),
                       t("dashboard.picNumber", "PIC Number"),
@@ -292,16 +294,21 @@ export function CustomerTable({
         <table className="w-full min-w-[1120px] table-fixed text-left">
           <thead className="bg-[#edf4f8] text-slate-700">
             <tr>
-              <th className="w-[18%] px-4 py-4 text-sm font-semibold">{t("dashboard.company", "Company")}</th>
+              <th className={isManager ? "w-[15%] px-4 py-4 text-sm font-semibold" : "w-[17%] px-4 py-4 text-sm font-semibold"}>
+                {t("dashboard.company", "Company")}
+              </th>
+              <th className="w-[11%] px-3 py-4 text-sm font-semibold">
+                {t("customer.companyCode", "Company Code")}
+              </th>
               {isManager && (
-                <th className="w-[13%] px-4 py-4 text-sm font-semibold">{t("nav.salesExecutive", "Sales Executive")}</th>
+                <th className="w-[12%] px-4 py-4 text-sm font-semibold">{t("nav.salesExecutive", "Sales Executive")}</th>
               )}
-              <th className={isManager ? "w-[15%] px-4 py-4 text-sm font-semibold" : "w-[21%] px-4 py-4 text-sm font-semibold"}>
+              <th className={isManager ? "w-[14%] px-4 py-4 text-sm font-semibold" : "w-[18%] px-4 py-4 text-sm font-semibold"}>
                 {t("common.address", "Address")}
               </th>
-              <th className="w-[13%] px-4 py-4 text-sm font-semibold">{t("dashboard.pic", "PIC")}</th>
-              <th className="w-[13%] px-4 py-4 text-sm font-semibold">{t("dashboard.picNumber", "PIC Number")}</th>
-              <th className="w-[14%] px-3 py-4 text-sm font-semibold leading-tight">{t("common.meetingSchedule", "Meeting Schedule")}</th>
+              <th className="w-[12%] px-4 py-4 text-sm font-semibold">{t("dashboard.pic", "PIC")}</th>
+              <th className="w-[12%] px-4 py-4 text-sm font-semibold">{t("dashboard.picNumber", "PIC Number")}</th>
+              <th className="w-[13%] px-3 py-4 text-sm font-semibold leading-tight">{t("common.meetingSchedule", "Meeting Schedule")}</th>
               <th className="w-[7%] px-2 py-4 text-center text-sm font-semibold">{isManager ? t("dashboard.tasks", "Task") : t("common.viewTask", "View Task")}</th>
               <th className="w-[7%] px-2 py-4 text-center text-sm font-semibold">{isManager ? t("common.details", "Details") : t("common.action", "Action")}</th>
             </tr>
@@ -314,14 +321,17 @@ export function CustomerTable({
               return (
                 <tr key={customer.id} className="min-h-[70px] transition-colors hover:bg-slate-50/70">
                   <td className="break-words px-4 py-3.5 font-medium text-slate-900 leading-tight">
-                    <div className="flex flex-col gap-1 items-start">
-                      <span className="font-semibold text-slate-900">{customer.companyName}</span>
-                      {customer.customerCode && (
-                        <span className="inline-block rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-mono font-medium text-blue-700 border border-blue-200/60">
-                          {customer.customerCode}
-                        </span>
-                      )}
-                    </div>
+                    <span className="font-semibold text-slate-900">{customer.companyName}</span>
+                  </td>
+
+                  <td className="px-3 py-3.5">
+                    {customer.customerCode ? (
+                      <span className="inline-block rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-mono font-semibold text-blue-700 border border-blue-200/80">
+                        {customer.customerCode}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 text-xs">—</span>
+                    )}
                   </td>
 
                   {isManager && (

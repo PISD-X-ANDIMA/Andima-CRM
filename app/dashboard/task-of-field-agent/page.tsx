@@ -7,6 +7,8 @@ import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
 import TaskOfFieldAgent from "@/components/TaskOfFieldAgent";
 import { supabase } from "@/lib/supabaseClient";
 import { DashboardSkeleton, Skeleton, TableSkeleton } from "@/components/ui/Skeleton";
+import { FigmaPagination } from "@/components/ui/FigmaPagination";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface TaskItem {
   jobNumber: string;
@@ -31,6 +33,7 @@ interface TaskItem {
 }
 
 export default function TaskOfFieldAgentPage() {
+  const { t } = useLanguage();
   const { selectedExecutive } = useManagerFilter();
   const [isManager, setIsManager] = useState<boolean | null>(null);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
@@ -40,6 +43,8 @@ export default function TaskOfFieldAgentPage() {
   const [detailDocs, setDetailDocs] = useState<Array<{ id: string; doc_type: string; file_url: string }>>([]);
   const [detailPhotos, setDetailPhotos] = useState<string[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
   const openDetail = (task: TaskItem) => {
     setSelectedTask(task);
@@ -164,6 +169,15 @@ export default function TaskOfFieldAgentPage() {
     });
   }, [tasks, selectedExecutive, search]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [selectedExecutive, search]);
+
+  const paginatedTasks = useMemo(() => {
+    const start = (page - 1) * perPage;
+    return filteredTasks.slice(start, start + perPage);
+  }, [filteredTasks, page, perPage]);
+
   if (isManager === null) {
     return <DashboardSkeleton rows={4} />;
   }
@@ -179,7 +193,7 @@ export default function TaskOfFieldAgentPage() {
 
   // Jika Manager of Customer Success, tampilkan antarmuka supervisi Field Agent Tasks (Tiket 6 MCS)
   return (
-    <div className="mx-auto w-full max-w-[1360px] space-y-6 pb-12">
+    <div className="w-full space-y-6 pb-12">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Field Agent Tasks
@@ -227,7 +241,7 @@ export default function TaskOfFieldAgentPage() {
                 </td>
               </tr>
             ) : (
-              filteredTasks.map((t, idx) => (
+              paginatedTasks.map((t, idx) => (
                 <tr key={`${t.company}-${idx}`} className="hover:bg-slate-50/70">
                   <td className="px-4 py-3.5 font-medium text-slate-900">{t.company}</td>
                   <td className="px-4 py-3.5">{t.salesExecutive}</td>
@@ -260,13 +274,17 @@ export default function TaskOfFieldAgentPage() {
         </table>
       </div>
 
-      <div className="flex items-center justify-between text-xs text-slate-500">
-        <span>
-          {filteredTasks.length > 0
-            ? `Showing 1-${filteredTasks.length} of ${tasks.length} tasks`
-            : "Showing 0-0 of 0 tasks"}
-        </span>
-      </div>
+      <FigmaPagination
+        total={filteredTasks.length}
+        page={page}
+        perPage={perPage}
+        onPageChange={setPage}
+        onPerPageChange={(newPerPage) => {
+          setPerPage(newPerPage);
+          setPage(1);
+        }}
+        itemLabel={t("common.tasks", "tasks")}
+      />
 
       {/* Modal Detail Task (Read-Only for Manager) */}
       {selectedTask && (

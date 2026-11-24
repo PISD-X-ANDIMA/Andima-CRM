@@ -11,6 +11,7 @@ import type { ApiResponse, CustomerDetailItem, CustomerListItem } from "@/types/
 import type { SalesExecutiveMetrics } from "@/lib/services/sales-executive-metrics";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { FigmaPagination } from "@/components/ui/FigmaPagination";
 
 interface Props {
   initialCustomers: CustomerListItem[];
@@ -217,7 +218,7 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
   ].filter((label): label is string => label !== null);
 
   return (
-    <div className="mx-auto w-full max-w-[1280px]">
+    <div className="w-full">
       <h1 className="mb-0 text-2xl font-bold tracking-tight text-black sm:text-3xl">Welcome Back, {displayName}</h1>
       <p className="mb-4 ml-1 text-sm text-[#858585] sm:text-base">Here’s your CRM Overview today!</p>
 
@@ -463,18 +464,13 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
         {searchError ? <div role="alert" className="border-t border-slate-200 p-6 text-center text-sm text-amber-800 bg-amber-50/50">{searchError}</div> : customers.length === 0 && !initialDataError && !isSearching ? <div className="border-t border-slate-200 p-8 text-center text-slate-500"><FileText className="mx-auto mb-2 h-5 w-5" />{search ? t("dashboard.noCustomerFound", "No customer or PIC found") : t("dashboard.noTransactions", "No transaction records yet")}</div> : null}
       </section>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 px-3 pt-2 text-xs text-slate-500">
-        <span>{t("dashboard.showingTransactions", `Showing ${firstRow}-${lastRow} of ${total} transactions`, { first: firstRow, last: lastRow, total })}</span>
-        <nav className="flex items-center gap-1" aria-label="Dashboard pages">
-          <button type="button" aria-label="Previous page" disabled={page <= 1 || isSearching} onClick={() => setPage((value) => value - 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40">‹</button>
-          {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
-            const pageNumber = totalPages <= 5 ? index + 1 : Math.max(1, Math.min(page - 2, totalPages - 4)) + index;
-            return <button type="button" key={pageNumber} aria-current={page === pageNumber ? "page" : undefined} onClick={() => setPage(pageNumber)} className={`h-8 min-w-8 rounded-md px-2 ${page === pageNumber ? "bg-blue-600 font-semibold text-white" : "text-slate-600 hover:bg-slate-100"}`}>{pageNumber}</button>;
-          })}
-          {totalPages > 5 && <><span className="px-1">...</span><button type="button" onClick={() => setPage(totalPages)} className="h-8 min-w-8 rounded-md px-2 text-slate-600">{totalPages}</button></>}
-          <button type="button" aria-label="Next page" disabled={page >= totalPages || isSearching} onClick={() => setPage((value) => value + 1)} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 disabled:opacity-40">›</button>
-        </nav>
-      </div>
+      <FigmaPagination
+        page={page}
+        total={total}
+        perPage={5}
+        onPageChange={setPage}
+        itemLabel={t("dashboard.overview", "transactions")}
+      />
 
       {exportOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setExportOpen(false); }}>

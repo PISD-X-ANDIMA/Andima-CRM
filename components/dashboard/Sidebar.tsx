@@ -205,7 +205,13 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
             className="flex h-[40px] w-full items-center justify-between rounded-[8px] !bg-[#0550d7] hover:!bg-[#0446b8] px-3 text-[14px] font-medium tracking-[0.07px] !text-white shadow-sm transition-colors cursor-pointer"
           >
             <div className="flex items-center gap-2.5">
-              <Users className="h-[18px] w-[18px] shrink-0 text-white" />
+              <Image
+                src="/crm-icon.png"
+                alt="CRM"
+                width={18}
+                height={18}
+                className="h-[18px] w-[18px] shrink-0 object-contain"
+              />
               <span className="truncate text-left text-white">{menuLabel}</span>
             </div>
             <ChevronDown

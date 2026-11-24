@@ -7,6 +7,8 @@ import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
 import InteractionTab from "@/components/InteractionTab";
 import { supabase } from "@/lib/supabaseClient";
 import { DashboardSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
+import { FigmaPagination } from "@/components/ui/FigmaPagination";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type BackupStatus = "Pending" | "In Progress" | "Reviewed";
 
@@ -25,6 +27,7 @@ interface ConversationRecord {
 }
 
 export default function RecordConversationPage() {
+  const { t } = useLanguage();
   const { selectedExecutive } = useManagerFilter();
   const [isManager, setIsManager] = useState<boolean | null>(null);
   const [conversations, setConversations] = useState<ConversationRecord[]>([]);
@@ -34,6 +37,8 @@ export default function RecordConversationPage() {
   const [search, setSearch] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<ConversationRecord | null>(null);
   const [updatingAlertId, setUpdatingAlertId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
   useEffect(() => {
     let active = true;
@@ -157,6 +162,15 @@ export default function RecordConversationPage() {
     });
   }, [conversations, selectedExecutive, channelFilter, backupFilter, search]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [selectedExecutive, channelFilter, backupFilter, search]);
+
+  const paginatedRecords = useMemo(() => {
+    const start = (page - 1) * perPage;
+    return filteredRecords.slice(start, start + perPage);
+  }, [filteredRecords, page, perPage]);
+
   const updateBackupStatus = async (record: ConversationRecord, status: BackupStatus) => {
     if (!record.alertId || updatingAlertId) return;
     setUpdatingAlertId(record.alertId);
@@ -195,7 +209,7 @@ export default function RecordConversationPage() {
 
   // Jika pengguna adalah Manager of Customer Success, render antarmuka supervisi Manager (Tiket 3 MCS)
   return (
-    <div className="mx-auto w-full max-w-[1360px] space-y-6 pb-12">
+    <div className="w-full space-y-6 pb-12">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Conversation Records
@@ -272,7 +286,7 @@ export default function RecordConversationPage() {
                 </td>
               </tr>
             ) : (
-              filteredRecords.map((r) => (
+              paginatedRecords.map((r) => (
                 <tr key={r.id} className={r.backupStatus && r.backupStatus !== "Reviewed" ? "bg-amber-50/50 hover:bg-amber-50" : "hover:bg-slate-50/70"}>
                   <td className="px-4 py-3.5 font-medium text-slate-900">{r.company}</td>
                   <td className="px-4 py-3.5">{r.salesExecutive}</td>
@@ -318,13 +332,17 @@ export default function RecordConversationPage() {
         </table>
       </div>
 
-      <div className="flex items-center justify-between text-xs text-slate-500">
-        <span>
-          {filteredRecords.length > 0
-            ? `Showing 1-${filteredRecords.length} of ${conversations.length} records`
-            : "Showing 0-0 of 0 records"}
-        </span>
-      </div>
+      <FigmaPagination
+        total={filteredRecords.length}
+        page={page}
+        perPage={perPage}
+        onPageChange={setPage}
+        onPerPageChange={(newPerPage) => {
+          setPerPage(newPerPage);
+          setPage(1);
+        }}
+        itemLabel={t("common.records", "records")}
+      />
 
       {/* Modal Detail Conversation */}
       {selectedRecord && (

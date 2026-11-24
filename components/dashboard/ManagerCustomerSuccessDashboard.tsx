@@ -70,7 +70,7 @@ export function ManagerCustomerSuccessDashboard() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1360px] pb-12">
+    <div className="w-full pb-12">
       {/* Page Title & Subtitle */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">

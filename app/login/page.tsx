@@ -17,6 +17,8 @@ export default function LoginPage() {
   const [countdown, setCountdown] = useState<number>(0);
   const [greeting, setGreeting] = useState<string>('Good Morning');
   const [existingSessionEmail, setExistingSessionEmail] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string>('');
+  const [passwordError, setPasswordError] = useState<string>('');
 
   // Automatically clear invalid refresh tokens if previous session expired
   useEffect(() => {
@@ -93,6 +95,8 @@ export default function LoginPage() {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
+    setEmailError('');
+    setPasswordError('');
 
     if (isLocked || isPermanentlyBlocked) return;
 
@@ -101,15 +105,21 @@ export default function LoginPage() {
       return;
     }
 
-    if (!email.trim() || !password.trim()) {
-      setErrorMessage('Email and Password are required.');
-      return;
+    let hasError = false;
+    if (!email.trim()) {
+      setEmailError('Email is required');
+      hasError = true;
+    } else if (!validateEmailFormat(email)) {
+      setEmailError('Invalid email format (example: name@andima.co.id)');
+      hasError = true;
     }
 
-    if (!validateEmailFormat(email)) {
-      setErrorMessage('Invalid email format (example: name@andima.co.id).');
-      return;
+    if (!password.trim()) {
+      setPasswordError('Password is required');
+      hasError = true;
     }
+
+    if (hasError) return;
 
     setIsSigningIn(true);
 
@@ -306,10 +316,20 @@ export default function LoginPage() {
                   type="email"
                   placeholder="username@andima.co.id"
                   value={email}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                    setEmail(e.target.value);
+                    if (emailError) setEmailError('');
+                  }}
                   disabled={isLocked || isPermanentlyBlocked}
-                  className="w-full px-4.5 py-3.5 rounded-xl bg-white/70 backdrop-blur-md text-[#0D1B2A] placeholder-[#64748B] text-sm focus:outline-none transition-all disabled:opacity-50 border border-white/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.04)] focus:bg-white focus:border-[#3B6FF5] focus:ring-2 focus:ring-[#3B6FF5]/30 font-medium"
+                  className={`w-full px-4.5 py-3.5 rounded-xl bg-white/70 backdrop-blur-md text-[#0D1B2A] placeholder-[#64748B] text-sm focus:outline-none transition-all disabled:opacity-50 border shadow-[inset_0_2px_4px_rgba(0,0,0,0.04)] focus:bg-white font-medium ${
+                    emailError
+                      ? '!border-rose-400 focus:!border-rose-500 focus:!ring-2 focus:!ring-rose-200'
+                      : 'border-white/90 focus:border-[#3B6FF5] focus:ring-2 focus:ring-[#3B6FF5]/30'
+                  }`}
                 />
+                {emailError && (
+                  <p className="mt-1.5 text-xs font-medium text-rose-600">{emailError}</p>
+                )}
               </div>
 
               <div>
@@ -321,9 +341,16 @@ export default function LoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••••••"
                     value={password}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                      setPassword(e.target.value);
+                      if (passwordError) setPasswordError('');
+                    }}
                     disabled={isLocked || isPermanentlyBlocked}
-                    className="w-full pl-4.5 pr-12 py-3.5 rounded-xl bg-white/70 backdrop-blur-md text-[#0D1B2A] placeholder-[#64748B] text-sm focus:outline-none transition-all disabled:opacity-50 border border-white/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.04)] focus:bg-white focus:border-[#3B6FF5] focus:ring-2 focus:ring-[#3B6FF5]/30 font-medium"
+                    className={`w-full pl-4.5 pr-12 py-3.5 rounded-xl bg-white/70 backdrop-blur-md text-[#0D1B2A] placeholder-[#64748B] text-sm focus:outline-none transition-all disabled:opacity-50 border shadow-[inset_0_2px_4px_rgba(0,0,0,0.04)] focus:bg-white font-medium ${
+                      passwordError
+                        ? '!border-rose-400 focus:!border-rose-500 focus:!ring-2 focus:!ring-rose-200'
+                        : 'border-white/90 focus:border-[#3B6FF5] focus:ring-2 focus:ring-[#3B6FF5]/30'
+                    }`}
                   />
 
                   <button
@@ -349,6 +376,9 @@ export default function LoginPage() {
                     )}
                   </button>
                 </div>
+                {passwordError && (
+                  <p className="mt-1.5 text-xs font-medium text-rose-600">{passwordError}</p>
+                )}
               </div>
 
               {errorMessage && (
