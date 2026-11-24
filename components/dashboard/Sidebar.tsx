@@ -4,11 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
-import { supabase } from '@/lib/supabaseClient';
-import {
-  Users,
-  ChevronDown,
-} from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
+import { Users, ChevronDown } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface SubMenuItem {
@@ -52,7 +49,7 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
     }
   };
 
-  // Instant role detection from localStorage or pathname to eliminate the 1-2s delay
+  // Instant role detection from localStorage or pathname
   const initialRole = (() => {
     if (typeof window !== "undefined") {
       try {
@@ -63,7 +60,9 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
           if (role.includes("field") || role.includes("agent")) return "field_agent";
           if (role.includes("manager")) return "manager";
         }
-      } catch (error) { console.error(error); }
+      } catch (error) {
+        console.error(error);
+      }
     }
     if (pathname.includes("manager-customer-success")) return "manager";
     if (pathname.includes("field-agent")) return "field_agent";
@@ -72,7 +71,7 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
 
   const [crmOpen, setCrmOpen] = useState(true);
   const [isManagerRole, setIsManagerRole] = useState(() => initialRole === "manager");
-  const [menuLabel, setMenuLabel] = useState(() => initialRole === "field_agent" ? "Field Agent" : "CRM");
+  const [menuLabel, setMenuLabel] = useState(() => (initialRole === "field_agent" ? "Field Agent" : "CRM"));
   const [roleTitle, setRoleTitle] = useState(() =>
     initialRole === "field_agent"
       ? "Field Agent"
@@ -96,7 +95,11 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
   );
 
   const getMenuTitle = (href: string, fallbackName: string) => {
-    if (href.includes("/sales-executive") || href.includes("/manager-customer-success") || href.includes("field-agent?tab=dashboard")) {
+    if (
+      href.includes("/sales-executive") ||
+      href.includes("/manager-customer-success") ||
+      href.includes("field-agent?tab=dashboard")
+    ) {
       return t("nav.dashboard", "Dashboard");
     }
     if (href.includes("/company-list")) return t("nav.companyList", "Company List");
@@ -104,7 +107,9 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
     if (href.includes("/record-conversation")) return t("nav.recordConversation", "Record Conversation");
     if (href.includes("/task-of-field-agent")) return t("nav.taskOfFieldAgent", "Task of Field Agent");
     if (href.includes("/field-agent-management") || href.includes("/field-agent-access")) {
-      return isManagerRole ? t("nav.manageAccounts", "Manage Accounts") : t("nav.fieldAgentManagement", "Field Agent Management");
+      return isManagerRole
+        ? t("nav.manageAccounts", "Manage Accounts")
+        : t("nav.fieldAgentManagement", "Field Agent Management");
     }
     if (href.includes("tab=tasks")) return t("nav.myTasks", "My Tasks");
     if (href.includes("tab=history")) return t("nav.history", "History");
@@ -140,7 +145,9 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
     }
 
     void loadNavData();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
 
   const [currentSectionPath, currentSectionQuery] = sectionHref.split("?");
@@ -155,108 +162,114 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
       aria-label="Main Navigation"
       className="flex h-full w-[260px] flex-col justify-between bg-[#0F2342] text-white select-none shadow-xl"
     >
-      {/* Brand Header */}
-      <div className="flex items-center gap-3 px-6 pt-7 pb-6">
-        <Image
-          src="/andima-logo.png"
-          alt="Andima Logo"
-          width={40}
-          height={40}
-          className="h-10 w-10 shrink-0 object-contain drop-shadow"
-          priority
-        />
-        <div className="flex flex-col">
-          <span className="font-heading text-xl font-black tracking-tight text-white leading-none">
-            ANDIMA
-          </span>
-          <span className="text-[11px] font-semibold tracking-wider text-slate-300 uppercase mt-0.5">
-            {t("nav.crm", "CRM")}
-          </span>
+      <div>
+        {/* Brand Header */}
+        <div className="flex items-center gap-3 px-4 pt-6 pb-5">
+          <Image
+            src="/andima-logo.png"
+            alt="Andima Logo"
+            width={48}
+            height={40}
+            className="h-10 w-12 shrink-0 object-contain drop-shadow"
+            priority
+          />
+          <div className="flex flex-col">
+            <span className="text-[20px] font-bold tracking-[-0.5px] leading-[28px] text-white">
+              ANDIMA
+            </span>
+            <span className="text-[12px] font-normal leading-[16px] text-[rgba(217,226,252,0.8)]">
+              Logistics Suite
+            </span>
+          </div>
         </div>
+
+        {/* Main Nav Container */}
+        <nav className="min-h-0 overflow-y-auto overscroll-contain px-4 pb-4">
+          <button
+            type="button"
+            onClick={() => setCrmOpen((value) => !value)}
+            className="flex h-[40px] w-full items-center justify-between rounded-[8px] bg-[#0550d7] px-3 text-[14px] font-semibold tracking-[0.07px] text-white shadow-sm transition-colors hover:bg-[#0446b8]"
+          >
+            <div className="flex items-center gap-2.5">
+              <Users className="h-[18px] w-[18px] shrink-0" />
+              <span className="truncate text-left">{menuLabel}</span>
+            </div>
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 transition-transform duration-200 ${
+                crmOpen ? "rotate-0" : "-rotate-90"
+              }`}
+            />
+          </button>
+
+          {crmOpen && (
+            <div className="ml-4 mt-2.5 space-y-1 border-l border-white/20 pl-2.5">
+              <Link
+                href={sectionHref}
+                prefetch
+                onClick={handleNavClick}
+                aria-current={isCurrentDashboard ? "page" : undefined}
+                className={`flex items-center rounded-[8px] px-3 py-[7px] text-[14px] font-semibold transition-colors ${
+                  isCurrentDashboard
+                    ? "bg-[#b0c6d4] text-[#45556c]"
+                    : "text-white hover:bg-white/10"
+                }`}
+              >
+                {isCurrentDashboard && (
+                  <span className="mr-2 size-[6px] shrink-0 rounded-full bg-[#069494]" />
+                )}
+                <span className="truncate">{currentRoleTitle}</span>
+              </Link>
+
+              <div className="space-y-1">
+                {submenuItems
+                  .filter((item) => item.href !== sectionHref)
+                  .map((item) => {
+                    const [rawItemPath, itemQuery] = item.href.split("?");
+                    const itemPath = rawItemPath.replace(/\/+$/, "");
+                    const currentPath = pathname.replace(/\/+$/, "");
+                    const isActive = itemQuery
+                      ? itemPath === currentPath && itemQuery === searchParams.toString()
+                      : itemPath === currentPath || currentPath.startsWith(`${itemPath}/`);
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={handleNavClick}
+                        aria-current={isActive ? "page" : undefined}
+                        className={`flex items-center rounded-[8px] px-3 py-[7px] text-[14px] font-semibold transition-colors ${
+                          isActive
+                            ? "bg-[#b0c6d4] text-[#45556c]"
+                            : "text-white hover:bg-white/10"
+                        }`}
+                      >
+                        {isActive && (
+                          <span className="mr-2 size-[6px] shrink-0 rounded-full bg-[#069494]" />
+                        )}
+                        <span className="truncate">{getMenuTitle(item.href, item.name)}</span>
+                      </Link>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+        </nav>
       </div>
 
-      {/* Main Nav Container */}
-      <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
-        <button
-          type="button"
-          onClick={() => setCrmOpen((value) => !value)}
-          className="flex w-full items-center gap-2.5 rounded-lg bg-[#0550D7] px-3 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-black/10 transition-colors hover:bg-[#0446B8]"
-        >
-          <span className="grid h-5 w-5 shrink-0 place-items-center rounded-[5px] bg-white">
-            <Users className="h-3 w-3 text-[#0550D7]" />
-          </span>
-          <span className="flex-1 truncate text-left">{menuLabel}</span>
-          <ChevronDown
-            className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${
-              crmOpen ? "rotate-0" : "-rotate-90"
-            }`}
-          />
-        </button>
-
-        {crmOpen && (
-          <div className="ml-3 mt-2 border-l-2 border-white/25 pl-3">
-            <Link
-              href={sectionHref}
-              prefetch
-              onClick={handleNavClick}
-              aria-current={isCurrentDashboard ? "page" : undefined}
-              className={`flex items-center rounded-md border-l-2 px-2 py-[7px] text-[12.5px] font-semibold transition-colors ${
-                isCurrentDashboard
-                  ? "border-transparent bg-[#B0C6D4] text-[#44525c]"
-                  : "border-transparent text-white hover:bg-white/10"
-              }`}
-            >
-              {isCurrentDashboard && (
-                <span className="mr-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-              )}
-              <span className="truncate">{currentRoleTitle}</span>
-            </Link>
-
-            <div className="space-y-0.5">
-              {submenuItems
-                .filter((item) => item.href !== sectionHref)
-                .map((item) => {
-                const [rawItemPath, itemQuery] = item.href.split("?");
-                const itemPath = rawItemPath.replace(/\/+$/, "");
-                const currentPath = pathname.replace(/\/+$/, "");
-                const isActive = itemQuery
-                  ? itemPath === currentPath && itemQuery === searchParams.toString()
-                  : itemPath === currentPath || currentPath.startsWith(`${itemPath}/`);
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={handleNavClick}
-                    aria-current={isActive ? "page" : undefined}
-                    className={`flex items-center rounded-md border-l-2 px-2 py-[7px] text-[12.5px] font-semibold transition-colors ${
-                      isActive
-                        ? "border-transparent bg-[#B0C6D4] text-[#44525c]"
-                        : "border-transparent text-white hover:bg-white/10"
-                    }`}
-                  >
-                    {isActive && (
-                      <span className="mr-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-                    )}
-                    <span className="truncate">{getMenuTitle(item.href, item.name)}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </nav>
-
       {/* Logout Footer */}
-      <div className="px-[17px] pb-5 pt-3">
+      <div className="px-4 pb-6 pt-3">
         <button
           type="button"
           onClick={async () => {
-            await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
-            try { localStorage.removeItem('andima_user'); } catch (error) { console.error(error); }
-            router.push('/login');
+            await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+            try {
+              localStorage.removeItem("andima_user");
+            } catch (error) {
+              console.error(error);
+            }
+            router.push("/login");
           }}
-          className="flex h-10 w-full items-center justify-center rounded-full border-2 border-[#D9364F] bg-transparent px-4 text-base font-bold text-[#D9364F] transition-colors hover:bg-[#D9364F] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D9364F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F2342] cursor-pointer"
+          className="flex h-[40px] w-full items-center justify-center rounded-full border-2 border-[#d9364f] bg-transparent text-[16px] font-semibold text-[#d9364f] transition-colors hover:bg-[#d9364f] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d9364f] cursor-pointer"
         >
           <span>{t("nav.logout", "Logout")}</span>
         </button>

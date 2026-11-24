@@ -11,7 +11,7 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export function DashboardHeader({ isManager = false }: { isManager?: boolean }) {
   const pathname = usePathname();
-  const { sidebarVisible, toggleSidebar } = useSidebarToggle();
+  const { toggleSidebar } = useSidebarToggle();
   const { t } = useLanguage();
   const [username, setUsername] = useState("User");
 
@@ -55,7 +55,7 @@ export function DashboardHeader({ isManager = false }: { isManager?: boolean }) 
 
   const breadcrumbs = useMemo(() => {
     const segments = pathname.split("/").filter(Boolean).slice(1);
-    if (!segments.length) return [t("nav.dashboard", "Dashboard")];
+    if (!segments.length) return ["CRM", t("nav.dashboard", "Dashboard")];
     const isManagerRole = pathname.includes("manager-customer-success");
     const parentRole = isManagerRole
       ? t("nav.managerCustomerSuccess", "Manager of Customer Success")
@@ -76,49 +76,53 @@ export function DashboardHeader({ isManager = false }: { isManager?: boolean }) 
   }, [pathname, routeLabelMap, t]);
 
   return (
-    <header className="mb-6 flex min-h-10 flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 pt-1 sm:mb-8">
+    <header className="sticky top-0 z-30 -mx-3 -mt-4 sm:-mx-6 sm:-mt-6 lg:-mx-10 lg:-mt-8 mb-6 sm:mb-8 flex min-h-[54px] w-[calc(100%+1.5rem)] sm:w-[calc(100%+3rem)] lg:w-[calc(100%+5rem)] flex-wrap items-center justify-between gap-3 border-b border-[#e2e8f0] bg-white px-4 sm:px-6 py-2 shadow-2xs">
+      {/* Left: Toggle Button + Breadcrumbs */}
       <div className="flex min-w-0 items-center gap-3">
         <button
           type="button"
           onClick={toggleSidebar}
-          aria-label={sidebarVisible ? "Hide sidebar" : "Show sidebar"}
-          aria-controls="crm-sidebar"
-          aria-expanded={sidebarVisible}
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-[#1476f2] text-white shadow-md transition-colors hover:bg-[#0f6ae0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1476f2]/40"
+          aria-label="Toggle navigation"
+          className="flex size-[36px] shrink-0 items-center justify-center rounded-[8px] bg-[#1565d8] text-white shadow-xs transition-colors hover:bg-[#0f52b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1565d8]/40 cursor-pointer"
         >
-          <Menu className="h-[18px] w-[18px]" strokeWidth={2.5} />
+          <Menu className="h-[18px] w-[18px]" strokeWidth={2.2} />
         </button>
-        <nav aria-label="Breadcrumb" className="flex min-w-0 flex-wrap items-center gap-1 text-[11px] sm:text-xs uppercase text-slate-500 font-medium">
-          {breadcrumbs.map((label, index) => (
-            <span
-              key={`${label}-${index}`}
-              className={`truncate max-w-[140px] sm:max-w-none ${
-                index === breadcrumbs.length - 1 ? "font-semibold text-blue-600" : ""
-              }`}
-            >
-              {index > 0 && <span className="px-1 text-slate-300">/</span>}
-              {label}
-            </span>
-          ))}
+
+        <nav aria-label="Breadcrumb" className="flex min-w-0 flex-wrap items-center gap-1.5 text-[12px] font-medium uppercase tracking-wide">
+          {breadcrumbs.map((label, index) => {
+            const isLast = index === breadcrumbs.length - 1;
+            return (
+              <span key={`${label}-${index}`} className="flex items-center gap-1.5">
+                {index > 0 && <span className="text-[#424753]">/</span>}
+                <span className={`truncate max-w-[150px] sm:max-w-none ${isLast ? "font-semibold text-[#1565d8]" : "text-[#424753]"}`}>
+                  {label}
+                </span>
+              </span>
+            );
+          })}
         </nav>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2.5 text-slate-700">
+      {/* Right: Language Switcher + Bell + User Profile */}
+      <div className="flex shrink-0 items-center gap-2.5">
         {/* Language Switcher */}
         <LanguageSwitcher />
 
         {/* Manager Backup Bell (conditional in component) */}
         {isManager && <ManagerBackupBell />}
 
-        {/* User avatar & name */}
-        <div className="flex items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50 py-1 pl-1 pr-3" aria-label={`Signed in as ${username}`}>
+        {/* User profile pill */}
+        <div
+          className="flex items-center gap-2 rounded-full border border-[#e2e8f0] bg-white pl-[5px] pr-3 sm:pr-[17px] py-[5px] shadow-2xs"
+          aria-label={`Signed in as ${username}`}
+        >
           <span
             aria-hidden="true"
-            className="grid h-7 w-7 sm:h-8 sm:w-8 place-items-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-2xs"
+            className="grid size-[28px] place-items-center rounded-full bg-[#1565d8] text-[12px] font-medium text-white shrink-0"
           >
             {username.slice(0, 1).toUpperCase()}
           </span>
-          <span className="max-w-28 sm:max-w-40 truncate text-xs font-semibold text-slate-800">
+          <span className="max-w-28 sm:max-w-44 truncate text-[12px] font-medium text-[#191b22]">
             {username}
           </span>
         </div>

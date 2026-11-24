@@ -2,11 +2,9 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Menu,
-  X,
   LayoutDashboard,
   Building2,
   Calendar,
@@ -14,7 +12,6 @@ import {
   Compass,
 } from "lucide-react";
 import { Sidebar } from "@/components/dashboard/Sidebar";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type SidebarToggle = { sidebarVisible: boolean; toggleSidebar: () => void };
@@ -108,47 +105,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             aria-label="Show sidebar"
             aria-controls="crm-sidebar"
             aria-expanded={false}
-            className="fixed left-4 top-5 z-40 hidden h-8 w-8 place-items-center rounded-md bg-[#1476f2] text-white shadow-md transition-colors hover:bg-[#0f6ae0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1476f2]/40 lg:grid"
+            className="fixed left-4 top-4 z-40 hidden size-[36px] place-items-center rounded-[8px] bg-[#1565d8] text-white shadow-md transition-colors hover:bg-[#0f52b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1565d8]/40 lg:grid cursor-pointer"
           >
-            <Menu className="h-[18px] w-[18px]" strokeWidth={2.5} />
+            <Menu className="h-[18px] w-[18px]" strokeWidth={2.2} />
           </button>
         )}
 
         {/* ======================================================== */}
-        {/* 2. MOBILE TOP BAR (Screens < 1024px)                      */}
-        {/* ======================================================== */}
-        <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-slate-200 bg-white/95 px-4 shadow-2xs backdrop-blur-md lg:hidden">
-          <div className="flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => setMobileDrawerOpen(true)}
-              aria-label="Open navigation drawer"
-              aria-expanded={mobileDrawerOpen}
-              className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 active:scale-95 transition-transform hover:bg-slate-100"
-            >
-              <Menu className="h-5 w-5" strokeWidth={2.2} />
-            </button>
-            <div className="flex items-center gap-2">
-              <Image
-                src="/andima-logo.png"
-                alt="Andima Logo"
-                width={28}
-                height={28}
-                className="h-7 w-7 object-contain"
-              />
-              <span className="font-heading text-sm font-bold tracking-tight text-[#0F2342]">
-                ANDIMA <span className="text-blue-600">CRM</span>
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <LanguageSwitcher />
-          </div>
-        </header>
-
-        {/* ======================================================== */}
-        {/* 3. MOBILE SLIDE-OUT DRAWER & BACKDROP (< 1024px)          */}
+        {/* 2. MOBILE SLIDE-OUT DRAWER & BACKDROP (< 1024px)          */}
         {/* ======================================================== */}
         {mobileDrawerOpen && (
           <div
@@ -173,14 +137,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         </div>
 
         {/* ======================================================== */}
-        {/* 4. MAIN CONTENT AREA                                      */}
+        {/* 3. MAIN CONTENT AREA                                      */}
         {/* ======================================================== */}
         <main className="min-w-0 flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-10 lg:py-8 pb-28 sm:pb-12 lg:pb-8">
           {children}
         </main>
 
         {/* ======================================================== */}
-        {/* 5. MOBILE BOTTOM NAVIGATION BAR (< 1024px)                */}
+        {/* 4. MOBILE BOTTOM NAVIGATION BAR (< 1024px)                */}
         {/* ======================================================== */}
         <nav
           aria-label="Mobile Navigation"
@@ -192,7 +156,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               href={dashboardHref}
               className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
                 isDashboardActive
-                  ? "text-blue-600 font-bold scale-105"
+                  ? "text-[#1565d8] font-bold scale-105"
                   : "text-slate-500 hover:text-slate-800"
               }`}
             >
@@ -205,7 +169,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               href="/dashboard/company-list"
               className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
                 isCompaniesActive
-                  ? "text-blue-600 font-bold scale-105"
+                  ? "text-[#1565d8] font-bold scale-105"
                   : "text-slate-500 hover:text-slate-800"
               }`}
             >
@@ -218,7 +182,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               href="/dashboard/meeting-schedule"
               className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
                 isScheduleActive
-                  ? "text-blue-600 font-bold scale-105"
+                  ? "text-[#1565d8] font-bold scale-105"
                   : "text-slate-500 hover:text-slate-800"
               }`}
             >
@@ -231,7 +195,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               href="/dashboard/record-conversation"
               className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
                 isConversationActive
-                  ? "text-blue-600 font-bold scale-105"
+                  ? "text-[#1565d8] font-bold scale-105"
                   : "text-slate-500 hover:text-slate-800"
               }`}
             >
@@ -243,7 +207,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             <button
               type="button"
               onClick={() => setMobileDrawerOpen(true)}
-              className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 hover:text-slate-800 active:scale-95 transition-all"
+              className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 hover:text-slate-800 active:scale-95 transition-all cursor-pointer"
             >
               <Compass className="h-5 w-5" />
               <span className="mt-1 text-[10px] tracking-tight">{t("nav.menu", "Menu")}</span>
