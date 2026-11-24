@@ -1,4 +1,6 @@
+import { cache } from "react";
 import { User } from "@supabase/supabase-js";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { roleForCrmEmail } from "./crm-role-map";
 
 export type CrmRole = "manager_customer_success" | "sales_executive" | "field_agent";
@@ -47,7 +49,8 @@ export function resolveCrmRoleFromPosition(pos?: {
  * Resolves current user's role and identity identifiers for data scoping.
  * Queries b2_register and joins with d3_positions directly.
  */
-export async function getCurrentUserScope(supabase: any): Promise<UserScope | null> {
+async function loadCurrentUserScope(): Promise<UserScope | null> {
+  const supabase = await createServerSupabaseClient();
   if (!supabase) return null;
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return null;
@@ -132,4 +135,12 @@ export async function getCurrentUserScope(supabase: any): Promise<UserScope | nu
     isManager: role === "manager_customer_success",
     identifiers: Array.from(identifiers).filter(Boolean),
   };
+}
+
+// React cache dedupes per render, so the layout, page and services inside one
+// request share one auth + role lookup instead of repeating the serial round trips.
+const getCachedCurrentUserScope = cache(loadCurrentUserScope);
+
+export function getCurrentUserScope(_supabase?: unknown): Promise<UserScope | null> {
+  return getCachedCurrentUserScope();
 }

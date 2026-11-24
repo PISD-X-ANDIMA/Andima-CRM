@@ -240,3 +240,19 @@
   }
 }
 
+
+/* Shared action-button sizing so primary/secondary buttons keep the same
+   height, radius and typography at every breakpoint. */
+@layer components {
+  .crm-btn {
+    @apply inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .crm-btn-primary {
+    @apply bg-blue-600 text-white shadow-xs hover:bg-blue-700;
+  }
+
+  .crm-btn-secondary {
+    @apply border border-slate-300 bg-white text-slate-700 shadow-xs hover:bg-slate-50;
+  }
+}

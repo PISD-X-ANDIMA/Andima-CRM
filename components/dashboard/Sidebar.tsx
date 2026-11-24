@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Users, ChevronDown } from "lucide-react";
+import { Users, ChevronDown, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface SubMenuItem {
@@ -65,7 +65,9 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
       }
     }
     if (pathname.includes("manager-customer-success")) return "manager";
-    if (pathname.includes("field-agent")) return "field_agent";
+    // Segment match only: /dashboard/field-agent-management and /dashboard/task-of-field-agent
+    // are Sales Executive routes, not the Field Agent dashboard.
+    if (pathname === "/dashboard/field-agent" || pathname.startsWith("/dashboard/field-agent/")) return "field_agent";
     return "sales_executive";
   })();
 
@@ -163,23 +165,35 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
     >
       <div>
         {/* Brand Header */}
-        <div className="flex items-center gap-3 px-4 pt-6 pb-5">
-          <Image
-            src="/andima-logo.png"
-            alt="Andima Logo"
-            width={48}
-            height={40}
-            className="h-10 w-12 shrink-0 object-contain drop-shadow"
-            priority
-          />
-          <div className="flex flex-col">
-            <span className="text-[20px] font-bold tracking-[-0.5px] leading-[28px] text-white">
-              ANDIMA
-            </span>
-            <span className="text-[12px] font-normal leading-[16px] text-[rgba(217,226,252,0.8)]">
-              Logistics Suite
-            </span>
+        <div className="flex items-center justify-between gap-3 px-4 pt-6 pb-5">
+          <div className="flex items-center gap-3">
+            <Image
+              src="/andima-logo.png"
+              alt="Andima Logo"
+              width={48}
+              height={40}
+              className="h-10 w-12 shrink-0 object-contain drop-shadow"
+              priority
+            />
+            <div className="flex flex-col">
+              <span className="text-[20px] font-bold tracking-[-0.5px] leading-[28px] text-white">
+                ANDIMA
+              </span>
+              <span className="text-[12px] font-normal leading-[16px] text-[rgba(217,226,252,0.8)]">
+                Logistics Suite
+              </span>
+            </div>
           </div>
+          {onHide && (
+            <button
+              type="button"
+              onClick={onHide}
+              aria-label={t("nav.closeSidebar", "Close sidebar")}
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-slate-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 cursor-pointer"
+            >
+              <X className="h-[18px] w-[18px]" strokeWidth={2.5} />
+            </button>
+          )}
         </div>
 
         {/* Main Nav Container */}

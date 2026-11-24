@@ -83,6 +83,10 @@ export async function GET(_request: NextRequest) {
       isManager,
       isFieldAgent,
       name: userScope.name,
+      // Flat fields consumed by components/dashboard/Sidebar.tsx
+      menuLabel: isFieldAgent ? "Field Agent" : "CRM",
+      sectionHref,
+      submenuItems: submenus.map((item) => ({ name: item.label, href: item.href })),
       menu: [
         { label: "CRM", href: null, children: crmChildren },
       ],

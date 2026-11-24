@@ -615,7 +615,7 @@ export default function MeetingSchedulePage() {
                 : "09:00";
             beginAdd(selectedDateKey >= todayKey ? selectedDateKey : todayKey, firstAvailable);
           }}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#0b5796] hover:bg-[#084577] px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all disabled:cursor-not-allowed disabled:opacity-50"
+          className="crm-btn crm-btn-primary"
         >
           <Plus className="h-4 w-4" />
           <span>{t("meetingSchedule.createMeeting", "Create Meeting")}</span>

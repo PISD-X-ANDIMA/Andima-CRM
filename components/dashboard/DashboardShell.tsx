@@ -1,18 +1,8 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Menu,
-  LayoutDashboard,
-  Building2,
-  Calendar,
-  MessageSquare,
-  Compass,
-} from "lucide-react";
 import { Sidebar } from "@/components/dashboard/Sidebar";
-import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type SidebarToggle = { sidebarVisible: boolean; toggleSidebar: () => void };
 
@@ -27,7 +17,6 @@ export function useSidebarToggle() {
 
 export function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { t } = useLanguage();
   const [desktopSidebarVisible, setDesktopSidebarVisible] = useState(true);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
@@ -46,20 +35,6 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [mobileDrawerOpen]);
-
-  // Determine dashboard link based on role
-  const isManager = pathname.includes("manager-customer-success");
-  const isFieldAgent = pathname.includes("field-agent");
-  const dashboardHref = isManager
-    ? "/dashboard/manager-customer-success"
-    : isFieldAgent
-      ? "/dashboard/field-agent"
-      : "/dashboard/sales-executive";
-
-  const isDashboardActive = pathname === dashboardHref || pathname === "/dashboard";
-  const isCompaniesActive = pathname.startsWith("/dashboard/company-list");
-  const isScheduleActive = pathname.startsWith("/dashboard/meeting-schedule");
-  const isConversationActive = pathname.startsWith("/dashboard/record-conversation");
 
   const toggleSidebar = () => {
     if (typeof window !== "undefined" && window.innerWidth < 1024) {
@@ -125,81 +100,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         {/* ======================================================== */}
         {/* 3. MAIN CONTENT AREA                                      */}
         {/* ======================================================== */}
-        <main className="min-w-0 flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-10 lg:py-8 pb-28 sm:pb-12 lg:pb-8">
+        <main className="min-w-0 flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-10 lg:py-8 pb-12 lg:pb-8">
           {children}
         </main>
-
-        {/* ======================================================== */}
-        {/* 4. MOBILE BOTTOM NAVIGATION BAR (< 1024px)                */}
-        {/* ======================================================== */}
-        <nav
-          aria-label="Mobile Navigation"
-          className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200/90 bg-white/95 px-2 py-1.5 shadow-lg backdrop-blur-md lg:hidden"
-        >
-          <div className="flex items-center justify-around">
-            {/* Dashboard Tab */}
-            <Link
-              href={dashboardHref}
-              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
-                isDashboardActive
-                  ? "text-[#1565d8] font-bold scale-105"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <LayoutDashboard className="h-5 w-5" />
-              <span className="mt-1 text-[10px] tracking-tight">{t("mobile.home", "Home")}</span>
-            </Link>
-
-            {/* Companies Tab */}
-            <Link
-              href="/dashboard/company-list"
-              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
-                isCompaniesActive
-                  ? "text-[#1565d8] font-bold scale-105"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <Building2 className="h-5 w-5" />
-              <span className="mt-1 text-[10px] tracking-tight">{t("mobile.companies", "Companies")}</span>
-            </Link>
-
-            {/* Schedule Tab */}
-            <Link
-              href="/dashboard/meeting-schedule"
-              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
-                isScheduleActive
-                  ? "text-[#1565d8] font-bold scale-105"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <Calendar className="h-5 w-5" />
-              <span className="mt-1 text-[10px] tracking-tight">{t("mobile.schedule", "Schedule")}</span>
-            </Link>
-
-            {/* Record Conversation / Notes Tab */}
-            <Link
-              href="/dashboard/record-conversation"
-              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
-                isConversationActive
-                  ? "text-[#1565d8] font-bold scale-105"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <MessageSquare className="h-5 w-5" />
-              <span className="mt-1 text-[10px] tracking-tight">{t("mobile.notes", "Notes")}</span>
-            </Link>
-
-            {/* All Menu Drawer Toggle */}
-            <button
-              type="button"
-              onClick={() => setMobileDrawerOpen(true)}
-              className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 hover:text-slate-800 active:scale-95 transition-all cursor-pointer"
-            >
-              <Compass className="h-5 w-5" />
-              <span className="mt-1 text-[10px] tracking-tight">{t("nav.menu", "Menu")}</span>
-            </button>
-          </div>
-        </nav>
       </div>
     </SidebarToggleContext.Provider>
   );

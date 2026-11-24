@@ -1327,9 +1327,9 @@ Exported on: ${new Date().toLocaleString('id-ID')}
         <button
           type="button"
           onClick={handleOpenCreateModal}
-          className="bg-[#0d6efd] hover:bg-blue-700 text-white rounded-xl px-5 py-2.5 text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer shrink-0"
+          className="crm-btn crm-btn-primary"
         >
-          <Plus size={14} />
+          <Plus className="h-4 w-4" />
           <span>Record Conversation</span>
         </button>
       </div>

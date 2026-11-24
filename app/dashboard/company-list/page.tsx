@@ -197,7 +197,7 @@ export default function CompanyListPage() {
             type="button"
             disabled={Boolean(error)}
             onClick={() => { setSuccessMessage(""); setModalCustomer(null); setIsModalOpen(true); }}
-            className="inline-flex h-11 sm:h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-blue-600 px-5 text-sm sm:text-base font-semibold text-white hover:bg-blue-700 active:scale-95 transition-all disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer shadow-xs"
+            className="crm-btn crm-btn-primary w-full sm:w-auto"
           >
             <Plus className="h-4 w-4" />
             <span>{t("companyList.addCompany", "Add Company")}</span>
@@ -230,9 +230,9 @@ export default function CompanyListPage() {
           type="button"
           onClick={() => { setExportError(""); setExportOpen(true); }}
           disabled={!total || isExporting}
-          className="inline-flex h-11 sm:h-[52px] items-center justify-center gap-2.5 rounded-xl sm:rounded-2xl border border-slate-300 bg-white px-5 text-sm sm:text-base font-semibold text-slate-600 hover:bg-slate-50 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+          className="crm-btn crm-btn-secondary"
         >
-          <Download className="h-4 w-4 sm:h-5 sm:w-5" />
+          <Download className="h-4 w-4" />
           <span>{t("common.export", "Export")}</span>
         </button>
       </div>

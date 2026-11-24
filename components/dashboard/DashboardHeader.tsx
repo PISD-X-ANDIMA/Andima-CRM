@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { ManagerBackupBell } from "@/components/dashboard/ManagerBackupBell";
-import { useSidebarToggle } from "@/components/dashboard/DashboardShell";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useSidebarToggle } from "@/components/dashboard/DashboardShell";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export function DashboardHeader({ isManager = false }: { isManager?: boolean }) {

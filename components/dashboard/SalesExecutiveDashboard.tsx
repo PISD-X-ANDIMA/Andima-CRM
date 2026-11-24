@@ -341,7 +341,7 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
           type="button"
           onClick={() => { setExportError(""); setExportOpen(true); }}
           disabled={!customers.length}
-          className="inline-flex h-11 sm:h-12 shrink-0 items-center justify-center gap-2 rounded-xl sm:rounded-2xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+          className="crm-btn crm-btn-secondary"
         >
           <Download className="h-4 w-4" />
           <span>{t("common.export", "Export")}</span>
