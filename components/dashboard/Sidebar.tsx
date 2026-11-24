@@ -10,7 +10,6 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 interface SubMenuItem {
   name: string;
@@ -248,13 +247,8 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
         )}
       </nav>
 
-      {/* Language Switcher & Logout Footer */}
-      <div className="px-[17px] pb-5 pt-3 space-y-3">
-        <div className="flex items-center justify-between rounded-lg bg-white/10 px-3 py-2 text-xs text-white">
-          <span className="font-medium text-slate-200">Language / Bahasa</span>
-          <LanguageSwitcher className="bg-white/20 border-white/30 text-white" />
-        </div>
-
+      {/* Logout Footer */}
+      <div className="px-[17px] pb-5 pt-3">
         <button
           type="button"
           onClick={async () => {
