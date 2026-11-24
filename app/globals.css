@@ -31,6 +31,12 @@
   }
 }
 
+/* Lock page scroll while any full-screen modal overlay is mounted. */
+html:has(.fixed.inset-0:not(.hidden)),
+body:has(.fixed.inset-0:not(.hidden)) {
+  overflow: hidden;
+}
+
 /* Notch/home-indicator iPhone: jangan taruh konten di area terpotong. */
 @supports (padding: env(safe-area-inset-bottom)) {
   body {
