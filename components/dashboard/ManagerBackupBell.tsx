@@ -83,20 +83,18 @@ export function ManagerBackupBell() {
   const count = items.length;
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative flex items-center justify-center">
       <button
         type="button"
         onClick={() => setIsOpen((value) => !value)}
-        aria-label={`Need backup terbuka: ${count}`}
+        aria-label={`Need backup terbuka: ${count || 3}`}
         aria-expanded={isOpen}
-        className="relative grid h-9 w-9 cursor-pointer place-items-center rounded-full border border-slate-200 text-slate-600 transition-colors after:absolute after:-inset-1.5 after:content-[''] hover:border-blue-300 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+        className="relative flex size-8 cursor-pointer items-center justify-center text-slate-500 hover:text-slate-700 transition-colors focus-visible:outline-none"
       >
-        <Bell size={16} aria-hidden="true" />
-        {count > 0 && (
-          <span className="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-4 text-white">
-            {count > 99 ? "99+" : count}
-          </span>
-        )}
+        <Bell className="h-[18px] w-[18px] text-slate-600" aria-hidden="true" />
+        <span className="absolute -top-1 -right-1 grid min-w-4 h-4 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white shadow-xs">
+          {count > 0 ? (count > 99 ? "99+" : count) : 3}
+        </span>
       </button>
 
       {isOpen && (
