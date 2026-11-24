@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Menu, Bell } from "lucide-react";
+import { Menu } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { ManagerBackupBell } from "@/components/dashboard/ManagerBackupBell";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -157,25 +157,12 @@ export function DashboardHeader({ isManager = false }: { isManager?: boolean }) 
         {/* Language Switcher */}
         <LanguageSwitcher />
 
-        {/* Vertical divider */}
-        <div className="h-5 w-px bg-slate-200" aria-hidden="true" />
-
-        {/* Notification Bell */}
-        {isActuallyManager ? (
-          <ManagerBackupBell />
-        ) : (
-          <div className="relative flex items-center justify-center">
-            <button
-              type="button"
-              className="relative flex size-8 cursor-pointer items-center justify-center text-slate-500 hover:text-slate-700 transition-colors focus-visible:outline-none"
-              aria-label="Notifications: 3 unread"
-            >
-              <Bell className="h-[18px] w-[18px] text-slate-600" aria-hidden="true" />
-              <span className="absolute -top-1 -right-1 grid min-w-4 h-4 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white shadow-xs">
-                3
-              </span>
-            </button>
-          </div>
+        {/* Notification Bell (Only for Manager of Customer Success) */}
+        {isActuallyManager && (
+          <>
+            <div className="h-5 w-px bg-slate-200" aria-hidden="true" />
+            <ManagerBackupBell />
+          </>
         )}
 
         {/* Vertical divider */}
