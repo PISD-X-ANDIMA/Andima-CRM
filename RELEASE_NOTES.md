@@ -196,4 +196,16 @@
 - Penyesuaian tata letak teks pada kolom **Company** menjadi rata tengah (*center-aligned*) selaras dengan kolom-kolom lainnya pada tabel.
 - Penyelarasan format ekspor (Excel dan PDF) untuk menyertakan atribut Company Code.
 
+## 24 November 2026
+### Penyelarasan Layout Pagination Figma
+- Pemindahan label "Per Halaman" / "Per Page" beserta dropdown pilihan limit baris per halaman ke sisi kiri berdampingan dengan ringkasan jumlah data (`Showing X–Y of Z ... | Per Halaman [10 v]`).
+- Penyederhanaan kontainer sisi kanan tabel hanya menyisakan kapsul navigasi nomor halaman (`< 1 2 3 ... >`) sesuai standar desain Figma.
+- Standardisasi komponen terpusat `FigmaPagination` yang otomatis berlaku di seluruh modul tabel Sales Executive dan Manager Customer Success.
+
+### Internasionalisasi (i18n) Error Handling & Peringatan Kalender
+- Penyelarasan menyeluruh notifikasi error handling dan peringatan pada halaman Meeting Schedule agar mendukung bilingual penuh (`EN` dan `ID`).
+- Penyesuaian tooltip hover slot waktu terlewat (`Time has already passed` / `Waktu sudah terlewat`).
+- Penyesuaian notifikasi toast saat mengklik tanggal atau jam lampau, validasi form, banner batasan jadwal Manager, dan modal konfirmasi hapus pertemuan agar dinamis mengikuti bahasa aktif pengguna.
+
+
 

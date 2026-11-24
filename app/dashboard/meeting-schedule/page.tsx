@@ -230,7 +230,7 @@ export default function MeetingSchedulePage() {
       const response = await fetch(`/api/v1/customers?${params}`, { cache: "no-store" });
       const result: ApiResponse<CustomerListItem[]> = await response.json();
       if (!response.ok || !result.success) {
-        throw new Error(result.success ? "Failed to load the schedule." : result.message);
+        throw new Error(result.success ? t("meetingSchedule.loadError", "Failed to load the schedule.") : result.message);
       }
       const allCustomers = [...result.data];
       if ((result.meta?.totalPages || 1) > 1) {
@@ -251,7 +251,7 @@ export default function MeetingSchedulePage() {
       }
       setCustomers(allCustomers);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Failed to load the schedule.");
+      setError(cause instanceof Error ? cause.message : t("meetingSchedule.loadError", "Failed to load the schedule."));
     } finally {
       setLoading(false);
     }
@@ -364,13 +364,13 @@ export default function MeetingSchedulePage() {
   const beginAdd = (dateStr: string, timeStr: string) => {
     const today = jakartaDateKey();
     if (dateStr < today) {
-      setPastSlotNotice("Tanggal sudah terlewat, tidak dapat menjadwalkan meeting.");
+      setPastSlotNotice(t("meetingSchedule.pastDateNotice", "This date has passed, cannot schedule a meeting."));
       setTimeout(() => setPastSlotNotice(""), 3500);
       return;
     }
     const hourNum = Number(timeStr.slice(0, 2));
     if (dateStr === today && hourNum * 60 <= jakartaMinutes()) {
-      setPastSlotNotice("Jam ini sudah terlewat, tidak dapat menjadwalkan meeting.");
+      setPastSlotNotice(t("meetingSchedule.pastHourNotice", "This time slot has passed, cannot schedule a meeting."));
       setTimeout(() => setPastSlotNotice(""), 3500);
       return;
     }
@@ -424,7 +424,7 @@ export default function MeetingSchedulePage() {
     const errors: Record<string, string> = {};
     if (!form.companyId) errors.companyId = t("meetingSchedule.companyRequired", "Company is required");
     if (!form.date) errors.date = t("meetingSchedule.dateRequired", "Date is required");
-    else if (form.date < jakartaDateKey()) errors.date = "Meetings cannot be scheduled on a past date";
+    else if (form.date < jakartaDateKey()) errors.date = t("meetingSchedule.pastDateError", "Meetings cannot be scheduled on a past date");
     if (!form.startTime) errors.startTime = t("meetingSchedule.timeRequired", "Time is required");
     if (!form.agenda.trim()) errors.agenda = t("meetingSchedule.agendaRequired", "Agenda is required");
     if (form.meetingType === "offline" && !form.location.trim()) {
@@ -441,31 +441,31 @@ export default function MeetingSchedulePage() {
 
     const customer = customers.find((item) => item.id === form.companyId);
     if (!customer) {
-      setMutationError("Select a company.");
+      setMutationError(t("meetingSchedule.selectCompanyError", "Select a company."));
       return;
     }
     if (form.meetingType === "offline" && !form.location.trim()) {
-      setMutationError("Location is required for an offline meeting.");
+      setMutationError(t("meetingSchedule.locationRequired", "Location is required for an offline meeting."));
       return;
     }
     if (form.meetingType === "online" && !form.meetingLink.trim()) {
-      setMutationError("A meeting link is required for an online meeting.");
+      setMutationError(t("meetingSchedule.linkRequired", "A meeting link is required for an online meeting."));
       return;
     }
     if (form.endTime <= form.startTime) {
-      setMutationError("End time must be after start time.");
+      setMutationError(t("meetingSchedule.endTimeAfterStart", "End time must be after start time."));
       return;
     }
     if (form.date < jakartaDateKey()) {
-      setMutationError("Meetings cannot be scheduled on a past date.");
+      setMutationError(t("meetingSchedule.pastDateError", "Meetings cannot be scheduled on a past date."));
       return;
     }
     if (!meetingSlots.some((slot) => slot.start === form.startTime && slot.end === form.endTime)) {
-      setMutationError("Select an available one-hour slot between 08:00 and 18:00.");
+      setMutationError(t("meetingSchedule.slotRangeError", "Select an available one-hour slot between 08:00 and 18:00."));
       return;
     }
     if (form.date === jakartaDateKey() && Number(form.startTime.slice(0, 2)) * 60 <= jakartaMinutes()) {
-      setMutationError("Meetings cannot be scheduled in a time slot that has already started.");
+      setMutationError(t("meetingSchedule.pastSlotError", "Meetings cannot be scheduled in a time slot that has already started."));
       return;
     }
 
@@ -496,7 +496,7 @@ export default function MeetingSchedulePage() {
         body: JSON.stringify(editMeeting ? { meetingId: editMeeting.meeting.id, ...payload } : payload),
       });
       const result: ApiResponse<{ meetingId: string }> = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.success ? "Failed to save the meeting." : result.message);
+      if (!response.ok || !result.success) throw new Error(result.success ? t("meetingSchedule.saveError", "Failed to save the meeting.") : result.message);
 
       setSelectedDateKey(form.date);
       setAnchorDate(dateForInput(form.date));
@@ -505,7 +505,7 @@ export default function MeetingSchedulePage() {
       setSelectedMeeting(null);
       setSlotRefresh((value) => value + 1);
     } catch (cause) {
-      setMutationError(cause instanceof Error ? cause.message : "Failed to save the meeting.");
+      setMutationError(cause instanceof Error ? cause.message : t("meetingSchedule.saveError", "Failed to save the meeting."));
     } finally {
       setSaving(false);
     }
@@ -523,13 +523,13 @@ export default function MeetingSchedulePage() {
         body: JSON.stringify({ meetingId: selectedMeeting.meeting.id }),
       });
       const result: ApiResponse<{ meetingId: string }> = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.success ? "Failed to delete the meeting." : result.message);
+      if (!response.ok || !result.success) throw new Error(result.success ? t("meetingSchedule.deleteError", "Failed to delete the meeting.") : result.message);
       setSelectedMeeting(null);
       setEditingMeeting(false);
       setDeleteConfirmOpen(false);
       setSlotRefresh((value) => value + 1);
     } catch (cause) {
-      setMutationError(cause instanceof Error ? cause.message : "Failed to delete the meeting.");
+      setMutationError(cause instanceof Error ? cause.message : t("meetingSchedule.deleteError", "Failed to delete the meeting."));
     } finally {
       setSaving(false);
     }
@@ -547,11 +547,11 @@ export default function MeetingSchedulePage() {
         body: JSON.stringify({ meetingId: selectedMeeting.meeting.id, status }),
       });
       const result: ApiResponse<{ meetingId: string }> = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.success ? "Failed to update the meeting status." : result.message);
+      if (!response.ok || !result.success) throw new Error(result.success ? t("meetingSchedule.updateStatusError", "Failed to update the meeting status.") : result.message);
       setSelectedMeeting((current) => (current ? { ...current, meeting: { ...current.meeting, status } } : null));
       setSlotRefresh((value) => value + 1);
     } catch (cause) {
-      setMutationError(cause instanceof Error ? cause.message : "Failed to update the meeting status.");
+      setMutationError(cause instanceof Error ? cause.message : t("meetingSchedule.updateStatusError", "Failed to update the meeting status."));
     } finally {
       setSaving(false);
     }
@@ -607,7 +607,10 @@ export default function MeetingSchedulePage() {
       {isManager && <ManagerGlobalFilterBar />}
       {isManager && (
         <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 text-xs font-medium text-amber-900 leading-relaxed shadow-2xs">
-          Manager sees meetings of the selected Sales Executive plus his or her own. Add, edit, delete, and status change are only for the Manager&apos;s own meetings. A time slot is blocked only by the Manager&apos;s own meetings.
+          {t(
+            "meetingSchedule.managerBanner",
+            "Manager sees meetings of the selected Sales Executive plus his or her own. Add, edit, delete, and status change are only for the Manager's own meetings. A time slot is blocked only by the Manager's own meetings."
+          )}
         </div>
       )}
 
@@ -615,7 +618,7 @@ export default function MeetingSchedulePage() {
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">{t("meetingSchedule.title", "Meeting Calendar")}</h1>
-          <p className="mt-1 text-sm sm:text-base text-slate-500">{t("meetingSchedule.subtitle", "Kelola dan lihat jadwal meeting dengan customer.")}</p>
+          <p className="mt-1 text-sm sm:text-base text-slate-500">{t("meetingSchedule.subtitle", "Manage and view scheduled meetings with customers.")}</p>
         </div>
         <button
           type="button"
@@ -681,7 +684,9 @@ export default function MeetingSchedulePage() {
             {/* Date jump popover */}
             {showDatePicker && (
               <div className="absolute left-0 top-full z-40 mt-2 w-64 rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
-                <label className="block text-xs font-semibold text-slate-700 mb-2">Pilih Tanggal Acuan:</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-2">
+                  {t("meetingSchedule.selectAnchorDate", "Select Reference Date:")}
+                </label>
                 <input
                   type="date"
                   value={dateKey(anchorDate)}
@@ -872,7 +877,13 @@ export default function MeetingSchedulePage() {
                           /* Past Empty Slot: Disabled with Hover Tooltip Notification */
                           <div
                             onClick={() => {
-                              setPastSlotNotice(`Waktu ${timeStr} pada tanggal ini sudah terlewat.`);
+                              setPastSlotNotice(
+                                t(
+                                  "meetingSchedule.pastTimeSlotNotice",
+                                  `Time ${timeStr} on this date has already passed.`,
+                                  { time: timeStr }
+                                )
+                              );
                               setTimeout(() => setPastSlotNotice(""), 3500);
                             }}
                             className="group/past relative flex h-full min-h-[56px] w-full cursor-not-allowed items-center justify-center rounded-lg bg-slate-50/50 p-1 transition-colors hover:bg-slate-100/70"
@@ -883,7 +894,7 @@ export default function MeetingSchedulePage() {
                             {/* Hover Notification Tooltip */}
                             <div className="pointer-events-none absolute -top-9 left-1/2 z-30 -translate-x-1/2 opacity-0 group-hover/past:opacity-100 transition-opacity duration-150">
                               <div className="whitespace-nowrap rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white shadow-xl">
-                                ⚠️ Waktu sudah terlewat
+                                ⚠️ {t("meetingSchedule.pastSlotWarning", "Time has already passed")}
                               </div>
                               <div className="mx-auto h-1.5 w-1.5 -translate-y-1 rotate-45 bg-slate-900" />
                             </div>
@@ -1359,7 +1370,7 @@ export default function MeetingSchedulePage() {
 
                 {selectedMeeting.meeting.status === "completed" && (
                   <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">
-                    This completed meeting is read-only.
+                    {t("meetingSchedule.readOnlyNotice", "This completed meeting is read-only.")}
                   </p>
                 )}
                 {mutationError && <p role="alert" className="text-sm text-rose-600">{mutationError}</p>}
@@ -1436,10 +1447,14 @@ export default function MeetingSchedulePage() {
               </span>
               <div>
                 <h2 id="delete-meeting-title" className="text-lg font-bold text-slate-900">
-                  Delete meeting?
+                  {t("meetingSchedule.deleteConfirmTitle", "Delete meeting?")}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Delete the meeting for <strong>{selectedMeeting.customer.companyName}</strong>? This action cannot be undone.
+                  {t(
+                    "meetingSchedule.deleteConfirmText",
+                    `Delete the meeting for ${selectedMeeting.customer.companyName}? This action cannot be undone.`,
+                    { company: selectedMeeting.customer.companyName }
+                  )}
                 </p>
               </div>
             </div>
