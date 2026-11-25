@@ -209,6 +209,7 @@ export const en = {
     deleteConfirmTitle: "Delete meeting?",
     deleteConfirmText: "Delete the meeting for {company}? This action cannot be undone.",
     readOnlyNotice: "This completed meeting is read-only.",
+    cannotCompleteFuture: "Meetings that have not occurred yet cannot be marked as completed.",
   },
   // Mobile UI
   mobile: {

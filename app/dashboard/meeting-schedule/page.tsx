@@ -86,6 +86,9 @@ function getMonday(dateInput: Date): Date {
 function isMeetingPast(meeting: NonNullable<CustomerListItem["meetingSchedule"]>, selectedDate: string) {
   const occurrenceDate = meeting.scheduleType === "one_day" ? meeting.meetingDate : meeting.occurrenceDate || selectedDate;
   if (!occurrenceDate) return false;
+  if (meeting.scheduleType === "weekly" && meeting.effectiveStartDate && occurrenceDate < meeting.effectiveStartDate) {
+    return false;
+  }
   const today = jakartaDateKey();
   if (occurrenceDate < today) return true;
   if (occurrenceDate > today) return false;
@@ -538,6 +541,10 @@ export default function MeetingSchedulePage() {
   // Update Status
   async function changeMeetingStatus(status: "scheduled" | "completed" | "cancelled") {
     if (!selectedMeeting || selectedMeeting.meeting.status === status) return;
+    if (status === "completed" && !isMeetingPast(selectedMeeting.meeting, selectedDateKey)) {
+      setMutationError(t("meetingSchedule.cannotCompleteFuture", "Meetings that have not occurred yet cannot be marked as completed."));
+      return;
+    }
     setSaving(true);
     setMutationError("");
     try {
@@ -843,7 +850,8 @@ export default function MeetingSchedulePage() {
                                   key={meeting.id}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setSelectedMeeting({ customer, meeting });
+                                    setSelectedDateKey(dKey);
+                                    setSelectedMeeting({ customer, meeting: { ...meeting, occurrenceDate: dKey } });
                                     setEditingMeeting(false);
                                     setMutationError("");
                                   }}
@@ -1355,9 +1363,11 @@ export default function MeetingSchedulePage() {
                             : "bg-blue-50 text-blue-700"
                         }`}
                       >
-                        <option value="scheduled">Scheduled</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Canceled</option>
+                        <option value="scheduled">{t("common.scheduled", "Scheduled")}</option>
+                        {isMeetingPast(selectedMeeting.meeting, selectedDateKey) && (
+                          <option value="completed">{t("common.completed", "Completed")}</option>
+                        )}
+                        <option value="cancelled">{t("common.canceled", "Canceled")}</option>
                       </select>
                     )}
                   </dd>

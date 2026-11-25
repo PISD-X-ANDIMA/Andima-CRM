@@ -61,6 +61,35 @@ export function validateMeetingScheduleDateAndSlot(input: Pick<MeetingInput, "me
   return null;
 }
 
+export function validateMeetingCompletionAllowed(input: {
+  schedule_type: ScheduleType;
+  meeting_date?: string | null;
+  effective_start_date?: string | null;
+  meeting_day?: MeetingDay;
+  start_time: string;
+  end_time: string;
+}): string | null {
+  const { date: today, minutes: nowMinutes } = jakartaDateAndMinutes();
+  const slotEnd = input.end_time?.slice(0, 5) || "00:00";
+  const [endHours, endMins] = slotEnd.split(":").map(Number);
+  const endMinutes = endHours * 60 + endMins;
+
+  if (input.schedule_type === "one_day") {
+    if (!input.meeting_date || input.meeting_date > today) {
+      return "Meetings that have not occurred yet cannot be marked as completed.";
+    }
+    if (input.meeting_date === today && endMinutes > nowMinutes) {
+      return "Meetings that have not finished yet cannot be marked as completed.";
+    }
+    return null;
+  }
+
+  if (input.effective_start_date && input.effective_start_date > today) {
+    return "Meetings that have not occurred yet cannot be marked as completed.";
+  }
+  return null;
+}
+
 /** Safely retained for backwards compatibility; does not destructively cancel user meetings. */
 export async function cancelExpiredOneTimeMeetings() {
   // Meetings are managed explicitly by users (scheduled, completed, cancelled).

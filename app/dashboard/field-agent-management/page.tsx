@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
-import { TableSkeleton } from "@/components/ui/Skeleton";
+import { TableSkeleton, Skeleton } from "@/components/ui/Skeleton";
 import { FigmaPagination } from "@/components/ui/FigmaPagination";
 
 interface AccountItem {
@@ -18,7 +18,22 @@ interface AccountItem {
 
 export default function FieldAgentManagementPage() {
   const [accounts, setAccounts] = useState<AccountItem[]>([]);
-  const [viewerRole, setViewerRole] = useState<string>("");
+  const [viewerRole, setViewerRole] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("andima_user");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          const role = String(parsed.role || "").toLowerCase();
+          if (role.includes("manager")) return "manager_customer_success";
+          if (role.includes("sales")) return "sales_executive";
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    }
+    return "";
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -94,16 +109,25 @@ export default function FieldAgentManagementPage() {
   const isManagerView = viewerRole === "manager_customer_success";
 
   return (
-    <div className="mx-auto w-full max-w-[1360px] space-y-6 pb-12">
+    <div className="w-full space-y-6 pb-12">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-          {isManagerView ? "Sales & Field Agent Accounts" : "Field Agent Accounts"}
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          {isManagerView
-            ? "Aktifkan atau nonaktifkan akun Sales Executive dan Field Agent."
-            : "Aktifkan atau nonaktifkan akun Field Agent."}
-        </p>
+        {isLoading && !viewerRole ? (
+          <div className="space-y-2">
+            <Skeleton className="h-9 w-72" />
+            <Skeleton className="h-4 w-80" />
+          </div>
+        ) : (
+          <>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+              {isManagerView ? "Sales & Field Agent Accounts" : "Field Agent Accounts"}
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              {isManagerView
+                ? "Aktifkan atau nonaktifkan akun Sales Executive dan Field Agent."
+                : "Aktifkan atau nonaktifkan akun Field Agent."}
+            </p>
+          </>
+        )}
       </div>
 
       <div className="relative max-w-md">

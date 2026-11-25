@@ -19,7 +19,6 @@ const managerCustomerSuccessMenu = [
   { label: "Company List", href: "/dashboard/company-list" },
   { label: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { label: "Record Conversation", href: "/dashboard/record-conversation" },
-  { label: "Monitoring Task of Field Agent", href: "/dashboard/task-of-field-agent" },
   { label: "Manage Accounts", href: "/dashboard/field-agent-management" },
 ];
 

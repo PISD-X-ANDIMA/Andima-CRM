@@ -211,6 +211,7 @@ export const id: TranslationType = {
     deleteConfirmTitle: "Hapus pertemuan?",
     deleteConfirmText: "Hapus pertemuan untuk {company}? Tindakan ini tidak dapat dibatalkan.",
     readOnlyNotice: "Pertemuan yang sudah selesai ini hanya dapat dibaca.",
+    cannotCompleteFuture: "Pertemuan yang belum berlangsung tidak dapat ditandai selesai.",
   },
   // Mobile UI
   mobile: {

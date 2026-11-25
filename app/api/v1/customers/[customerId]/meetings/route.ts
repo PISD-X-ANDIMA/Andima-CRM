@@ -6,6 +6,7 @@ import {
   updateMeeting,
   deleteMeeting,
   cancelExpiredOneTimeMeetings,
+  validateMeetingCompletionAllowed,
   validateMeetingScheduleDateAndSlot,
 } from "@/lib/services/meeting-service";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -125,6 +126,19 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     if (existingError || !existing) return createErrorResponse("NOT_FOUND_001", "Meeting not found", undefined, 404);
     if (existing.status === "completed") {
       return createErrorResponse("MEETING_LOCKED_001", "Completed meetings cannot be edited or have their status changed.", undefined, 409);
+    }
+    if (input.status === "completed") {
+      const completionError = validateMeetingCompletionAllowed({
+        schedule_type: input.schedule_type ?? existing.schedule_type,
+        meeting_date: input.meeting_date !== undefined ? input.meeting_date : existing.meeting_date,
+        effective_start_date: input.effective_start_date !== undefined ? input.effective_start_date : existing.effective_start_date,
+        meeting_day: input.meeting_day ?? existing.meeting_day,
+        start_time: input.start_time ?? existing.start_time,
+        end_time: input.end_time ?? existing.end_time,
+      });
+      if (completionError) {
+        return createErrorResponse("MEETING_NOT_OCCURRED_001", completionError, undefined, 400);
+      }
     }
 
     if (input.agenda !== undefined && !input.agenda?.trim()) {
