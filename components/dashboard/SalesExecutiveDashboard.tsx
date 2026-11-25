@@ -342,7 +342,7 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
           type="button"
           onClick={() => { setExportError(""); setExportOpen(true); }}
           disabled={!customers.length}
-          className="crm-btn crm-btn-secondary"
+          className="crm-btn crm-btn-secondary w-full sm:w-auto justify-center"
         >
           <Download className="h-4 w-4" />
           <span>{t("common.export", "Export")}</span>

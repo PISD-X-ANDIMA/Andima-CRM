@@ -115,9 +115,9 @@ export function DashboardHeader({ isManager = false }: { isManager?: boolean }) 
   }, [pathname, isActuallyManager, roleTitle]);
 
   return (
-    <header className="sticky top-0 z-30 -mx-3 -mt-4 sm:-mx-6 sm:-mt-6 lg:-mx-10 lg:-mt-8 mb-6 sm:mb-8 flex min-h-[58px] w-[calc(100%+1.5rem)] sm:w-[calc(100%+3rem)] lg:w-[calc(100%+5rem)] items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 sm:px-6 py-2.5 shadow-2xs">
+    <header className="sticky top-0 z-30 -mx-3 -mt-4 sm:-mx-6 sm:-mt-6 lg:-mx-10 lg:-mt-8 mb-6 sm:mb-8 flex min-h-[56px] w-[calc(100%+1.5rem)] sm:w-[calc(100%+3rem)] lg:w-[calc(100%+5rem)] items-center justify-between gap-2 sm:gap-3 border-b border-slate-200 bg-white px-3 sm:px-6 py-2 shadow-2xs">
       {/* Left: Hamburger + ANDIMA CRM + Divider + Breadcrumbs */}
-      <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
         <button
           type="button"
           onClick={toggleSidebar}
@@ -127,21 +127,27 @@ export function DashboardHeader({ isManager = false }: { isManager?: boolean }) 
           <Menu className="h-[18px] w-[18px] text-white" strokeWidth={2.2} />
         </button>
 
-        <span className="font-bold text-slate-900 text-[14px] sm:text-[15px] tracking-tight whitespace-nowrap">
+        <span className="hidden md:inline font-bold text-slate-900 text-[15px] tracking-tight whitespace-nowrap">
           ANDIMA CRM
         </span>
 
-        <span className="text-slate-300 font-light select-none text-sm mx-0.5 sm:mx-1" aria-hidden="true">
+        <span className="hidden md:inline text-slate-300 font-light select-none text-sm mx-1" aria-hidden="true">
           |
         </span>
 
-        <nav aria-label="Breadcrumb" className="flex min-w-0 flex-wrap items-center text-[12px] sm:text-[13px] font-medium leading-none">
+        {/* Mobile compact breadcrumb: current page only */}
+        <span className="sm:hidden truncate text-[13px] font-semibold text-[#1565d8]">
+          {breadcrumbs[breadcrumbs.length - 1]}
+        </span>
+
+        {/* Desktop/Tablet full breadcrumb path */}
+        <nav aria-label="Breadcrumb" className="hidden sm:flex min-w-0 flex-wrap items-center text-[13px] font-medium leading-none">
           {breadcrumbs.map((label, index) => {
             const isLast = index === breadcrumbs.length - 1;
             return (
               <span key={`${label}-${index}`} className="flex items-center">
                 {index > 0 && <span className="text-slate-400 mx-1.5 text-xs select-none">/</span>}
-                <span className={`truncate max-w-[140px] sm:max-w-none ${isLast ? "font-semibold text-[#1565d8]" : "text-slate-600"}`}>
+                <span className={`truncate max-w-[160px] md:max-w-none ${isLast ? "font-semibold text-[#1565d8]" : "text-slate-600"}`}>
                   {label}
                 </span>
               </span>
@@ -151,31 +157,32 @@ export function DashboardHeader({ isManager = false }: { isManager?: boolean }) 
       </div>
 
       {/* Right: Language Switcher + Divider + Bell + Divider + User Profile */}
-      <div className="flex shrink-0 items-center gap-2.5 sm:gap-3.5">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3.5">
         {/* Language Switcher */}
         <LanguageSwitcher />
 
         {/* Notification Bell (Only for Manager of Customer Success) */}
         {isActuallyManager && (
           <>
-            <div className="h-5 w-px bg-slate-200" aria-hidden="true" />
+            <div className="hidden sm:block h-5 w-px bg-slate-200" aria-hidden="true" />
             <ManagerBackupBell />
           </>
         )}
 
         {/* Vertical divider */}
-        <div className="h-5 w-px bg-slate-200" aria-hidden="true" />
+        <div className="hidden sm:block h-5 w-px bg-slate-200" aria-hidden="true" />
 
         {/* User Profile */}
         <div className="flex items-center gap-2 sm:gap-2.5">
           <div
             aria-hidden="true"
+            title={`${displayName} (${roleSubtitle})`}
             className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-[#1565d8] text-[13px] font-bold text-white shadow-xs"
           >
             {initial}
           </div>
-          <div className="flex flex-col text-left leading-tight">
-            <span className="max-w-[110px] sm:max-w-[180px] truncate text-[13px] font-semibold text-slate-900 leading-tight">
+          <div className="hidden sm:flex flex-col text-left leading-tight">
+            <span className="max-w-[180px] truncate text-[13px] font-semibold text-slate-900 leading-tight">
               {displayName}
             </span>
             <span className="text-[11px] font-normal text-slate-400">

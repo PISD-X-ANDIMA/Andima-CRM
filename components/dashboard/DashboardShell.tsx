@@ -100,7 +100,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         {/* ======================================================== */}
         {/* 3. MAIN CONTENT AREA                                      */}
         {/* ======================================================== */}
-        <main className="min-w-0 flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-10 lg:py-8 pb-12 lg:pb-8">
+        <main className="min-w-0 flex-1 overflow-x-clip px-3 py-4 sm:px-6 sm:py-6 lg:px-10 lg:py-8 pb-12 lg:pb-8">
           {children}
         </main>
       </div>

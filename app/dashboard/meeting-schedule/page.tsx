@@ -602,9 +602,9 @@ export default function MeetingSchedulePage() {
     <div className="space-y-6 pb-12">
       {/* Toast Notice for past slot click */}
       {pastSlotNotice && (
-        <div className="fixed top-6 right-6 z-[100] flex items-center gap-2 rounded-xl bg-[#f2fef8] border border-[#a7f3d0] px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#047857] shadow-lg animate-fade-in">
+        <div className="fixed top-4 left-4 right-4 sm:left-auto sm:top-6 sm:right-6 z-[100] flex items-center justify-between gap-2 rounded-xl bg-[#f2fef8] border border-[#a7f3d0] px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#047857] shadow-lg animate-fade-in">
           <span className="text-[#064e3b]">⚠️ {pastSlotNotice}</span>
-          <button type="button" onClick={() => setPastSlotNotice("")} className="ml-2 text-[#047857]/60 hover:text-[#064e3b]">
+          <button type="button" onClick={() => setPastSlotNotice("")} className="ml-2 shrink-0 text-[#047857]/60 hover:text-[#064e3b]">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -622,7 +622,7 @@ export default function MeetingSchedulePage() {
       )}
 
       {/* Header with Title and Create Meeting Button */}
-      <header className="flex flex-wrap items-center justify-between gap-4">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">{t("meetingSchedule.title", "Meeting Calendar")}</h1>
           <p className="mt-1 text-sm sm:text-base text-slate-500">{t("meetingSchedule.subtitle", "Manage and view scheduled meetings with customers.")}</p>
@@ -637,7 +637,7 @@ export default function MeetingSchedulePage() {
                 : "09:00";
             beginAdd(selectedDateKey >= todayKey ? selectedDateKey : todayKey, firstAvailable);
           }}
-          className="inline-flex items-center gap-2 rounded-xl !bg-[#1565d8] hover:!bg-[#0f52b8] px-5 py-3 text-sm font-semibold !text-white shadow-xs transition-all disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+          className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl !bg-[#1565d8] hover:!bg-[#0f52b8] px-5 py-3 text-sm font-semibold !text-white shadow-xs transition-all disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
         >
           <Plus className="h-4 w-4 text-white" />
           <span>{t("meetingSchedule.createMeeting", "Create Meeting")}</span>
@@ -713,7 +713,7 @@ export default function MeetingSchedulePage() {
         </div>
 
         {/* Right Side: View Mode Switcher */}
-        <div className="flex items-center rounded-xl bg-slate-100 p-1 text-xs font-semibold">
+        <div className="grid grid-cols-3 sm:flex w-full sm:w-auto items-center rounded-xl bg-slate-100 p-1 text-xs font-semibold">
           <button
             type="button"
             onClick={() => setViewMode("day")}

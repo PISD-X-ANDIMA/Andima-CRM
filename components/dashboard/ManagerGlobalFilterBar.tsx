@@ -55,17 +55,17 @@ export function ManagerGlobalFilterBar({
   }, [initialExecs]);
 
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200/90 bg-white px-4 py-3 shadow-xs">
-      <div className="flex items-center gap-2">
-        <label htmlFor="manager-sales-exec-filter" className="text-sm font-semibold text-slate-700 whitespace-nowrap">
+    <div className="mb-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-4 rounded-xl border border-slate-200/90 bg-white px-4 py-3 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
+        <label htmlFor="manager-sales-exec-filter" className="text-xs sm:text-sm font-semibold text-slate-700 whitespace-nowrap">
           {t("manager.viewingSalesExec", "Viewing Sales Executive:")}
         </label>
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <select
             id="manager-sales-exec-filter"
             value={selectedExecutive}
             onChange={(e) => setSelectedExecutive(e.target.value)}
-            className="h-9 min-w-[210px] appearance-none rounded-lg border border-slate-300 bg-white px-3 pr-8 text-sm font-medium text-slate-800 shadow-xs transition-colors hover:border-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="h-9 w-full sm:min-w-[210px] appearance-none rounded-lg border border-slate-300 bg-white px-3 pr-8 text-sm font-medium text-slate-800 shadow-xs transition-colors hover:border-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="all">{t("manager.allSalesExecOption", "All Sales Executives")}</option>
             {executives.filter((se) => se.id !== "all").map((se) => (

@@ -47,7 +47,7 @@ export function FigmaPagination({
       aria-label="Pagination Navigation"
     >
       {/* Left: Showing X-Y of Z & Per Halaman Selector */}
-      <div className="flex flex-wrap items-center gap-3 text-[12px] text-slate-500">
+      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3 text-[12px] text-slate-500">
         <div>
           {t("common.showing", "Showing")}{" "}
           <strong className="font-bold text-slate-800">
@@ -83,7 +83,7 @@ export function FigmaPagination({
 
       {/* Right: Page navigation capsule (Group212.png) */}
       <nav
-        className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-2xs"
+        className="flex max-w-full overflow-x-auto items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-2xs"
         aria-label="Page navigation"
       >
         <button
