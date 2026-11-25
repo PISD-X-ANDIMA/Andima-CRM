@@ -3,9 +3,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface SubMenuItem {
@@ -14,7 +14,7 @@ interface SubMenuItem {
 }
 
 const defaultSalesExecutiveMenus: SubMenuItem[] = [
-  { name: "Sales Executive", href: "/dashboard/sales-executive" },
+  { name: "Dashboard", href: "/dashboard/sales-executive" },
   { name: "Company List", href: "/dashboard/company-list" },
   { name: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { name: "Record Conversation", href: "/dashboard/record-conversation" },
@@ -74,6 +74,13 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
   const [crmOpen, setCrmOpen] = useState(true);
   const [isManagerRole, setIsManagerRole] = useState(() => initialRole === "manager");
   const [menuLabel, setMenuLabel] = useState(() => (initialRole === "field_agent" ? "Field Agent" : "CRM"));
+  const [roleTitle, setRoleTitle] = useState(() =>
+    initialRole === "field_agent"
+      ? "Field Agent"
+      : initialRole === "manager"
+        ? "Manager of Customer Success"
+        : "Sales Executive"
+  );
   const [submenuItems, setSubmenuItems] = useState<SubMenuItem[]>(() =>
     initialRole === "field_agent"
       ? defaultFieldAgentMenus
@@ -83,10 +90,8 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
   );
 
   const getMenuTitle = (href: string, fallbackName: string) => {
-    if (href.includes("/sales-executive")) {
-      return t("nav.salesExecutive", "Sales Executive");
-    }
     if (
+      href.includes("/sales-executive") ||
       href.includes("/manager-customer-success") ||
       href.includes("field-agent?tab=dashboard")
     ) {
@@ -106,6 +111,12 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
     return fallbackName;
   };
 
+  const currentRoleTitle = useMemo(() => {
+    if (isManagerRole || roleTitle.includes("Manager")) return t("nav.managerCustomerSuccess", "Manager of Customer Success");
+    if (roleTitle.includes("Field Agent")) return t("nav.fieldAgent", "Field Agent");
+    return t("nav.salesExecutive", "Sales Executive");
+  }, [isManagerRole, roleTitle, t]);
+
   useEffect(() => {
     let active = true;
 
@@ -117,6 +128,7 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
 
         setIsManagerRole(Boolean(result.data.isManager));
         setMenuLabel(result.data.menuLabel || "CRM");
+        if (result.data.roleTitle) setRoleTitle(result.data.roleTitle);
 
         const sub = result.data.submenuItems || result.data.menu?.[0]?.children?.[0]?.children;
         if (Array.isArray(sub) && sub.length > 0) {
@@ -145,35 +157,23 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
     >
       <div>
         {/* Brand Header */}
-        <div className="flex items-center justify-between gap-3 px-4 pt-6 pb-5">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/andima-logo.png"
-              alt="Andima Logo"
-              width={48}
-              height={40}
-              className="h-10 w-12 shrink-0 object-contain drop-shadow"
-              priority
-            />
-            <div className="flex flex-col">
-              <span className="text-[20px] font-bold tracking-[-0.5px] leading-[28px] text-white">
-                ANDIMA
-              </span>
-              <span className="text-[12px] font-normal leading-[16px] text-[rgba(217,226,252,0.8)]">
-                Logistics Suite
-              </span>
-            </div>
+        <div className="flex items-center gap-3 px-4 pt-6 pb-5">
+          <Image
+            src="/andima-logo.png"
+            alt="Andima Logo"
+            width={48}
+            height={40}
+            className="h-10 w-12 shrink-0 object-contain drop-shadow"
+            priority
+          />
+          <div className="flex flex-col">
+            <span className="text-[20px] font-bold tracking-[-0.5px] leading-[28px] text-white">
+              ANDIMA
+            </span>
+            <span className="text-[12px] font-normal leading-[16px] text-[rgba(217,226,252,0.8)]">
+              Logistics Suite
+            </span>
           </div>
-          {onHide && (
-            <button
-              type="button"
-              onClick={onHide}
-              aria-label={t("nav.closeSidebar", "Close sidebar")}
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-slate-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 cursor-pointer"
-            >
-              <X className="h-[18px] w-[18px]" strokeWidth={2.5} />
-            </button>
-          )}
         </div>
 
         {/* Main Nav Container */}
@@ -203,8 +203,13 @@ export function Sidebar({ onHide }: { onHide?: () => void } = {}) {
 
           {crmOpen && (
             <div className="mt-2.5">
+              {/* Active Role Subheading (non-clickable) */}
+              <div className="flex h-[40px] w-full items-center rounded-[8px] !bg-[#b0c6d4] px-3 text-[14px] font-medium !text-[#45556c] select-none">
+                <span className="truncate">{currentRoleTitle}</span>
+              </div>
+
               {/* Submodule Tree */}
-              <div className="ml-4 border-l border-white/20 pl-2.5 space-y-1">
+              <div className="ml-4 mt-2 border-l border-white/20 pl-2.5 space-y-1">
                 {submenuItems.map((item) => {
                   const [rawItemPath, itemQuery] = item.href.split("?");
                   const itemPath = rawItemPath.replace(/\/+$/, "");

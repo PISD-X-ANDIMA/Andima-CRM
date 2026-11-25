@@ -10,7 +10,7 @@ import { useSidebarToggle } from "@/components/dashboard/DashboardShell";
 
 export function DashboardHeader({ isManager = false }: { isManager?: boolean }) {
   const pathname = usePathname();
-  const { sidebarVisible, toggleSidebar } = useSidebarToggle();
+  const { toggleSidebar } = useSidebarToggle();
   const [username, setUsername] = useState<string>("");
   const [storedRole, setStoredRole] = useState<string>("");
 
@@ -122,9 +122,7 @@ export function DashboardHeader({ isManager = false }: { isManager?: boolean }) 
           type="button"
           onClick={toggleSidebar}
           aria-label="Toggle navigation"
-          className={`flex size-[36px] shrink-0 items-center justify-center rounded-[8px] !bg-[#1565d8] !text-white shadow-xs transition-colors hover:!bg-[#0f52b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1565d8]/40 cursor-pointer ${
-            sidebarVisible ? "lg:hidden" : ""
-          }`}
+          className="flex size-[36px] shrink-0 items-center justify-center rounded-[8px] !bg-[#1565d8] !text-white shadow-xs transition-colors hover:!bg-[#0f52b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1565d8]/40 cursor-pointer"
         >
           <Menu className="h-[18px] w-[18px] text-white" strokeWidth={2.2} />
         </button>

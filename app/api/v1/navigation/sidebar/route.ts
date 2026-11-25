@@ -6,7 +6,7 @@ import { getCurrentUserScope } from "@/lib/auth/roles";
 export const dynamic = "force-dynamic";
 
 const salesExecutiveMenu = [
-  { label: "Sales Executive", href: "/dashboard/sales-executive" },
+  { label: "Dashboard", href: "/dashboard/sales-executive" },
   { label: "Company List", href: "/dashboard/company-list" },
   { label: "Meeting Schedule", href: "/dashboard/meeting-schedule" },
   { label: "Record Conversation", href: "/dashboard/record-conversation" },
