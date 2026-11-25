@@ -135,14 +135,14 @@ export async function getConversations(options?: {
 
   const [companyRes, employeeRes] = await Promise.all([
     customerIds.length > 0
-      ? supabase.from('a1_customers').select('id, company_name').in('id', customerIds).is('deleted_at', null)
+      ? supabase.from('a1_customers').select('id, company_name, created_by, created_by_name').in('id', customerIds).is('deleted_at', null)
       : Promise.resolve({ data: [] }),
     employeeIds.length > 0
       ? supabase.from('b2_register').select('id, full_name').in('id', employeeIds)
       : Promise.resolve({ data: [] }),
   ]);
 
-  const companyMap = new Map<string, { company_name: string; customer_code: string | null }>();
+  const companyMap = new Map<string, { company_name: string; customer_code: string | null; created_by?: string | null; created_by_name?: string | null }>();
   (companyRes.data || []).forEach((c: any) => {
     companyMap.set(c.id, c);
   });
@@ -186,7 +186,7 @@ export async function getConversations(options?: {
       updated_at: item.updated_at,
       company_name: comp?.company_name || '-',
       client_contact_name: comp?.company_name || '',
-      sales_pic_name: employeeMap.get(item.created_by) || 'Sales Executive',
+      sales_pic_name: employeeMap.get(item.created_by) || comp?.created_by_name || 'Sales Executive',
     } as RecordConversationItem;
   });
 

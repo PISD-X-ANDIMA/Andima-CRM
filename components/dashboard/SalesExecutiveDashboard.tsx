@@ -331,6 +331,7 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
           <Search aria-hidden="true" className="absolute left-4 top-1/2 h-4 w-4 sm:h-5 sm:w-5 -translate-y-1/2 text-slate-400" />
           <input
             type="search"
+            maxLength={100}
             value={search}
             onChange={(event) => { setSearch(event.target.value); setPage(1); }}
             placeholder={t("common.search", "Search Company, Code, or PIC...")}
@@ -376,7 +377,7 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
                     {customer.companyName}
                   </h3>
                   {customer.customerCode && (
-                    <span className="mt-1 inline-block rounded-md bg-blue-50 px-2 py-0.5 text-xs font-mono font-medium text-blue-700 border border-blue-200/60">
+                    <span className="mt-1 inline-block rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-mono font-semibold text-blue-700 border border-blue-200/80">
                       {customer.customerCode}
                     </span>
                   )}
@@ -442,7 +443,7 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
                 </td>
                 <td className="break-words px-4 py-3.5 text-center font-mono text-xs font-semibold text-slate-800">
                   {customer.customerCode ? (
-                    <span className="inline-block rounded bg-blue-50 px-2 py-0.5 text-xs font-mono font-medium text-blue-700 border border-blue-200/60">
+                    <span className="inline-block rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-mono font-semibold text-blue-700 border border-blue-200/80">
                       {customer.customerCode}
                     </span>
                   ) : (
@@ -491,7 +492,7 @@ export function SalesExecutiveDashboard({ initialCustomers, metrics, initialData
                     <span className="text-rose-500">▣</span>
                     <span>PDF (.pdf)</span>
                   </label>
-                  {exportFormat === "pdf" && <p className="pl-9 text-xs text-slate-500">The browser print dialog will open. Choose “Save as PDF”.</p>}
+                  {exportFormat === "pdf" && <p className="pl-9 text-xs text-slate-500">{t("common.pdfPrintHint", "The browser print dialog will open. Choose “Save as PDF”.")}</p>}
                 </div>
               </fieldset>
               <fieldset>

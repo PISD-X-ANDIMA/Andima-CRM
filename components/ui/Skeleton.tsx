@@ -4,6 +4,22 @@ export function Skeleton({ className = "" }: { className?: string }) {
 
 const WIDTHS = [70, 55, 65, 45, 40];
 
+/** Reusable page header skeleton so static headings don't appear before data loads. */
+export function PageHeaderSkeleton({
+  titleWidth = "w-64",
+  subtitleWidth = "w-96 max-w-full",
+}: {
+  titleWidth?: string;
+  subtitleWidth?: string;
+}) {
+  return (
+    <div className="space-y-2.5" aria-hidden="true">
+      <Skeleton className={`h-8 sm:h-9 ${titleWidth}`} />
+      <Skeleton className={`h-4 ${subtitleWidth}`} />
+    </div>
+  );
+}
+
 /** Isi <tbody> saat tabel memuat. */
 export function TableSkeleton({ rows = 5, columns = 5 }: { rows?: number; columns?: number }) {
   return (
@@ -29,10 +45,11 @@ export function TableSkeleton({ rows = 5, columns = 5 }: { rows?: number; column
   );
 }
 
-/** Kerangka halaman saat cek role / fetch awal. */
+/** Kerangka halaman penuh (header + KPI + tabel) saat cek role / fetch awal. */
 export function DashboardSkeleton({ rows = 5 }: { rows?: number }) {
   return (
-    <div className="space-y-5" aria-busy="true">
+    <div className="space-y-6" aria-busy="true">
+      <PageHeaderSkeleton />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {[0, 1, 2].map((i) => (
           <div key={i} className="h-28 animate-pulse rounded-xl bg-slate-100" style={{ animationDelay: `${i * 80}ms` }} />

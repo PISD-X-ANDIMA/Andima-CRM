@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
-import { TableSkeleton, Skeleton } from "@/components/ui/Skeleton";
+import { TableSkeleton, PageHeaderSkeleton, Skeleton } from "@/components/ui/Skeleton";
 import { FigmaPagination } from "@/components/ui/FigmaPagination";
 
 interface AccountItem {
@@ -111,11 +111,8 @@ export default function FieldAgentManagementPage() {
   return (
     <div className="w-full space-y-6 pb-12">
       <div>
-        {isLoading && !viewerRole ? (
-          <div className="space-y-2">
-            <Skeleton className="h-9 w-72" />
-            <Skeleton className="h-4 w-80" />
-          </div>
+        {isLoading && accounts.length === 0 ? (
+          <PageHeaderSkeleton titleWidth="w-72" subtitleWidth="w-80 max-w-full" />
         ) : (
           <>
             <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -134,6 +131,7 @@ export default function FieldAgentManagementPage() {
         <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
+          maxLength={100}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search name or email..."

@@ -12,6 +12,7 @@ import { ManagerGlobalFilterBar } from "@/components/dashboard/ManagerGlobalFilt
 import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { FigmaPagination } from "@/components/ui/FigmaPagination";
+import { PageHeaderSkeleton, Skeleton } from "@/components/ui/Skeleton";
 
 type ExportFormat = "xlsx" | "pdf";
 
@@ -22,6 +23,7 @@ export default function CompanyListPage() {
 
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -86,6 +88,7 @@ export default function CompanyListPage() {
       setError(cause instanceof Error ? cause.message : "A connection error occurred");
     } finally {
       setIsLoading(false);
+      setHasLoadedOnce(true);
     }
   }, [debouncedSearch, page, perPage, isManager, selectedExecutive]);
 
@@ -179,64 +182,80 @@ export default function CompanyListPage() {
 
   return (
     <div className="space-y-6">
-      {/* Title Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            {t("companyList.title", "Company List")}
-          </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-500">
-            {isManager
-              ? "Customers handled by each Sales Executive. Read only for Manager."
-              : t("companyList.subtitle", "Manage customer accounts, meetings, and field agent tasks.")}
-          </p>
-        </div>
+      {!hasLoadedOnce && isLoading ? (
+        <>
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+            <PageHeaderSkeleton titleWidth="w-56" subtitleWidth="w-80 max-w-full" />
+            <Skeleton className="h-11 w-full sm:w-40 rounded-xl" />
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+            <Skeleton className="h-11 sm:h-[52px] w-full sm:max-w-[425px] rounded-xl sm:rounded-full" />
+            <Skeleton className="h-11 w-full sm:w-32 rounded-xl" />
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Title Header */}
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                {t("companyList.title", "Company List")}
+              </h1>
+              <p className="mt-1 text-xs sm:text-sm text-slate-500">
+                {isManager
+                  ? t("companyList.managerSubtitle", "Customers handled by each Sales Executive. Read only for Manager.")
+                  : t("companyList.subtitle", "Manage customer accounts, meetings, and field agent tasks.")}
+              </p>
+            </div>
 
-        {/* Hide Add Company for Manager */}
-        {!isManager && (
-          <button
-            type="button"
-            disabled={Boolean(error)}
-            onClick={() => { setSuccessMessage(""); setModalCustomer(null); setIsModalOpen(true); }}
-            className="crm-btn crm-btn-primary w-full sm:w-auto"
-          >
-            <Plus className="h-4 w-4" />
-            <span>{t("companyList.addCompany", "Add Company")}</span>
-          </button>
-        )}
-      </div>
+            {/* Hide Add Company for Manager */}
+            {!isManager && (
+              <button
+                type="button"
+                disabled={Boolean(error)}
+                onClick={() => { setSuccessMessage(""); setModalCustomer(null); setIsModalOpen(true); }}
+                className="crm-btn crm-btn-primary w-full sm:w-auto"
+              >
+                <Plus className="h-4 w-4" />
+                <span>{t("companyList.addCompany", "Add Company")}</span>
+              </button>
+            )}
+          </div>
 
-      {/* Global Filter Bar for Manager */}
-      {isManager && <ManagerGlobalFilterBar isCompanyListPage={true} />}
+          {/* Global Filter Bar for Manager */}
+          {isManager && <ManagerGlobalFilterBar isCompanyListPage={true} />}
 
-      {successMessage && (
-        <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
-          {successMessage}
-        </p>
+          {successMessage && (
+            <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+              {successMessage}
+            </p>
+          )}
+
+          {/* Search & Export Bar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+            <label className="relative block w-full sm:max-w-[425px]">
+              <Search className="absolute left-4 sm:left-5 top-1/2 h-4 w-4 sm:h-5 sm:w-5 -translate-y-1/2 text-slate-400" />
+              <input
+                type="search"
+                maxLength={100}
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                placeholder={t("companyList.searchPlaceholder", "Search Company, Code, PIC or Phone Number")}
+                className="h-11 sm:h-[52px] w-full rounded-xl sm:rounded-full border border-slate-300 bg-white pl-11 sm:pl-14 pr-4 sm:pr-5 text-sm sm:text-base font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => { setExportError(""); setExportOpen(true); }}
+              disabled={!total || isExporting}
+              className="crm-btn crm-btn-secondary w-full sm:w-auto justify-center"
+            >
+              <Download className="h-4 w-4" />
+              <span>{t("common.export", "Export")}</span>
+            </button>
+          </div>
+        </>
       )}
-
-      {/* Search & Export Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
-        <label className="relative block w-full sm:max-w-[425px]">
-          <Search className="absolute left-4 sm:left-5 top-1/2 h-4 w-4 sm:h-5 sm:w-5 -translate-y-1/2 text-slate-400" />
-          <input
-            type="search"
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
-            placeholder={t("companyList.searchPlaceholder", "Search Company, Code, PIC or Phone Number")}
-            className="h-11 sm:h-[52px] w-full rounded-xl sm:rounded-full border border-slate-300 bg-white pl-11 sm:pl-14 pr-4 sm:pr-5 text-sm sm:text-base font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-          />
-        </label>
-        <button
-          type="button"
-          onClick={() => { setExportError(""); setExportOpen(true); }}
-          disabled={!total || isExporting}
-          className="crm-btn crm-btn-secondary w-full sm:w-auto justify-center"
-        >
-          <Download className="h-4 w-4" />
-          <span>{t("common.export", "Export")}</span>
-        </button>
-      </div>
 
       {exportError && <p role="alert" className="-mt-4 text-sm text-red-600">{exportError}</p>}
 
@@ -276,11 +295,17 @@ export default function CompanyListPage() {
       {exportOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !isExporting) setExportOpen(false); }}>
           <section role="dialog" aria-modal="true" aria-labelledby="company-export-title" className="w-full max-w-5xl rounded-xl bg-white px-6 py-8 shadow-2xl sm:px-11 sm:py-10">
-            <h2 id="company-export-title" className="text-3xl font-bold tracking-tight text-black sm:text-4xl">Export Company List</h2>
-            <p className="mt-1 text-base text-[#747474] sm:text-xl">Select a file format and optional company creation date range</p>
+            <h2 id="company-export-title" className="text-3xl font-bold tracking-tight text-black sm:text-4xl">
+              {t("companyList.exportModalTitle", "Export Company List")}
+            </h2>
+            <p className="mt-1 text-base text-[#747474] sm:text-xl">
+              {t("companyList.exportModalSubtitle", "Select a file format and optional company creation date range")}
+            </p>
             <div className="mt-5 grid gap-7 md:grid-cols-2">
               <fieldset>
-                <legend className="mb-1 text-lg font-medium text-[#444] sm:text-xl">File Format</legend>
+                <legend className="mb-1 text-lg font-medium text-[#444] sm:text-xl">
+                  {t("common.fileFormat", "File Format")}
+                </legend>
                 <div className="flex min-h-[165px] flex-col justify-center gap-4 rounded-lg border border-[#ccc] px-5 py-4 text-lg text-[#777]">
                   <label className="flex cursor-pointer items-center gap-4">
                     <input type="radio" name="company-export-format" checked={exportFormat === "xlsx"} onChange={() => setExportFormat("xlsx")} className="h-5 w-5 accent-blue-600" />
@@ -290,24 +315,42 @@ export default function CompanyListPage() {
                     <input type="radio" name="company-export-format" checked={exportFormat === "pdf"} onChange={() => setExportFormat("pdf")} className="h-5 w-5 accent-blue-600" />
                     <span className="text-rose-500">▣</span><span>PDF (.pdf)</span>
                   </label>
-                  {exportFormat === "pdf" && <p className="pl-9 text-xs text-slate-500">The browser print dialog will open. Choose “Save as PDF”.</p>}
+                  {exportFormat === "pdf" && (
+                    <p className="pl-9 text-xs text-slate-500">
+                      {t("common.pdfPrintHint", "The browser print dialog will open. Choose “Save as PDF”.")}
+                    </p>
+                  )}
                 </div>
               </fieldset>
               <fieldset>
-                <legend className="mb-1 text-lg font-medium text-[#444] sm:text-xl">Date Range</legend>
+                <legend className="mb-1 text-lg font-medium text-[#444] sm:text-xl">
+                  {t("common.dateRange", "Date Range")}
+                </legend>
                 <div className="min-h-[165px] rounded-lg border border-[#ccc] p-4">
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="text-xs font-medium text-slate-500">From<input type="date" value={exportStart} onChange={(event) => setExportStart(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-700" /></label>
-                    <label className="text-xs font-medium text-slate-500">To<input type="date" value={exportEnd} onChange={(event) => setExportEnd(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-700" /></label>
+                    <label className="text-xs font-medium text-slate-500">
+                      {t("common.from", "From")}
+                      <input type="date" value={exportStart} onChange={(event) => setExportStart(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-700" />
+                    </label>
+                    <label className="text-xs font-medium text-slate-500">
+                      {t("common.to", "To")}
+                      <input type="date" value={exportEnd} onChange={(event) => setExportEnd(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-700" />
+                    </label>
                   </div>
-                  <p className="mt-3 text-xs text-slate-400">Leave both dates blank to export all matching companies.</p>
+                  <p className="mt-3 text-xs text-slate-400">
+                    {t("common.exportLeaveBlankHint", "Leave both dates blank to export all matching companies.")}
+                  </p>
                 </div>
               </fieldset>
             </div>
             {exportError && <p role="alert" className="mt-3 text-sm text-rose-600">{exportError}</p>}
             <div className="mt-6 flex flex-col-reverse justify-end gap-3 sm:flex-row sm:gap-5">
-              <button type="button" disabled={isExporting} onClick={() => setExportOpen(false)} className="h-14 rounded-lg border border-[#888] px-10 text-lg font-semibold text-[#505050] hover:bg-slate-50 disabled:opacity-60 sm:w-[220px]">Cancel</button>
-              <button type="button" disabled={isExporting} onClick={() => void runExport()} className="h-14 rounded-lg bg-[#3e6df5] px-10 text-lg font-semibold text-white hover:bg-blue-700 disabled:opacity-60 sm:w-[320px]">{isExporting ? "Preparing..." : "Export"}</button>
+              <button type="button" disabled={isExporting} onClick={() => setExportOpen(false)} className="h-14 rounded-lg border border-[#888] px-10 text-lg font-semibold text-[#505050] hover:bg-slate-50 disabled:opacity-60 sm:w-[220px]">
+                {t("common.cancel", "Cancel")}
+              </button>
+              <button type="button" disabled={isExporting} onClick={() => void runExport()} className="h-14 rounded-lg bg-[#3e6df5] px-10 text-lg font-semibold text-white hover:bg-blue-700 disabled:opacity-60 sm:w-[320px]">
+                {isExporting ? t("common.preparing", "Preparing...") : t("common.export", "Export")}
+              </button>
             </div>
           </section>
         </div>

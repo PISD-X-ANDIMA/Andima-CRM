@@ -6,7 +6,7 @@ import { ManagerGlobalFilterBar } from "@/components/dashboard/ManagerGlobalFilt
 import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
 import TaskOfFieldAgent from "@/components/TaskOfFieldAgent";
 import { supabase } from "@/lib/supabaseClient";
-import { DashboardSkeleton, Skeleton, TableSkeleton } from "@/components/ui/Skeleton";
+import { DashboardSkeleton, PageHeaderSkeleton, Skeleton, TableSkeleton } from "@/components/ui/Skeleton";
 import { FigmaPagination } from "@/components/ui/FigmaPagination";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -206,97 +206,110 @@ export default function TaskOfFieldAgentPage() {
   // Jika Manager of Customer Success, tampilkan antarmuka supervisi Field Agent Tasks (Tiket 6 MCS)
   return (
     <div className="w-full space-y-6 pb-12">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-          {t("manager.fieldAgentTasks", "Field Agent Tasks")}
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          {t("manager.fieldAgentTasksSubtitle", "Task progress and inspection results of the selected Sales Executive. Read only for Manager.")}
-        </p>
-      </div>
+      {isLoading ? (
+        <>
+          <PageHeaderSkeleton titleWidth="w-64" subtitleWidth="w-96 max-w-full" />
+          <Skeleton className="h-14 w-full rounded-xl" />
+          <Skeleton className="h-10 w-full max-w-md rounded-lg" />
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
+            <table className="w-full text-left text-xs text-slate-600">
+              <tbody className="divide-y divide-slate-100">
+                <TableSkeleton rows={5} columns={6} />
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : (
+        <>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+              {t("manager.fieldAgentTasks", "Field Agent Tasks")}
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              {t("manager.fieldAgentTasksSubtitle", "Task progress and inspection results of the selected Sales Executive. Read only for Manager.")}
+            </p>
+          </div>
 
-      {/* Global Filter Bar */}
-      <ManagerGlobalFilterBar />
+          <ManagerGlobalFilterBar />
 
-      {/* Search Input */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t("manager.searchFieldAgentPlaceholder", "Search by customer or field agent...")}
-          className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-xs placeholder:text-slate-400 focus:border-blue-500 focus:outline-hidden"
-        />
-      </div>
+          <div className="relative max-w-md">
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              maxLength={100}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t("manager.searchFieldAgentPlaceholder", "Search by customer or field agent...")}
+              className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-xs placeholder:text-slate-400 focus:border-blue-500 focus:outline-hidden"
+            />
+          </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
-        <table className="w-full text-left text-xs text-slate-600">
-          <thead className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-            <tr>
-              <th className="px-4 py-3.5">{t("dashboard.company", "Company")}</th>
-              <th className="px-4 py-3.5">{t("nav.salesExecutive", "Sales Executive")}</th>
-              <th className="px-4 py-3.5">{t("nav.fieldAgent", "Field Agent")}</th>
-              <th className="px-4 py-3.5">{t("manager.status", "Status")}</th>
-              <th className="px-4 py-3.5">{t("manager.issueResult", "Issue / Result")}</th>
-              <th className="px-4 py-3.5 text-center">{t("common.action", "Action")}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {isLoading ? (
-              <TableSkeleton rows={5} columns={6} />
-            ) : filteredTasks.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
-                  {t("manager.noFieldAgentTasksFound", "No field agent tasks found for this selection.")}
-                </td>
-              </tr>
-            ) : (
-              paginatedTasks.map((tItem, idx) => (
-                <tr key={`${tItem.company}-${idx}`} className="hover:bg-slate-50/70">
-                  <td className="px-4 py-3.5 font-medium text-slate-900">{tItem.company}</td>
-                  <td className="px-4 py-3.5">{tItem.salesExecutive}</td>
-                  <td className="px-4 py-3.5 font-medium text-slate-800">{tItem.fieldAgent}</td>
-                  <td className="px-4 py-3.5">
-                    <span className={`rounded-full px-2.5 py-0.5 font-semibold ${tItem.reviewStatus === "Completed" ? "bg-emerald-50 text-emerald-700" : tItem.reviewStatus === "Archived" ? "bg-slate-100 text-slate-600" : tItem.hasIssue ? "bg-rose-50 text-rose-700" : "bg-amber-50 text-amber-700"}`}>
-                      {tItem.reviewStatus}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3.5">
-                    {tItem.hasIssue ? (
-                      <span className="font-medium text-rose-600">{tItem.resultSummary}</span>
-                    ) : (
-                      <span className="text-slate-500">{tItem.resultSummary}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3.5 text-center">
-                    <button
-                      type="button"
-                      onClick={() => openDetail(tItem)}
-                      className="rounded-md border border-slate-200 px-3 py-1 font-semibold text-blue-600 hover:bg-slate-50"
-                    >
-                      {t("common.details", "Detail")}
-                    </button>
-                  </td>
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
+            <table className="w-full text-left text-xs text-slate-600">
+              <thead className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <tr>
+                  <th className="px-4 py-3.5">{t("dashboard.company", "Company")}</th>
+                  <th className="px-4 py-3.5">{t("nav.salesExecutive", "Sales Executive")}</th>
+                  <th className="px-4 py-3.5">{t("nav.fieldAgent", "Field Agent")}</th>
+                  <th className="px-4 py-3.5">{t("manager.status", "Status")}</th>
+                  <th className="px-4 py-3.5">{t("manager.issueResult", "Issue / Result")}</th>
+                  <th className="px-4 py-3.5 text-center">{t("common.action", "Action")}</th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredTasks.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
+                      {t("manager.noFieldAgentTasksFound", "No field agent tasks found for this selection.")}
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedTasks.map((tItem, idx) => (
+                    <tr key={`${tItem.company}-${idx}`} className="hover:bg-slate-50/70">
+                      <td className="px-4 py-3.5 font-medium text-slate-900">{tItem.company}</td>
+                      <td className="px-4 py-3.5">{tItem.salesExecutive}</td>
+                      <td className="px-4 py-3.5 font-medium text-slate-800">{tItem.fieldAgent}</td>
+                      <td className="px-4 py-3.5">
+                        <span className={`rounded-full px-2.5 py-0.5 font-semibold ${tItem.reviewStatus === "Completed" ? "bg-emerald-50 text-emerald-700" : tItem.reviewStatus === "Archived" ? "bg-slate-100 text-slate-600" : tItem.hasIssue ? "bg-rose-50 text-rose-700" : "bg-amber-50 text-amber-700"}`}>
+                          {tItem.reviewStatus}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        {tItem.hasIssue ? (
+                          <span className="font-medium text-rose-600">{tItem.resultSummary}</span>
+                        ) : (
+                          <span className="text-slate-500">{tItem.resultSummary}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3.5 text-center">
+                        <button
+                          type="button"
+                          onClick={() => openDetail(tItem)}
+                          className="rounded-md border border-slate-200 px-3 py-1 font-semibold text-blue-600 hover:bg-slate-50"
+                        >
+                          {t("common.details", "Detail")}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-      <FigmaPagination
-        total={filteredTasks.length}
-        page={page}
-        perPage={perPage}
-        onPageChange={setPage}
-        onPerPageChange={(newPerPage) => {
-          setPerPage(newPerPage);
-          setPage(1);
-        }}
-        itemLabel={t("common.tasks", "tasks")}
-      />
+          <FigmaPagination
+            total={filteredTasks.length}
+            page={page}
+            perPage={perPage}
+            onPageChange={setPage}
+            onPerPageChange={(newPerPage) => {
+              setPerPage(newPerPage);
+              setPage(1);
+            }}
+            itemLabel={t("common.tasks", "tasks")}
+          />
+        </>
+      )}
 
       {/* Modal Detail Task (Read-Only for Manager) */}
       {selectedTask && (
@@ -310,10 +323,11 @@ export default function TaskOfFieldAgentPage() {
           >
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Job Detail Summary</h2>
+                <h2 className="text-lg font-bold text-slate-900">{t("manager.jobDetailSummary", "Job Detail Summary")}</h2>
               </div>
               <button
                 type="button"
+                aria-label={t("common.close", "Close")}
                 onClick={() => setSelectedTask(null)}
                 className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
               >
@@ -324,8 +338,8 @@ export default function TaskOfFieldAgentPage() {
             <div className="mt-4 space-y-3.5 text-xs">
               <div className="rounded-lg border border-slate-100 bg-slate-50/60 p-3">
                 <h3 className="text-sm font-bold text-slate-900">{selectedTask.company}</h3>
-                <p className="text-slate-500 mt-1">Sales Executive: <strong>{selectedTask.salesExecutive}</strong></p>
-                <p className="text-slate-500">Field Agent: <strong>{selectedTask.fieldAgent}</strong></p>
+                <p className="text-slate-500 mt-1">{t("nav.salesExecutive", "Sales Executive")}: <strong>{selectedTask.salesExecutive}</strong></p>
+                <p className="text-slate-500">{t("nav.fieldAgent", "Field Agent")}: <strong>{selectedTask.fieldAgent}</strong></p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -334,7 +348,7 @@ export default function TaskOfFieldAgentPage() {
                   <p className="mt-1 font-semibold text-slate-800">{selectedTask.taskArea}</p>
                 </div>
                 <div className="rounded-lg border border-slate-100 p-2.5">
-                  <p className="text-slate-400">Status</p>
+                  <p className="text-slate-400">{t("manager.status", "Status")}</p>
                   <p className={`mt-1 font-bold ${selectedTask.hasIssue ? "text-rose-600" : "text-emerald-600"}`}>
                     {selectedTask.status}
                   </p>
@@ -343,17 +357,17 @@ export default function TaskOfFieldAgentPage() {
 
               {selectedTask.hasIssue && selectedTask.issueDetails && (
                 <div className="rounded-lg border border-rose-200 bg-rose-50/80 p-3">
-                  <p className="font-semibold text-rose-800">Issue Details:</p>
+                  <p className="font-semibold text-rose-800">{t("manager.issueDetails", "Issue Details:")}</p>
                   <p className="mt-1 text-rose-700 leading-relaxed">{selectedTask.issueDetails}</p>
                 </div>
               )}
 
               <div>
-                <p className="font-semibold text-slate-700 mb-1.5">Dokumen</p>
+                <p className="font-semibold text-slate-700 mb-1.5">{t("manager.documents", "Documents")}</p>
                 {detailLoading ? (
                   <Skeleton className="h-10 w-full" />
                 ) : detailDocs.length === 0 ? (
-                  <p className="text-slate-400">Belum ada dokumen diunggah.</p>
+                  <p className="text-slate-400">{t("manager.noDocumentsYet", "No documents uploaded yet.")}</p>
                 ) : (
                   <div className="space-y-1.5">
                     {detailDocs.map((doc) => {
@@ -366,7 +380,7 @@ export default function TaskOfFieldAgentPage() {
                             download={fileName}
                             className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[11px] font-semibold text-blue-600 hover:bg-slate-50"
                           >
-                            <Download className="h-3.5 w-3.5" /> Unduh
+                            <Download className="h-3.5 w-3.5" /> {t("common.download", "Download")}
                           </a>
                         </div>
                       );
@@ -377,7 +391,7 @@ export default function TaskOfFieldAgentPage() {
 
               {detailPhotos.length > 0 && (
                 <div>
-                  <p className="font-semibold text-slate-700 mb-1.5">Foto</p>
+                  <p className="font-semibold text-slate-700 mb-1.5">{t("manager.photos", "Photos")}</p>
                   <div className="grid grid-cols-4 gap-2">
                     {detailPhotos.slice(0, 4).map((url, index) => (
                       <a
@@ -387,7 +401,7 @@ export default function TaskOfFieldAgentPage() {
                         rel="noreferrer"
                         className="aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
                       >
-                        <img src={url} alt={`Foto ${index + 1}`} className="h-full w-full object-cover" />
+                        <img src={url} alt={`Photo ${index + 1}`} className="h-full w-full object-cover" />
                       </a>
                     ))}
                   </div>
@@ -395,7 +409,7 @@ export default function TaskOfFieldAgentPage() {
               )}
 
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-center text-xs font-medium text-amber-800">
-                Edit Info and Reassign Agent are hidden for Manager (Read-Only).
+                {t("manager.readOnlyFieldAgentNote", "Edit Info and Reassign Agent are hidden for Manager (Read-Only).")}
               </div>
             </div>
 
@@ -405,7 +419,7 @@ export default function TaskOfFieldAgentPage() {
                 onClick={() => setSelectedTask(null)}
                 className="rounded-lg bg-blue-600 px-6 py-2 text-xs font-semibold text-white hover:bg-blue-700"
               >
-                Close
+                {t("common.close", "Close")}
               </button>
             </div>
           </div>

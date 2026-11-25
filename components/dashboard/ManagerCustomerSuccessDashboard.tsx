@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
-import { Skeleton, TableSkeleton } from "@/components/ui/Skeleton";
+import { PageHeaderSkeleton, Skeleton, TableSkeleton } from "@/components/ui/Skeleton";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface SalesExecItem {
@@ -70,6 +70,51 @@ export function ManagerCustomerSuccessDashboard() {
     setSelectedExecutive(execName);
     router.push("/dashboard/company-list");
   };
+
+  if (loading) {
+    return (
+      <div className="w-full pb-12" aria-busy="true">
+        <div className="mb-6">
+          <PageHeaderSkeleton titleWidth="w-64" subtitleWidth="w-[460px] max-w-full" />
+        </div>
+
+        <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-3">
+              <Skeleton className="h-3.5 w-32" />
+              <Skeleton className="h-9 w-16" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+          ))}
+        </section>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          <section className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs lg:col-span-7">
+            <Skeleton className="mb-4 h-5 w-40" />
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <tbody className="divide-y divide-slate-100">
+                  <TableSkeleton rows={4} columns={5} />
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs lg:col-span-5">
+            <div>
+              <Skeleton className="mb-4 h-5 w-48" />
+              <div className="space-y-3">
+                {[0, 1, 2].map((i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
+              </div>
+            </div>
+            <div className="mt-6 pt-2">
+              <Skeleton className="h-9 w-full rounded-lg" />
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full pb-12">

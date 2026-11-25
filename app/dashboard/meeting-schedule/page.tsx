@@ -16,6 +16,7 @@ import type { ApiResponse, CustomerListItem, MeetingDay, ScheduleType } from "@/
 import { ManagerGlobalFilterBar } from "@/components/dashboard/ManagerGlobalFilterBar";
 import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { PageHeaderSkeleton, Skeleton } from "@/components/ui/Skeleton";
 
 // Hours displayed in the calendar: 08:00 to 18:00 (1 slot = 1 hour, from 08:00-09:00 until 17:00-18:00)
 const hours = Array.from({ length: 10 }, (_, index) => 8 + index);
@@ -610,6 +611,24 @@ export default function MeetingSchedulePage() {
   const availableCustomers = customers;
   const todayKey = jakartaDateKey();
 
+  if (loading && customers.length === 0) {
+    return (
+      <div className="space-y-6 pb-12" aria-busy="true">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <PageHeaderSkeleton titleWidth="w-64" subtitleWidth="w-80 max-w-full" />
+          <Skeleton className="h-11 w-full sm:w-44 rounded-xl" />
+        </div>
+        <Skeleton className="h-14 w-full rounded-2xl" />
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+          <Skeleton className="h-10 w-full rounded-xl" />
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-14 w-full rounded-lg" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-12">
       {/* Toast Notice for past slot click */}
@@ -1033,6 +1052,7 @@ export default function MeetingSchedulePage() {
               </MeetingField>
               <MeetingField label="Andima Representative" required>
                 <input
+                  maxLength={100}
                   value={form.representative}
                   onChange={(event) => updateForm("representative", event.target.value)}
                   placeholder="Representative name"
@@ -1058,6 +1078,7 @@ export default function MeetingSchedulePage() {
               {form.meetingType === "offline" ? (
                 <MeetingField label="Location" required error={fieldErrors.location}>
                   <input
+                    maxLength={150}
                     value={form.location}
                     onChange={(event) => updateForm("location", event.target.value)}
                     placeholder="Enter location"
@@ -1068,6 +1089,7 @@ export default function MeetingSchedulePage() {
                 <MeetingField label="Meeting Link" required error={fieldErrors.meetingLink}>
                   <input
                     type="url"
+                    maxLength={300}
                     value={form.meetingLink}
                     onChange={(event) => updateForm("meetingLink", event.target.value)}
                     placeholder="https://"
@@ -1212,6 +1234,7 @@ export default function MeetingSchedulePage() {
                 </MeetingField>
                 <MeetingField label="Andima Representative" required>
                   <input
+                    maxLength={100}
                     value={form.representative}
                     onChange={(event) => updateForm("representative", event.target.value)}
                     className={inputClass}
@@ -1236,6 +1259,7 @@ export default function MeetingSchedulePage() {
                 {form.meetingType === "offline" ? (
                   <MeetingField label="Location" required error={fieldErrors.location}>
                     <input
+                      maxLength={150}
                       value={form.location}
                       onChange={(event) => updateForm("location", event.target.value)}
                       className={`${inputClass} ${fieldErrors.location ? "!border-rose-400 focus:!ring-rose-200" : ""}`}
@@ -1245,6 +1269,7 @@ export default function MeetingSchedulePage() {
                   <MeetingField label="Meeting Link" required error={fieldErrors.meetingLink}>
                     <input
                       type="url"
+                      maxLength={300}
                       value={form.meetingLink}
                       onChange={(event) => updateForm("meetingLink", event.target.value)}
                       className={`${inputClass} ${fieldErrors.meetingLink ? "!border-rose-400 focus:!ring-rose-200" : ""}`}

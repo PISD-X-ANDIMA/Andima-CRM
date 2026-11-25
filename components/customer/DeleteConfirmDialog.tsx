@@ -2,6 +2,7 @@
 
 import React from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface DeleteConfirmDialogProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export function DeleteConfirmDialog({
   onConfirm,
   onCancel,
 }: DeleteConfirmDialogProps) {
+  const { t } = useLanguage();
   if (!isOpen) return null;
 
   return (
@@ -45,14 +47,13 @@ export function DeleteConfirmDialog({
                 id="delete-dialog-title"
                 className="text-sm font-semibold text-slate-900"
               >
-                Delete Company
+                {t("companyList.deleteCompany", "Delete Company")}
               </h3>
               <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">
-                You are about to delete{" "}
-                <strong className="text-slate-800 font-semibold">
-                  {companyName}
-                </strong>{" "}
-                from the company list. Its record will be archived, and existing history will be retained.
+                {t(
+                  "companyList.deleteConfirmMessage",
+                  "You are about to delete {company} from the company list. Its record will be archived, and existing history will be retained."
+                ).replace("{company}", companyName)}
               </p>
             </div>
           </div>
@@ -65,7 +66,7 @@ export function DeleteConfirmDialog({
             disabled={isDeleting}
             className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
           >
-            Cancel
+            {t("common.cancel", "Cancel")}
           </button>
           <button
             type="button"
@@ -76,10 +77,10 @@ export function DeleteConfirmDialog({
             {isDeleting ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Deleting...</span>
+                <span>{t("common.deleting", "Deleting...")}</span>
               </>
             ) : (
-              <span>Delete</span>
+              <span>{t("common.delete", "Delete")}</span>
             )}
           </button>
         </div>

@@ -314,6 +314,7 @@ export default function LoginPage() {
                 </label>
                 <input
                   type="email"
+                  maxLength={100}
                   placeholder="username@andima.co.id"
                   value={email}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
@@ -339,6 +340,7 @@ export default function LoginPage() {
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    maxLength={128}
                     placeholder="••••••••••••"
                     value={password}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => {

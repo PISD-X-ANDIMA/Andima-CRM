@@ -181,7 +181,7 @@ export function CustomerTable({
                       {customer.companyName}
                     </h3>
                     {customer.customerCode && (
-                      <span className="inline-block rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-mono font-bold text-blue-700 border border-blue-200/70">
+                      <span className="inline-block rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-mono font-semibold text-blue-700 border border-blue-200/80">
                         {customer.customerCode}
                       </span>
                     )}
@@ -297,7 +297,7 @@ export function CustomerTable({
               <th className={isManager ? "w-[15%] px-4 py-4 text-sm font-semibold" : "w-[17%] px-4 py-4 text-sm font-semibold"}>
                 {t("dashboard.company", "Company")}
               </th>
-              <th className="w-[11%] px-3 py-4 text-sm font-semibold">
+              <th className="w-[11%] px-3 py-4 text-center text-sm font-semibold">
                 {t("customer.companyCode", "Company Code")}
               </th>
               {isManager && (
@@ -324,9 +324,9 @@ export function CustomerTable({
                     <span className="font-semibold text-slate-900">{customer.companyName}</span>
                   </td>
 
-                  <td className="px-3 py-3.5">
+                  <td className="px-3 py-3.5 text-center">
                     {customer.customerCode ? (
-                      <span className="inline-block rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-mono font-semibold text-blue-700 border border-blue-200/80">
+                      <span className="inline-block rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-mono font-semibold text-blue-700 border border-blue-200/80">
                         {customer.customerCode}
                       </span>
                     ) : (

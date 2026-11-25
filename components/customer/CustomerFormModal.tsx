@@ -194,6 +194,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
                     <input
                       id="field-company_name"
                       type="text"
+                      maxLength={120}
                       value={form.company_name}
                       onChange={(e) => handleChange("company_name", e.target.value)}
                       placeholder="Example Company, Inc."
@@ -236,6 +237,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
                     <input
                       id="field-pic_full_name"
                       type="text"
+                      maxLength={100}
                       value={form.pic_full_name}
                       onKeyDown={(e) => {
                         if (/^[0-9]$/.test(e.key)) {
@@ -304,6 +306,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
                     <div className="pointer-events-none absolute left-0 top-3 pl-3 text-slate-400"><MapPin className="h-4 w-4" /></div>
                     <textarea
                       id="field-address"
+                      maxLength={250}
                       value={form.address}
                       onChange={(event) => handleChange("address", event.target.value)}
                       placeholder="Company address"
@@ -311,6 +314,7 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess, customer }: Cust
                       className={`w-full resize-none rounded-lg border py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 ${errors.address ? "border-red-300 focus:border-red-400 focus:ring-red-500/20" : "border-slate-200 focus:border-blue-400 focus:ring-blue-500/20"}`}
                     />
                   </div>
+                  <p className="mt-1 text-right text-[11px] text-slate-400">{form.address.length}/250</p>
                   {errors.address && <p className="mt-1.5 text-[11px] text-red-600">{errors.address}</p>}
                 </div>
               </div>

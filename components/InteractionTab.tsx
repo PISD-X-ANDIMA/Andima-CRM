@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { FigmaPagination } from '@/components/ui/FigmaPagination';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 import {
   fetchApiCustomers,
   fetchApiConversations,
@@ -156,6 +157,7 @@ interface InteractionTabProps {
 }
 
 export default function InteractionTab({ currentUser }: InteractionTabProps = {}) {
+  const { t } = useLanguage();
   // State nama akun aktif & role untuk PIC & Hak Akses
   const [activeUserName, setActiveUserName] = useState<string>(() => {
     if (currentUser?.name && currentUser.name.trim()) return currentUser.name.trim();
@@ -1235,8 +1237,8 @@ Exported on: ${new Date().toLocaleString('id-ID')}
             <Check size={14} className="text-[#047857] stroke-[3]" />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-[#064e3b] text-xs">Record Conversation Tersimpan</span>
-            <span className="text-[11px] text-[#047857] font-normal">Data percakapan berhasil diperbarui ke database</span>
+            <span className="font-bold text-[#064e3b] text-xs">{t('recordConv.savedTitle', 'Record Conversation Saved')}</span>
+            <span className="text-[11px] text-[#047857] font-normal">{t('recordConv.savedSubtitle', 'Conversation data has been updated in the database')}</span>
           </div>
           <button
             type="button"
@@ -1280,10 +1282,10 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       {/* 1. PAGE HEADING */}
       <div className="mb-5">
         <h1 className="text-2xl font-bold text-[#0f172a] tracking-tight">
-          Record Customer Conversation
+          {t('recordConv.title', 'Record Customer Conversation')}
         </h1>
         <p className="text-xs text-slate-400 mt-1">
-          Manage and view notes, meeting logs, and WhatsApp conversation history.
+          {t('recordConv.subtitle', 'Manage and view notes, meeting logs, and WhatsApp conversation history.')}
         </p>
       </div>
 
@@ -1296,12 +1298,13 @@ Exported on: ${new Date().toLocaleString('id-ID')}
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               type="text"
+              maxLength={100}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              placeholder="Search by Company, Summary..."
+              placeholder={t('recordConv.searchPlaceholder', 'Search by Company, Summary...')}
               className="w-full bg-[#f4f6fa] border border-slate-200/70 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:bg-white focus:border-blue-400 transition-colors"
             />
           </div>
@@ -1316,7 +1319,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               }}
               className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
             >
-              <span>{channelFilter === 'All Channel' ? 'Channel Type' : `Channel: ${channelFilter}`}</span>
+              <span>{channelFilter === 'All Channel' ? t('recordConv.channelType', 'Channel Type') : `${t('recordConv.colChannel', 'Channel')}: ${channelFilter}`}</span>
               <ChevronDown size={14} className={`text-slate-400 transition-transform ${isChannelDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
             </button>
 
@@ -1334,7 +1337,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${channelFilter === opt ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
                       }`}
                   >
-                    <span>{opt}</span>
+                    <span>{opt === 'All Channel' ? t('manager.allChannels', 'All Channels') : opt}</span>
                     {channelFilter === opt && <Check size={13} className="text-blue-600" />}
                   </button>
                 ))}
@@ -1352,7 +1355,17 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               }}
               className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
             >
-              <span>{dateFilter === 'All Dates' ? 'All Periods' : dateFilter}</span>
+              <span>
+                {dateFilter === 'All Dates'
+                  ? t('recordConv.allPeriods', 'All Periods')
+                  : dateFilter === 'Today'
+                    ? t('recordConv.today', 'Today')
+                    : dateFilter === 'This Week'
+                      ? t('recordConv.thisWeek', 'This Week')
+                      : dateFilter === 'This Month'
+                        ? t('recordConv.thisMonth', 'This Month')
+                        : dateFilter}
+              </span>
               <ChevronDown size={14} className={`text-slate-400 transition-transform ${isDateDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
             </button>
 
@@ -1370,7 +1383,15 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${dateFilter === opt ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
                       }`}
                   >
-                    <span>{opt === 'All Dates' ? 'All Periods' : opt}</span>
+                    <span>
+                      {opt === 'All Dates'
+                        ? t('recordConv.allPeriods', 'All Periods')
+                        : opt === 'Today'
+                          ? t('recordConv.today', 'Today')
+                          : opt === 'This Week'
+                            ? t('recordConv.thisWeek', 'This Week')
+                            : t('recordConv.thisMonth', 'This Month')}
+                    </span>
                     {dateFilter === opt && <Check size={13} className="text-blue-600" />}
                   </button>
                 ))}
@@ -1386,7 +1407,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
           className="crm-btn crm-btn-primary"
         >
           <Plus className="h-4 w-4" />
-          <span>Record Conversation</span>
+          <span>{t('recordConv.addBtn', 'Record Conversation')}</span>
         </button>
       </div>
 
@@ -1398,16 +1419,16 @@ Exported on: ${new Date().toLocaleString('id-ID')}
             <thead className="bg-[#F5F7FF] border-b border-slate-200/80">
               <tr>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[34%] first:rounded-tl-2xl">
-                  Company
+                  {t('recordConv.colCompany', 'Company')}
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[22%]">
-                  Channel
+                  {t('recordConv.colChannel', 'Channel')}
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[22%]">
-                  Date
+                  {t('recordConv.colDate', 'Date')}
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[22%] last:rounded-tr-2xl">
-                  Detail
+                  {t('recordConv.colDetail', 'Detail')}
                 </th>
               </tr>
             </thead>
@@ -1431,10 +1452,10 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                         <Search size={20} />
                       </div>
                       <h4 className="text-sm font-bold text-slate-800">
-                        Record Conversation Tidak Ditemukan
+                        {t('recordConv.emptyTitle', 'No Conversation Records Found')}
                       </h4>
                       <p className="text-xs text-slate-500 mt-1">
-                        Belum ada percakapan tersimpan di database yang sesuai dengan akses atau filter pencarian.
+                        {t('recordConv.emptySubtitle', 'No saved conversations match your access or search filters yet.')}
                       </p>
                       <button
                         type="button"
@@ -1442,7 +1463,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                         className="mt-3.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
                       >
                         <Plus size={14} />
-                        <span>Buat Record Conversation Baru</span>
+                        <span>{t('recordConv.emptyCreateBtn', 'Create New Record Conversation')}</span>
                       </button>
                     </div>
                   </td>
@@ -1485,7 +1506,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                         onClick={() => handleOpenDetail(row)}
                         className="text-[#2563eb] hover:text-blue-700 hover:underline font-semibold text-xs cursor-pointer transition-colors"
                       >
-                        See more..
+                        {t('recordConv.seeMore', 'See more..')}
                       </button>
                     </td>
                   </tr>
@@ -1518,7 +1539,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
             {/* Header: Title & Subtitle */}
             <div className="px-7 pt-6 pb-4 border-b border-slate-200/90 bg-white shrink-0">
               <h3 className="text-xl font-bold text-[#0f172a] tracking-tight">
-                Detail Conversation
+                {t('recordConv.detailTitle', 'Detail Conversation')}
               </h3>
               <p className="text-xs font-semibold text-slate-500 mt-1">
                 {selectedConversation.company}
@@ -1538,7 +1559,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                      COMPANY
+                      {t('recordConv.companyLabel', 'COMPANY')}
                     </span>
                     <h4 className="text-base font-bold text-[#0f172a] mt-1">
                       {selectedConversation.company}
@@ -1562,13 +1583,13 @@ Exported on: ${new Date().toLocaleString('id-ID')}
 
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
-                    <span className="text-xs text-slate-400 font-normal block">Created by:</span>
+                    <span className="text-xs text-slate-400 font-normal block">{t('recordConv.createdByLabel', 'Created by:')}</span>
                     <span className="font-bold text-slate-800 text-xs block mt-0.5">
                       {selectedConversation.pic} (Sales Executive)
                     </span>
                   </div>
                   <div>
-                    <span className="text-xs text-slate-400 font-normal block">Date of Conversation:</span>
+                    <span className="text-xs text-slate-400 font-normal block">{t('recordConv.dateLabel', 'Date of Conversation:')}</span>
                     <span className="font-bold text-slate-800 text-xs block mt-0.5">
                       {formatDateDisplay(selectedConversation.date) || '03/03/2026'}
                     </span>
@@ -1580,7 +1601,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    SUMMARY
+                    {t('recordConv.summaryLabel', 'SUMMARY')}
                   </span>
                   <button
                     type="button"
@@ -1588,11 +1609,11 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
                   >
                     <Download size={13} className="text-blue-600" />
-                    <span>Export Summary (.pdf)</span>
+                    <span>{t('recordConv.exportSummaryPdf', 'Export Summary (.pdf)')}</span>
                   </button>
                 </div>
                 <div className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed font-medium">
-                  {selectedConversation.summary || 'Discussed recent shipment delays. Customer requested schedule adjustment for container #2 and re-verification of documentation at Tanjung Priok Port.'}
+                  {selectedConversation.summary || '-'}
                 </div>
               </div>
 
@@ -1600,7 +1621,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    EVIDENCE ATTACHMENTS ({(selectedConversation.evidence_attachments || []).length})
+                    {t('recordConv.attachmentsLabel', 'EVIDENCE ATTACHMENTS')} ({(selectedConversation.evidence_attachments || []).length})
                   </span>
                 </div>
 
@@ -1619,7 +1640,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                             {file.name}
                           </p>
                           <p className="text-[10px] text-slate-400 mt-0.5">
-                            {file.size} • Dokumen Lampiran
+                            {file.size} • {t('recordConv.attachmentSub', 'Attachment File')}
                           </p>
                         </div>
                       </div>
@@ -1629,7 +1650,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                           type="button"
                           onClick={() => handleDownloadAttachment(file.url, file.name)}
                           className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                          title="Download Langsung"
+                          title={t('recordConv.directDownload', 'Direct Download')}
                         >
                           <Download size={16} />
                         </button>
@@ -1637,7 +1658,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                           type="button"
                           onClick={() => setPreviewModal({ isOpen: true, url: file.url, title: file.name })}
                           className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                          title="View"
+                          title={t('common.view', 'View')}
                         >
                           <ExternalLink size={16} />
                         </button>
@@ -1646,7 +1667,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                   ))
                 ) : (
                   <div className="bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 text-center">
-                    <p className="text-xs font-medium text-slate-500">Tidak ada berkas lampiran</p>
+                    <p className="text-xs font-medium text-slate-500">{t('recordConv.noAttachments', 'No attachment files')}</p>
                   </div>
                 )}
               </div>
@@ -1655,10 +1676,10 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    HISTORY NEED ASSISTANCE
+                    {t('recordConv.historyNeedAssistance', 'HISTORY NEED ASSISTANCE')}
                   </span>
                   <span className="text-[10px] font-medium text-slate-400">
-                    {selectedConversation.need_assistance ? '1 catatan ditemukan' : '0 catatan ditemukan'}
+                    {t('recordConv.recordsFound', '{count} record(s) found').replace('{count}', selectedConversation.need_assistance ? '1' : '0')}
                   </span>
                 </div>
 
@@ -1675,7 +1696,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                         <div>
                           <div className="flex items-center gap-2">
                             <h5 className="text-xs font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
-                              Issue Alamat Pengiriman
+                              {t('recordConv.deliveryAddressIssue', 'Delivery Address Issue')}
                             </h5>
                           </div>
                           <p className="text-[10px] text-slate-400 mt-0.5">
@@ -1683,14 +1704,14 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                           </p>
                           <div className="flex items-center gap-1.5 mt-1.5">
                             <span className="bg-amber-50 text-amber-700 border border-amber-200/90 rounded-md px-2 py-0.5 text-[10px] font-bold">
-                              Need Assistance
+                              {t('recordConv.needAssistance', 'Need Assistance')}
                             </span>
                             <span className="bg-slate-100 text-slate-600 border border-slate-200 rounded-md px-2 py-0.5 text-[10px] font-medium">
                               {selectedConversation.alert_status === 'Reviewed'
-                                ? 'Sudah ditangani Manager'
+                                ? t('recordConv.handledByManager', 'Handled by Manager')
                                 : selectedConversation.alert_status === 'In Progress'
-                                  ? 'Sedang ditangani Manager'
-                                  : 'Menunggu respons Manager'}
+                                  ? t('recordConv.beingHandledByManager', 'Being handled by Manager')
+                                  : t('recordConv.awaitingManager', 'Awaiting Manager response')}
                             </span>
                           </div>
                         </div>
@@ -1705,20 +1726,20 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                         </div>
                         <div>
                           <h5 className="text-xs font-bold text-slate-600">
-                            Follow-up laporan percakapan
+                            {t('recordConv.followUpReport', 'Conversation report follow-up')}
                           </h5>
                           <p className="text-[10px] text-slate-400 mt-0.5">
                             {selectedConversation.company} · {selectedConversation.date || '10 Okt 2026'}
                           </p>
                           <div className="flex items-center gap-1.5 mt-1.5">
                             <span className="bg-slate-100 text-slate-600 border border-slate-200 rounded-md px-2 py-0.5 text-[10px] font-medium">
-                              Tidak membutuhkan bantuan
+                              {t('recordConv.noAssistanceNeeded', 'Does not need assistance')}
                             </span>
                           </div>
                         </div>
                       </div>
                       <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-2 py-1 rounded-md">
-                        No Action
+                        {t('common.noAction', 'No Action')}
                       </span>
                     </div>
                   )}
@@ -1737,14 +1758,14 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     className="flex min-h-11 flex-1 items-center justify-center gap-2 py-3 rounded-xl bg-[#2563eb] hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
                   >
                     {isResolvingBackup ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <CheckCircle size={14} aria-hidden="true" />}
-                    {isResolvingBackup ? 'Menyimpan...' : 'Selesaikan Need Backup'}
+                    {isResolvingBackup ? t('common.saving', 'Saving...') : t('manager.resolveNeedBackup', 'Resolve Need Backup')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsDetailModalOpen(false)}
                     className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-colors cursor-pointer text-center"
                   >
-                    Close
+                    {t('common.close', 'Close')}
                   </button>
                 </div>
               ) : (
@@ -1753,7 +1774,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                   onClick={() => setIsDetailModalOpen(false)}
                   className="w-full py-3 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs text-center"
                 >
-                  Close
+                  {t('common.close', 'Close')}
                 </button>
               )}
             </div>
@@ -1771,7 +1792,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
             {/* Header */}
             <div className="px-6 pt-5 pb-4 border-b border-slate-100 bg-white">
               <h3 className="text-lg font-bold text-[#1e293b] tracking-tight text-center sm:text-left">
-                Manager Response &amp; Feedback
+                {t('recordConv.managerFeedbackTitle', 'Manager Response & Feedback')}
               </h3>
             </div>
 
@@ -1781,10 +1802,10 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               <div className="bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 space-y-3">
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    TOPIC ISSUE
+                    {t('recordConv.topicIssue', 'TOPIC ISSUE')}
                   </span>
                   <h4 className="text-sm font-bold text-[#0f172a] mt-0.5">
-                    Issue Alamat Pengiriman
+                    {t('recordConv.deliveryAddressIssue', 'Delivery Address Issue')}
                   </h4>
                 </div>
 
@@ -1792,13 +1813,13 @@ Exported on: ${new Date().toLocaleString('id-ID')}
 
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div>
-                    <span className="text-slate-400 text-xs block font-normal">Customer</span>
+                    <span className="text-slate-400 text-xs block font-normal">{t('recordConv.colCompany', 'Customer')}</span>
                     <span className="font-bold text-[#0f172a] text-xs block mt-0.5">
                       {selectedConversation.company || 'PT Contoh Customer'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-400 text-xs block font-normal">Date of Conversation:</span>
+                    <span className="text-slate-400 text-xs block font-normal">{t('recordConv.dateLabel', 'Date of Conversation:')}</span>
                     <span className="font-bold text-[#0f172a] text-xs block mt-0.5">
                       {formatDateDisplay(selectedConversation.date) || '03/03/2026'}
                     </span>
@@ -1809,15 +1830,15 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               {/* Section 2: Resolution Status */}
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
-                  RESOLUTION STATUS
+                  {t('recordConv.resolutionStatus', 'RESOLUTION STATUS')}
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#e6f9ed] text-[#16a34a] border border-[#bbf7d0]">
                     <span className="text-[10px]">●</span>
-                    <span>Responded / Answered</span>
+                    <span>{t('recordConv.respondedStatus', 'Responded / Answered')}</span>
                   </span>
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#f1f5f9] text-slate-500">
-                    Previous: Awaiting Response
+                    {t('recordConv.previousAwaiting', 'Previous: Awaiting Response')}
                   </span>
                 </div>
               </div>
@@ -1825,15 +1846,15 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               {/* Section 3: Manager Notes & Instructions */}
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
-                  MANAGER NOTES &amp; INSTRUCTIONS
+                  {t('recordConv.managerNotes', 'MANAGER NOTES & INSTRUCTIONS')}
                 </span>
                 <div className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed font-normal shadow-2xs">
-                  {selectedConversation.summary || 'Discussed recent shipment delays. Customer requested schedule adjustment for container #2 and re-verification of documentation at Tanjung Priok Port.'}
+                  {selectedConversation.summary || '-'}
                 </div>
                 <div className="mt-2.5 flex items-center justify-between text-[11px]">
                   <div className="flex items-center gap-1.5 text-slate-600 font-medium">
                     <CheckCircle size={14} className="text-blue-600 shrink-0" />
-                    <span>Responded by: <strong className="text-slate-900 font-bold">Mr. Bambang</strong> (Sales Manager)</span>
+                    <span>{t('recordConv.respondedBy', 'Responded by:')} <strong className="text-slate-900 font-bold">Mr. Bambang</strong> (Sales Manager)</span>
                   </div>
                   <span className="text-slate-400 font-normal">10 Oct 2026, 15:00 WIB</span>
                 </div>
@@ -1847,7 +1868,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 onClick={() => setIsManagerFeedbackModalOpen(false)}
                 className="w-full py-3 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-2xs text-center"
               >
-                Close
+                {t('common.close', 'Close')}
               </button>
             </div>
           </div>
@@ -1898,9 +1919,10 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                       <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                       <input
                         type="text"
+                        maxLength={100}
                         value={customerSearchQuery}
                         onChange={(e) => setCustomerSearchQuery(e.target.value)}
-                        placeholder="Cari customer / perusahaan..."
+                        placeholder={t('recordConv.searchCustomerPlaceholder', 'Search customer / company...')}
                         className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-800 outline-none"
                         onClick={(e) => e.stopPropagation()}
                       />
@@ -1941,6 +1963,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 <div className="relative flex items-center">
                   <input
                     type="text"
+                    maxLength={10}
                     required
                     value={recordDate}
                     onChange={(e) => {
@@ -2213,7 +2236,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     onClick={() => setIsCreateModalOpen(false)}
                     className="px-5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors cursor-pointer bg-white"
                   >
-                    Cancel
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     type="submit"
@@ -2221,7 +2244,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     className="px-6 py-2.5 rounded-xl bg-[#3b6ff5] hover:bg-[#2b5ce5] text-white text-xs font-bold shadow-md transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
                   >
                     {isSubmittingNew ? <Loader2 size={14} className="animate-spin" /> : null}
-                    <span>Save Record</span>
+                    <span>{t('recordConv.saveRecord', 'Save Record')}</span>
                   </button>
                 </div>
               </div>
@@ -2258,14 +2281,14 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
               >
                 <Download size={14} />
-                <span>Download File</span>
+                <span>{t('recordConv.downloadFile', 'Download File')}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setPreviewModal(null)}
                 className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
               >
-                Close
+                {t('common.close', 'Close')}
               </button>
             </div>
           </div>
