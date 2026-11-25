@@ -555,7 +555,19 @@ export default function MeetingSchedulePage() {
       });
       const result: ApiResponse<{ meetingId: string }> = await response.json();
       if (!response.ok || !result.success) throw new Error(result.success ? t("meetingSchedule.updateStatusError", "Failed to update the meeting status.") : result.message);
-      setSelectedMeeting((current) => (current ? { ...current, meeting: { ...current.meeting, status } } : null));
+      if (status === "cancelled") {
+        const cancelledId = selectedMeeting.meeting.id;
+        setCustomers((prev) =>
+          prev.map((cust) => ({
+            ...cust,
+            meetings: (cust.meetings || []).map((m) => (m.id === cancelledId ? { ...m, status: "cancelled" } : m)),
+          }))
+        );
+        setSelectedMeeting(null);
+        setEditingMeeting(false);
+      } else {
+        setSelectedMeeting((current) => (current ? { ...current, meeting: { ...current.meeting, status } } : null));
+      }
       setSlotRefresh((value) => value + 1);
     } catch (cause) {
       setMutationError(cause instanceof Error ? cause.message : t("meetingSchedule.updateStatusError", "Failed to update the meeting status."));
