@@ -344,7 +344,7 @@ export default function TaskOfFieldAgentPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-lg border border-slate-100 p-2.5">
-                  <p className="text-slate-400">Task Area</p>
+                  <p className="text-slate-400">{t("manager.taskArea", "Task Area")}</p>
                   <p className="mt-1 font-semibold text-slate-800">{selectedTask.taskArea}</p>
                 </div>
                 <div className="rounded-lg border border-slate-100 p-2.5">
@@ -357,7 +357,7 @@ export default function TaskOfFieldAgentPage() {
 
               {selectedTask.hasIssue && selectedTask.issueDetails && (
                 <div className="rounded-lg border border-rose-200 bg-rose-50/80 p-3">
-                  <p className="font-semibold text-rose-800">{t("manager.issueDetails", "Issue Details:")}</p>
+                  <p className="font-semibold text-rose-800">{t("manager.issueResult", "Issue / Result")}:</p>
                   <p className="mt-1 text-rose-700 leading-relaxed">{selectedTask.issueDetails}</p>
                 </div>
               )}
@@ -380,7 +380,7 @@ export default function TaskOfFieldAgentPage() {
                             download={fileName}
                             className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[11px] font-semibold text-blue-600 hover:bg-slate-50"
                           >
-                            <Download className="h-3.5 w-3.5" /> {t("common.download", "Download")}
+                            <Download className="h-3.5 w-3.5" /> {t("manager.downloadFile", "Download")}
                           </a>
                         </div>
                       );
@@ -409,7 +409,7 @@ export default function TaskOfFieldAgentPage() {
               )}
 
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-center text-xs font-medium text-amber-800">
-                {t("manager.readOnlyFieldAgentNote", "Edit Info and Reassign Agent are hidden for Manager (Read-Only).")}
+                {t("manager.readOnlyHiddenNotice", "Edit Info and Reassign Agent are hidden for Manager (Read-Only).")}
               </div>
             </div>
 

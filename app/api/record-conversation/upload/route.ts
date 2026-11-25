@@ -17,6 +17,8 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
+    const channelRaw = formData.get('channel');
+    const channelType = typeof channelRaw === 'string' ? channelRaw : null;
 
     if (!file) {
       return NextResponse.json(
@@ -28,7 +30,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await uploadConversationFile(file);
+    const result = await uploadConversationFile(file, channelType);
 
     if (!result.success) {
       return NextResponse.json(
@@ -36,7 +38,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: result.error || 'Failed to process file upload',
         },
-        { status: 500 }
+        { status: result.statusCode || 500 }
       );
     }
 

@@ -11,13 +11,31 @@ const BUCKET_NAME = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || 'a2-recor
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB per lecturer rules
 
 /**
- * Validasi batas ukuran file 5 MB dan pemeriksaan format
+ * Memeriksa apakah berkas adalah format .txt yang valid untuk channel WhatsApp.
  */
-export function validateFile(file: File): { valid: boolean; error?: string } {
+export function isValidWhatsAppTxtFile(file: { name?: string; type?: string }): boolean {
+  const fileName = (file.name || '').trim().toLowerCase();
+  const ext = fileName.includes('.') ? fileName.split('.').pop() : '';
+  const mime = (file.type || '').trim().toLowerCase();
+  const validMime = !mime || mime === 'text/plain';
+  return ext === 'txt' && validMime;
+}
+
+/**
+ * Validasi batas ukuran file 5 MB dan pemeriksaan format berdasarkan channel
+ */
+export function validateFile(file: File, channelType?: string | null): { valid: boolean; error?: string } {
   if (file.size > MAX_FILE_SIZE_BYTES) {
     return {
       valid: false,
       error: `Ukuran file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimal 5 MB.`,
+    };
+  }
+
+  if (channelType && channelType.trim().toLowerCase() === 'whatsapp' && !isValidWhatsAppTxtFile(file)) {
+    return {
+      valid: false,
+      error: `Channel WhatsApp hanya menerima berkas berformat .txt. File "${file.name}" tidak diperbolehkan.`,
     };
   }
 
@@ -27,15 +45,19 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
 /**
  * Mengunggah berkas percakapan langsung ke Supabase Storage (bucket: record-documents).
  */
-export async function uploadConversationFile(file: File): Promise<{
+export async function uploadConversationFile(
+  file: File,
+  channelType?: string | null
+): Promise<{
   success: boolean;
   data?: UploadedFileMetadata;
   error?: string;
+  statusCode?: number;
 }> {
   try {
-    const validation = validateFile(file);
+    const validation = validateFile(file, channelType);
     if (!validation.valid) {
-      return { success: false, error: validation.error };
+      return { success: false, error: validation.error, statusCode: 400 };
     }
 
     const ext = file.name.split('.').pop()?.toLowerCase() || 'bin';
