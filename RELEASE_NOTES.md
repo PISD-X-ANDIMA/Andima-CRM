@@ -206,6 +206,25 @@
 - Penyelarasan menyeluruh notifikasi error handling dan peringatan pada halaman Meeting Schedule agar mendukung bilingual penuh (`EN` dan `ID`).
 - Penyesuaian tooltip hover slot waktu terlewat (`Time has already passed` / `Waktu sudah terlewat`).
 - Penyesuaian notifikasi toast saat mengklik tanggal atau jam lampau, validasi form, banner batasan jadwal Manager, dan modal konfirmasi hapus pertemuan agar dinamis mengikuti bahasa aktif pengguna.
+- Penambahan dukungan terjemahan bilingual penuh (`EN` dan `ID`) pada Dashboard Manager of Customer Success, `ManagerGlobalFilterBar`, serta halaman Record Conversation dan Task of Field Agent.
 
+### Peningkatan UX Modal, Topbar, dan Isolasi Data Lapangan
+- Penerapan penguncian scroll halaman latar belakang (*scroll lock*) saat modal terbuka di seluruh halaman CRM agar tampilan tetap stabil.
+- Penyelarasan tampilan topbar header dan penyembunyian ikon lonceng notifikasi untuk role Sales Executive.
+- Penerapan *scoping* data pada modul Task of Field Agent dan Record Conversation agar terfilter sesuai daftar perusahaan milik Sales Executive terkait.
 
+## 25 November 2026
+### Pemulihan Struktur Sidebar & Navigasi Role
+- Pengembalian subjudul role non-interaktif (`Manager of Customer Success` dan `Sales Executive`) pada sidebar, dengan menu `Dashboard` tersusun rapi sebagai submenu pertama di bawahnya.
+- Penghapusan tombol `X` pada header sidebar dan pemulihan tombol garis tiga (*hamburger toggle*) untuk membuka atau menutup sidebar.
+- Penghapusan menu `Monitoring Task of Field Agent` dari sidebar role Manager of Customer Success.
+- Perbaikan teks judul saat proses pemuatan data (*loading*) pada halaman Manage Account Manager agar tidak sempat menampilkan `Field Agent Accounts`.
+
+### Perbaikan Logika & Pembatalan Meeting Schedule
+- Penerapan validasi di sisi frontend dan backend agar meeting yang belum terjadi (jadwal masa depan) tidak dapat ditandai sebagai `Completed`.
+- Pembaruan status 2 meeting masa depan di database yang sebelumnya berstatus `completed` kembali menjadi `scheduled`.
+- Perbaikan alur pembatalan (*Cancel*) meeting pada kalender Meeting Schedule: meeting yang dibatalkan langsung hilang dari tampilan kalender dan modal detail otomatis tertutup tanpa perlu pembatalan ulang.
+
+### Perapihan Tampilan Mode Mobile
+- Perapihan tata letak responsif untuk tampilan perangkat mobile pada header (`DashboardHeader`), kerangka halaman (`DashboardShell`), filter bar Manager, `FigmaPagination`, `Meeting Schedule`, `Company List`, dan `SalesExecutiveDashboard` agar elemen tidak saling menumpuk atau terpotong.
 
