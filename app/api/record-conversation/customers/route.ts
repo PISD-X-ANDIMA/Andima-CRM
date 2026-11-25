@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCustomers } from '@/backend/record_conversation/conversationService';
 import { getCompanyScope } from '@/lib/services/access-scope';
+import { createAdminSupabaseClient, createServerSupabaseClient } from '@/lib/supabase/server';
 
 /**
  * GET /api/record-conversation/customers
@@ -14,8 +15,10 @@ export async function GET() {
       return NextResponse.json({ success: false, error: 'Please sign in to continue.' }, { status: 401 });
     }
 
+    const dbClient = createAdminSupabaseClient() || (await createServerSupabaseClient()) || undefined;
     const customers = await getCustomers(
-      scope.isManager || scope.companyIds.length === 0 ? null : scope.companyIds
+      scope.isManager || scope.companyIds.length === 0 ? null : scope.companyIds,
+      dbClient
     );
     const response = NextResponse.json({
       success: true,

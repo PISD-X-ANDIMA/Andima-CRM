@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { FigmaPagination } from '@/components/ui/FigmaPagination';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 import {
   fetchApiCustomers,
   fetchApiConversations,
@@ -45,6 +46,7 @@ interface ConversationDisplayItem {
   source: 'Meeting' | 'WhatsApp' | string;
   date: string;
   pic: string;
+  pic_role?: string;
   time?: string;
   summary?: string;
   status?: string;
@@ -57,6 +59,14 @@ interface ConversationDisplayItem {
   audit_logs?: AuditLogItem[];
   customer_id?: string;
   created_at?: string;
+}
+
+function isWhatsAppTxtFile(file: { name?: string; file_name?: string; type?: string; file_type?: string }): boolean {
+  const fileName = (file.name || file.file_name || '').trim().toLowerCase();
+  const ext = fileName.includes('.') ? fileName.split('.').pop() : '';
+  const rawType = (file.type || file.file_type || '').trim().toLowerCase();
+  const validType = !rawType || rawType === 'text/plain' || rawType === 'txt';
+  return ext === 'txt' && validType;
 }
 
 function formatDateDisplay(dateStr?: string | null): string {
@@ -156,6 +166,7 @@ interface InteractionTabProps {
 }
 
 export default function InteractionTab({ currentUser }: InteractionTabProps = {}) {
+  const { t } = useLanguage();
   // State nama akun aktif & role untuk PIC & Hak Akses
   const [activeUserName, setActiveUserName] = useState<string>(() => {
     if (currentUser?.name && currentUser.name.trim()) return currentUser.name.trim();
@@ -186,12 +197,17 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   });
 
   useEffect(() => {
+    let active = true;
+
     if (currentUser?.name && currentUser.name.trim()) {
       setActiveUserName(currentUser.name.trim());
     }
     if (currentUser?.role && currentUser.role.trim()) {
       setActiveUserRole(currentUser.role.trim());
-    } else if (typeof window !== 'undefined') {
+      return () => { active = false; };
+    }
+
+    if (typeof window !== 'undefined') {
       try {
         const stored = localStorage.getItem('andima_user');
         if (stored) {
@@ -201,6 +217,26 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
         }
       } catch (error) { console.error(error); }
     }
+
+    // Selalu sinkronkan dengan akun yang sedang login di sesi server
+    fetch('/api/v1/auth/me', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json) => {
+        if (!active || !json?.success || !json.data) return;
+        const serverName = String(json.data.name || '').trim();
+        const rawRole = String(json.data.role || '').trim();
+        const mappedRole =
+          rawRole === 'manager_customer_success'
+            ? 'Manager of Customer Success'
+            : rawRole === 'field_agent'
+              ? 'Field Agent'
+              : 'Sales Executive';
+        if (serverName) setActiveUserName(serverName);
+        setActiveUserRole(mappedRole);
+      })
+      .catch(() => {});
+
+    return () => { active = false; };
   }, [currentUser]);
 
   // State untuk Fitur Bantuan Footer "Need Assistance?"
@@ -535,6 +571,7 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
             source: c.channel_type === 'WhatsApp' ? 'WhatsApp' : 'Meeting',
             date: formatDateDisplay(c.conversation_date),
             pic: c.sales_pic_name || 'Sales Executive',
+            pic_role: c.sales_pic_role,
             summary: c.summary || '',
             status: c.status || 'active',
             urgency_level: c.urgency_level || 'standard',
@@ -992,13 +1029,24 @@ Exported on: ${new Date().toLocaleString('id-ID')}
     setIsCreateModalOpen(true);
   };
 
-  // Switch channel without dropping already-selected attachments.
+  // Switch channel with automatic .txt validation when switching to WhatsApp.
   const handleChannelSelectionChange = (newChannel: 'WhatsApp' | 'Meeting') => {
     setChannelSelection(newChannel);
     setAttachmentError(null);
+
+    if (newChannel === 'WhatsApp' && newUploadedFiles.length > 0) {
+      const invalidFiles = newUploadedFiles.filter((f) => !isWhatsAppTxtFile(f));
+      if (invalidFiles.length > 0) {
+        const validFiles = newUploadedFiles.filter((f) => isWhatsAppTxtFile(f));
+        setNewUploadedFiles(validFiles);
+        setAttachmentError(
+          `Berkas (${invalidFiles.map((i) => i.file_name).join(', ')}) dihapus karena channel WhatsApp hanya menerima file berformat .txt.`
+        );
+      }
+    }
   };
 
-  // Upload file in Create Modal with 5 MB & Channel Type validation (Lecturer Rules 3 & 4)
+  // Upload file in Create Modal with 5 MB & WhatsApp .txt validation
   const handleCreateFileUpload = async (files: FileList | File[] | null) => {
     if (!files) return;
     const fileList = Array.from(files);
@@ -1020,12 +1068,19 @@ Exported on: ${new Date().toLocaleString('id-ID')}
         if (createFileInputRef.current) createFileInputRef.current.value = '';
         return;
       }
+
+      if (channelSelection === 'WhatsApp' && !isWhatsAppTxtFile(file)) {
+        const ext = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() : 'tanpa ekstensi';
+        setAttachmentError(`Jenis berkas "${file.name}" (.${ext}) tidak diperbolehkan. Channel WhatsApp hanya bisa memasukkan file .txt.`);
+        if (createFileInputRef.current) createFileInputRef.current.value = '';
+        return;
+      }
     }
 
     setIsUploadingFile(true);
     try {
       for (const file of fileList) {
-        const res = await uploadApiFile(file);
+        const res = await uploadApiFile(file, channelSelection);
         if (res.success && res.data) {
           setNewUploadedFiles(prev => [...prev, res.data!]);
         } else {
@@ -1095,6 +1150,12 @@ Exported on: ${new Date().toLocaleString('id-ID')}
     if (recordSummary.trim().length > MAX_SUMMARY_CHARS) {
       setSummaryError(`Text Summary melebihi batas maksimum ${MAX_SUMMARY_CHARS} karakter. Mohon persingkat.`);
       setCreateFormError(`Text Summary melebihi batas maksimum ${MAX_SUMMARY_CHARS} karakter. Mohon persingkat.`);
+      return;
+    }
+
+    if (channelSelection === 'WhatsApp' && newUploadedFiles.some((f) => !isWhatsAppTxtFile(f))) {
+      setAttachmentError('Channel WhatsApp hanya bisa memasukkan file .txt.');
+      setCreateFormError('Channel WhatsApp hanya menerima berkas berformat .txt. Harap hapus berkas selain .txt.');
       return;
     }
 
@@ -1229,14 +1290,18 @@ Exported on: ${new Date().toLocaleString('id-ID')}
         <div
           onClick={() => setSaveSuccessNotif(false)}
           className="fixed top-6 right-6 z-[100] bg-[#f2fef8] text-[#047857] text-xs font-semibold px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-3 duration-200 cursor-pointer select-none border border-[#a7f3d0]"
-          title="Klik untuk menutup"
+          title={t('recordConversation.clickToClose', 'Click to close')}
         >
           <div className="w-6 h-6 rounded-full bg-[#d1fae5] text-[#047857] flex items-center justify-center shrink-0">
             <Check size={14} className="text-[#047857] stroke-[3]" />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-[#064e3b] text-xs">Record Conversation Tersimpan</span>
-            <span className="text-[11px] text-[#047857] font-normal">Data percakapan berhasil diperbarui ke database</span>
+            <span className="font-bold text-[#064e3b] text-xs">
+              {t('recordConversation.toastSavedTitle', 'Record Conversation Saved')}
+            </span>
+            <span className="text-[11px] text-[#047857] font-normal">
+              {t('recordConversation.toastSavedSubtitle', 'Conversation data has been updated in the database')}
+            </span>
           </div>
           <button
             type="button"
@@ -1257,7 +1322,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
           role="alert"
           onClick={() => setActionError(null)}
           className="fixed top-6 right-6 z-[100] bg-rose-50 text-rose-800 text-xs font-semibold px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-3 duration-200 cursor-pointer select-none border border-rose-200"
-          title="Klik untuk menutup"
+          title={t('recordConversation.clickToClose', 'Click to close')}
         >
           <div className="w-6 h-6 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
             <AlertCircle size={14} />
@@ -1270,7 +1335,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               setActionError(null);
             }}
             className="ml-1 text-rose-400 hover:text-rose-700 p-1 transition-colors"
-            aria-label="Tutup notifikasi"
+            aria-label={t('recordConversation.clickToClose', 'Close')}
           >
             <X size={14} />
           </button>
@@ -1280,10 +1345,10 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       {/* 1. PAGE HEADING */}
       <div className="mb-5">
         <h1 className="text-2xl font-bold text-[#0f172a] tracking-tight">
-          Record Customer Conversation
+          {t('recordConversation.title', 'Record Customer Conversation')}
         </h1>
         <p className="text-xs text-slate-400 mt-1">
-          Manage and view notes, meeting logs, and WhatsApp conversation history.
+          {t('recordConversation.subtitle', 'Manage and view notes, meeting logs, and WhatsApp conversation history.')}
         </p>
       </div>
 
@@ -1301,7 +1366,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              placeholder="Search by Company, Summary..."
+              placeholder={t('recordConversation.searchPlaceholder', 'Search by Company, Summary...')}
               className="w-full bg-[#f4f6fa] border border-slate-200/70 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:bg-white focus:border-blue-400 transition-colors"
             />
           </div>
@@ -1316,7 +1381,11 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               }}
               className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
             >
-              <span>{channelFilter === 'All Channel' ? 'Channel Type' : `Channel: ${channelFilter}`}</span>
+              <span>
+                {channelFilter === 'All Channel'
+                  ? t('recordConversation.channelTypeLabel', 'Channel Type')
+                  : `${t('recordConversation.channelCol', 'Channel')}: ${channelFilter}`}
+              </span>
               <ChevronDown size={14} className={`text-slate-400 transition-transform ${isChannelDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
             </button>
 
@@ -1334,7 +1403,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${channelFilter === opt ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
                       }`}
                   >
-                    <span>{opt}</span>
+                    <span>{opt === 'All Channel' ? t('recordConversation.allChannel', 'All Channel') : opt}</span>
                     {channelFilter === opt && <Check size={13} className="text-blue-600" />}
                   </button>
                 ))}
@@ -1352,26 +1421,41 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               }}
               className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
             >
-              <span>{dateFilter === 'All Dates' ? 'All Periods' : dateFilter}</span>
+              <span>
+                {dateFilter === 'All Dates'
+                  ? t('recordConversation.allPeriods', 'All Periods')
+                  : dateFilter === 'Today'
+                    ? t('common.today', 'Today')
+                    : dateFilter === 'This Week'
+                      ? t('recordConversation.thisWeek', 'This Week')
+                      : dateFilter === 'This Month'
+                        ? t('recordConversation.thisMonth', 'This Month')
+                        : dateFilter}
+              </span>
               <ChevronDown size={14} className={`text-slate-400 transition-transform ${isDateDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
             </button>
 
             {isDateDropdownOpen && (
               <div className="absolute top-full left-0 mt-1.5 w-40 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1">
-                {['All Dates', 'Today', 'This Week', 'This Month'].map(opt => (
+                {[
+                  { value: 'All Dates', label: t('recordConversation.allPeriods', 'All Periods') },
+                  { value: 'Today', label: t('common.today', 'Today') },
+                  { value: 'This Week', label: t('recordConversation.thisWeek', 'This Week') },
+                  { value: 'This Month', label: t('recordConversation.thisMonth', 'This Month') },
+                ].map(opt => (
                   <button
-                    key={opt}
+                    key={opt.value}
                     type="button"
                     onClick={() => {
-                      setDateFilter(opt);
+                      setDateFilter(opt.value);
                       setCurrentPage(1);
                       setIsDateDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${dateFilter === opt ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
+                    className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${dateFilter === opt.value ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
                       }`}
                   >
-                    <span>{opt === 'All Dates' ? 'All Periods' : opt}</span>
-                    {dateFilter === opt && <Check size={13} className="text-blue-600" />}
+                    <span>{opt.label}</span>
+                    {dateFilter === opt.value && <Check size={13} className="text-blue-600" />}
                   </button>
                 ))}
               </div>
@@ -1386,7 +1470,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
           className="crm-btn crm-btn-primary"
         >
           <Plus className="h-4 w-4" />
-          <span>Record Conversation</span>
+          <span>{t('recordConversation.addButton', 'Record Conversation')}</span>
         </button>
       </div>
 
@@ -1398,16 +1482,16 @@ Exported on: ${new Date().toLocaleString('id-ID')}
             <thead className="bg-[#F5F7FF] border-b border-slate-200/80">
               <tr>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[34%] first:rounded-tl-2xl">
-                  Company
+                  {t('recordConversation.companyCol', 'Company')}
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[22%]">
-                  Channel
+                  {t('recordConversation.channelCol', 'Channel')}
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[22%]">
-                  Date
+                  {t('recordConversation.dateCol', 'Date')}
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[22%] last:rounded-tr-2xl">
-                  Detail
+                  {t('recordConversation.detailCol', 'Detail')}
                 </th>
               </tr>
             </thead>
@@ -1431,10 +1515,10 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                         <Search size={20} />
                       </div>
                       <h4 className="text-sm font-bold text-slate-800">
-                        Record Conversation Tidak Ditemukan
+                        {t('recordConversation.notFoundTitle', 'No Conversation Records Found')}
                       </h4>
                       <p className="text-xs text-slate-500 mt-1">
-                        Belum ada percakapan tersimpan di database yang sesuai dengan akses atau filter pencarian.
+                        {t('recordConversation.notFoundSubtitle', 'No conversations saved in the database match your access or search filters.')}
                       </p>
                       <button
                         type="button"
@@ -1442,7 +1526,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                         className="mt-3.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
                       >
                         <Plus size={14} />
-                        <span>Buat Record Conversation Baru</span>
+                        <span>{t('recordConversation.createNewButton', 'Create New Record Conversation')}</span>
                       </button>
                     </div>
                   </td>
@@ -1485,7 +1569,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                         onClick={() => handleOpenDetail(row)}
                         className="text-[#2563eb] hover:text-blue-700 hover:underline font-semibold text-xs cursor-pointer transition-colors"
                       >
-                        See more..
+                        {t('common.seeMore', 'See more')}..
                       </button>
                     </td>
                   </tr>
@@ -1506,7 +1590,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               setPageSize(newPerPage);
               setCurrentPage(1);
             }}
-            itemLabel="customers"
+            itemLabel={t('common.customers', 'customers')}
           />
         </div>
       </div>
@@ -1518,7 +1602,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
             {/* Header: Title & Subtitle */}
             <div className="px-7 pt-6 pb-4 border-b border-slate-200/90 bg-white shrink-0">
               <h3 className="text-xl font-bold text-[#0f172a] tracking-tight">
-                Detail Conversation
+                {t('recordConversation.detailTitle', 'Detail Conversation')}
               </h3>
               <p className="text-xs font-semibold text-slate-500 mt-1">
                 {selectedConversation.company}
@@ -1538,7 +1622,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                      COMPANY
+                      {t('recordConversation.companyLabel', 'COMPANY')}
                     </span>
                     <h4 className="text-base font-bold text-[#0f172a] mt-1">
                       {selectedConversation.company}
@@ -1562,13 +1646,21 @@ Exported on: ${new Date().toLocaleString('id-ID')}
 
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
-                    <span className="text-xs text-slate-400 font-normal block">Created by:</span>
+                    <span className="text-xs text-slate-400 font-normal block">
+                      {t('recordConversation.createdByLabel', 'Created by:')}
+                    </span>
                     <span className="font-bold text-slate-800 text-xs block mt-0.5">
-                      {selectedConversation.pic} (Sales Executive)
+                      {selectedConversation.pic}
+                      {selectedConversation.pic_role &&
+                      selectedConversation.pic.toLowerCase() !== selectedConversation.pic_role.toLowerCase()
+                        ? ` (${selectedConversation.pic_role})`
+                        : ''}
                     </span>
                   </div>
                   <div>
-                    <span className="text-xs text-slate-400 font-normal block">Date of Conversation:</span>
+                    <span className="text-xs text-slate-400 font-normal block">
+                      {t('recordConversation.dateOfConversationLabel', 'Date of Conversation:')}
+                    </span>
                     <span className="font-bold text-slate-800 text-xs block mt-0.5">
                       {formatDateDisplay(selectedConversation.date) || '03/03/2026'}
                     </span>
@@ -1580,7 +1672,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    SUMMARY
+                    {t('recordConversation.summaryLabel', 'SUMMARY')}
                   </span>
                   <button
                     type="button"
@@ -1588,7 +1680,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
                   >
                     <Download size={13} className="text-blue-600" />
-                    <span>Export Summary (.pdf)</span>
+                    <span>{t('recordConversation.exportSummaryPdf', 'Export Summary (.pdf)')}</span>
                   </button>
                 </div>
                 <div className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed font-medium">
@@ -1600,7 +1692,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    EVIDENCE ATTACHMENTS ({(selectedConversation.evidence_attachments || []).length})
+                    {t('recordConversation.attachmentsLabel', 'EVIDENCE ATTACHMENTS')} ({(selectedConversation.evidence_attachments || []).length})
                   </span>
                 </div>
 
@@ -1619,7 +1711,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                             {file.name}
                           </p>
                           <p className="text-[10px] text-slate-400 mt-0.5">
-                            {file.size} • Dokumen Lampiran
+                            {file.size} • {t('recordConversation.attachmentDocSubtitle', 'Document Attachment')}
                           </p>
                         </div>
                       </div>
@@ -1629,7 +1721,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                           type="button"
                           onClick={() => handleDownloadAttachment(file.url, file.name)}
                           className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                          title="Download Langsung"
+                          title={t('recordConversation.downloadDirect', 'Direct Download')}
                         >
                           <Download size={16} />
                         </button>
@@ -1637,7 +1729,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                           type="button"
                           onClick={() => setPreviewModal({ isOpen: true, url: file.url, title: file.name })}
                           className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                          title="View"
+                          title={t('recordConversation.viewLabel', 'View')}
                         >
                           <ExternalLink size={16} />
                         </button>
@@ -1646,7 +1738,9 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                   ))
                 ) : (
                   <div className="bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 text-center">
-                    <p className="text-xs font-medium text-slate-500">Tidak ada berkas lampiran</p>
+                    <p className="text-xs font-medium text-slate-500">
+                      {t('recordConversation.noAttachments', 'No file attachments')}
+                    </p>
                   </div>
                 )}
               </div>
@@ -1655,10 +1749,12 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    HISTORY NEED ASSISTANCE
+                    {t('recordConversation.historyAssistanceLabel', 'HISTORY NEED ASSISTANCE')}
                   </span>
                   <span className="text-[10px] font-medium text-slate-400">
-                    {selectedConversation.need_assistance ? '1 catatan ditemukan' : '0 catatan ditemukan'}
+                    {t('recordConversation.recordsFoundCount', '{count} record found', {
+                      count: selectedConversation.need_assistance ? 1 : 0,
+                    })}
                   </span>
                 </div>
 
@@ -1675,7 +1771,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                         <div>
                           <div className="flex items-center gap-2">
                             <h5 className="text-xs font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
-                              Issue Alamat Pengiriman
+                              {t('recordConversation.issueDeliveryTitle', 'Delivery Address Issue')}
                             </h5>
                           </div>
                           <p className="text-[10px] text-slate-400 mt-0.5">
@@ -1683,14 +1779,14 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                           </p>
                           <div className="flex items-center gap-1.5 mt-1.5">
                             <span className="bg-amber-50 text-amber-700 border border-amber-200/90 rounded-md px-2 py-0.5 text-[10px] font-bold">
-                              Need Assistance
+                              {t('recordConversation.needAssistanceBadge', 'Need Assistance')}
                             </span>
                             <span className="bg-slate-100 text-slate-600 border border-slate-200 rounded-md px-2 py-0.5 text-[10px] font-medium">
                               {selectedConversation.alert_status === 'Reviewed'
-                                ? 'Sudah ditangani Manager'
+                                ? t('recordConversation.handledByManager', 'Handled by Manager')
                                 : selectedConversation.alert_status === 'In Progress'
-                                  ? 'Sedang ditangani Manager'
-                                  : 'Menunggu respons Manager'}
+                                  ? t('recordConversation.inProgressByManager', 'Being handled by Manager')
+                                  : t('recordConversation.waitingManagerResponse', 'Waiting for Manager response')}
                             </span>
                           </div>
                         </div>
@@ -1705,20 +1801,20 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                         </div>
                         <div>
                           <h5 className="text-xs font-bold text-slate-600">
-                            Follow-up laporan percakapan
+                            {t('recordConversation.followUpTitle', 'Conversation report follow-up')}
                           </h5>
                           <p className="text-[10px] text-slate-400 mt-0.5">
                             {selectedConversation.company} · {selectedConversation.date || '10 Okt 2026'}
                           </p>
                           <div className="flex items-center gap-1.5 mt-1.5">
                             <span className="bg-slate-100 text-slate-600 border border-slate-200 rounded-md px-2 py-0.5 text-[10px] font-medium">
-                              Tidak membutuhkan bantuan
+                              {t('recordConversation.noAssistanceNeeded', 'No assistance needed')}
                             </span>
                           </div>
                         </div>
                       </div>
                       <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-2 py-1 rounded-md">
-                        No Action
+                        {t('recordConversation.noActionBadge', 'No Action')}
                       </span>
                     </div>
                   )}
@@ -1737,14 +1833,16 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     className="flex min-h-11 flex-1 items-center justify-center gap-2 py-3 rounded-xl bg-[#2563eb] hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
                   >
                     {isResolvingBackup ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <CheckCircle size={14} aria-hidden="true" />}
-                    {isResolvingBackup ? 'Menyimpan...' : 'Selesaikan Need Backup'}
+                    {isResolvingBackup
+                      ? t('recordConversation.resolvingBtn', 'Saving...')
+                      : t('recordConversation.resolveBackupBtn', 'Resolve Need Backup')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsDetailModalOpen(false)}
                     className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-colors cursor-pointer text-center"
                   >
-                    Close
+                    {t('common.close', 'Close')}
                   </button>
                 </div>
               ) : (
@@ -1753,7 +1851,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                   onClick={() => setIsDetailModalOpen(false)}
                   className="w-full py-3 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs text-center"
                 >
-                  Close
+                  {t('common.close', 'Close')}
                 </button>
               )}
             </div>
@@ -1771,7 +1869,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
             {/* Header */}
             <div className="px-6 pt-5 pb-4 border-b border-slate-100 bg-white">
               <h3 className="text-lg font-bold text-[#1e293b] tracking-tight text-center sm:text-left">
-                Manager Response &amp; Feedback
+                {t('recordConversation.managerFeedbackTitle', 'Manager Response & Feedback')}
               </h3>
             </div>
 
@@ -1781,10 +1879,10 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               <div className="bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 space-y-3">
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    TOPIC ISSUE
+                    {t('recordConversation.topicIssueLabel', 'TOPIC ISSUE')}
                   </span>
                   <h4 className="text-sm font-bold text-[#0f172a] mt-0.5">
-                    Issue Alamat Pengiriman
+                    {t('recordConversation.issueDeliveryTitle', 'Delivery Address Issue')}
                   </h4>
                 </div>
 
@@ -1792,13 +1890,17 @@ Exported on: ${new Date().toLocaleString('id-ID')}
 
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div>
-                    <span className="text-slate-400 text-xs block font-normal">Customer</span>
+                    <span className="text-slate-400 text-xs block font-normal">
+                      {t('recordConversation.customerLabel', 'Customer')}
+                    </span>
                     <span className="font-bold text-[#0f172a] text-xs block mt-0.5">
                       {selectedConversation.company || 'PT Contoh Customer'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-400 text-xs block font-normal">Date of Conversation:</span>
+                    <span className="text-slate-400 text-xs block font-normal">
+                      {t('recordConversation.dateOfConversationLabel', 'Date of Conversation:')}
+                    </span>
                     <span className="font-bold text-[#0f172a] text-xs block mt-0.5">
                       {formatDateDisplay(selectedConversation.date) || '03/03/2026'}
                     </span>
@@ -1809,15 +1911,15 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               {/* Section 2: Resolution Status */}
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
-                  RESOLUTION STATUS
+                  {t('recordConversation.resolutionStatusLabel', 'RESOLUTION STATUS')}
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#e6f9ed] text-[#16a34a] border border-[#bbf7d0]">
                     <span className="text-[10px]">●</span>
-                    <span>Responded / Answered</span>
+                    <span>{t('recordConversation.respondedBadge', 'Responded / Answered')}</span>
                   </span>
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#f1f5f9] text-slate-500">
-                    Previous: Awaiting Response
+                    {t('recordConversation.previousAwaitingBadge', 'Previous: Awaiting Response')}
                   </span>
                 </div>
               </div>
@@ -1825,7 +1927,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               {/* Section 3: Manager Notes & Instructions */}
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
-                  MANAGER NOTES &amp; INSTRUCTIONS
+                  {t('recordConversation.managerNotesLabel', 'MANAGER NOTES & INSTRUCTIONS')}
                 </span>
                 <div className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words bg-[#f8fafc] border border-slate-200/90 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed font-normal shadow-2xs">
                   {selectedConversation.summary || 'Discussed recent shipment delays. Customer requested schedule adjustment for container #2 and re-verification of documentation at Tanjung Priok Port.'}
@@ -1833,7 +1935,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 <div className="mt-2.5 flex items-center justify-between text-[11px]">
                   <div className="flex items-center gap-1.5 text-slate-600 font-medium">
                     <CheckCircle size={14} className="text-blue-600 shrink-0" />
-                    <span>Responded by: <strong className="text-slate-900 font-bold">Mr. Bambang</strong> (Sales Manager)</span>
+                    <span>{t('recordConversation.respondedByLabel', 'Responded by:')} <strong className="text-slate-900 font-bold">Mr. Bambang</strong> (Sales Manager)</span>
                   </div>
                   <span className="text-slate-400 font-normal">10 Oct 2026, 15:00 WIB</span>
                 </div>
@@ -1847,7 +1949,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 onClick={() => setIsManagerFeedbackModalOpen(false)}
                 className="w-full py-3 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-2xs text-center"
               >
-                Close
+                {t('common.close', 'Close')}
               </button>
             </div>
           </div>
@@ -1861,10 +1963,10 @@ Exported on: ${new Date().toLocaleString('id-ID')}
             {/* Header with Title & Subtitle */}
             <div className="px-7 pt-6 pb-4 border-b border-slate-200/90 bg-white shrink-0">
               <h3 className="text-xl font-bold text-[#0f172a] tracking-tight">
-                Record Customer Conversation
+                {t('recordConversation.modalCreateTitle', 'Record Customer Conversation')}
               </h3>
               <p className="text-xs text-slate-500 font-normal mt-1">
-                Log WhatsApp threads or meeting documents and declare assistance requirement.
+                {t('recordConversation.modalCreateSubtitle', 'Log WhatsApp threads or meeting documents and declare assistance requirement.')}
               </p>
             </div>
 
@@ -1881,7 +1983,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               {/* Select Customer * */}
               <div className="relative" ref={accountDropdownRef}>
                 <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                  Select Customer<span className="text-red-500">*</span>
+                  {t('recordConversation.selectCustomerLabel', 'Select Customer')}<span className="text-red-500">*</span>
                 </label>
                 <button
                   type="button"
@@ -1900,7 +2002,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                         type="text"
                         value={customerSearchQuery}
                         onChange={(e) => setCustomerSearchQuery(e.target.value)}
-                        placeholder="Cari customer / perusahaan..."
+                        placeholder={t('recordConversation.searchCustomerPlaceholder', 'Search customer / company...')}
                         className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-800 outline-none"
                         onClick={(e) => e.stopPropagation()}
                       />
@@ -1925,7 +2027,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                         ))}
                       {accountOptions.filter((acc) => acc.toLowerCase().includes(customerSearchQuery.toLowerCase().trim())).length === 0 && (
                         <div className="p-2 text-center text-xs text-slate-400">
-                          Tidak ada customer yang cocok &quot;{customerSearchQuery}&quot;
+                          {t('recordConversation.noMatchingCustomer', 'No customer matching')} &quot;{customerSearchQuery}&quot;
                         </div>
                       )}
                     </div>
@@ -1933,10 +2035,29 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 )}
               </div>
 
+              {/* Created by (Akun Login) */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  {t('recordConversation.createdByFieldLabel', 'Created by')}
+                </label>
+                <div className="w-full bg-slate-100/80 border border-slate-200 rounded-xl px-4 py-3 flex items-center justify-between text-xs font-semibold text-slate-700">
+                  <span className="truncate">
+                    {activeUserName}
+                    {activeUserRole && activeUserName.toLowerCase() !== activeUserRole.toLowerCase()
+                      ? ` (${activeUserRole})`
+                      : ''}
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-400 shrink-0">
+                    <LockIcon size={11} />
+                    <span>{t('recordConversation.loggedInAccountBadge', 'Logged-in Account')}</span>
+                  </span>
+                </div>
+              </div>
+
               {/* Date * */}
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                  Date <span className="text-red-500">*</span>
+                  {t('recordConversation.dateFieldLabel', 'Date')} <span className="text-red-500">*</span>
                 </label>
                 <div className="relative flex items-center">
                   <input
@@ -1948,7 +2069,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                       setRecordDate(formatted);
                       setDateError(
                         /^\d{2}\/\d{2}\/\d{4}$/.test(formatted) && isFutureRecordDate(formatted)
-                          ? 'Tanggal tidak boleh melewati hari ini.'
+                          ? t('recordConversation.futureDateError', 'Date cannot be in the future.')
                           : null
                       );
                     }}
@@ -1967,11 +2088,15 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                         if (val) {
                           const [yyyy, mm, dd] = val.split('-');
                           setRecordDate(`${dd}/${mm}/${yyyy}`);
-                          setDateError(val > todayJakartaIso() ? 'Tanggal tidak boleh melewati hari ini.' : null);
+                          setDateError(
+                            val > todayJakartaIso()
+                              ? t('recordConversation.futureDateError', 'Date cannot be in the future.')
+                              : null
+                          );
                         }
                       }}
                       className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-                      title="Pilih tanggal dari kalender"
+                      title={t('recordConversation.pickDateFromCalendar', 'Pick date from calendar')}
                     />
                     <Calendar size={16} className="text-blue-600 pointer-events-none" />
                   </div>
@@ -1984,7 +2109,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               {/* Channel Type * */}
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                  Channel Type<span className="text-red-500">*</span>
+                  {t('recordConversation.channelTypeField', 'Channel Type')}<span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <div
@@ -1995,7 +2120,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                       }`}
                   >
                     <span className={`text-xs ${channelSelection === 'WhatsApp' ? 'font-bold text-[#2563eb]' : 'font-medium text-slate-700'}`}>
-                      WhatsApp (.txt)
+                      {t('recordConversation.whatsappOption', 'WhatsApp (.txt)')}
                     </span>
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${channelSelection === 'WhatsApp' ? 'border-2 border-[#3b82f6]' : 'border border-slate-300'
                       }`}>
@@ -2013,7 +2138,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     <div className="flex items-center gap-2">
                       <FileText size={15} className={channelSelection === 'Meeting' ? 'text-[#3b82f6]' : 'text-slate-400'} />
                       <span className={`text-xs ${channelSelection === 'Meeting' ? 'font-bold text-[#2563eb]' : 'font-medium text-slate-700'}`}>
-                        Meeting Document
+                        {t('recordConversation.meetingOption', 'Meeting Document')}
                       </span>
                     </div>
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${channelSelection === 'Meeting' ? 'border-2 border-[#3b82f6]' : 'border border-slate-300'
@@ -2028,10 +2153,14 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-bold text-slate-800">
-                    Text Summary<span className="text-red-500">*</span>
+                    {t('recordConversation.textSummaryLabel', 'Text Summary')}<span className="text-red-500">*</span>
                   </label>
                   <span className={`text-[11px] font-bold ${getWordCount(recordSummary) >= MAX_SUMMARY_WORDS ? 'text-red-600 font-bold' : 'text-slate-400'}`}>
-                    {getWordCount(recordSummary)} / {MAX_SUMMARY_WORDS} kata · maks. {MAX_WORD_CHARS} karakter/kata
+                    {t('recordConversation.wordLimitInfo', '{count} / {maxWords} words · max {maxChars} chars/word', {
+                      count: getWordCount(recordSummary),
+                      maxWords: MAX_SUMMARY_WORDS,
+                      maxChars: MAX_WORD_CHARS,
+                    })}
                   </span>
                 </div>
                 <textarea
@@ -2058,7 +2187,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                       setSummaryError(null);
                     }
                   }}
-                  placeholder="Diskusi bersama Pak Hendra (DSV) mengenai kepastian jadwal kontainer di Gate 3 Priok. Membutuhkan verifikasi fisik cepat dan pendampingan customs clearance untuk mencegah denda demurrage."
+                  placeholder={t('recordConversation.summaryPlaceholder', 'Discussion regarding container schedule...')}
                   className={`w-full bg-[#f8fafc] border rounded-xl p-3.5 text-xs font-normal text-slate-800 leading-relaxed outline-none shadow-2xs transition-colors resize-none placeholder:text-slate-400 ${summaryError
                       ? 'border-red-500 bg-red-50/20 focus:border-red-600 focus:ring-1 focus:ring-red-500'
                       : 'border-slate-200 focus:border-blue-500 focus:bg-white'
@@ -2076,14 +2205,14 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-bold text-slate-800">
-                    File Lampiran (Opsional)
+                    {t('recordConversation.attachmentFieldLabel', 'Attachment File (Optional)')}
                   </label>
                   <span className="text-[10px] text-slate-400 font-medium">
                     {channelSelection === 'WhatsApp'
-                      ? 'Khusus .txt • Max 5MB'
+                      ? t('recordConversation.whatsappFormatHint', 'Only .txt • Max 5MB')
                       : channelSelection === 'Meeting'
-                        ? 'Dokumen / Gambar • Max 5MB'
-                        : 'Pilih channel terlebih dahulu'}
+                        ? t('recordConversation.meetingFormatHint', 'Documents / Images • Max 5MB')
+                        : t('recordConversation.selectChannelFirstHint', 'Select channel first')}
                   </span>
                 </div>
                 <div
@@ -2107,24 +2236,30 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                   </div>
                   <p className="text-xs font-bold text-slate-800">
                     {channelSelection === 'WhatsApp'
-                      ? 'Upload chat export .txt file (Khusus WhatsApp)'
+                      ? t('recordConversation.uploadWhatsappTitle', 'Upload chat export .txt file (WhatsApp Only)')
                       : channelSelection === 'Meeting'
-                        ? 'Upload meeting notes & dokumen (.pdf, .docx, .xlsx, .png)'
-                        : 'Pilih channel type terlebih dahulu untuk melampirkan berkas'}
+                        ? t('recordConversation.uploadMeetingTitle', 'Upload meeting notes & documents (.pdf, .docx, .xlsx, .png)')
+                        : t('recordConversation.uploadSelectFirstTitle', 'Select channel type first to attach files')}
                   </p>
                   <p className="text-[11px] text-slate-500 mt-1">
-                    Drag &amp; drop berkas di sini, atau <span className="text-[#2563eb] font-semibold underline">Browse files</span>
+                    {t('recordConversation.dragDropOrBrowse', 'Drag & drop files here, or')}{' '}
+                    <span className="text-[#2563eb] font-semibold underline">
+                      {t('recordConversation.browseFiles', 'Browse files')}
+                    </span>
                   </p>
                   <div className={`mt-3 px-3 py-1 rounded-lg border text-[10px] font-semibold ${attachmentError ? 'border-red-200 bg-red-50 text-red-600' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
                     {channelSelection === null
-                      ? 'Ukuran maks: 5MB • Pilih channel type untuk melihat format yang diterima'
-                      : 'Ukuran maks: 5MB • Semua format berkas didukung'}
+                      ? t('recordConversation.maxSizeSelectChannel', 'Max size: 5MB • Select channel type to view accepted formats')
+                      : channelSelection === 'WhatsApp'
+                        ? t('recordConversation.maxSizeWhatsappOnly', 'Max size: 5MB • Only .txt format supported')
+                        : t('recordConversation.maxSizeAllFormats', 'Max size: 5MB • All file formats supported')}
                   </div>
                 </div>
                 <input
                   ref={createFileInputRef}
                   type="file"
                   multiple
+                  accept={channelSelection === 'WhatsApp' ? '.txt,text/plain' : undefined}
                   onChange={(e) => handleCreateFileUpload(e.target.files)}
                   className="hidden"
                 />
@@ -2161,7 +2296,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
               {/* Need Assistance * */}
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                  Need Assistance<span className="text-red-500">*</span>
+                  {t('recordConversation.needAssistanceField', 'Need Assistance')}<span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <div
@@ -2172,7 +2307,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                       }`}
                   >
                     <span className={`text-xs ${createNeedAssistance === true ? 'font-bold text-[#2563eb]' : 'font-medium text-slate-700'}`}>
-                      Yes
+                      {t('recordConversation.yesLabel', 'Yes')}
                     </span>
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${createNeedAssistance === true ? 'border-2 border-[#3b82f6]' : 'border border-slate-300'
                       }`}>
@@ -2188,7 +2323,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                       }`}
                   >
                     <span className={`text-xs ${createNeedAssistance === false ? 'font-bold text-[#2563eb]' : 'font-medium text-slate-700'}`}>
-                      No
+                      {t('recordConversation.noLabel', 'No')}
                     </span>
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${createNeedAssistance === false ? 'border-2 border-[#3b82f6]' : 'border border-slate-300'
                       }`}>
@@ -2203,7 +2338,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#10b981] inline-block" />
                   <span className="text-xs text-slate-400 font-medium">
-                    Auto-synced with C-Track Timeline
+                    {t('recordConversation.autoSyncedFooter', 'Auto-synced with C-Track Timeline')}
                   </span>
                 </div>
 
@@ -2213,7 +2348,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     onClick={() => setIsCreateModalOpen(false)}
                     className="px-5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors cursor-pointer bg-white"
                   >
-                    Cancel
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     type="submit"
@@ -2221,7 +2356,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     className="px-6 py-2.5 rounded-xl bg-[#3b6ff5] hover:bg-[#2b5ce5] text-white text-xs font-bold shadow-md transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
                   >
                     {isSubmittingNew ? <Loader2 size={14} className="animate-spin" /> : null}
-                    <span>Save Record</span>
+                    <span>{t('recordConversation.saveRecordBtn', 'Save Record')}</span>
                   </button>
                 </div>
               </div>
@@ -2258,14 +2393,14 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
               >
                 <Download size={14} />
-                <span>Download File</span>
+                <span>{t('recordConversation.downloadFileBtn', 'Download File')}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setPreviewModal(null)}
                 className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
               >
-                Close
+                {t('common.close', 'Close')}
               </button>
             </div>
           </div>

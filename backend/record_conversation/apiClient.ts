@@ -68,7 +68,7 @@ export async function fetchApiConversations(options?: {
   }
 
   const queryString = params.toString() ? `?${params.toString()}` : '';
-  const res = await fetch(`${BASE_URL}/conversations${queryString}`);
+  const res = await fetch(`${BASE_URL}/conversations${queryString}`, { cache: 'no-store' });
   const json = await res.json();
   if (!json.success) {
     throw new Error(json.error || 'Failed to fetch conversations');
@@ -185,11 +185,15 @@ export async function fetchApiWorksheetDetail(id: number): Promise<WorksheetItem
  * Mengunggah berkas percakapan via REST API: POST /api/record-conversation/upload
  */
 export async function uploadApiFile(
-  file: File
+  file: File,
+  channelType?: string | null
 ): Promise<{ success: boolean; data?: UploadedFileMetadata; error?: string }> {
   try {
     const formData = new FormData();
     formData.append('file', file);
+    if (channelType) {
+      formData.append('channel', channelType);
+    }
 
     const res = await fetch(`${BASE_URL}/upload`, {
       method: 'POST',

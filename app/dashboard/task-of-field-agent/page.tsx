@@ -310,7 +310,7 @@ export default function TaskOfFieldAgentPage() {
           >
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Job Detail Summary</h2>
+                <h2 className="text-lg font-bold text-slate-900">{t("manager.jobDetailSummary", "Job Detail Summary")}</h2>
               </div>
               <button
                 type="button"
@@ -324,17 +324,17 @@ export default function TaskOfFieldAgentPage() {
             <div className="mt-4 space-y-3.5 text-xs">
               <div className="rounded-lg border border-slate-100 bg-slate-50/60 p-3">
                 <h3 className="text-sm font-bold text-slate-900">{selectedTask.company}</h3>
-                <p className="text-slate-500 mt-1">Sales Executive: <strong>{selectedTask.salesExecutive}</strong></p>
-                <p className="text-slate-500">Field Agent: <strong>{selectedTask.fieldAgent}</strong></p>
+                <p className="text-slate-500 mt-1">{t("nav.salesExecutive", "Sales Executive")}: <strong>{selectedTask.salesExecutive}</strong></p>
+                <p className="text-slate-500">{t("nav.fieldAgent", "Field Agent")}: <strong>{selectedTask.fieldAgent}</strong></p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-lg border border-slate-100 p-2.5">
-                  <p className="text-slate-400">Task Area</p>
+                  <p className="text-slate-400">{t("manager.taskArea", "Task Area")}</p>
                   <p className="mt-1 font-semibold text-slate-800">{selectedTask.taskArea}</p>
                 </div>
                 <div className="rounded-lg border border-slate-100 p-2.5">
-                  <p className="text-slate-400">Status</p>
+                  <p className="text-slate-400">{t("manager.status", "Status")}</p>
                   <p className={`mt-1 font-bold ${selectedTask.hasIssue ? "text-rose-600" : "text-emerald-600"}`}>
                     {selectedTask.status}
                   </p>
@@ -343,17 +343,17 @@ export default function TaskOfFieldAgentPage() {
 
               {selectedTask.hasIssue && selectedTask.issueDetails && (
                 <div className="rounded-lg border border-rose-200 bg-rose-50/80 p-3">
-                  <p className="font-semibold text-rose-800">Issue Details:</p>
+                  <p className="font-semibold text-rose-800">{t("manager.issueResult", "Issue / Result")}:</p>
                   <p className="mt-1 text-rose-700 leading-relaxed">{selectedTask.issueDetails}</p>
                 </div>
               )}
 
               <div>
-                <p className="font-semibold text-slate-700 mb-1.5">Dokumen</p>
+                <p className="font-semibold text-slate-700 mb-1.5">{t("manager.documents", "Documents")}</p>
                 {detailLoading ? (
                   <Skeleton className="h-10 w-full" />
                 ) : detailDocs.length === 0 ? (
-                  <p className="text-slate-400">Belum ada dokumen diunggah.</p>
+                  <p className="text-slate-400">{t("manager.noDocumentsYet", "No documents uploaded yet.")}</p>
                 ) : (
                   <div className="space-y-1.5">
                     {detailDocs.map((doc) => {
@@ -366,7 +366,7 @@ export default function TaskOfFieldAgentPage() {
                             download={fileName}
                             className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[11px] font-semibold text-blue-600 hover:bg-slate-50"
                           >
-                            <Download className="h-3.5 w-3.5" /> Unduh
+                            <Download className="h-3.5 w-3.5" /> {t("manager.downloadFile", "Download")}
                           </a>
                         </div>
                       );
@@ -377,7 +377,7 @@ export default function TaskOfFieldAgentPage() {
 
               {detailPhotos.length > 0 && (
                 <div>
-                  <p className="font-semibold text-slate-700 mb-1.5">Foto</p>
+                  <p className="font-semibold text-slate-700 mb-1.5">{t("manager.photos", "Photos")}</p>
                   <div className="grid grid-cols-4 gap-2">
                     {detailPhotos.slice(0, 4).map((url, index) => (
                       <a
@@ -395,7 +395,7 @@ export default function TaskOfFieldAgentPage() {
               )}
 
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-center text-xs font-medium text-amber-800">
-                Edit Info and Reassign Agent are hidden for Manager (Read-Only).
+                {t("manager.readOnlyHiddenNotice", "Edit Info and Reassign Agent are hidden for Manager (Read-Only).")}
               </div>
             </div>
 
@@ -405,7 +405,7 @@ export default function TaskOfFieldAgentPage() {
                 onClick={() => setSelectedTask(null)}
                 className="rounded-lg bg-blue-600 px-6 py-2 text-xs font-semibold text-white hover:bg-blue-700"
               >
-                Close
+                {t("common.close", "Close")}
               </button>
             </div>
           </div>

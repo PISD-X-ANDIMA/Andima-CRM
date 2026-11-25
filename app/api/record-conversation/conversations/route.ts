@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getConversations, createConversation, updateConversation } from '@/backend/record_conversation/conversationService';
 import { NewConversationPayload, UpdateConversationPayload } from '@/backend/record_conversation/types';
 import { getCompanyScope } from '@/lib/services/access-scope';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createAdminSupabaseClient, createServerSupabaseClient } from '@/lib/supabase/server';
+import { getCurrentUserScope } from '@/lib/auth/roles';
 
 const unauthorized = () => NextResponse.json({ success: false, error: 'Please sign in to continue.' }, { status: 401 });
+
+function formatRoleLabel(role?: string | null): string {
+  if (role === 'manager_customer_success') return 'Manager of Customer Success';
+  if (role === 'field_agent') return 'Field Agent';
+  return 'Sales Executive';
+}
 
 /**
  * GET /api/record-conversation/conversations
@@ -27,6 +34,9 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, Number(searchParams.get('page')) || 1);
     const limit = Math.max(1, Number(searchParams.get('limit')) || 8);
 
+    const serverSupabase = await createServerSupabaseClient();
+    const dbClient = createAdminSupabaseClient() || serverSupabase || undefined;
+
     const result = await getConversations({
       channelType: channel,
       status: status,
@@ -35,6 +45,7 @@ export async function GET(request: NextRequest) {
       page,
       limit,
       visibleCompanyIds: scope.isManager ? null : scope.companyIds,
+      dbClient,
     });
 
     const response = NextResponse.json({
@@ -98,14 +109,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let author: { id: string; email: string | null } | undefined;
-    const supabase = await createServerSupabaseClient();
-    if (supabase) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) author = { id: user.id, email: user.email ?? null };
+    let author: { id: string; email: string | null; name?: string | null; role?: string | null } | undefined;
+    const serverSupabase = await createServerSupabaseClient();
+    const dbClient = createAdminSupabaseClient() || serverSupabase || undefined;
+
+    if (serverSupabase) {
+      const userScope = await getCurrentUserScope(serverSupabase).catch(() => null);
+      if (userScope) {
+        author = {
+          id: userScope.user.id,
+          email: userScope.email,
+          name: userScope.name,
+          role: formatRoleLabel(userScope.role),
+        };
+      } else {
+        const { data: { user } } = await serverSupabase.auth.getUser();
+        if (user) {
+          author = {
+            id: user.id,
+            email: user.email ?? null,
+            name: String(user.user_metadata?.full_name || user.user_metadata?.name || user.email || '').trim() || null,
+          };
+        }
+      }
     }
 
-    const result = await createConversation(body, author);
+    const result = await createConversation(body, author, dbClient);
 
     if (!result.success) {
       return NextResponse.json(
@@ -157,13 +186,15 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    const serverSupabase = await createServerSupabaseClient();
+    const dbClient = createAdminSupabaseClient() || serverSupabase || undefined;
+
     // A sales executive may only update conversations for companies they own.
     if (!scope.isManager) {
-      const supabase = await createServerSupabaseClient();
-      if (!supabase) {
+      if (!serverSupabase) {
         return NextResponse.json({ success: false, error: 'Database client unavailable' }, { status: 503 });
       }
-      const { data: conversation } = await supabase
+      const { data: conversation } = await serverSupabase
         .from('a2_record_conversations')
         .select('customer_id')
         .eq('id', body.id)
@@ -179,7 +210,7 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    const result = await updateConversation(body);
+    const result = await updateConversation(body, dbClient);
 
     if (!result.success) {
       return NextResponse.json(

@@ -356,7 +356,7 @@ export default function RecordConversationPage() {
           >
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Detail Conversation</h2>
+                <h2 className="text-lg font-bold text-slate-900">{t("manager.detailConversation", "Detail Conversation")}</h2>
                 <p className="text-xs text-slate-400">{selectedRecord.company}</p>
               </div>
               <button
@@ -370,7 +370,7 @@ export default function RecordConversationPage() {
 
             <div className="mt-4 space-y-4 text-xs">
               <div>
-                <p className="font-semibold uppercase tracking-wider text-slate-400">Customer / Company</p>
+                <p className="font-semibold uppercase tracking-wider text-slate-400">{t("manager.customerCompany", "Customer / Company")}</p>
                 <div className="mt-1 flex items-center justify-between">
                   <span className="text-base font-bold text-slate-900">{selectedRecord.company}</span>
                   <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
@@ -381,30 +381,30 @@ export default function RecordConversationPage() {
 
               <div className="grid grid-cols-2 gap-4 border-y border-slate-100 py-3">
                 <div>
-                  <p className="text-slate-400">Created by</p>
+                  <p className="text-slate-400">{t("manager.createdBy", "Created by")}</p>
                   <p className="mt-0.5 font-semibold text-slate-800">{selectedRecord.salesExecutive}</p>
                 </div>
                 <div>
-                  <p className="text-slate-400">Date and time</p>
+                  <p className="text-slate-400">{t("manager.dateTime", "Date and time")}</p>
                   <p className="mt-0.5 font-semibold text-slate-800">{selectedRecord.date}, {selectedRecord.time}</p>
                 </div>
               </div>
 
               <div>
-                <p className="font-semibold uppercase tracking-wider text-slate-400">Summary</p>
+                <p className="font-semibold uppercase tracking-wider text-slate-400">{t("manager.summary", "Summary")}</p>
                 <p className="mt-1 max-h-48 overflow-y-auto whitespace-pre-wrap break-words text-sm text-slate-700 leading-relaxed">{selectedRecord.summary}</p>
               </div>
 
               {selectedRecord.alertId && (
                 <div>
-                  <p className="font-semibold uppercase tracking-wider text-slate-400">Backup Status</p>
+                  <p className="font-semibold uppercase tracking-wider text-slate-400">{t("manager.backupStatus", "Backup Status")}</p>
                   <p className="mt-1">
                     {selectedRecord.backupStatus === "Pending" ? (
-                      <span className="rounded-full bg-amber-100 px-2.5 py-0.5 font-semibold text-amber-800">Need Backup</span>
+                      <span className="rounded-full bg-amber-100 px-2.5 py-0.5 font-semibold text-amber-800">{t("manager.needBackup", "Need Backup")}</span>
                     ) : selectedRecord.backupStatus === "In Progress" ? (
-                      <span className="rounded-full bg-blue-100 px-2.5 py-0.5 font-semibold text-blue-800">On Progress</span>
+                      <span className="rounded-full bg-blue-100 px-2.5 py-0.5 font-semibold text-blue-800">{t("manager.onProgress", "On Progress")}</span>
                     ) : (
-                      <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 font-semibold text-emerald-800">Reviewed</span>
+                      <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 font-semibold text-emerald-800">{t("manager.reviewed", "Reviewed")}</span>
                     )}
                   </p>
                 </div>
@@ -420,7 +420,7 @@ export default function RecordConversationPage() {
                       onClick={() => alert(`Downloading ${selectedRecord.attachmentName}`)}
                       className="rounded border border-slate-300 bg-white px-3 py-1 font-semibold text-blue-600 hover:bg-slate-50 shrink-0"
                     >
-                      Download
+                      {t("manager.downloadFile", "Download")}
                     </button>
                   </div>
                 </div>
@@ -435,7 +435,7 @@ export default function RecordConversationPage() {
                   disabled={updatingAlertId === selectedRecord.alertId}
                   className="rounded-lg border border-blue-200 bg-blue-50 px-5 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-60"
                 >
-                  {updatingAlertId === selectedRecord.alertId ? "Menyimpan..." : "Tandai On Progress"}
+                  {updatingAlertId === selectedRecord.alertId ? t("manager.updatingStatus", "Updating...") : t("manager.onProgress", "On Progress")}
                 </button>
               )}
               {selectedRecord.backupStatus && selectedRecord.backupStatus !== "Reviewed" && (
@@ -445,7 +445,7 @@ export default function RecordConversationPage() {
                   disabled={updatingAlertId === selectedRecord.alertId}
                   className="rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60"
                 >
-                  Selesaikan
+                  {t("common.resolved", "Resolved")}
                 </button>
               )}
               <button
@@ -453,7 +453,7 @@ export default function RecordConversationPage() {
                 onClick={() => setSelectedRecord(null)}
                 className="rounded-lg bg-blue-600 px-5 py-2 text-xs font-semibold text-white hover:bg-blue-700"
               >
-                Close
+                {t("common.close", "Close")}
               </button>
             </div>
           </div>

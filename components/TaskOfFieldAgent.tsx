@@ -11,6 +11,7 @@ import {
 import { submitNeedBackup } from '@/backend/record_conversation/worksheetService';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { FigmaPagination } from '@/components/ui/FigmaPagination';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 // ==========================================
 // TYPES & INTERFACES
@@ -565,6 +566,7 @@ const EXACT_FIGMA_TASKS: FieldTaskItem[] = [
 ];
 
 export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps) {
+  const { t } = useLanguage();
   const [tasks, setTasks] = useState<FieldTaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [companyFilter, setCompanyFilter] = useState<string | null>(null);
@@ -1722,10 +1724,10 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
       {/* 2. TITLE & SUBTITLE */}
       <div className="mb-5">
         <h1 className="text-2xl font-bold text-[#0f172a] tracking-tight leading-tight">
-          Monitoring Task Field Agent
+          {t('taskFieldAgent.title', 'Monitoring Task Field Agent')}
         </h1>
         <p className="text-xs text-slate-400 font-normal mt-1">
-          Monitor progres task dan tinjau hasil inspeksi yang dikirim dari A3.
+          {t('taskFieldAgent.subtitle', 'Monitor task progress and review inspection results submitted from A3.')}
         </p>
       </div>
 
@@ -1742,7 +1744,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 setSearchQuery(e.target.value);
                 setT1Page(1);
               }}
-              placeholder="Company Name atau Field Agent"
+              placeholder={t('taskFieldAgent.searchPlaceholder', 'Company Name or Field Agent')}
               className="w-full bg-[#f4f6fa] border border-slate-200/70 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:bg-white focus:border-blue-400 transition-colors"
             />
           </div>
@@ -1757,16 +1759,22 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               }}
               className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
             >
-              <span>{issueFilter === 'All' ? 'Status' : issueFilter}</span>
+              <span>
+                {issueFilter === 'All'
+                  ? t('taskFieldAgent.statusLabel', 'Status')
+                  : issueFilter === 'Issue'
+                    ? t('taskFieldAgent.issueLabel', 'Issue')
+                    : t('taskFieldAgent.completedLabel', 'Completed')}
+              </span>
               <ChevronDown size={14} className={`text-slate-400 transition-transform ${isIssueDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
             </button>
 
             {isIssueDropdownOpen && (
               <div className="absolute top-full left-0 mt-1.5 w-40 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1">
                 {[
-                  { label: 'Status (All)', value: 'All' },
-                  { label: 'Issue', value: 'Issue' },
-                  { label: 'Completed', value: 'Completed' },
+                  { label: t('taskFieldAgent.statusAllLabel', 'Status (All)'), value: 'All' },
+                  { label: t('taskFieldAgent.issueLabel', 'Issue'), value: 'Issue' },
+                  { label: t('taskFieldAgent.completedLabel', 'Completed'), value: 'Completed' },
                 ].map(opt => (
                   <button
                     key={opt.value}
@@ -1798,27 +1806,42 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               }}
               className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 flex items-center gap-2 shadow-2xs cursor-pointer transition-colors"
             >
-              <span>{periodFilter === 'All' ? 'All Periods' : periodFilter}</span>
+              <span>
+                {periodFilter === 'All'
+                  ? t('taskFieldAgent.allPeriods', 'All Periods')
+                  : periodFilter === 'Today'
+                    ? t('taskFieldAgent.today', 'Today')
+                    : periodFilter === 'This Week'
+                      ? t('taskFieldAgent.thisWeek', 'This Week')
+                      : periodFilter === 'This Month'
+                        ? t('taskFieldAgent.thisMonth', 'This Month')
+                        : periodFilter}
+              </span>
               <ChevronDown size={14} className={`text-slate-400 transition-transform ${isPeriodDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
             </button>
 
             {isPeriodDropdownOpen && (
               <div className="absolute top-full left-0 mt-1.5 w-40 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 animate-in fade-in slide-in-from-top-1">
-                {['All', 'Today', 'This Week', 'This Month'].map(opt => (
+                {[
+                  { value: 'All', label: t('taskFieldAgent.allPeriods', 'All Periods') },
+                  { value: 'Today', label: t('taskFieldAgent.today', 'Today') },
+                  { value: 'This Week', label: t('taskFieldAgent.thisWeek', 'This Week') },
+                  { value: 'This Month', label: t('taskFieldAgent.thisMonth', 'This Month') },
+                ].map(opt => (
                   <button
-                    key={opt}
+                    key={opt.value}
                     type="button"
                     onClick={() => {
-                      setPeriodFilter(opt);
+                      setPeriodFilter(opt.value);
                       setT1Page(1);
                       setIsPeriodDropdownOpen(false);
                     }}
                     className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-                      periodFilter === opt ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
+                      periodFilter === opt.value ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'
                     }`}
                   >
-                    <span>{opt === 'All' ? 'All Periods' : opt}</span>
-                    {periodFilter === opt && <Check size={13} className="text-blue-600" />}
+                    <span>{opt.label}</span>
+                    {periodFilter === opt.value && <Check size={13} className="text-blue-600" />}
                   </button>
                 ))}
               </div>
@@ -1835,19 +1858,19 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             <thead className="bg-[#F5F7FF] border-b border-slate-200/80">
               <tr>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[25%] first:rounded-tl-2xl">
-                  Company Name
+                  {t('taskFieldAgent.colCompanyName', 'Company Name')}
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[15%]">
-                  Date
+                  {t('taskFieldAgent.colDate', 'Date')}
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[13%]">
-                  Status
+                  {t('taskFieldAgent.colStatus', 'Status')}
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[15%]">
-                  Field Agent
+                  {t('taskFieldAgent.colFieldAgent', 'Field Agent')}
                 </th>
                 <th className="py-4 px-6 text-sm font-bold text-slate-800 text-center tracking-normal w-[12%] last:rounded-tr-2xl">
-                  Result
+                  {t('taskFieldAgent.colResult', 'Result')}
                 </th>
               </tr>
             </thead>
@@ -1873,12 +1896,12 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                         <FileText size={24} />
                       </div>
                       <h3 className="text-sm font-bold text-slate-800">
-                        Tidak Ada Monitoring Task Field Agent
+                        {t('taskFieldAgent.emptyTitle', 'No Monitoring Tasks Found')}
                       </h3>
                       <p className="text-xs text-slate-500 mt-1 max-w-xs">
                         {searchQuery.trim()
-                          ? `Tidak ada task yang cocok dengan pencarian "${searchQuery}".`
-                          : 'Belum ada data monitoring task Field Agent tersimpan.'}
+                          ? t('taskFieldAgent.emptySearch', 'No tasks match your search "{search}".', { search: searchQuery })
+                          : t('taskFieldAgent.emptyDefault', 'No Field Agent monitoring tasks saved yet.')}
                       </p>
                     </div>
                   </td>
@@ -1903,20 +1926,20 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                           type="button"
                           onClick={() => handleOpenIssueModal(task)}
                           className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-[#e11d48] bg-[#ffe4e6] border border-[#fecdd3] hover:bg-rose-200 transition-colors cursor-pointer"
-                          title="Klik untuk melihat detail issue"
+                          title={t('taskFieldAgent.issueTooltip', 'Click to view issue details')}
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-[#e11d48]" />
-                          <span>Issue</span>
+                          <span>{t('taskFieldAgent.issueLabel', 'Issue')}</span>
                         </button>
                       ) : (
                         <button
                           type="button"
                           onClick={() => handleOpenIssueModal(task)}
                           className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
-                          title="Klik untuk melihat Detail Status"
+                          title={t('taskFieldAgent.detailStatusTooltip', 'Click to view Detail Status')}
                         >
                           <Check size={11} className="text-emerald-600 stroke-[3]" />
-                          <span>{task.review_status || 'Completed'}</span>
+                          <span>{task.review_status || t('taskFieldAgent.completedLabel', 'Completed')}</span>
                         </button>
                       )}
                     </td>
@@ -1942,7 +1965,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                           onClick={() => openTaskWithDocuments(task, setResultModalTask)}
                           className="text-xs font-semibold text-[#0d6efd] hover:underline cursor-pointer transition-colors mt-0.5"
                         >
-                          See more...
+                          {t('taskFieldAgent.seeMore', 'See more...')}
                         </button>
                       </div>
                     </td>
@@ -1964,7 +1987,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               setT1PageSize(newPerPage);
               setT1Page(1);
             }}
-            itemLabel="tasks"
+            itemLabel={t('common.tasks', 'tasks')}
           />
         </div>
       </div>
@@ -1984,7 +2007,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                  Handling Notes &amp; Issue History
+                  {t('taskFieldAgent.handlingNotesTitle', 'Handling Notes & Issue History')}
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal flex items-center gap-1.5 flex-wrap">
                   <span>Job {notesModalTask.customer_name}</span>
@@ -1998,11 +2021,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             <div className="bg-[#ecfdf5] border border-[#a7f3d0] rounded-2xl p-3.5 flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-bold text-[#047857]">
                 <span className="w-2 h-2 rounded-full bg-[#10b981]" />
-                <span>CURRENT ISSUE STATUS</span>
+                <span>{t('taskFieldAgent.currentIssueStatus', 'CURRENT ISSUE STATUS')}</span>
               </div>
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#d1fae5] border border-[#a7f3d0] text-[#047857] text-xs font-bold">
                 <Check size={12} className="text-[#047857] stroke-[3]" />
-                <span>Resolved / Selesai</span>
+                <span>{t('taskFieldAgent.resolvedBadge', 'Resolved / Completed')}</span>
               </span>
             </div>
 
@@ -2010,10 +2033,10 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-2xl p-4 space-y-3">
               <div className="flex items-center justify-between pb-1 border-b border-slate-200/60">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  INITIAL ISSUE REPORT
+                  {t('taskFieldAgent.initialIssueReport', 'INITIAL ISSUE REPORT')}
                 </span>
                 <span className="text-[10px] font-medium text-slate-500 bg-slate-200/70 px-2 py-0.5 rounded">
-                  Read-Only
+                  {t('taskFieldAgent.readOnlyBadge', 'Read-Only')}
                 </span>
               </div>
 
@@ -2026,7 +2049,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 <div className="bg-white border border-slate-200/80 rounded-xl p-3 flex items-center justify-between shadow-2xs">
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
-                      JOB NUMBER
+                      {t('taskFieldAgent.companyBadge', 'COMPANY')}
                     </span>
                     <span className="text-xs sm:text-sm font-bold text-[#1d4ed8] font-mono">
                       {notesModalTask.customer_name}
@@ -2034,7 +2057,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   </div>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fffbeb] border border-[#fde68a] text-[#b45309] text-[10px] font-bold">
                     <Lock size={10} className="text-[#b45309]" />
-                    <span>Locked</span>
+                    <span>{t('taskFieldAgent.lockedBadge', 'Locked')}</span>
                   </span>
                 </div>
 
@@ -2042,7 +2065,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 <div className="bg-white border border-slate-200/80 rounded-xl p-3 flex items-center justify-between shadow-2xs">
                   <div className="min-w-0 flex-1">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
-                      FIELD AGENT &amp; WAKTU
+                      {t('taskFieldAgent.fieldAgentTimeBadge', 'FIELD AGENT & TIME')}
                     </span>
                     <span className="text-xs sm:text-sm font-bold text-slate-900 block truncate">
                       {notesModalTask.field_agent_name || 'Khoirul Anwar'}
@@ -2053,7 +2076,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   </div>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#fffbeb] border border-[#fde68a] text-[#b45309] text-[10px] font-bold shrink-0 ml-1">
                     <Lock size={10} className="text-[#b45309]" />
-                    <span>Locked</span>
+                    <span>{t('taskFieldAgent.lockedBadge', 'Locked')}</span>
                   </span>
                 </div>
               </div>
@@ -2064,9 +2087,9 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 tracking-wider">
                   <Clock size={14} className="text-slate-500" />
-                  <span>NOTES &amp; ESCALATION HISTORY</span>
+                  <span>{t('taskFieldAgent.notesHistoryHeading', 'NOTES & ESCALATION HISTORY')}</span>
                 </div>
-                <span className="text-xs text-slate-400 font-normal">1 entry on file</span>
+                <span className="text-xs text-slate-400 font-normal">{t('taskFieldAgent.entryOnFile', '1 entry on file')}</span>
               </div>
 
               {/* History list */}
@@ -2089,15 +2112,16 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-700 tracking-wider">
-                  + ADD FOLLOW-UP NOTES <span className="text-slate-400 font-normal">(opsional)</span>
+                  {t('taskFieldAgent.addFollowUpNotes', '+ ADD FOLLOW-UP NOTES')}{' '}
+                  <span className="text-slate-400 font-normal">{t('taskFieldAgent.optionalLabel', '(optional)')}</span>
                 </label>
                 <div className="flex items-center gap-3">
                   <span className={`text-xs font-semibold ${countWords(editingNoteText) >= 50 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
-                    {countWords(editingNoteText)}/50 kata
+                    {countWords(editingNoteText)}/50 {t('taskFieldAgent.wordsUnit', 'words')}
                   </span>
                   <div className="flex items-center gap-1 text-xs font-bold text-[#059669]">
                     <CheckCircle size={14} className="text-[#059669]" />
-                    <span>Encrypted Record</span>
+                    <span>{t('taskFieldAgent.encryptedRecord', 'Encrypted Record')}</span>
                   </div>
                 </div>
               </div>
@@ -2107,7 +2131,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 value={editingNoteText}
                 onKeyDown={(e) => handleKeyDownMaxWords(e, editingNoteText, 50)}
                 onChange={(e) => handleMax50WordsChange(e.target.value, setEditingNoteText)}
-                placeholder="Ketik catatan tambahan di sini jika ada update baru..."
+                placeholder={t('taskFieldAgent.notesPlaceholder', 'Type additional notes here if there are new updates...')}
                 className={`w-full bg-white border rounded-2xl p-3.5 sm:p-4 text-xs sm:text-sm text-slate-800 placeholder-slate-400 outline-none min-h-[90px] resize-none shadow-2xs leading-relaxed ${
                   countWords(editingNoteText) >= 50
                     ? 'border-red-500 focus:border-red-600 focus:ring-1 focus:ring-red-500'
@@ -2117,11 +2141,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               {countWords(editingNoteText) >= 50 && (
                 <p className="mt-1 text-xs text-red-600 font-semibold flex items-center gap-1">
                   <AlertTriangle size={13} className="shrink-0 text-red-500" />
-                  <span>Telah mencapai batas maksimal 50 kata. Tidak dapat menambahkan kata lagi.</span>
+                  <span>{t('taskFieldAgent.maxWordsReached', 'Reached maximum limit of 50 words. Cannot add more words.')}</span>
                 </p>
               )}
               <p className="text-xs text-slate-400 font-normal">
-                Catatan ini akan langsung terbit pada modul job list mobile A3 Field Agent &amp; tersimpan dalam audit trail.
+                {t('taskFieldAgent.notesPublishHint', 'These notes will immediately appear in the A3 Field Agent mobile job list & are saved in the audit trail.')}
               </p>
             </div>
 
@@ -2132,14 +2156,14 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 onClick={() => setNotesModalTask(null)}
                 className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
               >
-                Close
+                {t('common.close', 'Close')}
               </button>
               <button
                 type="button"
                 onClick={handleSaveTaskNote}
                 className="px-6 py-2.5 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer"
               >
-                Save Notes
+                {t('taskFieldAgent.saveNotesBtn', 'Save Notes')}
               </button>
             </div>
           </div>
@@ -2155,7 +2179,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             {/* Header */}
             <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
               <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                New Transaction
+                {t('taskFieldAgent.newTransactionTitle', 'New Transaction')}
               </h3>
             </div>
 
@@ -2166,7 +2190,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700 animate-in fade-in">
                   <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
                   <div className="leading-snug">
-                    <strong className="block font-bold">Validasi Transaksi Gagal</strong>
+                    <strong className="block font-bold">{t('taskFieldAgent.validationFailedTitle', 'Transaction Validation Failed')}</strong>
                     <span>{transactionFormError}</span>
                   </div>
                 </div>
@@ -2291,13 +2315,13 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   onClick={() => setIsCreateModalOpen(false)}
                   className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
                 >
-                  Close
+                  {t('common.close', 'Close')}
                 </button>
                 <button
                   type="submit"
                   className="px-6 py-2.5 rounded-xl bg-[#0d6efd] hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
                 >
-                  Save Transaction
+                  {t('taskFieldAgent.saveTransactionBtn', 'Save Transaction')}
                 </button>
               </div>
             </form>
@@ -2314,8 +2338,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             {/* Header */}
             <div className="px-6 pt-5 pb-3 flex items-start justify-between">
               <div>
-                <h3 className="text-[17px] font-bold text-slate-900 leading-snug">Field Agent Assignment</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Select a field inspector from HRMS records for this job.</p>
+                <h3 className="text-[17px] font-bold text-slate-900 leading-snug">{t('taskFieldAgent.assignModalTitle', 'Field Agent Assignment')}</h3>
+                <p className="text-xs text-slate-500 mt-0.5">{t('taskFieldAgent.assignModalSubtitle', 'Select a field inspector from HRMS records for this job.')}</p>
               </div>
             </div>
 
@@ -2446,14 +2470,14 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   onClick={handleCancelAssign}
                   className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
                 >
-                  Close
+                  {t('common.close', 'Close')}
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirmAssign}
                   className="px-6 py-2 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white text-xs font-bold shadow-xs cursor-pointer transition-colors"
                 >
-                  Dispatch Job
+                  {t('taskFieldAgent.dispatchJobBtn', 'Dispatch Job')}
                 </button>
               </div>
             </div>
@@ -2475,10 +2499,10 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 </div>
                 <div>
                   <h3 className="text-[17px] font-bold text-slate-900 leading-snug">
-                    Reassign Field Agent
+                    {t('taskFieldAgent.reassignModalTitle', 'Reassign Field Agent')}
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Transfer assignment from previous agent to a new agent.
+                    {t('taskFieldAgent.reassignModalSubtitle', 'Transfer assignment from previous agent to a new agent.')}
                   </p>
                 </div>
               </div>
@@ -2649,14 +2673,14 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   onClick={() => setReassignModalTask(null)}
                   className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
                 >
-                  Close
+                  {t('common.close', 'Close')}
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirmReassign}
                   className="px-6 py-2.5 rounded-xl bg-[#0d6efd] hover:bg-blue-700 text-white text-xs font-bold shadow-xs cursor-pointer transition-colors"
                 >
-                  Save Reassignment
+                  {t('taskFieldAgent.saveReassignmentBtn', 'Save Reassignment')}
                 </button>
               </div>
             </div>
@@ -2677,7 +2701,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                  Detail Status
+                  {t('taskFieldAgent.detailStatusTitle', 'Detail Status')}
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">
                   Job <span className="font-semibold text-slate-700">{issueModalTask.customer_name}</span> • <span className="font-semibold text-slate-700">{issueModalTask.customer_name}</span>
@@ -2692,18 +2716,18 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 <div className="bg-[#fff1f2] border border-[#fecdd3] rounded-2xl p-4 flex items-center justify-between shadow-2xs">
                   <div className="flex items-center gap-2 text-[#e11d48] font-bold text-xs tracking-wider uppercase">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#e11d48] inline-block" />
-                    <span>CURRENT ISSUE STATUS</span>
+                    <span>{t('taskFieldAgent.currentIssueStatus', 'CURRENT ISSUE STATUS')}</span>
                   </div>
                 </div>
               ) : (
                 <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-2xl p-4 flex items-center justify-between shadow-2xs">
                   <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs tracking-wider uppercase">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block" />
-                    <span>CURRENT ISSUE STATUS</span>
+                    <span>{t('taskFieldAgent.currentIssueStatus', 'CURRENT ISSUE STATUS')}</span>
                   </div>
                   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#dcfce7] border border-[#86efac] text-emerald-800 text-xs font-bold shadow-2xs">
                     <Check size={12} className="text-emerald-700 stroke-[3]" />
-                    <span>Completed</span>
+                    <span>{t('taskFieldAgent.completedLabel', 'Completed')}</span>
                   </span>
                 </div>
               )}
@@ -2712,11 +2736,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl p-4 sm:p-4.5 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                    INITIAL ISSUE REPORT
+                    {t('taskFieldAgent.initialIssueReport', 'INITIAL ISSUE REPORT')}
                   </span>
                   {!issueModalTask.has_issue && issueModalTask.issue_status !== 'Issue' && (
                     <span className="bg-slate-200/80 text-slate-600 text-[10px] font-bold px-2.5 py-0.5 rounded">
-                      Read-Only
+                      {t('taskFieldAgent.readOnlyBadge', 'Read-Only')}
                     </span>
                   )}
                 </div>
@@ -2725,7 +2749,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 <div className="bg-white border border-slate-200/90 rounded-xl p-3.5 text-xs sm:text-sm text-slate-800 italic leading-relaxed shadow-2xs">
                   {issueModalTask.has_issue || issueModalTask.issue_status === 'Issue'
                     ? `“${issueModalTask.issue_note || 'Selisih 2 koli kargo saat serah terima di area cargo MM2100.'}”`
-                    : `“Semua berjalan lancar di lapangan”`}
+                    : `“${t('taskFieldAgent.smoothFieldNote', 'Everything went smoothly in the field')}”`}
                 </div>
 
                 {/* Bottom 2 Grid Info */}
@@ -2733,21 +2757,25 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   {/* Job Number */}
                   <div className="bg-white border border-slate-200/80 rounded-xl p-3 flex items-center justify-between shadow-2xs">
                     <div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">COMPANY</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                        {t('taskFieldAgent.companyBadge', 'COMPANY')}
+                      </span>
                       <span className="text-xs font-bold text-[#0d6efd] font-mono block mt-0.5">
                         {issueModalTask.customer_name}
                       </span>
                     </div>
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#fff7ed] border border-[#fed7aa] text-[#c2410c] text-[10px] font-medium">
                       <Lock size={10} className="text-[#ea580c]" />
-                      <span>Locked</span>
+                      <span>{t('taskFieldAgent.lockedBadge', 'Locked')}</span>
                     </span>
                   </div>
 
                   {/* Field Agent & Waktu */}
                   <div className="bg-white border border-slate-200/80 rounded-xl p-3 flex items-center justify-between shadow-2xs">
                     <div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">FIELD AGENT &amp; WAKTU</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                        {t('taskFieldAgent.fieldAgentTimeBadge', 'FIELD AGENT & TIME')}
+                      </span>
                       <span className="text-xs font-bold text-slate-900 block mt-0.5">
                         {issueModalTask.field_agent_name || 'Maselinus'}
                       </span>
@@ -2757,7 +2785,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     </div>
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#fff7ed] border border-[#fed7aa] text-[#c2410c] text-[10px] font-medium self-start">
                       <Lock size={10} className="text-[#ea580c]" />
-                      <span>Locked</span>
+                      <span>{t('taskFieldAgent.lockedBadge', 'Locked')}</span>
                     </span>
                   </div>
                 </div>
@@ -2767,7 +2795,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               <div className="space-y-3 pt-1">
                 <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                   <Clock size={14} className="text-slate-500" />
-                  <span>NOTES &amp; ESCALATION HISTORY</span>
+                  <span>{t('taskFieldAgent.notesHistoryHeading', 'NOTES & ESCALATION HISTORY')}</span>
                 </div>
 
                 {/* Timeline History Item (Shown when task has notes) */}
@@ -2792,11 +2820,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 <div className="space-y-2 pt-1">
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-bold text-slate-700 tracking-wider">
-                      + ADD MORE NOTES <span className="text-slate-400 font-normal">(max 50 words)</span>
+                      {t('taskFieldAgent.addMoreNotesLabel', '+ ADD MORE NOTES')} <span className="text-slate-400 font-normal">{t('taskFieldAgent.max50Words', '(max 50 words)')}</span>
                     </label>
                     <div className="flex items-center gap-1 text-[11px] font-bold text-[#059669]">
                       <Shield size={13} className="text-[#059669]" />
-                      <span>Encrypted Record</span>
+                      <span>{t('taskFieldAgent.encryptedRecord', 'Encrypted Record')}</span>
                     </div>
                   </div>
 
@@ -2805,7 +2833,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     value={issueModalNoteText}
                     onKeyDown={(e) => handleKeyDownMaxWords(e, issueModalNoteText, 50)}
                     onChange={(e) => handleMax50WordsChange(e.target.value, setIssueModalNoteText)}
-                    placeholder="Ketik catatan tambahan di sini jika ada update baru..."
+                    placeholder={t('taskFieldAgent.notesPlaceholder', 'Type additional notes here if there are new updates...')}
                     className={`w-full bg-white border rounded-xl p-3.5 text-xs text-slate-800 placeholder-slate-400 outline-none resize-none leading-relaxed shadow-2xs ${
                       countWords(issueModalNoteText) >= 50
                         ? 'border-red-500 focus:border-red-600 focus:ring-1 focus:ring-red-500'
@@ -2814,15 +2842,15 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   />
 
                   <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400">
-                    <span>Catatan ini akan langsung terbit pada modul job list mobile A3 Field Agent &amp; tersimpan dalam audit trail.</span>
+                    <span>{t('taskFieldAgent.notesPublishHint', 'These notes will immediately appear in the A3 Field Agent mobile job list & are saved in the audit trail.')}</span>
                     <span className={countWords(issueModalNoteText) >= 50 ? 'text-red-500 font-bold shrink-0 ml-2' : 'text-slate-400 shrink-0 ml-2'}>
-                      {countWords(issueModalNoteText)}/50 kata
+                      {countWords(issueModalNoteText)}/50 {t('taskFieldAgent.wordsUnit', 'words')}
                     </span>
                   </div>
                   {countWords(issueModalNoteText) >= 50 && (
                     <p className="mt-1 text-[11px] text-red-600 font-semibold flex items-center gap-1">
                       <AlertTriangle size={12} className="shrink-0 text-red-500" />
-                      <span>Telah mencapai batas maksimal 50 kata. Tidak dapat menambahkan kata lagi.</span>
+                      <span>{t('taskFieldAgent.maxWordsReached', 'Reached maximum limit of 50 words. Cannot add more words.')}</span>
                     </p>
                   )}
                 </div>
@@ -2836,14 +2864,14 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 onClick={() => setIssueModalTask(null)}
                 className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
               >
-                Close
+                {t('common.close', 'Close')}
               </button>
               <button
                 type="button"
                 onClick={handleSaveIssueModalNotes}
                 className="px-6 py-2.5 rounded-xl bg-[#0d6efd] hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
               >
-                Save Notes
+                {t('taskFieldAgent.saveNotesBtn', 'Save Notes')}
               </button>
             </div>
           </div>
@@ -2859,10 +2887,10 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             {/* Light Header */}
             <div className="px-5 sm:px-6 py-4 border-b border-slate-200 flex items-center gap-2 shrink-0">
               <h2 className="text-[15px] font-bold text-slate-900 tracking-tight uppercase">
-                Field Agent Worksheet
+                {t('taskFieldAgent.worksheetTitle', 'Field Agent Worksheet')}
               </h2>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-[10px] font-bold tracking-wide">
-                A3 INSPECTION RESULT
+                {t('taskFieldAgent.inspectionBadge', 'A3 INSPECTION RESULT')}
               </span>
             </div>
 
@@ -2873,8 +2901,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700 animate-in fade-in">
                   <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
                   <div className="leading-snug">
-                    <strong className="block font-bold">Data Hasil Pemeriksaan Tidak Ditemukan</strong>
-                    <span>Data hasil pemeriksaan tidak ditemukan berdasarkan Job Number yang dipilih.</span>
+                    <strong className="block font-bold">{t('taskFieldAgent.resultNotFoundTitle', 'Inspection Result Data Not Found')}</strong>
+                    <span>{t('taskFieldAgent.resultNotFoundDesc', 'Inspection result data was not found for the selected Job Number.')}</span>
                   </div>
                 </div>
               )}
@@ -2884,8 +2912,8 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-2.5 text-xs text-blue-800 animate-in fade-in">
                   <AlertCircle size={16} className="text-blue-600 shrink-0 mt-0.5" />
                   <div className="leading-snug">
-                    <strong className="block font-bold">Hasil Pemeriksaan Belum Tersedia</strong>
-                    <span>Hasil pemeriksaan belum tersedia. Dokumen dan foto inspeksi belum diunggah oleh Field Agent.</span>
+                    <strong className="block font-bold">{t('taskFieldAgent.resultUnavailableTitle', 'Inspection Results Not Yet Available')}</strong>
+                    <span>{t('taskFieldAgent.resultUnavailableDesc', 'Inspection results are not available yet. Documents and inspection photos have not been uploaded by the Field Agent.')}</span>
                   </div>
                 </div>
               )}
@@ -2893,36 +2921,46 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               {/* 1. ASSIGNMENT & CREATION INFORMATION */}
               <div>
                 <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-                  ASSIGNMENT &amp; CREATION INFORMATION
+                  {t('taskFieldAgent.assignmentInfoHeading', 'ASSIGNMENT & CREATION INFORMATION')}
                 </h3>
                 <div className="border border-slate-200 rounded-xl p-4 grid grid-cols-2 gap-x-6 gap-y-4">
                   <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">Company</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">
+                      {t('taskFieldAgent.companyLabel', 'Company')}
+                    </span>
                     <span className="text-xs font-bold text-slate-900 block mt-0.5 font-mono">
                       {resultModalTask.customer_name}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">Job Type</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">
+                      {t('taskFieldAgent.jobTypeLabel', 'Job Type')}
+                    </span>
                     <span className="inline-flex mt-1 px-2.5 py-0.5 rounded-full border border-blue-200 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase">
                       Export
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">Customer</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">
+                      {t('taskFieldAgent.customerLabel', 'Customer')}
+                    </span>
                     <span className="text-xs font-bold text-slate-900 block mt-0.5">
                       {resultModalTask.customer_name || '-'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">Sales Executive</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">
+                      {t('taskFieldAgent.salesExecLabel', 'Sales Executive')}
+                    </span>
                     <span className="text-xs font-bold text-slate-900 block mt-0.5">
                       Adelia (HQ)
                     </span>
                   </div>
                   <div className="col-span-2 grid grid-cols-3 gap-x-6 gap-y-2 pt-3 border-t border-slate-100">
                     <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">Shipper</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 block">
+                        {t('taskFieldAgent.shipperLabel', 'Shipper')}
+                      </span>
                       <span className="text-[11px] font-bold text-slate-800 block mt-0.5 truncate">{resultModalTask.shipper || '-'}</span>
                     </div>
                     <div>
@@ -2940,11 +2978,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               {/* 2. ROUTE & HANDOVER TIME */}
               <div>
                 <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-                  ROUTE &amp; HANDOVER TIME
+                  {t('taskFieldAgent.routeHandoverHeading', 'ROUTE & HANDOVER TIME')}
                 </h3>
                 <div className="border border-slate-200 rounded-xl p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-[11px] text-slate-500">Waktu &amp; Lokasi GPS.</span>
+                    <span className="text-[11px] text-slate-500">{t('taskFieldAgent.gpsTimeLocation', 'Time & GPS Location.')}</span>
                     <span className="text-[11px] font-bold text-slate-900">
                       {formatTaskDateDisplay(resultModalTask.handover_datetime)}
                     </span>
@@ -2952,7 +2990,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <div className="grid grid-cols-2 gap-3">
                     <div className="border border-slate-100 bg-slate-50/60 rounded-lg px-3 py-2">
                       <span className="text-[9px] font-semibold uppercase tracking-wide text-slate-400 block">
-                        Port Asal (Handover)
+                        {t('taskFieldAgent.originPortLabel', 'Origin Port (Handover)')}
                       </span>
                       <span className="flex items-center gap-1.5 text-[11px] font-bold text-slate-800 mt-1">
                         <MapPin size={12} className="text-slate-400 shrink-0" />
@@ -2961,7 +2999,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     </div>
                     <div className="border border-slate-100 bg-slate-50/60 rounded-lg px-3 py-2">
                       <span className="text-[9px] font-semibold uppercase tracking-wide text-slate-400 block">
-                        Tujuan (Destination)
+                        {t('taskFieldAgent.destinationLabel', 'Destination')}
                       </span>
                       <span className="flex items-center gap-1.5 text-[11px] font-bold text-slate-800 mt-1">
                         <Truck size={12} className="text-slate-400 shrink-0" />
@@ -2976,7 +3014,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     </span>
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-emerald-200 bg-emerald-50 text-emerald-700 text-[9px] font-bold uppercase shrink-0">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                      GPS Verified
+                      {t('taskFieldAgent.gpsVerifiedBadge', 'GPS Verified')}
                     </span>
                   </div>
                 </div>
@@ -2985,23 +3023,29 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               {/* 3. COMMODITY & CARGO DETAILS */}
               <div>
                 <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-                  COMMODITY &amp; CARGO DETAILS
+                  {t('taskFieldAgent.commodityCargoHeading', 'COMMODITY & CARGO DETAILS')}
                 </h3>
                 <div className="grid grid-cols-3 gap-2.5">
                   <div className="border border-slate-200 rounded-xl px-3 py-2.5 text-center">
-                    <span className="text-[9px] font-semibold uppercase tracking-wide text-slate-400 block">Komoditas</span>
+                    <span className="text-[9px] font-semibold uppercase tracking-wide text-slate-400 block">
+                      {t('taskFieldAgent.commodityLabel', 'Commodity')}
+                    </span>
                     <span className="text-xs font-bold text-slate-900 mt-1 block leading-tight">
                       {resultModalTask.packaging_type || 'Instant Noodles & Food'}
                     </span>
                   </div>
                   <div className="border border-slate-200 rounded-xl px-3 py-2.5 text-center">
-                    <span className="text-[9px] font-semibold uppercase tracking-wide text-slate-400 block">Jumlah Koli</span>
+                    <span className="text-[9px] font-semibold uppercase tracking-wide text-slate-400 block">
+                      {t('taskFieldAgent.piecesLabel', 'Total Packages')}
+                    </span>
                     <span className="text-xs font-bold text-slate-900 mt-1 block">
                       {resultModalTask.cargo_pieces || '24 Pcs'}
                     </span>
                   </div>
                   <div className="border border-slate-200 rounded-xl px-3 py-2.5 text-center">
-                    <span className="text-[9px] font-semibold uppercase tracking-wide text-blue-600 block">Berat Aktual</span>
+                    <span className="text-[9px] font-semibold uppercase tracking-wide text-blue-600 block">
+                      {t('taskFieldAgent.actualWeightLabel', 'Actual Weight')}
+                    </span>
                     <span className="text-xs font-bold text-blue-600 mt-1 block">
                       {resultModalTask.gross_weight || '360.0 Kg'}
                     </span>
@@ -3013,11 +3057,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                    FIELD PHOTO EVIDENCE
+                    {t('taskFieldAgent.fieldPhotoHeading', 'FIELD PHOTO EVIDENCE')}
                   </h3>
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold">
                     <Check size={11} className="text-emerald-600" />
-                    <span>{Math.min(resultModalTask.result_photos?.length || 0, 4)}/4 Verified</span>
+                    <span>{Math.min(resultModalTask.result_photos?.length || 0, 4)}/4 {t('taskFieldAgent.verifiedBadge', 'Verified')}</span>
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -3032,18 +3076,18 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       }}
                     >
                       {resultPhotoUrl(0) ? (
-                        <img src={resultPhotoUrl(0)} alt="Foto Keseluruhan" className="absolute inset-0 h-full w-full object-cover" />
+                        <img src={resultPhotoUrl(0)} alt={t('taskFieldAgent.photo1Label', '1. Overall Cargo')} className="absolute inset-0 h-full w-full object-cover" />
                       ) : (
                         <>
                           <div className="w-6 h-6 rounded-full bg-blue-100 text-[#2563eb] flex items-center justify-center shadow-xs">
                             <Camera size={12} />
                           </div>
-                          <span className="text-[9px] text-slate-400 font-mono mt-0.5">Belum ada foto</span>
+                          <span className="text-[9px] text-slate-400 font-mono mt-0.5">{t('taskFieldAgent.noPhotoYet', 'No photo yet')}</span>
                         </>
                       )}
                     </div>
                     <div className="px-2 py-1 bg-white flex items-center justify-between border-t border-slate-100">
-                      <span className="text-[10px] font-semibold text-slate-800">1. Overall Cargo</span>
+                      <span className="text-[10px] font-semibold text-slate-800">{t('taskFieldAgent.photo1Label', '1. Overall Cargo')}</span>
                       <span className="text-[10px] font-bold text-emerald-600">OK</span>
                     </div>
                   </div>
@@ -3059,18 +3103,18 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       }}
                     >
                       {resultPhotoUrl(1) ? (
-                        <img src={resultPhotoUrl(1)} alt="Marking dan Label" className="absolute inset-0 h-full w-full object-cover" />
+                        <img src={resultPhotoUrl(1)} alt={t('taskFieldAgent.photo2Label', '2. Marking & Label')} className="absolute inset-0 h-full w-full object-cover" />
                       ) : (
                         <>
                           <div className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shadow-xs">
                             <Tag size={12} />
                           </div>
-                          <span className="text-[9px] text-slate-400 font-mono mt-0.5">Belum ada foto</span>
+                          <span className="text-[9px] text-slate-400 font-mono mt-0.5">{t('taskFieldAgent.noPhotoYet', 'No photo yet')}</span>
                         </>
                       )}
                     </div>
                     <div className="px-2 py-1 bg-white flex items-center justify-between border-t border-slate-100">
-                      <span className="text-[10px] font-semibold text-slate-800">2. Marking &amp; Label</span>
+                      <span className="text-[10px] font-semibold text-slate-800">{t('taskFieldAgent.photo2Label', '2. Marking & Label')}</span>
                       <span className="text-[10px] font-bold text-emerald-600">Match</span>
                     </div>
                   </div>
@@ -3086,18 +3130,18 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       }}
                     >
                       {resultPhotoUrl(2) ? (
-                        <img src={resultPhotoUrl(2)} alt="Container Seal" className="absolute inset-0 h-full w-full object-cover" />
+                        <img src={resultPhotoUrl(2)} alt={t('taskFieldAgent.photo3Label', '3. Container Seal')} className="absolute inset-0 h-full w-full object-cover" />
                       ) : (
                         <>
                           <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
                             <Lock size={12} />
                           </div>
-                          <span className="text-[9px] text-slate-400 font-mono mt-0.5">Belum ada foto</span>
+                          <span className="text-[9px] text-slate-400 font-mono mt-0.5">{t('taskFieldAgent.noPhotoYet', 'No photo yet')}</span>
                         </>
                       )}
                     </div>
                     <div className="px-2 py-1 bg-white flex items-center justify-between border-t border-slate-100">
-                      <span className="text-[10px] font-semibold text-slate-800">3. Container Seal</span>
+                      <span className="text-[10px] font-semibold text-slate-800">{t('taskFieldAgent.photo3Label', '3. Container Seal')}</span>
                       <span className="text-[10px] font-bold text-emerald-600">Intact</span>
                     </div>
                   </div>
@@ -3113,19 +3157,19 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       }}
                     >
                       {resultPhotoUrl(3) ? (
-                        <img src={resultPhotoUrl(3)} alt="Surface Detail" className="absolute inset-0 h-full w-full object-cover" />
+                        <img src={resultPhotoUrl(3)} alt={t('taskFieldAgent.photo4Label', '4. Surface Detail')} className="absolute inset-0 h-full w-full object-cover" />
                       ) : (
                         <>
                           <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
                             <Shield size={12} />
                           </div>
-                          <span className="text-[9px] text-slate-400 font-mono mt-0.5">Belum ada foto</span>
+                          <span className="text-[9px] text-slate-400 font-mono mt-0.5">{t('taskFieldAgent.noPhotoYet', 'No photo yet')}</span>
                         </>
                       )}
                     </div>
                     <div className="px-2 py-1 bg-white flex items-center justify-between border-t border-slate-100">
-                      <span className="text-[10px] font-semibold text-slate-800">4. Surface Detail</span>
-                      <span className="text-[10px] font-bold text-blue-600">Verified</span>
+                      <span className="text-[10px] font-semibold text-slate-800">{t('taskFieldAgent.photo4Label', '4. Surface Detail')}</span>
+                      <span className="text-[10px] font-bold text-blue-600">{t('taskFieldAgent.verifiedBadge', 'Verified')}</span>
                     </div>
                   </div>
                 </div>
@@ -3134,23 +3178,23 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               {/* 5. DOCUMENT ATTACHMENTS */}
               <div>
                 <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-                  DOCUMENT ATTACHMENTS
+                  {t('taskFieldAgent.docAttachmentsHeading', 'DOCUMENT ATTACHMENTS')}
                 </h3>
                 <div className="space-y-1.5">
                   {(resultModalTask.documents || []).length === 0 ? (
                     <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-4 text-center text-[10px] text-slate-400">
-                      Belum ada dokumen yang diunggah Field Agent.
+                      {t('taskFieldAgent.noDocumentsUploaded', 'No documents uploaded by Field Agent yet.')}
                     </div>
                   ) : (
                     (resultModalTask.documents || []).map((doc) => {
                       const fileName = decodeURIComponent(doc.file_url.split('?')[0].split('/').pop() || 'document');
                       const ext = fileName.split('.').pop()?.toUpperCase() || 'FILE';
                       const typeLabel = doc.doc_type === 'main_doc'
-                        ? 'Primary Document'
+                        ? t('taskFieldAgent.primaryDoc', 'Primary Document')
                         : doc.doc_type === 'support_doc'
-                          ? 'Supporting Document'
+                          ? t('taskFieldAgent.supportingDoc', 'Supporting Document')
                           : doc.doc_type === 'msds'
-                            ? 'MSDS / DG Declaration'
+                            ? t('taskFieldAgent.msdsDoc', 'MSDS / DG Declaration')
                             : doc.doc_type;
                       return (
                         <div key={doc.id} className="flex items-center justify-between p-2.5 bg-white border border-[#e2eaf5] rounded-xl shadow-2xs">
@@ -3175,7 +3219,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                               showToast(`Berkas ${fileName} berhasil diunduh`);
                             }}
                             className="p-1.5 text-slate-400 hover:text-[#2563eb] rounded-lg transition-colors cursor-pointer"
-                            title="Unduh Berkas"
+                            title={t('taskFieldAgent.downloadDocTooltip', 'Download File')}
                           >
                             <Download size={14} />
                           </button>
@@ -3187,14 +3231,18 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   {/* Pihak Penyerah & Pihak Penerima Box */}
                   <div className="bg-[#f8fafd] border border-[#e2eaf5] rounded-xl p-2.5 grid grid-cols-2 gap-3 mt-1">
                     <div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">PIHAK PENYERAH</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                        {t('taskFieldAgent.handoverFromLabel', 'HANDOVER PARTY')}
+                      </span>
                       <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5 mt-0.5">
                         <User size={12} className="text-slate-500" />
                         <span>Budi Santoso</span>
                       </span>
                     </div>
                     <div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">PIHAK PENERIMA</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                        {t('taskFieldAgent.handoverToLabel', 'RECEIVING PARTY')}
+                      </span>
                       <span className="text-xs font-bold text-[#2563eb] flex items-center gap-1.5 mt-0.5">
                         <User size={12} className="text-[#2563eb]" />
                         <span>{resultModalTask.field_agent_name || 'Marsel'}</span>
@@ -3208,7 +3256,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               <div>
                 <div className="flex items-center gap-1.5 text-slate-800 text-[11px] font-bold uppercase tracking-wider mb-2">
                   <CheckCircle size={13} className="text-[#2563eb]" />
-                  <span>CHECKLIST CENTANG &amp; STATUS MASALAH</span>
+                  <span>{t('taskFieldAgent.checklistHeading', 'VERIFICATION CHECKLIST & ISSUE STATUS')}</span>
                 </div>
                 <div className="bg-white border border-[#e2eaf5] rounded-xl p-3 space-y-2">
                   <div className="space-y-1.5">
@@ -3225,7 +3273,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                           <span>{item}</span>
                         </span>
                         <span className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold">
-                          Verified
+                          {t('taskFieldAgent.verifiedBadge', 'Verified')}
                         </span>
                       </div>
                     ))}
@@ -3233,13 +3281,13 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
 
                   <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-slate-500 text-[11px]">Dangerous Goods:</span>
+                      <span className="text-slate-500 text-[11px]">{t('taskFieldAgent.dangerousGoodsLabel', 'Dangerous Goods:')}</span>
                       <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px]">
                         NO
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-slate-500 text-[11px]">Special Handling:</span>
+                      <span className="text-slate-500 text-[11px]">{t('taskFieldAgent.specialHandlingLabel', 'Special Handling:')}</span>
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#fffbeb] border border-[#fef3c7] text-[#b45309] text-[10px] font-bold">
                         <RefreshCw size={10} className="text-[#b45309]" />
                         <span>YES (Kooler / Priority Cargo)</span>
@@ -3252,7 +3300,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               {/* 7. FIELD ISSUES */}
               <div>
                 <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-                  FIELD ISSUES
+                  {t('taskFieldAgent.fieldIssuesHeading', 'FIELD ISSUES')}
                 </h3>
                 {(resultModalTask.has_issue || resultModalTask.issue_status === 'Issue') ? (
                   <div className="rounded-xl border border-red-200 bg-red-50/70 p-3.5">
@@ -3260,16 +3308,16 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       <span className="inline-flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-red-600 shrink-0" />
                         <span className="px-2.5 py-0.5 rounded bg-red-600 text-white text-[9px] font-bold uppercase tracking-wide">
-                          Yes - Has Issue
+                          {t('taskFieldAgent.hasIssueBadge', 'Yes - Has Issue')}
                         </span>
                       </span>
                       <span className="text-[9px] font-bold uppercase tracking-wide text-red-500">
                         Severity: Medium
                       </span>
                     </div>
-                    <p className="text-[10px] font-bold text-red-600 mt-3">Agent Issue Note:</p>
+                    <p className="text-[10px] font-bold text-red-600 mt-3">{t('taskFieldAgent.agentIssueNoteLabel', 'Agent Issue Note:')}</p>
                     <p className="mt-1.5 rounded-md border border-red-200 bg-white/70 px-3 py-2 text-[11px] italic text-red-600 leading-relaxed">
-                      &ldquo;{resultModalTask.issue_note || 'Tidak ada catatan tambahan dari field agent.'}&rdquo;
+                      &ldquo;{resultModalTask.issue_note || t('taskFieldAgent.noAgentNoteDefault', 'No additional notes from field agent.')}&rdquo;
                     </p>
                   </div>
                 ) : (
@@ -3278,13 +3326,13 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                       <span className="inline-flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-emerald-700 shrink-0" />
                         <span className="px-2.5 py-0.5 rounded bg-emerald-700 text-white text-[9px] font-bold uppercase tracking-wide">
-                          No - Clear/Safe
+                          {t('taskFieldAgent.noIssueBadge', 'No - Clear/Safe')}
                         </span>
                       </span>
                     </div>
-                    <p className="text-[10px] font-bold text-emerald-700 mt-3">Agent Issue Note:</p>
+                    <p className="text-[10px] font-bold text-emerald-700 mt-3">{t('taskFieldAgent.agentIssueNoteLabel', 'Agent Issue Note:')}</p>
                     <p className="mt-1.5 rounded-md border border-emerald-200 bg-white/70 px-3 py-2 text-[11px] italic text-emerald-700 leading-relaxed">
-                      &ldquo;Tidak terdapat masalah&rdquo;
+                      &ldquo;{t('taskFieldAgent.noProblemsDefault', 'No issues found')}&rdquo;
                     </p>
                   </div>
                 )}
@@ -3304,7 +3352,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     onClick={() => handleReviewAction('approve')}
                     className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-bold transition-colors cursor-pointer text-center"
                   >
-                    Acc
+                    {t('taskFieldAgent.approveBtn', 'Approve')}
                   </button>
                   <button
                     type="button"
@@ -3312,7 +3360,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     onClick={() => handleReviewAction('request')}
                     className="flex-1 py-2.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 disabled:opacity-60 text-amber-800 text-xs font-bold transition-colors cursor-pointer text-center"
                   >
-                    Minta dilengkapi
+                    {t('taskFieldAgent.requestCompletionBtn', 'Request Completion')}
                   </button>
                   <button
                     type="button"
@@ -3320,7 +3368,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                     onClick={() => handleReviewAction('archive')}
                     className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-60 text-slate-600 text-xs font-bold transition-colors cursor-pointer text-center"
                   >
-                    Arsipkan
+                    {t('taskFieldAgent.archiveBtn', 'Archive')}
                   </button>
                 </>
               )}
@@ -3329,7 +3377,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 onClick={() => setResultModalTask(null)}
                 className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-bold transition-colors cursor-pointer text-center"
               >
-                Close Panel
+                {t('taskFieldAgent.closePanelBtn', 'Close Panel')}
               </button>
               <button
                 type="button"
@@ -3337,7 +3385,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 className="flex-[2] inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-bold transition-colors cursor-pointer"
               >
                 <Download size={14} />
-                Export PDF
+                {t('taskFieldAgent.exportPdfBtn', 'Export PDF')}
               </button>
             </div>
           </div>
@@ -3353,7 +3401,9 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             {/* Header */}
             <div className="px-6 pt-5 pb-3 flex items-start justify-between border-b border-slate-100">
               <div>
-                <h3 className="text-[17px] font-bold text-slate-900 leading-tight">Job / Transaction Detail Summary</h3>
+                <h3 className="text-[17px] font-bold text-slate-900 leading-tight">
+                  {t('taskFieldAgent.detailSummaryTitle', 'Job / Transaction Detail Summary')}
+                </h3>
                 <p className="text-xs text-slate-500 font-mono mt-0.5">{detailModalTask.customer_name}</p>
               </div>
             </div>
@@ -3661,7 +3711,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 onClick={() => setDetailModalTask(null)}
                 className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
               >
-                Close
+                {t('common.close', 'Close')}
               </button>
               {!isEditingTransaction ? (
                 <button
@@ -3669,7 +3719,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   onClick={() => handleOpenEditTransaction(detailModalTask)}
                   className="px-4 py-2 rounded-xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-xs font-bold text-[#0d6efd] cursor-pointer transition-colors shadow-2xs"
                 >
-                  Edit Info
+                  {t('taskFieldAgent.editInfoBtn', 'Edit Info')}
                 </button>
               ) : (
                 <div />
@@ -3680,28 +3730,28 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   <button
                     type="button"
                     onClick={() => {
-                      const t = detailModalTask;
+                      const tItem = detailModalTask;
                       setDetailModalTask(null);
                       setReassignAgent('');
                       setReassignReason('');
                       setReassignNotes('');
-                      setReassignModalTask(t);
+                      setReassignModalTask(tItem);
                     }}
                     className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer transition-colors"
                   >
-                    Reassign Agent
+                    {t('taskFieldAgent.reassignAgentBtn', 'Reassign Agent')}
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => {
-                    const t = detailModalTask;
+                    const tItem = detailModalTask;
                     setDetailModalTask(null);
-                    setTimelineModalTask(t);
+                    setTimelineModalTask(tItem);
                   }}
                   className="px-5 py-2 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white text-xs font-bold shadow-xs cursor-pointer transition-colors"
                 >
-                  View Timeline
+                  {t('taskFieldAgent.viewTimelineBtn', 'View Timeline')}
                 </button>
               </div>
             </div>
@@ -3721,7 +3771,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             {/* Header */}
             <div className="px-6 pt-5 pb-3 flex items-center justify-between border-b border-slate-100">
               <h3 className="text-[17px] font-bold text-slate-900 leading-tight">
-                Handling Timeline &amp; Audit Log
+                {t('taskFieldAgent.timelineModalTitle', 'Handling Timeline & Audit Log')}
               </h3>
             </div>
 
@@ -3874,7 +3924,7 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                 onClick={() => setTimelineModalTask(null)}
                 className="px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
               >
-                Close
+                {t('common.close', 'Close')}
               </button>
             </div>
           </div>
@@ -3901,10 +3951,10 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
               <div className="px-6 pt-5 pb-3.5 border-b border-slate-100 flex items-start justify-between shrink-0 bg-white">
                 <div>
                   <h3 className="text-[17px] font-bold text-slate-900 tracking-tight leading-tight">
-                    Pengajuan Need Backup
+                    {t('taskFieldAgent.needBackupModalTitle', 'Need Backup Request')}
                   </h3>
                   <p className="text-xs text-slate-400 font-normal mt-0.5">
-                    Buat tiket bantuan penanganan masalah untuk tim support/operations.
+                    {t('taskFieldAgent.needBackupModalSubtitle', 'Create an issue handling support ticket for the support/operations team.')}
                   </p>
                 </div>
               </div>
@@ -4044,14 +4094,14 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
                   onClick={() => setBackupModalTask(null)}
                   className="px-5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
                 >
-                  Close
+                  {t('common.close', 'Close')}
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirmBackup}
                   className="px-6 py-2.5 rounded-xl bg-[#0d6efd] hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
                 >
-                  Ajukan Backup
+                  {t('taskFieldAgent.submitBackupBtn', 'Submit Backup')}
                 </button>
               </div>
             </div>
@@ -4069,10 +4119,11 @@ export default function TaskOfFieldAgent({ currentUser }: TaskOfFieldAgentProps)
             <img src={previewPhotoUrl} alt="Preview" className="w-full h-auto object-contain" />
             <div className="p-3 bg-slate-900 border-t border-slate-800 flex justify-end">
               <button
+                type="button"
                 onClick={() => setPreviewPhotoUrl(null)}
                 className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
               >
-                Close
+                {t('common.close', 'Close')}
               </button>
             </div>
           </div>

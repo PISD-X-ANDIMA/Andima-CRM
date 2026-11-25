@@ -41,6 +41,7 @@ export interface RecordConversationItem {
   company_name?: string;
   client_contact_name?: string;
   sales_pic_name?: string;
+  sales_pic_role?: string;
 }
 
 export interface ConversationFileItem {
