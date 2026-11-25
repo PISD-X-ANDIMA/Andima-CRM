@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search, Download, X, Eye } from "lucide-react";
+import { Search, X, Eye } from "lucide-react";
 import { ManagerGlobalFilterBar } from "@/components/dashboard/ManagerGlobalFilterBar";
 import { useManagerFilter } from "@/lib/hooks/useManagerFilter";
 import InteractionTab from "@/components/InteractionTab";
@@ -9,8 +9,14 @@ import { supabase } from "@/lib/supabaseClient";
 import { DashboardSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
 import { FigmaPagination } from "@/components/ui/FigmaPagination";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { parseAttachmentUrls, fileNameFromUrl } from "@/backend/record_conversation/attachmentUtils";
 
 type BackupStatus = "Pending" | "In Progress" | "Reviewed";
+
+interface ConversationAttachment {
+  name: string;
+  url: string;
+}
 
 interface ConversationRecord {
   rawId?: string;
@@ -22,6 +28,7 @@ interface ConversationRecord {
   summary: string;
   time: string;
   attachmentName?: string;
+  attachments?: ConversationAttachment[];
   alertId?: string;
   backupStatus?: BackupStatus;
 }
@@ -114,6 +121,11 @@ export default function RecordConversationPage() {
           setConversations(
             data.map((c: any, index: number) => {
               const displayCode = c.conversation_id || (c.id ? `CONV-${String(c.id).slice(-8).toUpperCase()}` : `CONV-${String(index + 1).padStart(4, "0")}`);
+              const attachmentUrls = parseAttachmentUrls(c.attachment_url ?? c.document_urls);
+              const attachments = attachmentUrls.map((url, attIdx) => ({
+                name: fileNameFromUrl(url, `Attachment_${attIdx + 1}`),
+                url,
+              }));
               return {
                 rawId: String(c.id || index),
                 id: displayCode,
@@ -123,7 +135,8 @@ export default function RecordConversationPage() {
                 date: c.conversation_date || (c.created_at ? c.created_at.slice(0, 10) : "-"),
                 time: c.conversation_time || (c.created_at ? c.created_at.slice(11, 16) : "-"),
                 summary: c.summary || "-",
-                attachmentName: Array.isArray(c.document_urls) && c.document_urls.length > 0 ? c.document_urls[0].split("/").pop() : c.attachment_name,
+                attachments,
+                attachmentName: attachments[0]?.name || c.attachment_name,
                 alertId: backupByConversation.get(String(c.id))?.id,
                 backupStatus: backupByConversation.get(String(c.id))?.status,
               };
@@ -410,18 +423,40 @@ export default function RecordConversationPage() {
                 </div>
               )}
 
-              {selectedRecord.attachmentName && (
+              {((selectedRecord.attachments && selectedRecord.attachments.length > 0) || selectedRecord.attachmentName) && (
                 <div>
-                  <p className="font-semibold uppercase tracking-wider text-slate-400">Attachment (1) - Max 5 MB</p>
-                  <div className="mt-1.5 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-                    <span className="text-slate-700 font-medium truncate max-w-[280px]">{selectedRecord.attachmentName}</span>
-                    <button
-                      type="button"
-                      onClick={() => alert(`Downloading ${selectedRecord.attachmentName}`)}
-                      className="rounded border border-slate-300 bg-white px-3 py-1 font-semibold text-blue-600 hover:bg-slate-50 shrink-0"
-                    >
-                      {t("manager.downloadFile", "Download")}
-                    </button>
+                  <p className="font-semibold uppercase tracking-wider text-slate-400">
+                    Attachment ({selectedRecord.attachments && selectedRecord.attachments.length > 0 ? selectedRecord.attachments.length : 1}) - Max 5 MB
+                  </p>
+                  <div className="mt-1.5 space-y-2">
+                    {selectedRecord.attachments && selectedRecord.attachments.length > 0 ? (
+                      selectedRecord.attachments.map((att, idx) => (
+                        <div
+                          key={`${att.url}-${idx}`}
+                          className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-2.5"
+                        >
+                          <span className="text-slate-700 font-medium truncate max-w-[280px]">{att.name}</span>
+                          <a
+                            href={`/api/record-conversation/download?url=${encodeURIComponent(att.url)}&filename=${encodeURIComponent(att.name)}`}
+                            download={att.name}
+                            className="rounded border border-slate-300 bg-white px-3 py-1 font-semibold text-blue-600 hover:bg-slate-50 shrink-0"
+                          >
+                            {t("manager.downloadFile", "Download")}
+                          </a>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                        <span className="text-slate-700 font-medium truncate max-w-[280px]">{selectedRecord.attachmentName}</span>
+                        <button
+                          type="button"
+                          onClick={() => alert(`Downloading ${selectedRecord.attachmentName}`)}
+                          className="rounded border border-slate-300 bg-white px-3 py-1 font-semibold text-blue-600 hover:bg-slate-50 shrink-0"
+                        >
+                          {t("manager.downloadFile", "Download")}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

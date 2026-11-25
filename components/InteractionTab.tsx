@@ -16,6 +16,7 @@ import {
   createApiConversation,
   updateApiConversation,
   uploadApiFile,
+  fileNameFromUrl,
   CompanyItem,
   RecordConversationItem,
   UploadedFileMetadata
@@ -316,12 +317,6 @@ export default function InteractionTab({ currentUser }: InteractionTabProps = {}
   const MAX_SUMMARY_WORDS = 100;
   const MAX_WORD_CHARS = 25;
   const MAX_SUMMARY_CHARS = 2600;
-
-  // URL lama memakai path "conversations/<timestamp>_<nama>". Buang prefix angka itu.
-  const fileNameFromUrl = (url: string, fallback: string): string => {
-    const raw = url.split('/').pop()?.split('?')[0] || fallback;
-    return decodeURIComponent(raw).replace(/^\d{10,}_/, '');
-  };
 
   const todayJakartaIso = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date());
 
@@ -1211,6 +1206,7 @@ Exported on: ${new Date().toLocaleString('id-ID')}
       }
 
       await loadData();
+      setCurrentPage(1);
       setRecordSummary('');
       setNewUploadedFiles([]);
       setJobNumberInput('');
@@ -2206,6 +2202,11 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-bold text-slate-800">
                     {t('recordConversation.attachmentFieldLabel', 'Attachment File (Optional)')}
+                    {newUploadedFiles.length > 0 && (
+                      <span className="ml-1.5 text-[11px] font-semibold text-blue-600">
+                        ({newUploadedFiles.length}/5)
+                      </span>
+                    )}
                   </label>
                   <span className="text-[10px] text-slate-400 font-medium">
                     {channelSelection === 'WhatsApp'
@@ -2269,6 +2270,13 @@ Exported on: ${new Date().toLocaleString('id-ID')}
                     <AlertCircle size={13} className="shrink-0 text-red-500" />
                     <span>{attachmentError}</span>
                   </p>
+                )}
+
+                {isUploadingFile && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-blue-600 font-medium">
+                    <Loader2 size={14} className="animate-spin shrink-0" />
+                    <span>{t('recordConversation.uploadingFiles', 'Uploading attachment...')}</span>
+                  </div>
                 )}
 
                 {newUploadedFiles.length > 0 && (

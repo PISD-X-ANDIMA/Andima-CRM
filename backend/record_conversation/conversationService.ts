@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { CompanyItem, RecordConversationItem, NewConversationPayload, UpdateConversationPayload, PaginatedResult } from './types';
+import { parseAttachmentUrls, serializeAttachmentUrls } from './attachmentUtils';
 
 const MAX_SUMMARY_WORDS = 100;
 const MAX_WORD_CHARS = 25;
@@ -187,7 +188,8 @@ export async function getConversations(options?: {
       created_at,
       updated_at
     `, { count: 'exact' })
-    .order('conversation_date', { ascending: false });
+    .order('conversation_date', { ascending: false })
+    .order('created_at', { ascending: false });
 
   if (options?.channelType && options.channelType !== 'All Channels') {
     query = query.eq('channel', options.channelType);
@@ -280,6 +282,7 @@ export async function getConversations(options?: {
   const mappedData = data.filter((item: any) => companyMap.has(item.customer_id)).map((item: any) => {
     const comp = companyMap.get(item.customer_id);
     const emp = employeeMap.get(item.created_by);
+    const documentUrls = parseAttachmentUrls(item.attachment_url);
     return {
       id: String(item.id),
       job_number: null,
@@ -293,7 +296,7 @@ export async function getConversations(options?: {
       alert_status: alertMap.get(item.id) || null,
       urgency_level: item.need_assist ? 'high_priority' : 'standard',
       synced_to_ctrack: true,
-      document_urls: item.attachment_url ? [item.attachment_url] : null,
+      document_urls: documentUrls.length > 0 ? documentUrls : null,
       status: 'active',
       created_by: item.created_by,
       created_at: item.created_at,
@@ -373,7 +376,7 @@ export async function createConversation(
       conversation_date: conversationDate,
       summary: payload.summary,
       need_assist: Boolean(payload.need_assistance),
-      attachment_url: fileUrls.length > 0 ? fileUrls[0] : null,
+      attachment_url: serializeAttachmentUrls(fileUrls),
       created_by: authorId,
     };
 
@@ -400,12 +403,14 @@ export async function createConversation(
       }
     }
 
-    // Single attachment is stored directly in a2_record_conversations.attachment_url
+    const savedUrls = parseAttachmentUrls(convData?.attachment_url);
 
     return {
       success: true,
       data: {
         ...(convData as RecordConversationItem),
+        channel_type: convData?.channel || payload.channel_type || 'WhatsApp',
+        document_urls: savedUrls.length > 0 ? savedUrls : null,
         sales_pic_name: authorName,
         sales_pic_role: authorRole,
       },
@@ -453,8 +458,10 @@ export async function updateConversation(
     }
     if (payload.channel_type !== undefined) updateFields.channel = payload.channel_type;
     if (payload.need_assistance !== undefined) updateFields.need_assist = payload.need_assistance;
-    if (payload.document_urls !== undefined && Array.isArray(payload.document_urls) && payload.document_urls.length > 0) {
-      updateFields.attachment_url = payload.document_urls[0];
+    if (payload.document_urls !== undefined) {
+      updateFields.attachment_url = serializeAttachmentUrls(
+        Array.isArray(payload.document_urls) ? payload.document_urls : []
+      );
     }
 
     const { data, error } = await db
@@ -519,8 +526,12 @@ export async function updateConversation(
       }
     }
 
+    const savedUrls = parseAttachmentUrls(data.attachment_url);
+
     const updatedItem: RecordConversationItem = {
       ...data,
+      channel_type: data.channel || 'WhatsApp',
+      document_urls: savedUrls.length > 0 ? savedUrls : null,
       company_name: companyName,
       customer_code: customerCode,
       sales_pic_name: salesPicName,

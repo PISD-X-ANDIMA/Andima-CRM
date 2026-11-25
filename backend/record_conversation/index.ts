@@ -1,4 +1,5 @@
 export * from './types';
+export * from './attachmentUtils';
 export * from './supabaseClient';
 export * from './uploadService';
 export * from './conversationService';

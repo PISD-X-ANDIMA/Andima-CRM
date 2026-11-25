@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
       limit: result.limit,
       totalPages: result.totalPages,
     });
-    response.headers.set('Cache-Control', 'private, max-age=3, stale-while-revalidate=30');
+    response.headers.set('Cache-Control', 'private, no-cache, must-revalidate');
     return response;
   } catch (error: any) {
     console.error('Error in GET /api/record-conversation/conversations:', error);
